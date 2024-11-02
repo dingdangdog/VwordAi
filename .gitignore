@@ -1,0 +1,8 @@
+.nuxt
+.output
+
+build
+dist
+
+node_modules
+

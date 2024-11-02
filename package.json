@@ -1,0 +1,68 @@
+{
+  "name": "dotts",
+  "version": "0.0.1",
+  "private": true,
+  "type": "commonjs",
+  "main": "main.js",
+  "author": {
+    "name": "dingdangdog",
+    "email": "dingdangdogx@outlook.com"
+  },
+  "scripts": {
+    "dev": "nuxt dev",
+    "electron": "electron .",
+    "package": "nuxt generate && electron-builder",
+    "build": "nuxt build",
+    "generate": "nuxt generate",
+    "preview": "nuxt preview",
+    "postinstall": "nuxt prepare"
+  },
+  "build": {
+    "appId": "top.oldmoon.dotts",
+    "productName": "DoTTS",
+    "directories": {
+      "output": "build"
+    },
+    "asar": false,
+    "files": [
+      "main.js",
+      "preload.js"
+    ],
+    "extraResources": [
+      {
+        "from": ".output/public/",
+        "to": "app/ui/"
+      }
+    ],
+    "linux": {
+      "target": [
+        "AppImage",
+        "deb"
+      ],
+      "category": "Utility"
+    },
+    "mac": {
+      "target": [
+        "dmg",
+        "zip"
+      ],
+      "category": "public.app-category.utilities"
+    },
+    "win": {
+      "target": [
+        "nsis"
+      ],
+      "icon": "public/favicon.ico"
+    }
+  },
+  "dependencies": {
+    "@nuxtjs/i18n": "^8.3.1",
+    "@nuxtjs/tailwindcss": "^6.12.2",
+    "nuxt": "^3.12.4",
+    "vue": "latest"
+  },
+  "devDependencies": {
+    "electron": "^24.8.8",
+    "electron-builder": "^23.6.0"
+  }
+}
