@@ -9,13 +9,8 @@
     "email": "dingdangdogx@outlook.com"
   },
   "scripts": {
-    "dev": "nuxt dev",
     "electron": "electron .",
-    "package": "nuxt generate && electron-builder",
-    "build": "nuxt build",
-    "generate": "nuxt generate",
-    "preview": "nuxt preview",
-    "postinstall": "nuxt prepare"
+    "package": "electron-builder"
   },
   "build": {
     "appId": "top.oldmoon.dotts",
@@ -23,16 +18,12 @@
     "directories": {
       "output": "build"
     },
-    "asar": false,
     "files": [
       "main.js",
-      "preload.js"
-    ],
-    "extraResources": [
-      {
-        "from": ".output/public/",
-        "to": "app/ui/"
-      }
+      "preload.js",
+      "handler.js",
+      "server/**",
+      "ui/dist/**"
     ],
     "linux": {
       "target": [
@@ -52,14 +43,11 @@
       "target": [
         "nsis"
       ],
-      "icon": "public/favicon.ico"
+      "icon": "ui/public/favicon.ico"
     }
   },
   "dependencies": {
-    "@nuxtjs/i18n": "^8.3.1",
-    "@nuxtjs/tailwindcss": "^6.12.2",
-    "nuxt": "^3.12.4",
-    "vue": "latest"
+    "dotenv": "^16.4.5"
   },
   "devDependencies": {
     "electron": "^24.8.8",

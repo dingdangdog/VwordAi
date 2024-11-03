@@ -30,56 +30,60 @@
 </template>
 
 <script setup lang="ts">
-import IconMicrophone from '~/components/icon/microphone.vue'
-import IconCog from '~/components/icon/cog.vue'
-import IconAccount from '~/components/icon/account.vue'
-import IconWifi from '~/components/icon/wifi.vue'
+import { ref } from "vue";
+import router from "@/router";
+
+import IconMicrophone from "@/components/icon/microphone.vue";
+import IconCog from "@/components/icon/cog.vue";
+import IconAccount from "@/components/icon/account.vue";
+import IconWifi from "@/components/icon/wifi.vue";
 
 const getIcon = (icon: string) => {
   switch (icon) {
-    case 'IconMicrophone':
-      return IconMicrophone
-    case 'IconCog':
-      return IconCog
-    case 'IconAccount':
-      return IconAccount
-    case 'IconWifi':
-      return IconWifi
+    case "IconMicrophone":
+      return IconMicrophone;
+    case "IconCog":
+      return IconCog;
+    case "IconAccount":
+      return IconAccount;
+    case "IconWifi":
+      return IconWifi;
     default:
-      return IconCog
+      return IconCog;
   }
-}
+};
 
-const activeMenu = ref('oldmoon')
-const menuOpen = ref(true)
+const activeMenu = ref("oldmoon");
+const menuOpen = ref(true);
 
 const menus = [
   {
-    code: '',
-    name: '语音转换',
-    icon: 'IconMicrophone'
+    code: "index",
+    name: "语音转换",
+    icon: "IconMicrophone",
   },
   {
-    code: 'local',
-    name: '本地开放',
-    icon: 'IconWifi'
+    code: "local",
+    name: "本地开放",
+    icon: "IconWifi",
   },
   {
-    code: 'setting',
-    name: '系统设置',
-    icon: 'IconCog'
+    code: "setting",
+    name: "系统设置",
+    icon: "IconCog",
   },
   {
-    code: 'account',
-    name: '账户管理',
-    icon: 'IconAccount'
-  }
-]
+    code: "account",
+    name: "账户管理",
+    icon: "IconAccount",
+  },
+];
 
 const goPage = (code: string) => {
-  activeMenu.value = code
-  navigateTo('/' + code)
-}
+  activeMenu.value = code;
+  // navigateTo("/" + code);
+  router.push({ path: "/" + code });
+};
 </script>
 
 <style scoped></style>

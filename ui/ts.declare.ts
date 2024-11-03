@@ -1,5 +1,5 @@
 declare global {
   interface Window {
-    electron: any
+    electron: any;
   }
 }

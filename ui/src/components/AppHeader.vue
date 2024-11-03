@@ -51,38 +51,46 @@
 </template>
 
 <script setup lang="ts">
+import { onMounted, ref } from "vue";
+
+import IconGithub from "@/components/icon/github.vue";
+import IconMinimize from "@/components/icon/minimize.vue";
+import IconMaximize from "@/components/icon/maximize.vue";
+import IconDock from "@/components/icon/dock.vue";
+import IconClose from "@/components/icon/close.vue";
+
 // 最小化
 const minimizeWindow = () => {
-  window.electron.minimize()
-}
+  window.electron.minimize();
+};
 // 最大化标志
-const isMax = ref(false)
+const isMax = ref(false);
 // 最大化
 const maximizeWindow = () => {
-  window.electron.maximize()
-  isMas()
-}
+  window.electron.maximize();
+  isMas();
+};
 // 关闭窗口
 const closeWindow = () => {
-  window.electron.close()
-}
+  window.electron.close();
+};
 
 // 判断窗口是否最大化
 const isMas = () => {
   window.electron.isMaximized().then((flag: boolean) => {
-    isMax.value = flag
-  })
-}
+    isMax.value = flag;
+  });
+};
 
 const onMouseDown = () => {
   if (isMax.value) {
-    maximizeWindow()
+    maximizeWindow();
   }
-}
+};
 
 onMounted(() => {
-  isMas()
-})
+  isMas();
+});
 </script>
 
 <style scoped>

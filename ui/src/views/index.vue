@@ -4,7 +4,7 @@
       <div class="links-tag">oldmoon</div>
       <div class="links">
         <WebsiteCard
-          v-for="(website, index) in webList.data.value"
+          v-for="(website, index) in webList"
           :key="index"
           :website="website"
         ></WebsiteCard>
@@ -14,7 +14,15 @@
 </template>
 
 <script setup lang="ts">
-const webList = await useFetch('/api/tags')
+import { ref } from "vue";
+import WebsiteCard from "@/components/WebsiteCard.vue";
+import local from "@/utils/local";
+
+const webList = ref([]);
+local("test", "null").then((res) => {
+  console.log(res)
+  webList.value = res;
+});
 </script>
 
 <style scoped>
