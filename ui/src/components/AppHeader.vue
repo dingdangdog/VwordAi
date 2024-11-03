@@ -1,6 +1,6 @@
 <template>
   <div
-    class="w-full h-12 bg-gray-950 fixed top-0 left-0 flex justify-between items-center drag-area rounded-t-md shadow-sm shadow-white"
+    class="w-full h-12 bg-gray-950 fixed top-0 left-0 flex justify-between items-center drag-area rounded-t-md shadow-sm shadow-white border-b-2 border-gray-600"
   >
     <div class="w-1/2 px-3 flex items-center h-full">
       <img src="/favicon.ico" class="w-6 h-6" />

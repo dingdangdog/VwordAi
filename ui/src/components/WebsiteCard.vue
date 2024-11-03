@@ -20,7 +20,7 @@ const openLink = (url: string) => {
 
 <style scoped>
 .website-card {
-  margin: 0.5rem;
+  margin-bottom: 0.5rem;
   padding: 0.5rem;
   border: 1px solid #ddd;
   border-radius: 0.5rem;

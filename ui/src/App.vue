@@ -13,7 +13,7 @@ import AppAside from "./components/AppAside.vue";
         style="height: calc(100vh - 3rem)"
         class="overflow-y-auto flex justify-between relative"
       >
-        <div class="h-full border-r-2 border-gray-500 bg-gray-950">
+        <div class="h-full border-r-2 border-gray-800 bg-gray-950">
           <AppAside />
         </div>
         <div class="w-full h-full overflow-y-auto bg-gray-900">
