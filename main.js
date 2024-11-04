@@ -1,7 +1,15 @@
-const { app, BrowserWindow, ipcMain } = require("electron");
+const { app, BrowserWindow, ipcMain, dialog, shell } = require("electron");
 const path = require("path");
 const handler = require("./handler.js"); // 函数封装在handler.js中
 require("dotenv").config(); // Load environment variables from .env file
+
+if (process.env.NODE_ENV === "development") {
+  // const devPath = path.join(__dirname, "config");
+  handler.setConfigDir(__dirname);
+} else {
+  // const defaultPath = path.join(app.getPath("userData"), "config");
+  handler.setConfigDir(app.getPath("userData"));
+}
 
 let win;
 
@@ -125,4 +133,17 @@ ipcMain.handle("select-folder", async () => {
     properties: ["openDirectory"], // 仅允许选择文件夹
   });
   return filePaths[0]; // 返回选中的文件夹路径
+});
+
+// 监听渲染进程的事件，弹出选择文件夹对话框
+ipcMain.handle("open-folder", (event, dir) => {
+  // 打开文件夹
+  shell
+    .openPath(dir)
+    .then(() => {
+      console.log("Folder opened successfully");
+    })
+    .catch((error) => {
+      console.error("Error opening folder:", error);
+    });
 });
