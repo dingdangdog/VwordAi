@@ -11,6 +11,34 @@ const readJsonFile = (filePath) => {
   return JSON.parse(data);
 };
 
+const copyFiles = (srcDir, destDir, excludedFiles = []) => {
+  // 检查目标文件夹是否存在，如果不存在则创建它
+  if (!fs.existsSync(destDir)) {
+    fs.mkdirSync(destDir, { recursive: true });
+  }
+
+  // 读取源目录的内容
+  const files = fs.readdirSync(srcDir);
+
+  files.forEach((file) => {
+    // Skip excluded files like 'server_config.json'
+    if (excludedFiles.includes(file)) {
+      return;
+    }
+    const srcFile = path.join(srcDir, file);
+    const destFile = path.join(destDir, file);
+
+    // 检查是文件还是文件夹
+    if (fs.statSync(srcFile).isFile()) {
+      // 将文件复制到目标目录
+      fs.copyFileSync(srcFile, destFile);
+    } else {
+      // 如果是文件夹，则递归移动
+      copyFiles(srcFile, path.join(destDir, file), excludedFiles);
+    }
+  });
+};
+
 // Helper function to move files from one folder to another, excluding specific files
 const moveFiles = (srcDir, destDir, excludedFiles = []) => {
   // Check if destination folder exists, if not create it

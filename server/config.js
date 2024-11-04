@@ -34,7 +34,7 @@ const getConfig = () => {
 
     const configDir = path.dirname(configFile);
     const defaultConfigDir = path.dirname(defaultConfigFile);
-    moveFiles(defaultConfigDir, configDir);
+    copyFiles(defaultConfigDir, configDir);
 
     // const defaultConfig = readJsonFile(defaultConfigFile);
     // fs.writeFileSync(configPath, JSON.stringify(defaultConfig));
