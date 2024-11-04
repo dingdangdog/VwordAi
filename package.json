@@ -9,6 +9,7 @@
     "email": "dingdangdogx@outlook.com"
   },
   "scripts": {
+    "ui": "cd ui && npm run dev",
     "electron": "electron .",
     "package": "electron-builder"
   },
@@ -47,7 +48,8 @@
     }
   },
   "dependencies": {
-    "dotenv": "^16.4.5"
+    "dotenv": "^16.4.5",
+    "microsoft-cognitiveservices-speech-sdk": "^1.41.0"
   },
   "devDependencies": {
     "electron": "^24.8.8",

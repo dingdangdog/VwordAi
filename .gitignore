@@ -1,5 +1,7 @@
 build
-**/dist/
+config
+dotts
 
-**/node_modules/
+dist
+node_modules
 

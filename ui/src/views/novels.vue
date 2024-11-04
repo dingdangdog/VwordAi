@@ -10,10 +10,8 @@ local("test", "null").then((res) => {
 });
 
 const editText = ref(
-  "阿莎空间的黄金卡上贷记卡和健康的，啥叫看活动空间撒谎的，看见哈萨克家里的贺卡，距离首都看见了，还是看，还得看。"
+  "阿莎空间的黄金卡上贷记卡和健康的啥叫看活动空间撒谎的看见哈萨克家里的贺卡距离首都看见了还是看还得看"
 );
-const voiceFileName = ref("");
-
 const textareaEdit = ref();
 
 const showSelection = () => {
@@ -32,12 +30,6 @@ const showSelection = () => {
 
   // return alert(editText.value.substring(start, end));
 };
-
-const tts = () => {
-  local("speech", editText.value, voiceFileName.value).then((res) => {
-    console.log(res);
-  });
-};
 </script>
 
 <template>
@@ -54,7 +46,7 @@ const tts = () => {
       </div>
     </div>
     <div class="h-full w-full ml-2 flex flex-col">
-      <div class="p-2 bg-gray-800 rounded-md h-12">
+      <div class="p-2 bg-gray-800 rounded-md h-24">
         <button
           class="px-2 py-1 bg-gray-800 rounded-md hover:bg-gray-700"
           @click="showSelection()"
@@ -62,10 +54,10 @@ const tts = () => {
           show
         </button>
       </div>
-      <div class="my-2 p-2 bg-gray-800 rounded-md flex-1 h-[90%] flex">
+      <div class="mt-2 p-2 bg-gray-800 rounded-md flex-1 h-[90%] flex">
         <textarea
           ref="textareaEdit"
-          class="bg-gray-900 w-1/2 h-full p-2 resize-none"
+          class="bg-gray-900 w-1/2 p-2 h-full"
           placeholder="请输入文本"
           v-model="editText"
         >
@@ -74,19 +66,6 @@ const tts = () => {
           class="w-1/2 h-full ml-2 p-2 bg-gray-900 rounded-md overflow-y-auto"
           v-html="editText"
         ></div>
-      </div>
-      <div class="p-2 bg-gray-800 rounded-md h-12 flex items-center">
-        <h3>存储文件名:</h3>
-        <input
-          class="w-64 bg-transparent border-b mx-2 py-1 focus:outline-none"
-          v-model="voiceFileName"
-        />
-        <button
-          class="px-2 py-1 bg-gray-700 rounded-md hover:bg-gray-600"
-          @click="tts()"
-        >
-          语音合成
-        </button>
       </div>
     </div>
   </div>

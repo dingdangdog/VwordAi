@@ -59,7 +59,12 @@ const menuOpen = ref(true);
 const menus = [
   {
     code: "index",
-    name: "语音转换",
+    name: "读书",
+    icon: "IconMicrophone",
+  },
+  {
+    code: "novels",
+    name: "读小说",
     icon: "IconMicrophone",
   },
   {
@@ -84,6 +89,8 @@ const goPage = (code: string) => {
   // navigateTo("/" + code);
   router.push({ path: "/" + code });
 };
+
+goPage("index");
 </script>
 
 <style scoped></style>

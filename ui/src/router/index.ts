@@ -1,7 +1,8 @@
 import { createRouter, createWebHistory } from "vue-router";
+import NovelsView from "@/views/novels.vue";
+import IndexView from "@/views/index.vue";
 import AboutView from "@/views/about.vue";
 import AccountView from "@/views/account.vue";
-import IndexView from "@/views/index.vue";
 import LocalView from "@/views/local.vue";
 import SettingView from "@/views/setting.vue";
 
@@ -17,6 +18,11 @@ const router = createRouter({
       path: "/about",
       name: "about",
       component: AboutView,
+    },
+    {
+      path: "/novels",
+      name: "novels",
+      component: NovelsView,
     },
     {
       path: "/account",
