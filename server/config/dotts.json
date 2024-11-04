@@ -1,0 +1,15 @@
+{
+  "dataPath": "",
+  "serviceProviders": [
+    { "name": "Azure", "code": "azure" },
+    { "name": "阿里云", "code": "aliyun" }
+  ],
+  "serviceConfig": {
+    "azure": {
+      "key": "",
+      "region": "",
+      "endpoint": ""
+    },
+    "aliyun": { "appkey": "", "token": "", "models": [], "endpoint": "" }
+  }
+}
