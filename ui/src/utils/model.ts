@@ -31,7 +31,7 @@ export interface AliyunConfig {
   endpoint: string;
 }
 
-export interface Model {
+export interface VoiceModel {
   lang: string;
   gender: string;
   name: string;

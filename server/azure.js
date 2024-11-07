@@ -3,6 +3,7 @@ const sdk = require("microsoft-cognitiveservices-speech-sdk");
 
 const { getConfig } = require("./config");
 const path = require("path");
+const { success, error } = require("./util");
 
 const speech = (text, fileName) => {
   if (!text) {
@@ -66,6 +67,58 @@ const TEMPLATE_TEXT =
   "</voice>" +
   "</speak>";
 
+const play = (model, text) => {
+  if (!text || !model) {
+    return;
+  }
+
+  const config = getConfig();
+  const speechConfig = sdk.SpeechConfig.fromSubscription(
+    config.serviceConfig.azure.key,
+    config.serviceConfig.azure.region
+  );
+
+  // 设置语音模型
+  speechConfig.speechSynthesisVoiceName = model;
+
+  // 指定音频输出格式为 .wav 格式
+  speechConfig.speechSynthesisOutputFormat =
+    sdk.SpeechSynthesisOutputFormat.Riff16Khz16BitMonoPcm;
+
+  const speechSynthesizer = new sdk.SpeechSynthesizer(speechConfig);
+
+  // 返回一个 Promise，用于处理异步操作
+  return new Promise((resolve, reject) => {
+    // 使用 speakTextAsync 播放语音
+    speechSynthesizer.speakTextAsync(
+      text,
+      (result) => {
+        if (result.reason === sdk.ResultReason.SynthesizingAudioCompleted) {
+          console.log("Synthesis finished.");
+
+          // 将 ArrayBuffer 转换为 Buffer
+          const audioData = Buffer.from(result.audioData);
+
+          // 成功时，返回音频数据
+          resolve(success(audioData, "success"));
+        } else {
+          console.error("Synthesis failed. Reason:", result.errorDetails);
+          reject(error(result.errorDetails)); // 失败时返回错误
+        }
+        speechSynthesizer.close();
+      },
+      (error) => {
+        console.log("Error:", error);
+        reject(new Error(error)); // 失败时返回错误
+        speechSynthesizer.close();
+      }
+    );
+  });
+};
+
+// 播放本地语音文件（如 mp3, wav 等）
+
 module.exports = {
   speech,
+  play,
 };

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref } from "vue";
-import type { Model, SerivceProvider, SystemConfig } from "@/utils/model";
+import type { VoiceModel, SerivceProvider, SystemConfig } from "@/utils/model";
 import local from "@/utils/local";
 import ModelCard from "@/components/ModelCard.vue";
 
@@ -9,15 +9,12 @@ const serviceProviderCode = ref("");
 // @ts-ignore
 const systemConfig = ref<SystemConfig>({});
 
-const ServiceProviders = ref<SerivceProvider[]>([]);
-
 local("getConfigApi", "").then((res) => {
   console.log(res);
   systemConfig.value = res;
-  ServiceProviders.value = res.serviceProviders;
 });
 
-const models = ref<Model[]>();
+const models = ref<VoiceModel[]>();
 const getModels = () => {
   local("getModels", serviceProviderCode.value).then((res) => {
     models.value = res;
@@ -62,15 +59,15 @@ const openFolder = () => {
       <div class="flex justify-between">
         <div class="flex items-center">
           <h3>我的服务商</h3>
-          <div class="w-48 pl-4">
+          <div class="w-36 pl-4">
             <select
               v-model="serviceProviderCode"
-              class="bg-transparent border-2 px-2 py-1 rounded-md focus:outline-none"
+              class="bg-transparent w-full border-2 px-2 p-1 rounded-md focus:outline-none"
               @change="getModels()"
             >
               <option
                 class="bg-gray-800"
-                v-for="sp in ServiceProviders"
+                v-for="sp in systemConfig.serviceProviders"
                 :key="sp.code"
                 :value="sp.code"
               >

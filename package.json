@@ -48,6 +48,7 @@
     }
   },
   "dependencies": {
+    "audic": "^3.0.2",
     "dotenv": "^16.4.5",
     "microsoft-cognitiveservices-speech-sdk": "^1.41.0"
   },
