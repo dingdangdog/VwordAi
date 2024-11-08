@@ -14,7 +14,7 @@ const dotts = (ssml, fileName) => {
     config.serviceConfig.azure.key,
     config.serviceConfig.azure.region
   );
-  const time = new Date().getMilliseconds();
+  const time = new Date().getTime();
   fileName = path.join(config.dataPath, `${fileName}_${time}.wav`);
   console.log(fileName);
   const audioConfig = sdk.AudioConfig.fromAudioFileOutput(fileName);
