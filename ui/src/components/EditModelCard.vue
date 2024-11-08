@@ -6,7 +6,12 @@ import IconPause from "@/components/icon/pause.vue";
 import local from "@/utils/local";
 import { VoiceTestText } from "@/utils/common";
 
-const { model } = defineProps(["model", "provider", "play"]);
+const { model, provider, play, set } = defineProps([
+  "model",
+  "provider",
+  "play",
+  "set",
+]);
 </script>
 
 <template>
@@ -17,18 +22,27 @@ const { model } = defineProps(["model", "provider", "play"]);
     <div class="flex justify-between items-center">
       <h4>{{ model.name }}</h4>
       <span class="text-sm text-gray-500">{{ model.gender }}</span>
-      <button
-        class="p-1 flex items-center text-sm bg-gray-400 hover:bg-gray-500 rounded-md"
-        @click="play(model)"
-      >
-        <span class="w-4 h-4">
-          <IconPlay color="black" />
-        </span>
-        <!-- <span class="w-4 h-4">
+      <div class="flex">
+        <button
+          class="px-1 flex items-center text-sm bg-gray-500 hover:bg-gray-400 rounded-md"
+          @click="play(model)"
+        >
+          <span class="w-4 h-4">
+            <IconPlay color="black" />
+          </span>
+          <!-- <span class="w-4 h-4">
           <IconPause color="black" />
         </span> -->
-        <span class="text-black">试听</span>
-      </button>
+          <span class="text-black">试听</span>
+        </button>
+
+        <button
+          class="ml-1 px-1 flex items-center text-sm bg-gray-500 hover:bg-gray-400 rounded-md"
+          @click="set(model)"
+        >
+          <span class="text-black">使用</span>
+        </button>
+      </div>
     </div>
     <p class="text-sm text-gray-500 flex justify-between">
       {{ model.code }}

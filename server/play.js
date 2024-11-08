@@ -1,4 +1,4 @@
-const { play } = require("./azure");
+const { play, azurePlaySSML } = require("./azure");
 const { error } = require("./util");
 
 const playTest = (model, text, provider) => {
@@ -9,6 +9,11 @@ const playTest = (model, text, provider) => {
   return error("", "not support");
 };
 
+const playSSML = (text) => {
+  return azurePlaySSML(text);
+};
+
 module.exports = {
   playTest,
+  playSSML,
 };

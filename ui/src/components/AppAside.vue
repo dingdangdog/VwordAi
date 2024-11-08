@@ -1,6 +1,6 @@
 <template>
-  <div class="h-full flex flex-col justify-between">
-    <div>
+  <div class="min-w-48 h-full flex flex-col justify-between">
+    <div class="flex-1">
       <div
         v-for="menu in menus"
         :key="menu.code"

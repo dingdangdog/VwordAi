@@ -116,9 +116,58 @@ const play = (model, text) => {
   });
 };
 
+const azurePlaySSML = (ssml) => {
+  if (!ssml) {
+    return;
+  }
+  const config = getConfig();
+  const speechConfig = sdk.SpeechConfig.fromSubscription(
+    config.serviceConfig.azure.key,
+    config.serviceConfig.azure.region
+  );
+
+  // 指定音频输出格式为 .wav 格式
+  speechConfig.speechSynthesisOutputFormat =
+    sdk.SpeechSynthesisOutputFormat.Riff16Khz16BitMonoPcm;
+
+  const speechSynthesizer = new sdk.SpeechSynthesizer(speechConfig);
+
+  // 返回一个 Promise，用于处理异步操作
+  return new Promise((resolve, reject) => {
+    speechSynthesizer.speakSsmlAsync(
+      `<speak version="1.0" xmlns="http://www.w3.org/2001/10/synthesis" 
+    xmlns:mstts="https://www.w3.org/2001/mstts" 
+    xmlns:emo="http://www.w3.org/2009/10/emotionml"
+    xml:lang="zh-CN"> 
+    ${ssml}
+    </speak>
+    `,
+      (result) => {
+        if (result.reason === sdk.ResultReason.SynthesizingAudioCompleted) {
+          console.log("Synthesis finished.");
+
+          // 将 ArrayBuffer 转换为 Buffer
+          const audioData = Buffer.from(result.audioData);
+
+          // 成功时，返回音频数据
+          resolve(success(audioData, "success"));
+        } else {
+          console.error("Synthesis failed. Reason:", result.errorDetails);
+          reject(error(result.errorDetails)); // 失败时返回错误
+        }
+        speechSynthesizer.close();
+      },
+      (error) => {
+        console.log(error);
+        speechSynthesizer.close();
+      }
+    );
+  });
+};
 // 播放本地语音文件（如 mp3, wav 等）
 
 module.exports = {
   speech,
   play,
+  azurePlaySSML,
 };
