@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { onMounted, ref } from "vue";
 import local from "@/utils/local";
-import type { SsmlText, VoiceModel } from "@/utils/model";
+import type { SerivceProvider, SsmlText, VoiceModel } from "@/utils/model";
 import EditBlankIcon from "@/components/edit/BlankIcon.vue";
 import EditModelCard from "@/components/EditModelCard.vue";
 import { playAudio, VoiceTestText } from "@/utils/common";
+import MySelect from "@/components/MySelect.vue";
 
 const webList = ref([]);
 local("test", "null").then((res) => {
@@ -12,18 +13,26 @@ local("test", "null").then((res) => {
   webList.value = res;
 });
 
-const editText = ref(
-  "阿莎空间的黄金卡上贷记卡和健康的，啥叫看活动空间撒谎的，看见哈萨克家里的贺卡，距离首都看见了，还是看，还得看。"
-);
+const editText = ref("");
+const selectServiceProvider = ref("");
 const voiceFileName = ref("");
 
 const textEditor = ref();
 
 onMounted(() => {
   textEditor.value.innerHTML = editText.value;
-});
+  textEditor.value.addEventListener("input", () => {
+    if (textEditor.value.innerText.trim() === "") {
+      textEditor.value.classList.add("empty");
+    } else {
+      textEditor.value.classList.remove("empty");
+    }
+  });
 
-const textSsmlConfig = ref<SsmlText[]>([]);
+  if (textEditor.value.innerText.trim() === "") {
+    textEditor.value.classList.add("empty");
+  }
+});
 
 const addBlank = () => {
   const selection = window.getSelection();
@@ -75,7 +84,6 @@ const tts = () => {
 
 // @ts-ignore
 const systemConfig = ref<SystemConfig>({});
-const selectServiceProvider = ref("");
 const filterModelParam = ref("");
 
 local("getConfigApi", "").then((res) => {
@@ -84,8 +92,9 @@ local("getConfigApi", "").then((res) => {
 });
 
 const models = ref<VoiceModel[]>();
-const getModels = () => {
-  local("getModels", selectServiceProvider.value).then((res) => {
+const getModels = (provider: SerivceProvider) => {
+  selectServiceProvider.value = provider.code;
+  local("getModels", provider.code).then((res) => {
     models.value = res;
   });
 };
@@ -109,25 +118,12 @@ const playTest = (model: VoiceModel) => {
     .finally(() => {});
 };
 
-const applyColorToSelection = (color: string) => {
-  const selection = window.getSelection();
-  if (!selection?.rangeCount) return;
-
-  const range = selection.getRangeAt(0);
-  const span = document.createElement("span");
-  span.style.color = color;
-  range.surroundContents(span);
-};
-
-const playSSML = (ssml: string) => {
-  local("playSSML", ssml).then((res) => {
-    playAudio(res);
-  });
-};
-
 const doTTS = (ssml: string) => {
   local("dotts", ssml, voiceFileName.value).then();
 };
+
+// 是否添加了旁白标识
+const layoutFlag = ref(false);
 
 const addLayoutVoice = () => {
   const text = textEditor.value.innerHTML;
@@ -137,6 +133,7 @@ const addLayoutVoice = () => {
   span.setAttribute("data-model", "zh-CN-YunyangNeural");
   span.innerHTML = text;
   textEditor.value.innerHTML = span.outerHTML;
+  layoutFlag.value = true;
 };
 
 const convertHTMLToSSML = () => {
@@ -198,29 +195,14 @@ const processNode = (node: ChildNode, currentVoice: string | null): string => {
     <div
       class="h-full w-[500px] overflow-y-auto overflow-x-hidden p-2 bg-gray-800 rounded-md flex flex-col justify-between"
     >
-      <select
-        v-model="selectServiceProvider"
-        class="w-full h-8 bg-transparent border px-2 py-1 rounded-md focus:outline-none"
-        @change="getModels()"
-      >
-        <option
-          class="bg-gray-800 px-2 py-4"
-          v-for="sp in systemConfig.serviceProviders"
-          :key="sp.code"
-          :value="sp.code"
-        >
-          <span class="px-2 py-1">
-            {{ sp.name }}
-          </span>
-        </option>
-      </select>
+      <MySelect :items="systemConfig.serviceProviders" :select="getModels" />
       <input
-        class="w-full h-8 bg-transparent border px-2 py-1 my-1 rounded-md focus:outline-none"
+        class="w-full h-8 bg-transparent border border-gray-400 p-2 my-2 rounded-md focus:outline-none"
         placeholder="筛选"
         v-model="filterModelParam"
         @change=""
       />
-      <div class="flex-1 mt-2 overflow-y-auto">
+      <div class="flex-1 overflow-y-auto">
         <EditModelCard
           v-for="(model, index) in models"
           :key="index"
@@ -237,7 +219,13 @@ const processNode = (node: ChildNode, currentVoice: string | null): string => {
           class="px-2 py-1 bg-gray-800 rounded-md hover:bg-gray-700"
           @click="showHtml()"
         >
-          打开文件
+          打开项目
+        </button>
+        <button
+          class="px-2 py-1 bg-gray-800 rounded-md hover:bg-gray-700"
+          @click="showHtml()"
+        >
+          导入文本
         </button>
         <button
           class="px-2 py-1 bg-gray-800 rounded-md hover:bg-gray-700"
@@ -255,23 +243,13 @@ const processNode = (node: ChildNode, currentVoice: string | null): string => {
           >
             <EditBlankIcon class="w-6 h-6" color="white" />
           </button>
-
-          <!-- <button @click="() => showHtml()">showHtml</button>
-          <button @click="() => applyColorToSelection('#FF0000')">红色</button>
-          <button @click="() => applyColorToSelection('#00FF00')">绿色</button> -->
         </div>
-        <div class="bg-gray-800 rounded-md flex-1 flex">
-          <!-- <textarea
-            ref="textareaEdit"
-            class="bg-gray-900 w-1/2 h-full p-2 resize-none focus:outline-none"
-            placeholder="请输入文本"
-            v-model="editText"
-          >
-          </textarea> -->
+        <div class="bg-gray-800 rounded-md flex-1 flex max-h-[100%]">
           <div
             class="w-full h-full p-2 bg-gray-900 rounded-md overflow-y-auto focus:outline-none"
             ref="textEditor"
             id="textEditor"
+            data-placeholder="请输入文本"
             contenteditable
           ></div>
         </div>
@@ -279,23 +257,23 @@ const processNode = (node: ChildNode, currentVoice: string | null): string => {
       <div class="p-2 bg-gray-800 rounded-md h-12 flex items-center">
         <h3>项目名:</h3>
         <input
-          class="w-64 bg-transparent border-b mx-2 py-1 focus:outline-none"
+          class="w-64 bg-transparent border-b ml-2 py-1 focus:outline-none"
           v-model="voiceFileName"
         />
         <button
-          class="px-2 py-1 bg-gray-700 rounded-md hover:bg-gray-600"
+          class="px-2 py-1 ml-2 bg-gray-700 rounded-md hover:bg-gray-600"
           @click="convertHTMLToSSML()"
         >
           本地合成
         </button>
-        <button
-          class="mx-2 px-2 py-1 bg-gray-700 rounded-md hover:bg-gray-600"
+        <!-- <button
+          class="ml-2 px-2 py-1 bg-gray-700 rounded-md hover:bg-gray-600"
           @click="tts()"
         >
           云端合成
-        </button>
+        </button> -->
         <button
-          class="px-2 py-1 bg-gray-700 rounded-md hover:bg-gray-600"
+          class="px-2 py-1 ml-2 bg-gray-700 rounded-md hover:bg-gray-600"
           @click="tts()"
         >
           保存项目
@@ -305,4 +283,10 @@ const processNode = (node: ChildNode, currentVoice: string | null): string => {
   </div>
 </template>
 
-<style scoped></style>
+<style scoped>
+#textEditor[data-placeholder].empty::before {
+  content: attr(data-placeholder);
+  color: #a0a0a0;
+  font-style: italic;
+}
+</style>
