@@ -65,7 +65,7 @@ const changeSelected = (item: any) => {
 
 .select:hover > .options {
   opacity: 1;
-  top: 35px;
+  top: 32px;
   max-height: 180px;
 }
 
