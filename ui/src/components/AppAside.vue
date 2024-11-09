@@ -1,11 +1,14 @@
 <template>
-  <div class="min-w-48 h-full flex flex-col justify-between">
+  <div
+    class="h-full flex flex-col justify-between duration-300 overflow-hidden"
+    :class="menuOpen ? 'w-40' : 'w-12'"
+  >
     <div class="flex-1">
       <div
         v-for="menu in menus"
         :key="menu.code"
         @click="goPage(menu.code)"
-        class="flex items-center p-2 hover:bg-gray-700 duration-300 cursor-pointer"
+        class="flex items-center p-2 hover:bg-gray-700 cursor-pointer"
         :class="activeMenu == menu.code ? 'bg-gray-800' : ''"
       >
         <div class="p-1">
@@ -13,19 +16,23 @@
             <component :is="getIcon(menu.icon)" />
           </div>
         </div>
-        <div v-show="menuOpen" class="px-2" :class="menuOpen ? 'min-w-24' : ''">
+        <div
+          v-show="menuOpen"
+          class="px-2 duration-300 overflow-hidden transition-opacity whitespace-nowrap"
+          :class="menuOpen ? 'opacity-100 w-32' : 'opacity-0 w-0'"
+        >
           {{ menu.name }}
         </div>
       </div>
     </div>
-    <!-- <div
-      class="w-full flex justify-center hover:bg-gray-800 cursor-pointer duration-300"
+    <div
+      class="w-full flex justify-center hover:bg-gray-800 cursor-pointer"
       @click="menuOpen = !menuOpen"
     >
-      <div class="w-8 h-8">
+      <div class="w-6 h-8 flex items-center">
         <IconMenu />
       </div>
-    </div> -->
+    </div>
   </div>
 </template>
 
@@ -37,6 +44,7 @@ import IconMicrophone from "@/components/icon/microphone.vue";
 import IconCog from "@/components/icon/cog.vue";
 import IconAccount from "@/components/icon/account.vue";
 import IconWifi from "@/components/icon/wifi.vue";
+import IconMenu from "@/components/icon/menu.vue";
 
 const getIcon = (icon: string) => {
   switch (icon) {
