@@ -70,26 +70,26 @@ const menus = [
     name: "读书",
     icon: "IconMicrophone",
   },
-  {
-    code: "novels",
-    name: "读小说",
-    icon: "IconMicrophone",
-  },
-  {
-    code: "local",
-    name: "本地开放",
-    icon: "IconWifi",
-  },
+  // {
+  //   code: "novels",
+  //   name: "读小说",
+  //   icon: "IconMicrophone",
+  // },
+  // {
+  //   code: "local",
+  //   name: "本地开放",
+  //   icon: "IconWifi",
+  // },
   {
     code: "setting",
     name: "系统设置",
     icon: "IconCog",
   },
-  {
-    code: "account",
-    name: "账户管理",
-    icon: "IconAccount",
-  },
+  // {
+  //   code: "account",
+  //   name: "账户管理",
+  //   icon: "IconAccount",
+  // },
 ];
 
 const goPage = (code: string) => {
