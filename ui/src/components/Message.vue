@@ -1,7 +1,5 @@
 <script setup lang="ts">
 import { getMessageClass, messages } from "@/utils/common";
-import type { MessageModel } from "@/utils/model";
-import { ref, watch } from "vue";
 </script>
 
 <template>
