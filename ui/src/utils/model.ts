@@ -4,6 +4,21 @@ export interface Result<T> {
   d: T;
 }
 
+export interface MessageModel {
+  id: string;
+  type: "success" | "info" | "error" | "warning" | "" | undefined;
+  info: string;
+  show: boolean;
+}
+
+export interface Project {
+  path?: string;
+  name?: string;
+  content?: string;
+  createTime?: number;
+  updateTime?: number;
+}
+
 export interface SystemConfig {
   dataPath: string;
   serviceProviders: SerivceProvider[];

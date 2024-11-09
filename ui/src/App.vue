@@ -3,6 +3,7 @@ import { RouterLink, RouterView } from "vue-router";
 
 import AppHeader from "./components/AppHeader.vue";
 import AppAside from "./components/AppAside.vue";
+import Message from "./components/Message.vue";
 </script>
 
 <template>
@@ -22,6 +23,7 @@ import AppAside from "./components/AppAside.vue";
       </div>
     </main>
   </div>
+  <Message />
 </template>
 
 <script setup lang="ts"></script>

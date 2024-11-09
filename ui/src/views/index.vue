@@ -1,10 +1,15 @@
 <script setup lang="ts">
 import { onMounted, ref } from "vue";
 import local from "@/utils/local";
-import type { SerivceProvider, SsmlText, VoiceModel } from "@/utils/model";
+import type {
+  Project,
+  SerivceProvider,
+  SsmlText,
+  VoiceModel,
+} from "@/utils/model";
 import EditBlankIcon from "@/components/edit/BlankIcon.vue";
 import EditModelCard from "@/components/EditModelCard.vue";
-import { playAudio, VoiceTestText } from "@/utils/common";
+import { alertSuccess, playAudio, VoiceTestText } from "@/utils/common";
 import MySelect from "@/components/MySelect.vue";
 
 const webList = ref([]);
@@ -15,7 +20,6 @@ local("test", "null").then((res) => {
 
 const editText = ref("");
 const selectServiceProvider = ref("");
-const voiceFileName = ref("");
 
 const textEditor = ref();
 
@@ -77,7 +81,7 @@ const showHtml = () => {
 };
 
 const tts = () => {
-  local("speech", editText.value, voiceFileName.value).then((res) => {
+  local("speech", editText.value, project.value.name).then((res) => {
     // console.log(res);
   });
 };
@@ -119,7 +123,7 @@ const playTest = (model: VoiceModel) => {
 };
 
 const doTTS = (ssml: string) => {
-  local("dotts", ssml, voiceFileName.value).then();
+  local("dotts", ssml, project.value.name).then();
 };
 
 // 是否添加了旁白标识
@@ -188,12 +192,26 @@ const processNode = (node: ChildNode, currentVoice: string | null): string => {
 
   return "";
 };
+
+const project = ref<Project>({});
+
+const saveProject = () => {
+  project.value.content = textEditor.value.innerHTML;
+  if (project.value.path) {
+    project.value.updateTime = Date.now();
+  } else {
+    project.value.createTime = Date.now();
+  }
+  local("saveProject", project.value).then((res) => {
+    // console.log(res);
+  });
+};
 </script>
 
 <template>
-  <div class="h-full p-2 flex justify-between">
+  <div class="h-full w-full p-2 flex justify-between">
     <div
-      class="h-full w-[500px] overflow-y-auto overflow-x-hidden p-2 bg-gray-800 rounded-md flex flex-col justify-between"
+      class="h-full w-[350px] overflow-y-auto overflow-x-hidden p-2 bg-gray-800 rounded-md flex flex-col justify-between"
     >
       <MySelect :items="systemConfig.serviceProviders" :select="getModels" />
       <input
@@ -213,29 +231,35 @@ const processNode = (node: ChildNode, currentVoice: string | null): string => {
         ></EditModelCard>
       </div>
     </div>
-    <div class="h-full w-full ml-2 flex flex-col">
+    <div
+      class="h-full ml-2 flex-1 flex flex-col"
+      style="width: calc(100% - 350px)"
+    >
       <div class="p-2 bg-gray-800 rounded-md h-12">
         <button
-          class="px-2 py-1 bg-gray-800 rounded-md hover:bg-gray-700"
+          class="px-2 py-1 rounded-md bg-gray-700 hover:bg-gray-600"
           @click="showHtml()"
         >
           打开项目
         </button>
         <button
-          class="px-2 py-1 bg-gray-800 rounded-md hover:bg-gray-700"
+          class="ml-2 px-2 py-1 rounded-md bg-gray-700 hover:bg-gray-600"
           @click="showHtml()"
         >
           导入文本
         </button>
         <button
-          class="px-2 py-1 bg-gray-800 rounded-md hover:bg-gray-700"
+          class="ml-2 px-2 py-1 rounded-md bg-gray-700 hover:bg-gray-600"
           @click="addLayoutVoice()"
         >
           添加旁白
         </button>
       </div>
-      <div class="my-2 p-2 bg-gray-800 rounded-md flex-1 flex flex-col">
-        <div class="p-1 h-10 flex items-center">
+      <div
+        class="my-2 p-2 bg-gray-800 rounded-md flex-1 flex flex-col"
+        style="height: calc(100% - 8rem)"
+      >
+        <div class="flex items-center justify-center h-8">
           <button
             class="p-1 rounded-sm cursor-pointer hover:bg-gray-700"
             title="添加空白"
@@ -244,9 +268,11 @@ const processNode = (node: ChildNode, currentVoice: string | null): string => {
             <EditBlankIcon class="w-6 h-6" color="white" />
           </button>
         </div>
-        <div class="bg-gray-800 rounded-md flex-1 flex max-h-[100%]">
+        <div
+          class="mt-2 bg-gray-800 rounded-md flex-1 flex h-[calc(100%-4rem)]"
+        >
           <div
-            class="w-full h-full p-2 bg-gray-900 rounded-md overflow-y-auto focus:outline-none"
+            class="w-full p-2 bg-gray-900 rounded-md overflow-y-auto focus:outline-none h-full"
             ref="textEditor"
             id="textEditor"
             data-placeholder="请输入文本"
@@ -258,10 +284,10 @@ const processNode = (node: ChildNode, currentVoice: string | null): string => {
         <h3>项目名:</h3>
         <input
           class="w-64 bg-transparent border-b ml-2 py-1 focus:outline-none"
-          v-model="voiceFileName"
+          v-model="project.name"
         />
         <button
-          class="px-2 py-1 ml-2 bg-gray-700 rounded-md hover:bg-gray-600"
+          class="px-2 py-1 ml-2 rounded-md bg-gray-700 hover:bg-gray-600"
           @click="convertHTMLToSSML()"
         >
           本地合成
@@ -273,8 +299,8 @@ const processNode = (node: ChildNode, currentVoice: string | null): string => {
           云端合成
         </button> -->
         <button
-          class="px-2 py-1 ml-2 bg-gray-700 rounded-md hover:bg-gray-600"
-          @click="tts()"
+          class="px-2 py-1 ml-2 rounded-md bg-gray-700 hover:bg-gray-600"
+          @click="saveProject()"
         >
           保存项目
         </button>
