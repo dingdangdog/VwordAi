@@ -21,7 +21,7 @@ function createWindow() {
   // 创建浏览器窗口
   win = new BrowserWindow({
     width: 1280,
-    height: 720,
+    height: 800,
     // resizable: false, // 设置为 false 禁止缩小
     //绝对路径
     // icon: path.join(__dirname, 'icon.ico'),
