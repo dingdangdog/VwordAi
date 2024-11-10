@@ -142,8 +142,10 @@ ipcMain.handle("select-folder", async () => {
 // 监听渲染进程的事件，弹出选择文件夹对话框
 ipcMain.handle("open-folder", (event, dir) => {
   // 打开文件夹
+  const dirs = dir.split("/");
+  const filePath = path.join(...dirs);
   shell
-    .openPath(dir)
+    .openPath(filePath)
     .then(() => {
       console.log("Folder opened successfully");
     })
