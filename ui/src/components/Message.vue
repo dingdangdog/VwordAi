@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { getMessageClass, messages } from "@/utils/common";
+import { getMessageClass } from "@/utils/common";
+import { messages } from "@/utils/global.store";
 </script>
 
 <template>
@@ -9,8 +10,8 @@ import { getMessageClass, messages } from "@/utils/common";
     v-show="messages.length > 0"
   >
     <span
-      class="rounded-md px-2 my-1 py-1 text-gray-100"
-      :class="getMessageClass()"
+      class="rounded-md px-2 mt-2 py-1 text-gray-100"
+      :class="getMessageClass(message)"
       v-for="(message, index) in messages"
       :key="index"
       v-show="message.show"

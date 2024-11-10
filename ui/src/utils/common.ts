@@ -1,5 +1,10 @@
-import { ref } from "vue";
 import type { MessageModel } from "./model";
+import { messages } from "./global.store";
+
+export const selectFloder = async () => {
+  // @ts-ignore
+  return await window.electron.selectFolder();
+};
 
 export const VoiceTestText = "你好，我是{}，很高兴认识你！";
 
@@ -29,8 +34,6 @@ export const playAudio = (res: any) => {
   };
 };
 
-export const messages = ref<MessageModel[]>([]);
-
 export const addMessage = (message: MessageModel) => {
   messages.value.push(message);
   const id = message.id;
@@ -40,7 +43,7 @@ export const addMessage = (message: MessageModel) => {
     if (index !== -1) {
       messages.value.splice(index, 1); // 删除消息
     }
-  }, 3000);
+  }, 2000);
 };
 
 export const alertSuccess = (info: string) => {
@@ -59,8 +62,8 @@ export const alertWarning = (info: string) => {
   addMessage({ id: String(Date.now()), type: "warning", info, show: true });
 };
 
-export const getMessageClass = () => {
-  switch (messages.value[0].type) {
+export const getMessageClass = (message: MessageModel) => {
+  switch (message.type) {
     case "success":
       return "bg-green-600";
     case "error":

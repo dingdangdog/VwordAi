@@ -2,6 +2,7 @@
  * 封装http请求工具
  */
 import type { Result } from "@/utils/model";
+import { alertError } from "./common";
 // import { errorAlert } from "@/utils/alert";
 // import { cleanLoginInfo } from '@/utils/common'
 
@@ -19,11 +20,12 @@ const local = async (functionName: string, ...args: any) => {
   // console.log('res', res)
   if (!res) {
     // errorAlert('res Undefined')
+    alertError("未知异常，请提交反馈");
     throw Error("res undefined");
   }
   if (res.c == 500) {
     // 500 服务异常
-    // errorAlert(res.m)
+    alertError(res.m);
     throw Error(res.m);
   } else if (res.c == 403) {
     // 403 登陆失效、无权限，跳转登陆页面

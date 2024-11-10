@@ -17,13 +17,13 @@ import Message from "./components/Message.vue";
         <div class="h-full border-r border-gray-700 bg-gray-950">
           <AppAside />
         </div>
-        <div class="w-full h-full overflow-y-auto bg-gray-900">
+        <div class="w-full h-full overflow-y-auto bg-gray-900 relative">
+          <Message />
           <RouterView />
         </div>
       </div>
     </main>
   </div>
-  <Message />
 </template>
 
 <script setup lang="ts"></script>
