@@ -8,7 +8,7 @@
         v-for="menu in menus"
         :key="menu.code"
         @click="goPage(menu.code)"
-        class="flex items-center p-2 hover:bg-gray-700 cursor-pointer"
+        class="flex items-center p-2 hover:bg-gray-700 cursor-pointer duration-300"
         :class="activeMenu == menu.code ? 'bg-gray-800' : ''"
       >
         <div class="p-1">
@@ -66,7 +66,7 @@ const menuOpen = ref(true);
 
 const menus = [
   {
-    code: "index",
+    code: "",
     name: "读书",
     icon: "IconMicrophone",
   },
@@ -98,7 +98,7 @@ const goPage = (code: string) => {
   router.push({ path: "/" + code });
 };
 
-goPage("index");
+goPage("");
 </script>
 
 <style scoped></style>
