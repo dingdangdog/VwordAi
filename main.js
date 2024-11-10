@@ -1,6 +1,10 @@
 const { app, BrowserWindow, ipcMain, dialog, shell } = require("electron");
 const path = require("path");
 const handler = require("./handler.js"); // 函数封装在handler.js中
+const chardet = require("chardet");
+const iconv = require("iconv-lite");
+const fs = require("fs");
+
 require("dotenv").config(); // Load environment variables from .env file
 
 if (process.env.NODE_ENV === "development") {
@@ -146,4 +150,28 @@ ipcMain.handle("open-folder", (event, dir) => {
     .catch((error) => {
       console.error("Error opening folder:", error);
     });
+});
+
+// 监听渲染进程的事件，弹出选择文件夹对话框
+ipcMain.handle("open-file", async () => {
+  // 打开文件
+  const { canceled, filePaths } = await dialog.showOpenDialog({
+    filters: [{ name: "Text Files", extensions: ["txt"] }],
+    properties: ["openFile"],
+  });
+  // 读取文件内容
+  if (!canceled && filePaths.length > 0) {
+    const filePath = filePaths[0];
+
+    // Detect encoding of the file
+    const encoding = chardet.detectFileSync(filePath);
+    console.log(`Detected encoding: ${encoding}`);
+
+    // Read file with the detected encoding
+    const contentBuffer = fs.readFileSync(filePath);
+    const content = iconv.decode(contentBuffer, encoding || "utf-8");
+
+    // Send file content to renderer
+    return content;
+  }
 });

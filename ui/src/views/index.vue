@@ -106,7 +106,25 @@ onMounted(() => {
   }
 });
 
-const importText = () => {};
+// 打开文件，读取文本
+const importText = () => {
+  // @ts-ignore
+  window.electron
+    .openFile()
+    .then((res: string) => {
+      // console.log(res)
+      if (res) {
+        textEditor.value.classList.remove("empty");
+        textEditor.value.innerHTML = res;
+      } else {
+        alertError("文件内容为空");
+      }
+    })
+    .catch((err: any) => {
+      console.log(err);
+      alertError("读取文件出错");
+    });
+};
 
 // 初次打开项目时编辑的文本
 const editText = ref("");
@@ -358,7 +376,7 @@ const processNode = (node: ChildNode, currentVoice: string | null): string => {
           class="mt-2 bg-gray-800 rounded-md flex-1 flex h-[calc(100%-4rem)]"
         >
           <div
-            class="w-full p-2 bg-gray-900 rounded-md overflow-y-auto focus:outline-none h-full"
+            class="w-full p-2 bg-gray-900 rounded-md overflow-y-auto focus:outline-none h-full whitespace-pre-wrap"
             ref="textEditor"
             id="textEditor"
             data-placeholder="请输入文本"
