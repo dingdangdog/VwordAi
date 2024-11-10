@@ -44,8 +44,9 @@ const getConfig = () => {
 };
 
 const saveConfig = (config) => {
-  const configPath = path.join(baseDir, CONFIG_FILE);
-  fs.writeFileSync(configPath, JSON.stringify(config));
+  const configFile = path.join(baseDir, CONFIG_FILE);
+  fs.writeFileSync(configFile, JSON.stringify(config));
+  return success(config, "success");
 };
 
 const getConfigApi = () => {
@@ -59,10 +60,10 @@ const getModels = (code) => {
   return success(models, "success");
 };
 
-const changeDataDir = (dir) => {
+const changeDataDir = (newdir) => {
   let config = getConfig();
-  moveFiles(config.dataPath, dir);
-  config.dataPath = dir;
+  moveFiles(config.dataPath, newdir);
+  config.dataPath = newdir;
   saveConfig(config);
 
   return success(config, "success");

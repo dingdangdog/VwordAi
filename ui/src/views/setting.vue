@@ -4,6 +4,7 @@ import type { VoiceModel, SerivceProvider, SystemConfig } from "@/utils/model";
 import local from "@/utils/local";
 import ModelCard from "@/components/ModelCard.vue";
 import MySelect from "@/components/MySelect.vue";
+import { alertSuccess, selectFloder } from "@/utils/common";
 
 const showConfig = ref("basic");
 const serviceProviderCode = ref("");
@@ -16,9 +17,16 @@ const changeServiceProvider = (provider: SerivceProvider) => {
 const systemConfig = ref<SystemConfig>({});
 
 local("getConfigApi", "").then((res) => {
-  console.log(res);
+  // console.log(res);
   systemConfig.value = res;
 });
+
+const saveConfig = () => {
+  local("saveConfig", systemConfig.value).then((res) => {
+    // console.log(res);
+    alertSuccess("保存成功");
+  });
+};
 
 const models = ref<VoiceModel[]>();
 const modelProviderCode = ref("");
@@ -30,18 +38,20 @@ const getModels = (provider: SerivceProvider) => {
   });
 };
 
-const selectFloder = () => {
-  // console.log("selectFloder");
-  // @ts-ignore
-  window.electron.selectFolder().then((path: string) => {
+const selectDataFloder = () => {
+  selectFloder().then((path) => {
     if (path) {
       systemConfig.value.dataPath = path;
+      local("changeDataDir", path).then((res) => {
+        alertSuccess("数据迁移成功");
+        systemConfig.value = res;
+      });
     }
   });
 };
 
 const openFolder = () => {
-  console.log("openFloder");
+  // console.log("openFloder");
   // @ts-ignore
   window.electron.openFolder(systemConfig.value.dataPath);
 };
@@ -49,22 +59,24 @@ const openFolder = () => {
 
 <template>
   <div class="h-full flex justify-between">
-    <div class="w-32 h-full bg-gray-800 flex flex-col">
+    <div class="w-40 h-full bg-black/20 flex flex-col">
       <a
-        class="p-2 hover:bg-gray-600 cursor-pointer"
-        :class="showConfig == 'basic' ? 'bg-gray-700' : ''"
+        class="p-2 hover:bg-gray-700 cursor-pointer duration-300"
+        :class="showConfig == 'basic' ? 'bg-gray-800' : ''"
         @click="showConfig = 'basic'"
       >
         基本设置
       </a>
       <a
-        class="p-2 hover:bg-gray-600 cursor-pointer"
+        class="p-2 hover:bg-gray-700 cursor-pointer duration-300"
+        :class="showConfig == 'provider' ? 'bg-gray-800' : ''"
         @click="showConfig = 'provider'"
       >
         服务商设置
       </a>
       <a
-        class="p-2 hover:bg-gray-600 cursor-pointer"
+        class="p-2 hover:bg-gray-700 cursor-pointer duration-300"
+        :class="showConfig == 'model' ? 'bg-gray-800' : ''"
         @click="showConfig = 'model'"
       >
         模型设置
@@ -78,7 +90,7 @@ const openFolder = () => {
             <input
               class="w-96 bg-transparent border-b ml-2 focus:outline-none"
               v-model="systemConfig.dataPath"
-              @click="selectFloder()"
+              @click="selectDataFloder()"
             />
             <button
               class="ml-2 px-2 py-1 rounded-md bg-gray-700 hover:bg-gray-600"
@@ -87,9 +99,12 @@ const openFolder = () => {
               打开文件夹
             </button>
           </div>
-          <button class="px-2 py-1 rounded-md bg-gray-700 hover:bg-gray-600">
+          <!-- <button
+            class="px-2 py-1 rounded-md bg-gray-700 hover:bg-gray-600"
+            @click="saveConfig()"
+          >
             保存
-          </button>
+          </button> -->
         </div>
       </div>
       <div
@@ -107,7 +122,10 @@ const openFolder = () => {
             </div>
           </div>
 
-          <button class="px-2 py-1 rounded-md bg-gray-700 hover:bg-gray-600">
+          <button
+            class="px-2 py-1 rounded-md bg-gray-700 hover:bg-gray-600"
+            @click="saveConfig()"
+          >
             保存
           </button>
         </div>
