@@ -3,17 +3,23 @@ import { ref } from "vue";
 
 const { items, select } = defineProps(["items", "select"]);
 
+const showOptions = ref(false); // 用于控制选项显示状态
 const selectedItem = ref("");
 
 const changeSelected = (item: any) => {
   // console.log(item);
   selectedItem.value = item.name;
   select(item);
+  showOptions.value = false;
 };
 </script>
 
 <template>
-  <div class="select relative">
+  <div
+    class="select relative"
+    @mouseover="showOptions = true"
+    @mouseleave="showOptions = false"
+  >
     <div
       class="selected flex justify-between items-center px-2 py-1 border rounded-md border-gray-400"
       :data="selectedItem ? selectedItem : '请选择'"
@@ -29,7 +35,10 @@ const changeSelected = (item: any) => {
         ></path>
       </svg>
     </div>
-    <div class="options border border-gray-400 rounded-md overflow-hidden">
+    <div
+      class="options border border-gray-400 rounded-md overflow-hidden"
+      v-if="showOptions"
+    >
       <div
         class="cursor-pointer px-2 py-1 bg-gray-800 hover:bg-gray-700 duration-300"
         v-for="item in items"
