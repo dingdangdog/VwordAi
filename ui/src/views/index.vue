@@ -9,26 +9,88 @@ import type {
 } from "@/utils/model";
 import EditBlankIcon from "@/components/edit/BlankIcon.vue";
 import EditModelCard from "@/components/EditModelCard.vue";
-import { alertSuccess, playAudio, VoiceTestText } from "@/utils/common";
+import {
+  alertError,
+  alertInfo,
+  alertSuccess,
+  playAudio,
+  selectFloder,
+  VoiceTestText,
+} from "@/utils/common";
 import MySelect from "@/components/MySelect.vue";
+import {
+  openProjectFlag,
+  saveProjectFlag,
+  project,
+} from "@/utils/global.store";
 
-const webList = ref([]);
-local("test", "null").then((res) => {
-  // console.log(res);
-  webList.value = res;
-});
+// 新建项目
+const addProject = () => {
+  project.value = {};
+  project.value.createTime = Date.now();
+  initEditor("");
+  openProjectFlag.value = true;
+};
 
-const editText = ref("");
-const selectServiceProvider = ref("");
+// 打开项目
+const openProject = () => {
+  selectFloder().then((path) => {
+    project.value.path = path;
+    if (path) {
+      local("getProject", path).then((res) => {
+        alertSuccess("打开成功");
+        project.value.name = res.name;
+        project.value.createTime = res.createTime;
+        project.value.content = res.content;
+        // TODO 弹出文件夹选择，选择后读取文件夹中的项目内容
+        initEditor(project.value.content || "");
+        openProjectFlag.value = true;
+      });
+    }
+  });
+};
 
-const textEditor = ref();
+// 保存项目
+const saveProject = () => {
+  project.value.content = textEditor.value.innerHTML;
+  if (project.value.path) {
+    project.value.updateTime = Date.now();
+  }
+  if (!project.value.name && !project.value.path && !project.value.content) {
+    alertError("项目没有任何内容，无需保存");
+    return;
+  }
 
-onMounted(() => {
-  textEditor.value.innerHTML = editText.value;
+  local("saveProject", project.value).then((res) => {
+    // console.log(res);
+    alertSuccess("保存成功");
+    saveProjectFlag.value = true;
+  });
+};
+
+// 关闭项目
+const closeProject = () => {
+  if (!saveProjectFlag.value && textEditor.value.innerHTML) {
+    alertError("请先保存项目");
+    return;
+  }
+  if (openProjectFlag.value) {
+    openProjectFlag.value = false;
+  }
+  project.value = {};
+  alertInfo("项目已关闭");
+};
+
+const initEditor = (text: string) => {
+  textEditor.value.innerHTML = text;
   textEditor.value.addEventListener("input", () => {
     if (textEditor.value.innerText.trim() === "") {
+      // 内容为空时，将已保存标示设置为true
+      saveProjectFlag.value = true;
       textEditor.value.classList.add("empty");
     } else {
+      // 内容变更且不为空，将已保存标示设置为false
+      saveProjectFlag.value = false;
       textEditor.value.classList.remove("empty");
     }
   });
@@ -36,8 +98,26 @@ onMounted(() => {
   if (textEditor.value.innerText.trim() === "") {
     textEditor.value.classList.add("empty");
   }
+};
+
+onMounted(() => {
+  if (openProjectFlag.value) {
+    initEditor(project.value.content || "");
+  }
 });
 
+const importText = () => {};
+
+// 初次打开项目时编辑的文本
+const editText = ref("");
+// 选择的服务提供商:azure/aliyun等
+const selectServiceProvider = ref("");
+
+// 文本编辑器(DIV)
+const textEditor = ref();
+
+// 常量配置 默认空白间隔
+const DEFAULT_BREAK_TIME = "500ms";
 const addBlank = () => {
   const selection = window.getSelection();
   if (!selection?.rangeCount) return;
@@ -62,6 +142,7 @@ const addBlank = () => {
   selection.addRange(range);
 };
 
+// 为选中文字添加指定语音模型
 const addTextSsml = (model: VoiceModel) => {
   const selection = window.getSelection();
   if (!selection?.rangeCount) return;
@@ -74,10 +155,6 @@ const addTextSsml = (model: VoiceModel) => {
   span.setAttribute("data-type", "text");
   span.setAttribute("data-model", model.code);
   range.surroundContents(span);
-};
-
-const showHtml = () => {
-  console.log(textEditor.value.innerHTML);
 };
 
 const tts = () => {
@@ -123,12 +200,25 @@ const playTest = (model: VoiceModel) => {
 };
 
 const doTTS = (ssml: string) => {
-  local("dotts", ssml, project.value.name).then();
+  if (!project.value.path) {
+    project.value.path = `${systemConfig.value.dataPath}/${project.value.name}`;
+  }
+  // 组装本次转换的文件名
+  const fileName = `${project.value.path}/${
+    project.value.name
+  }_${Date.now()}.wav`;
+  local("dotts", ssml, fileName).then((res) => {
+    alertSuccess("生成成功");
+    // @ts-ignore
+    window.electron.openFolder(project.value.path);
+    // window.electron.openFolder(res);
+    // 自动打开文件夹
+  });
 };
 
 // 是否添加了旁白标识
 const layoutFlag = ref(false);
-
+// 添加旁白
 const addLayoutVoice = () => {
   const text = textEditor.value.innerHTML;
   const span = document.createElement("span");
@@ -139,7 +229,7 @@ const addLayoutVoice = () => {
   textEditor.value.innerHTML = span.outerHTML;
   layoutFlag.value = true;
 };
-
+// 将 HTML 转换成 SSML
 const convertHTMLToSSML = () => {
   const htmlContent = textEditor.value.innerHTML;
   const parser = new DOMParser();
@@ -152,9 +242,6 @@ const convertHTMLToSSML = () => {
   console.log(ssmlContent);
   doTTS(ssmlContent);
 };
-
-// 常量配置
-const DEFAULT_BREAK_TIME = "500ms";
 
 // 递归处理节点并转换成 SSML，避免 voice 嵌套
 const processNode = (node: ChildNode, currentVoice: string | null): string => {
@@ -192,24 +279,29 @@ const processNode = (node: ChildNode, currentVoice: string | null): string => {
 
   return "";
 };
-
-const project = ref<Project>({});
-
-const saveProject = () => {
-  project.value.content = textEditor.value.innerHTML;
-  if (project.value.path) {
-    project.value.updateTime = Date.now();
-  } else {
-    project.value.createTime = Date.now();
-  }
-  local("saveProject", project.value).then((res) => {
-    // console.log(res);
-  });
-};
 </script>
 
 <template>
-  <div class="h-full w-full p-2 flex justify-between">
+  <div
+    class="h-full w-full flex justify-center items-center"
+    v-show="!openProjectFlag"
+  >
+    <div class="-mt-52 flex justify-center items-center">
+      <button
+        class="px-4 py-2 rounded-md bg-gray-700 hover:bg-gray-600"
+        @click="addProject()"
+      >
+        新建项目
+      </button>
+      <button
+        class="px-4 py-2 ml-4 rounded-md bg-gray-700 hover:bg-gray-600"
+        @click="openProject()"
+      >
+        打开项目
+      </button>
+    </div>
+  </div>
+  <div class="h-full w-full p-2 flex justify-between" v-show="openProjectFlag">
     <div
       class="h-full w-[350px] overflow-y-auto overflow-x-hidden p-2 bg-gray-800 rounded-md flex flex-col justify-between"
     >
@@ -238,13 +330,7 @@ const saveProject = () => {
       <div class="p-2 bg-gray-800 rounded-md h-12">
         <button
           class="px-2 py-1 rounded-md bg-gray-700 hover:bg-gray-600"
-          @click="showHtml()"
-        >
-          打开项目
-        </button>
-        <button
-          class="ml-2 px-2 py-1 rounded-md bg-gray-700 hover:bg-gray-600"
-          @click="showHtml()"
+          @click="importText()"
         >
           导入文本
         </button>
@@ -299,10 +385,16 @@ const saveProject = () => {
           云端合成
         </button> -->
         <button
-          class="px-2 py-1 ml-2 rounded-md bg-gray-700 hover:bg-gray-600"
+          class="px-2 py-1 ml-2 rounded-md bg-green-700 hover:bg-green-600"
           @click="saveProject()"
         >
           保存项目
+        </button>
+        <button
+          class="px-2 py-1 ml-2 rounded-md bg-red-500 hover:bg-red-400"
+          @click="closeProject()"
+        >
+          关闭项目
         </button>
       </div>
     </div>

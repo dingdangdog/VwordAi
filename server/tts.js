@@ -3,7 +3,7 @@ const path = require("path");
 const sdk = require("microsoft-cognitiveservices-speech-sdk");
 
 const { getConfig } = require("./config");
-const { success, error } = require("./util");
+const { success, error, readJsonFile } = require("./util");
 
 const dotts = (ssml, fileName) => {
   if (!ssml) {
@@ -14,8 +14,13 @@ const dotts = (ssml, fileName) => {
     config.serviceConfig.azure.key,
     config.serviceConfig.azure.region
   );
-  const time = new Date().getTime();
-  fileName = path.join(config.dataPath, `${fileName}_${time}.wav`);
+
+  // 判断fileName的父文件夹是否存在
+
+  if (!fs.existsSync(path.dirname(fileName))) {
+    fs.mkdirSync(path.dirname(fileName), { recursive: true });
+  }
+
   console.log(fileName);
   const audioConfig = sdk.AudioConfig.fromAudioFileOutput(fileName);
 
@@ -46,4 +51,41 @@ const dotts = (ssml, fileName) => {
   return success(fileName, "success");
 };
 
-module.exports = { dotts };
+// export interface Project {
+//   path?: string;
+//   name?: string;
+//   content?: string;
+//   createTime?: number;
+//   updateTime?: number;
+// }
+
+const saveProject = (project) => {
+  // console.log(project);
+  if (!project.name) {
+    project.name = project.createTime;
+  }
+  if (!project.path) {
+    const config = getConfig();
+    project.path = path.join(config.dataPath, project.name);
+  }
+  const configPath = path.join(project.path, "project.json");
+
+  if (!fs.existsSync(project.path)) {
+    fs.mkdirSync(project.path, { recursive: true });
+  }
+
+  fs.writeFileSync(configPath, JSON.stringify(project));
+
+  return success("", "success");
+};
+
+const getProject = (projectPath) => {
+  const configPath = path.join(projectPath, "project.json");
+  if (fs.existsSync(configPath)) {
+    return success(readJsonFile(configPath), "success");
+  } else {
+    return error("", "项目文件不存在");
+  }
+};
+
+module.exports = { dotts, saveProject, getProject };
