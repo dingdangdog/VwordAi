@@ -28,14 +28,30 @@ const saveConfig = () => {
   });
 };
 
-const models = ref<VoiceModel[]>();
 const modelProviderCode = ref("");
-const filterModelParam = ref("");
+const models = ref<VoiceModel[]>();
+const showModels = ref<VoiceModel[]>();
 const getModels = (provider: SerivceProvider) => {
   modelProviderCode.value = provider.code;
   local("getModels", provider.code).then((res) => {
     models.value = res;
+    showModels.value = models.value;
   });
+};
+const filterModelParam = ref("");
+const filterModel = () => {
+  if (!filterModelParam.value) {
+    showModels.value = models.value;
+    return;
+  }
+  const filterParam = filterModelParam.value.toLowerCase(); // 转换为小写
+  showModels.value = models.value?.filter(
+    (model) =>
+      model.name.toLowerCase().includes(filterParam) ||
+      model.code.toLowerCase().includes(filterParam) ||
+      model.gender.toLowerCase().includes(filterParam) ||
+      model.lang.toLowerCase().includes(filterParam)
+  );
 };
 
 const selectDataFloder = () => {
@@ -190,7 +206,7 @@ const openFolder = () => {
               class="w-52 h-8 bg-transparent border border-gray-400 p-2 ml-2 rounded-md focus:outline-none"
               placeholder="筛选"
               v-model="filterModelParam"
-              @change=""
+              @keyup.enter="filterModel()"
             />
           </div>
 
@@ -202,7 +218,7 @@ const openFolder = () => {
         <div class="flex items-center py-1 w-full" v-show="modelProviderCode">
           <!-- <label class="min-w-32">Models</label> -->
           <div class="flex flex-wrap w-full">
-            <ModelCard v-for="m in models" :key="m.code" :model="m" />
+            <ModelCard v-for="m in showModels" :key="m.code" :model="m" />
           </div>
         </div>
       </div>

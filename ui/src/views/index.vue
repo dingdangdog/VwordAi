@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref } from "vue";
+import { onMounted, ref, watch } from "vue";
 import local from "@/utils/local";
 import type {
   Project,
@@ -183,7 +183,6 @@ const tts = () => {
 
 // @ts-ignore
 const systemConfig = ref<SystemConfig>({});
-const filterModelParam = ref("");
 
 local("getConfigApi", "").then((res) => {
   // console.log(res);
@@ -191,11 +190,28 @@ local("getConfigApi", "").then((res) => {
 });
 
 const models = ref<VoiceModel[]>();
+const showModels = ref<VoiceModel[]>();
 const getModels = (provider: SerivceProvider) => {
   selectServiceProvider.value = provider.code;
   local("getModels", provider.code).then((res) => {
     models.value = res;
+    showModels.value = res;
   });
+};
+const filterModelParam = ref("");
+const filterModel = () => {
+  if (!filterModelParam.value) {
+    showModels.value = models.value;
+    return;
+  }
+  const filterParam = filterModelParam.value.toLowerCase(); // 转换为小写
+  showModels.value = models.value?.filter(
+    (model) =>
+      model.name.toLowerCase().includes(filterParam) ||
+      model.code.toLowerCase().includes(filterParam) ||
+      model.gender.toLowerCase().includes(filterParam) ||
+      model.lang.toLowerCase().includes(filterParam)
+  );
 };
 
 const playTest = (model: VoiceModel) => {
@@ -328,11 +344,11 @@ const processNode = (node: ChildNode, currentVoice: string | null): string => {
         class="w-full h-8 bg-transparent border border-gray-400 p-2 my-2 rounded-md focus:outline-none"
         placeholder="筛选"
         v-model="filterModelParam"
-        @change=""
+        @keyup.enter="filterModel()"
       />
       <div class="flex-1 overflow-y-auto">
         <EditModelCard
-          v-for="(model, index) in models"
+          v-for="(model, index) in showModels"
           :key="index"
           :model="model"
           :provider="selectServiceProvider"
