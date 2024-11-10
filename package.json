@@ -10,6 +10,7 @@
   },
   "scripts": {
     "ui": "cd ui && npm run dev",
+    "build": "cd ui && npm run build-only",
     "electron": "electron .",
     "package": "electron-builder"
   },
@@ -17,7 +18,7 @@
     "appId": "top.oldmoon.dotts",
     "productName": "DoTTS",
     "directories": {
-      "output": "build"
+      "output": "package"
     },
     "files": [
       "main.js",

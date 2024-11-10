@@ -3,5 +3,7 @@ config
 dotts
 
 dist
+
 node_modules
 
+package
