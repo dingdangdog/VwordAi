@@ -120,4 +120,5 @@ module.exports = {
   success,
   error,
   moveFiles,
+  copyFiles,
 };
