@@ -1,16 +1,16 @@
 <script setup lang="ts">
 import { ref } from "vue";
-import type { VoiceModel, SerivceProvider, SystemConfig } from "@/utils/model";
+import type { SerivceProvider, SystemConfig } from "@/utils/model";
 import local from "@/utils/local";
-import ModelCard from "@/components/ModelCard.vue";
 import MySelect from "@/components/MySelect.vue";
 import { alertSuccess, selectFloder } from "@/utils/common";
+import { ServiceProviderItems } from "@/utils/global.store";
 
 const showConfig = ref("basic");
-const serviceProviderCode = ref("");
+const selectedProvider = ref<SerivceProvider>();
 
 const changeServiceProvider = (provider: SerivceProvider) => {
-  serviceProviderCode.value = provider.code;
+  selectedProvider.value = provider;
 };
 
 // @ts-ignore
@@ -26,32 +26,6 @@ const saveConfig = () => {
     // console.log(res);
     alertSuccess("保存成功");
   });
-};
-
-const modelProviderCode = ref("");
-const models = ref<VoiceModel[]>();
-const showModels = ref<VoiceModel[]>();
-const getModels = (provider: SerivceProvider) => {
-  modelProviderCode.value = provider.code;
-  local("getModels", provider.code).then((res) => {
-    models.value = res;
-    showModels.value = models.value;
-  });
-};
-const filterModelParam = ref("");
-const filterModel = () => {
-  if (!filterModelParam.value) {
-    showModels.value = models.value;
-    return;
-  }
-  const filterParam = filterModelParam.value.toLowerCase(); // 转换为小写
-  showModels.value = models.value?.filter(
-    (model) =>
-      model.name.toLowerCase().includes(filterParam) ||
-      model.code.toLowerCase().includes(filterParam) ||
-      model.gender.toLowerCase().includes(filterParam) ||
-      model.lang.toLowerCase().includes(filterParam)
-  );
 };
 
 const selectDataFloder = () => {
@@ -90,19 +64,12 @@ const openFolder = () => {
       >
         服务商设置
       </a>
-      <a
-        class="p-2 hover:bg-gray-700 cursor-pointer duration-300"
-        :class="showConfig == 'model' ? 'bg-gray-800' : ''"
-        @click="showConfig = 'model'"
-      >
-        模型设置
-      </a>
     </div>
     <div class="flex-1 h-full overflow-y-auto">
       <div class="m-2 p-2 bg-gray-800 rounded-md" v-if="showConfig == 'basic'">
         <div class="flex justify-between">
           <div class="flex items-center">
-            <h3>音频存储文件夹</h3>
+            <h3>数据存储路径</h3>
             <input
               class="w-96 bg-transparent border-b ml-2 focus:outline-none"
               v-model="systemConfig.dataPath"
@@ -132,8 +99,9 @@ const openFolder = () => {
             <h3>服务商</h3>
             <div class="w-36 ml-2">
               <MySelect
-                :items="systemConfig.serviceProviders"
+                :items="ServiceProviderItems"
                 :select="changeServiceProvider"
+                :selected="selectedProvider"
               />
             </div>
           </div>
@@ -146,7 +114,7 @@ const openFolder = () => {
           </button>
         </div>
 
-        <div class="py-1" v-if="serviceProviderCode == 'azure'">
+        <div class="py-1" v-if="selectedProvider?.code == 'azure'">
           <div class="flex items-center px-2 py-1">
             <label class="min-w-24">Key</label>
             <input
@@ -169,7 +137,7 @@ const openFolder = () => {
             />
           </div>
         </div>
-        <div class="py-1" v-if="serviceProviderCode == 'aliyun'">
+        <div class="py-1" v-if="selectedProvider?.code == 'aliyun'">
           <div class="flex items-center px-2 py-1">
             <label class="min-w-24">App Key</label>
             <input
@@ -189,38 +157,8 @@ const openFolder = () => {
             />
           </div>
         </div>
-        <div class="py-1" v-if="serviceProviderCode == 'openai'">OpenAI</div>
-        <div class="py-1" v-if="serviceProviderCode == 'sovits'">SoVits</div>
-      </div>
-      <div class="m-2 p-2 bg-gray-800 rounded-md" v-if="showConfig == 'model'">
-        <div class="flex justify-between">
-          <div class="flex items-center">
-            <h3>服务商</h3>
-            <div class="w-36 ml-2">
-              <MySelect
-                :items="systemConfig.serviceProviders"
-                :select="getModels"
-              />
-            </div>
-            <input
-              class="w-52 h-8 bg-transparent border border-gray-400 p-2 ml-2 rounded-md focus:outline-none"
-              placeholder="筛选"
-              v-model="filterModelParam"
-              @keyup.enter="filterModel()"
-            />
-          </div>
-
-          <button class="px-2 py-1 rounded-md bg-gray-700 hover:bg-gray-600">
-            保存
-          </button>
-        </div>
-
-        <div class="flex items-center py-1 w-full" v-show="modelProviderCode">
-          <!-- <label class="min-w-32">Models</label> -->
-          <div class="flex flex-wrap w-full">
-            <ModelCard v-for="m in showModels" :key="m.code" :model="m" />
-          </div>
-        </div>
+        <div class="py-1" v-if="selectedProvider?.code == 'openai'">OpenAI</div>
+        <div class="py-1" v-if="selectedProvider?.code == 'sovits'">SoVits</div>
       </div>
     </div>
   </div>

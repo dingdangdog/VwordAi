@@ -7,6 +7,7 @@
       <div
         v-for="menu in menus"
         :key="menu.code"
+        :title="menu.name"
         @click="goPage(menu.code)"
         class="flex items-center p-2 hover:bg-gray-700 cursor-pointer duration-300"
         :class="activeMenu == menu.code ? 'bg-gray-800' : ''"
@@ -43,6 +44,7 @@ import router from "@/router";
 import IconMicrophone from "@/components/icon/microphone.vue";
 import IconCog from "@/components/icon/cog.vue";
 import IconAccount from "@/components/icon/account.vue";
+import IconAccountVoice from "@/components/icon/accountvoice.vue";
 import IconWifi from "@/components/icon/wifi.vue";
 import IconMenu from "@/components/icon/menu.vue";
 
@@ -54,6 +56,8 @@ const getIcon = (icon: string) => {
       return IconCog;
     case "IconAccount":
       return IconAccount;
+    case "IconAccountVoice":
+      return IconAccountVoice;
     case "IconWifi":
       return IconWifi;
     default:
@@ -80,6 +84,11 @@ const menus = [
   //   name: "本地开放",
   //   icon: "IconWifi",
   // },
+  {
+    code: "models",
+    name: "模型库",
+    icon: "IconAccountVoice",
+  },
   {
     code: "setting",
     name: "系统设置",
