@@ -1,14 +1,18 @@
 <script setup lang="ts">
 import { ref } from "vue";
 
-const { items, select } = defineProps(["items", "select"]);
+const { items, select, selected } = defineProps([
+  "items",
+  "select",
+  "selected",
+]);
 
 const showOptions = ref(false); // 用于控制选项显示状态
-const selectedItem = ref("");
+const selectedItem = ref(selected);
 
 const changeSelected = (item: any) => {
   // console.log(item);
-  selectedItem.value = item.name;
+  selectedItem.value = item;
   select(item);
   showOptions.value = false;
 };
@@ -22,7 +26,7 @@ const changeSelected = (item: any) => {
   >
     <div
       class="selected flex justify-between items-center px-2 py-1 border rounded-md border-gray-400"
-      :data="selectedItem ? selectedItem : '请选择'"
+      :data="selectedItem ? selectedItem.name : '请选择'"
     >
       <svg
         xmlns="http://www.w3.org/2000/svg"
