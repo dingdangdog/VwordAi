@@ -1,5 +1,7 @@
 [
   {
+    "provider": "azure",
+    "collect": false,
     "lang": "中文（普通话，简体）",
     "gender": "女",
     "name": "晓晓",
@@ -7,6 +9,8 @@
     "emotions": []
   },
   {
+    "provider": "azure",
+    "collect": false,
     "lang": "中文（普通话，简体）",
     "gender": "男",
     "name": "云溪",
@@ -14,6 +18,8 @@
     "emotions": []
   },
   {
+    "provider": "azure",
+    "collect": false,
     "lang": "中文（普通话，简体）",
     "gender": "男",
     "name": "云健",
@@ -21,6 +27,8 @@
     "emotions": []
   },
   {
+    "provider": "azure",
+    "collect": false,
     "lang": "中文（普通话，简体）",
     "gender": "女",
     "name": "晓伊",
@@ -28,6 +36,8 @@
     "emotions": []
   },
   {
+    "provider": "azure",
+    "collect": false,
     "lang": "中文（普通话，简体）",
     "gender": "男",
     "name": "云扬",
@@ -35,6 +45,8 @@
     "emotions": []
   },
   {
+    "provider": "azure",
+    "collect": false,
     "lang": "中文（普通话，简体）",
     "gender": "女",
     "name": "晓辰",
@@ -42,6 +54,8 @@
     "emotions": []
   },
   {
+    "provider": "azure",
+    "collect": false,
     "lang": "中文（普通话，简体）",
     "gender": "女",
     "name": "晓辰多语言",
@@ -50,6 +64,8 @@
     "emotions": []
   },
   {
+    "provider": "azure",
+    "collect": false,
     "lang": "中文（普通话，简体）",
     "gender": "女",
     "name": "晓涵",
@@ -57,6 +73,8 @@
     "emotions": []
   },
   {
+    "provider": "azure",
+    "collect": false,
     "lang": "中文（普通话，简体）",
     "gender": "女",
     "name": "晓萌",
@@ -64,6 +82,8 @@
     "emotions": []
   },
   {
+    "provider": "azure",
+    "collect": false,
     "lang": "中文（普通话，简体）",
     "gender": "女",
     "name": "晓墨",
@@ -71,6 +91,8 @@
     "emotions": []
   },
   {
+    "provider": "azure",
+    "collect": false,
     "lang": "中文（普通话，简体）",
     "gender": "女",
     "name": "晓秋",
@@ -78,6 +100,8 @@
     "emotions": []
   },
   {
+    "provider": "azure",
+    "collect": false,
     "lang": "中文（普通话，简体）",
     "gender": "女",
     "name": "晓柔",
@@ -85,6 +109,8 @@
     "emotions": []
   },
   {
+    "provider": "azure",
+    "collect": false,
     "lang": "中文（普通话，简体）",
     "gender": "女",
     "name": "晓睿",
@@ -92,6 +118,8 @@
     "emotions": []
   },
   {
+    "provider": "azure",
+    "collect": false,
     "lang": "中文（普通话，简体）",
     "gender": "女",
     "name": "晓霜",
@@ -99,6 +127,8 @@
     "emotions": ["儿童"]
   },
   {
+    "provider": "azure",
+    "collect": false,
     "lang": "中文（普通话，简体）",
     "gender": "女",
     "name": "晓晓方言",
@@ -106,6 +136,8 @@
     "emotions": []
   },
   {
+    "provider": "azure",
+    "collect": false,
     "lang": "中文（普通话，简体）",
     "gender": "女",
     "name": "晓晓多语言",
@@ -114,6 +146,8 @@
     "emotions": []
   },
   {
+    "provider": "azure",
+    "collect": false,
     "lang": "中文（普通话，简体）",
     "gender": "女",
     "name": "晓燕",
@@ -121,6 +155,8 @@
     "emotions": []
   },
   {
+    "provider": "azure",
+    "collect": false,
     "lang": "中文（普通话，简体）",
     "gender": "女",
     "name": "晓优",
@@ -128,6 +164,8 @@
     "emotions": ["儿童"]
   },
   {
+    "provider": "azure",
+    "collect": false,
     "lang": "中文（普通话，简体）",
     "gender": "女",
     "name": "晓瑜多语言",
@@ -136,6 +174,8 @@
     "emotions": []
   },
   {
+    "provider": "azure",
+    "collect": false,
     "lang": "中文（普通话，简体）",
     "gender": "女",
     "name": "晓珍",
@@ -143,6 +183,8 @@
     "emotions": []
   },
   {
+    "provider": "azure",
+    "collect": false,
     "lang": "中文（普通话，简体）",
     "gender": "男",
     "name": "云峰",
@@ -150,6 +192,8 @@
     "emotions": []
   },
   {
+    "provider": "azure",
+    "collect": false,
     "lang": "中文（普通话，简体）",
     "gender": "男",
     "name": "云浩",
@@ -157,6 +201,8 @@
     "emotions": []
   },
   {
+    "provider": "azure",
+    "collect": false,
     "lang": "中文（普通话，简体）",
     "gender": "男",
     "name": "云杰",
@@ -164,6 +210,8 @@
     "emotions": []
   },
   {
+    "provider": "azure",
+    "collect": false,
     "lang": "中文（普通话，简体）",
     "gender": "男",
     "name": "云霞",
@@ -171,6 +219,8 @@
     "emotions": []
   },
   {
+    "provider": "azure",
+    "collect": false,
     "lang": "中文（普通话，简体）",
     "gender": "男",
     "name": "云烨",
@@ -178,6 +228,8 @@
     "emotions": []
   },
   {
+    "provider": "azure",
+    "collect": false,
     "lang": "中文（普通话，简体）",
     "gender": "男",
     "name": "云逸多语言",
@@ -186,6 +238,8 @@
     "emotions": []
   },
   {
+    "provider": "azure",
+    "collect": false,
     "lang": "中文（普通话，简体）",
     "gender": "男",
     "name": "云泽",
@@ -193,6 +247,8 @@
     "emotions": []
   },
   {
+    "provider": "azure",
+    "collect": false,
     "lang": "中文（广西口音普通话，简体）",
     "gender": "男",
     "name": "云启",
@@ -201,6 +257,8 @@
     "emotions": []
   },
   {
+    "provider": "azure",
+    "collect": false,
     "lang": "中文（中原官话河南，简体）",
     "gender": "男",
     "name": "云登",
@@ -209,6 +267,8 @@
     "emotions": []
   },
   {
+    "provider": "azure",
+    "collect": false,
     "lang": "中文（东北官话，简体）",
     "gender": "女",
     "name": "晓贝",
@@ -217,6 +277,8 @@
     "emotions": []
   },
   {
+    "provider": "azure",
+    "collect": false,
     "lang": "中文（东北官话，简体）",
     "gender": "男",
     "name": "云彪",
@@ -225,6 +287,8 @@
     "emotions": []
   },
   {
+    "provider": "azure",
+    "collect": false,
     "lang": "中文（中原官话陕西，简体）",
     "gender": "女",
     "name": "晓妮",
@@ -233,6 +297,8 @@
     "emotions": []
   },
   {
+    "provider": "azure",
+    "collect": false,
     "lang": "中文（冀鲁官话，简体）",
     "gender": "男",
     "name": "云翔",
@@ -241,6 +307,8 @@
     "emotions": []
   },
   {
+    "provider": "azure",
+    "collect": false,
     "lang": "中文（西南普通话，简体）",
     "gender": "男",
     "name": "云熙",
@@ -249,6 +317,8 @@
     "emotions": []
   },
   {
+    "provider": "azure",
+    "collect": false,
     "lang": "中文(粤语，繁体)",
     "gender": "女",
     "name": "晓雯",
@@ -256,6 +326,8 @@
     "emotions": []
   },
   {
+    "provider": "azure",
+    "collect": false,
     "lang": "中文(粤语，繁体)",
     "gender": "男",
     "name": "雯龙",
@@ -263,6 +335,8 @@
     "emotions": []
   },
   {
+    "provider": "azure",
+    "collect": false,
     "lang": "中文(粤语，繁体)",
     "gender": "女",
     "name": "晓佳",
@@ -270,6 +344,8 @@
     "emotions": []
   },
   {
+    "provider": "azure",
+    "collect": false,
     "lang": "中文（台湾普通话，繁体）",
     "gender": "女",
     "name": "晓辰",
@@ -277,6 +353,8 @@
     "emotions": []
   },
   {
+    "provider": "azure",
+    "collect": false,
     "lang": "中文（台湾普通话，繁体）",
     "gender": "男",
     "name": "云哲",
@@ -284,6 +362,8 @@
     "emotions": []
   },
   {
+    "provider": "azure",
+    "collect": false,
     "lang": "中文（台湾普通话，繁体）",
     "gender": "女",
     "name": "晓瑜",
@@ -291,6 +371,8 @@
     "emotions": []
   },
   {
+    "provider": "azure",
+    "collect": false,
     "lang": "中文（吴语，简体）",
     "gender": "女",
     "name": "小彤",
@@ -299,6 +381,8 @@
     "emotions": []
   },
   {
+    "provider": "azure",
+    "collect": false,
     "lang": "中文（吴语，简体）",
     "gender": "男",
     "name": "云哲",
@@ -307,6 +391,8 @@
     "emotions": []
   },
   {
+    "provider": "azure",
+    "collect": false,
     "lang": "中文（粤语，简体）",
     "gender": "女",
     "name": "晓敏",
@@ -315,6 +401,8 @@
     "emotions": []
   },
   {
+    "provider": "azure",
+    "collect": false,
     "lang": "中文（粤语，简体）",
     "gender": "男",
     "name": "云松",

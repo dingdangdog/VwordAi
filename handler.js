@@ -3,10 +3,10 @@ const { playTest, playSSML } = require("./server/play.js");
 const {
   setConfigDir,
   getConfigApi,
-  getModels,
   changeDataDir,
   saveConfig,
 } = require("./server/config.js");
+const { getModels, saveModel } = require("./server/model.js");
 const { speech } = require("./server/azure.js");
 const { dotts, saveProject, getProject } = require("./server/tts.js");
 
@@ -17,9 +17,11 @@ module.exports = {
 
   setConfigDir,
   getConfigApi,
-  getModels,
   changeDataDir,
   saveConfig,
+
+  getModels,
+  saveModel,
 
   speech,
   dotts,
