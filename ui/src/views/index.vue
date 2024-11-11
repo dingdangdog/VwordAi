@@ -338,7 +338,7 @@ const processNode = (node: ChildNode, currentVoice: string | null): string => {
   </div>
   <div class="h-full w-full p-2 flex justify-between" v-show="openProjectFlag">
     <div
-      class="h-full w-[350px] overflow-y-auto overflow-x-hidden p-2 bg-gray-800 rounded-md flex flex-col justify-between"
+      class="h-full w-72 overflow-y-auto overflow-x-hidden p-2 bg-gray-800 rounded-md flex flex-col justify-between"
     >
       <MySelect :items="ModelCategoryItems" :select="getModels" />
       <input
