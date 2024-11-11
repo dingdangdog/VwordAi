@@ -5,6 +5,7 @@ import AboutView from "@/views/about.vue";
 import AccountView from "@/views/account.vue";
 import LocalView from "@/views/local.vue";
 import SettingView from "@/views/setting.vue";
+import ModelsView from "@/views/models.vue";
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -25,19 +26,24 @@ const router = createRouter({
       component: NovelsView,
     },
     {
-      path: "/account",
-      name: "account",
-      component: AccountView,
-    },
-    {
       path: "/local",
       name: "local",
       component: LocalView,
     },
     {
+      path: "/models",
+      name: "models",
+      component: ModelsView,
+    },
+    {
       path: "/setting",
       name: "setting",
       component: SettingView,
+    },
+    {
+      path: "/account",
+      name: "account",
+      component: AccountView,
     },
   ],
 });

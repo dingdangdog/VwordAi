@@ -9,10 +9,10 @@ require("dotenv").config(); // Load environment variables from .env file
 
 if (process.env.NODE_ENV === "development") {
   // const devPath = path.join(__dirname, "config");
-  handler.setConfigDir(__dirname);
+  handler.setBaseDir(__dirname);
 } else {
   // const defaultPath = path.join(app.getPath("userData"), "config");
-  handler.setConfigDir(app.getPath("userData"));
+  handler.setBaseDir(app.getPath("userData"));
 }
 
 let win;
@@ -30,6 +30,7 @@ function createWindow() {
     //绝对路径
     // icon: path.join(__dirname, 'icon.ico'),
     webPreferences: {
+      // devTools: true,
       nodeIntegration: false, // 关闭 Node.js 集成以增强安全性
       contextIsolation: true, // 启用上下文隔离
       preload: path.join(__dirname, "preload.js"), // 预加载脚本
@@ -43,10 +44,10 @@ function createWindow() {
   if (process.env.NODE_ENV === "development") {
     win.loadURL("http://localhost:5173/");
     // 打开开发者工具
+    win.webContents.openDevTools({ mode: "detach" });
   } else {
     win.loadFile(path.join(__dirname, "ui/dist/index.html"));
   }
-  win.webContents.openDevTools({ mode: "detach" });
 
   // 加载应用程序
 

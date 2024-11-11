@@ -22,6 +22,7 @@ import {
   openProjectFlag,
   saveProjectFlag,
   project,
+  ModelCategoryItems,
 } from "@/utils/global.store";
 
 // 新建项目
@@ -339,7 +340,7 @@ const processNode = (node: ChildNode, currentVoice: string | null): string => {
     <div
       class="h-full w-[350px] overflow-y-auto overflow-x-hidden p-2 bg-gray-800 rounded-md flex flex-col justify-between"
     >
-      <MySelect :items="systemConfig.serviceProviders" :select="getModels" />
+      <MySelect :items="ModelCategoryItems" :select="getModels" />
       <input
         class="w-full h-8 bg-transparent border border-gray-400 p-2 my-2 rounded-md focus:outline-none"
         placeholder="筛选"

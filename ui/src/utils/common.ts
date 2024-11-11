@@ -65,14 +65,14 @@ export const alertWarning = (info: string) => {
 export const getMessageClass = (message: MessageModel) => {
   switch (message.type) {
     case "success":
-      return "bg-green-600";
+      return "bg-green-500/70";
     case "error":
-      return "bg-red-400";
+      return "bg-red-400/80";
     case "info":
-      return "bg-gray-500";
+      return "bg-gray-400/60";
     case "warning":
-      return "bg-yellow-800";
+      return "bg-yellow-700/60";
     default:
-      return "bg-gray-800";
+      return "bg-gray-800/80";
   }
 };

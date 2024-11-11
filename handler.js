@@ -1,7 +1,7 @@
 const { test } = require("./server/test.js");
 const { playTest, playSSML } = require("./server/play.js");
 const {
-  setConfigDir,
+  setBaseDir,
   getConfigApi,
   changeDataDir,
   saveConfig,
@@ -15,7 +15,7 @@ module.exports = {
   playTest,
   playSSML,
 
-  setConfigDir,
+  setBaseDir,
   getConfigApi,
   changeDataDir,
   saveConfig,

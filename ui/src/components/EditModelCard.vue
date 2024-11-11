@@ -17,7 +17,7 @@ const { model, provider, play, set } = defineProps([
 <template>
   <div
     class="min-w-32 p-1 m-1 rounded-md"
-    :class="model.gender == '女' ? 'bg-pink-500/20' : 'bg-blue-500/20'"
+    :class="model.gender == '女' ? 'bg-pink-600/30' : 'bg-blue-600/30'"
   >
     <div class="flex justify-between items-center">
       <h4>{{ model.name }}</h4>

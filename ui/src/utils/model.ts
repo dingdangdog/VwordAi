@@ -30,10 +30,12 @@ export interface SystemConfig {
   };
 }
 
-export interface SerivceProvider {
+export interface BaseSelector {
   name: string;
   code: string;
 }
+
+export interface SerivceProvider extends BaseSelector {}
 export interface AzureConfig {
   key: string;
   region: string;
@@ -47,6 +49,8 @@ export interface AliyunConfig {
 }
 
 export interface VoiceModel {
+  provider: string;
+  collect: boolean;
   lang: string;
   gender: string;
   name: string;
