@@ -6,7 +6,7 @@ import { messages } from "@/utils/global.store";
 <template>
   <div
     class="absolute top-0 w-full flex flex-col justify-center items-center"
-    style="margin: 0 auto"
+    style="margin: 0 auto; z-index: 9999"
     v-show="messages.length > 0"
   >
     <span
