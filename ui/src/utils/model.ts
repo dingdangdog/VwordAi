@@ -56,11 +56,25 @@ export interface VoiceModel {
   name: string;
   code: string;
   level?: string;
-  emotions: Emotion[];
 }
-export interface Emotion {
+
+export interface VoiceStyle {
+  style: EmotionStyle[]; // 情感
+  styledegree: string;
+  role: EmotionStyle[]; // 模仿声音，如：小男孩/小女孩/老人
+}
+
+export interface EmotionStyle {
   name: string;
   code: string;
+  desc: string;
+}
+
+export interface EditVoiceStyle {
+  provider?: string;
+  style?: string;
+  styledegree?: string;
+  role?: string;
 }
 
 export interface SsmlText {

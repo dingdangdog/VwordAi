@@ -61,22 +61,25 @@ const dotts = (ssml, fileName) => {
 
 const saveProject = (project) => {
   // console.log(project);
+  // 项目名不存在，默认为创建时间
   if (!project.name) {
     project.name = project.createTime;
   }
+  // 项目路径不存在，默认为数据路径 + 项目名
   if (!project.path) {
     const config = getConfig();
-    project.path = path.join(config.dataPath, project.name);
+    project.path = path.join(config.dataPath, String(project.name));
   }
+  // 项目数据文件路径
   const configPath = path.join(project.path, "project.json");
-
+  // 判断项目文件夹是否存在
   if (!fs.existsSync(project.path)) {
     fs.mkdirSync(project.path, { recursive: true });
   }
-
+  // 保存项目配置和数据
   fs.writeFileSync(configPath, JSON.stringify(project));
 
-  return success("", "success");
+  return success(project, "success");
 };
 
 const getProject = (projectPath) => {

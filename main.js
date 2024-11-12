@@ -40,9 +40,9 @@ function createWindow() {
   });
   // 初始最大化窗口
   // win.maximize()
-  console.log("process.env.NODE_ENV", process.env.NODE_ENV);
   if (process.env.NODE_ENV === "development") {
     win.loadURL("http://localhost:5173/");
+    console.log("process.env.NODE_ENV", process.env.NODE_ENV);
     // 打开开发者工具
     win.webContents.openDevTools({ mode: "detach" });
   } else {

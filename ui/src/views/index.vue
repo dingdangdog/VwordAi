@@ -2,19 +2,24 @@
 import { onMounted, ref, watch } from "vue";
 import local from "@/utils/local";
 import type {
+  EditVoiceStyle,
   Project,
   SerivceProvider,
   SsmlText,
   VoiceModel,
 } from "@/utils/model";
 import EditBlankIcon from "@/components/edit/BlankIcon.vue";
+import EditEmotionIcon from "@/components/edit/EmotionIcon.vue";
 import EditModelCard from "@/components/EditModelCard.vue";
 import {
   alertError,
   alertInfo,
   alertSuccess,
+  alertWarning,
   playAudio,
+  processVoiceNode,
   selectFloder,
+  stopPalyAudio,
   VoiceTestText,
 } from "@/utils/common";
 import MySelect from "@/components/MySelect.vue";
@@ -24,11 +29,17 @@ import {
   project,
   ModelCategoryItems,
 } from "@/utils/global.store";
+import BlankMenu from "@/components/BlankMenu.vue";
+import EmotionMenu from "@/components/EmotionMenu.vue";
+import VoiceMenu from "@/components/VoiceMenu.vue";
+import { playSSML } from "@/utils/api";
 
 // 新建项目
 const addProject = () => {
   project.value = {};
   project.value.createTime = Date.now();
+  // 初始化创建项目所在目录，并保存基本数据
+  saveProject();
   initEditor("");
   openProjectFlag.value = true;
 };
@@ -52,38 +63,71 @@ const openProject = () => {
 };
 
 // 保存项目
-const saveProject = () => {
+const saveProject = async () => {
   project.value.content = textEditor.value.innerHTML;
   if (project.value.path) {
     project.value.updateTime = Date.now();
   }
-  if (!project.value.name && !project.value.path && !project.value.content) {
-    alertError("项目没有任何内容，无需保存");
-    return;
-  }
+  // if (!project.value.name && !project.value.path && !project.value.content) {
+  //   alertError("项目没有任何内容，无需保存");
+  //   return;
+  // }
 
-  local("saveProject", project.value).then((res) => {
-    // console.log(res);
-    alertSuccess("保存成功");
+  const res = await local("saveProject", project.value);
+  // console.log(res);
+  if (res) {
+    project.value = res;
+    // alertSuccess("保存成功");
     saveProjectFlag.value = true;
-  });
+  } else {
+    alertError("保存失败");
+  }
 };
 
 // 关闭项目
-const closeProject = () => {
-  if (!saveProjectFlag.value && textEditor.value.innerHTML) {
-    alertError("请先保存项目");
+const closeProject = (canSave: boolean) => {
+  if (!canSave) {
     return;
   }
   if (openProjectFlag.value) {
     openProjectFlag.value = false;
   }
   project.value = {};
-  alertInfo("项目已关闭");
+  // alertInfo("项目已关闭");
+};
+// 保存并关闭项目
+const saveAndCloseProject = async () => {
+  await saveProject();
+  closeProject(saveProjectFlag.value);
 };
 
 const initEditor = (text: string) => {
   textEditor.value.innerHTML = text;
+  // 声音模型标签事件初始化
+  const voiceElements = document.getElementsByClassName("voice");
+  // console.log(voiceElements);
+  for (let e of voiceElements) {
+    let voice = e as HTMLElement;
+    addVoiceClickListener(voice);
+    addVoiceContentMenuListener(voice);
+  }
+  // 情感标签事件初始化
+  const emotionElements = document.getElementsByClassName("emotion");
+  // console.log(emotionElements);
+  for (let e of emotionElements) {
+    let emotion = e as HTMLElement;
+    addEmotionClickListener(emotion);
+    addEmotionContentMenuListener(emotion);
+  }
+  // 空白标签事件初始化
+  const breakElements = document.getElementsByClassName("break");
+  // console.log(breakElements);
+  for (let e of breakElements) {
+    let blank = e as HTMLElement;
+    addBreakClickListener(blank);
+    addBreakContentMenuListener(blank);
+  }
+
   textEditor.value.addEventListener("input", () => {
     if (textEditor.value.innerText.trim() === "") {
       // 内容为空时，将已保存标示设置为true
@@ -98,6 +142,8 @@ const initEditor = (text: string) => {
 
   if (textEditor.value.innerText.trim() === "") {
     textEditor.value.classList.add("empty");
+  } else {
+    textEditor.value.classList.remove("empty");
   }
 };
 
@@ -105,7 +151,18 @@ onMounted(() => {
   if (openProjectFlag.value) {
     initEditor(project.value.content || "");
   }
+
+  document.addEventListener("click", (event) => {
+    showBlankMenu.value = false;
+    showEmotionMenu.value = false;
+    showVoiceMenu.value = false;
+  });
 });
+
+const openProjectFolder = () => {
+  // @ts-ignore
+  window.electron.openFolder(project.value.path);
+};
 
 // 打开文件，读取文本
 const importText = () => {
@@ -118,7 +175,7 @@ const importText = () => {
         textEditor.value.classList.remove("empty");
         textEditor.value.innerHTML = res;
       } else {
-        alertError("文件内容为空");
+        // alertError("未选择文件/文件内容为空");
       }
     })
     .catch((err: any) => {
@@ -135,45 +192,23 @@ const selectServiceProvider = ref("");
 // 文本编辑器(DIV)
 const textEditor = ref();
 
-// 常量配置 默认空白间隔
-const DEFAULT_BREAK_TIME = "500ms";
-const addBlank = () => {
-  const selection = window.getSelection();
-  if (!selection?.rangeCount) return;
-
-  // 获取当前选区
-  const range = selection.getRangeAt(0);
-  range.deleteContents(); // 删除选中的内容
-
-  // 创建一个文本节点，并将其插入到选区位置
-  const blankNode = document.createElement("span");
-  blankNode.className = "bg-gray-600 rounded-sm blank px-1 text-sm mx-1";
-  blankNode.setAttribute("data-type", "blank");
-  blankNode.setAttribute("data-model", "500");
-  blankNode.textContent = "500ms";
-  blankNode.contentEditable = "false";
-  range.insertNode(blankNode);
-
-  // 移动光标到插入的文本节点之后
-  range.setStartAfter(blankNode);
-  range.collapse(true);
-  selection.removeAllRanges();
-  selection.addRange(range);
-};
-
 // 为选中文字添加指定语音模型
-const addTextSsml = (model: VoiceModel) => {
+const addTextVoice = (model: VoiceModel) => {
   const selection = window.getSelection();
   if (!selection?.rangeCount) return;
 
   // 获取当前选区
   const range = selection.getRangeAt(0);
 
-  const span = document.createElement("span");
-  span.className = "bg-red-800 rounded-sm blank px-1 mx-1";
-  span.setAttribute("data-type", "text");
-  span.setAttribute("data-model", model.code);
-  range.surroundContents(span);
+  const voice = document.createElement("span");
+  voice.className =
+    "voice bg-red-500/50 rounded-sm px-1 mx-1 pointer-events-auto";
+  voice.setAttribute("data-type", "voice");
+  voice.setAttribute("data-provider", model.provider);
+  voice.setAttribute("data-model", model.code);
+  range.surroundContents(voice);
+  addVoiceClickListener(voice);
+  addVoiceContentMenuListener(voice);
 };
 
 const tts = () => {
@@ -244,26 +279,33 @@ const doTTS = (ssml: string) => {
   }_${Date.now()}.wav`;
   local("dotts", ssml, fileName).then((res) => {
     alertSuccess("生成成功");
-    // @ts-ignore
-    window.electron.openFolder(project.value.path);
-    // window.electron.openFolder(res);
+    // @ts-ignore 直接打开生成后的文件
+    window.electron.openFolder(res);
+    // window.electron.openFolder(project.value.path);
     // 自动打开文件夹
   });
 };
 
 // 是否添加了旁白标识
 const layoutFlag = ref(false);
+
 // 添加旁白
 const addLayoutVoice = () => {
   const text = textEditor.value.innerHTML;
   const span = document.createElement("span");
-  span.className = "brank bg-gray-700 rounded-sm blank px-1 block";
-  span.setAttribute("data-type", "text");
+  span.className =
+    "voice bg-gray-600/50 rounded-sm p-1 block pointer-events-auto";
+  span.setAttribute("data-type", "voice");
+  span.setAttribute("data-provider", "azure");
   span.setAttribute("data-model", "zh-CN-YunyangNeural");
   span.innerHTML = text;
   textEditor.value.innerHTML = span.outerHTML;
   layoutFlag.value = true;
+  // console.log(span);
+  addVoiceClickListener(span);
+  addVoiceContentMenuListener(span);
 };
+
 // 将 HTML 转换成 SSML
 const convertHTMLToSSML = () => {
   const htmlContent = textEditor.value.innerHTML;
@@ -271,48 +313,294 @@ const convertHTMLToSSML = () => {
   const doc = parser.parseFromString(htmlContent, "text/html");
 
   const ssmlContent = Array.from(doc.body.childNodes)
-    .map((node) => processNode(node, null))
+    .map((node) => processVoiceNode(node, null))
     .join("");
 
   console.log(ssmlContent);
   doTTS(ssmlContent);
 };
 
-// 递归处理节点并转换成 SSML，避免 voice 嵌套
-const processNode = (node: ChildNode, currentVoice: string | null): string => {
-  if (node.nodeType === Node.TEXT_NODE) {
-    return node.textContent || "";
+const menuPosition = ref({ x: 0, y: 0 });
+const showBlankMenu = ref(false);
+const editBlankFlag = ref(false);
+const blankTime = ref(0);
+const selectedBlank = ref<HTMLElement | null>(null); // 保存当前选中的 span
+
+// 常量配置 默认空白间隔
+const addBreak = () => {
+  const selection = window.getSelection();
+  if (!selection?.rangeCount) return;
+
+  // 获取当前选区
+  const range = selection.getRangeAt(0);
+  range.deleteContents(); // 删除选中的内容
+
+  // 创建一个文本节点，并将其插入到选区位置
+  const blankNode = document.createElement("span");
+  blankNode.className =
+    "break bg-gray-600 hover:bg-gray-500 rounded-sm px-1 text-sm mx-1 cursor-pointer pointer-events-auto";
+  blankNode.setAttribute("data-type", "break");
+  blankNode.setAttribute("data-model", "500");
+  blankNode.textContent = "500ms";
+  blankNode.contentEditable = "false";
+  // 左键功能
+  addBreakClickListener(blankNode);
+  // 右键菜单
+  addBreakContentMenuListener(blankNode);
+
+  range.insertNode(blankNode);
+
+  // 移动光标到插入的文本节点之后
+  range.setStartAfter(blankNode);
+  range.collapse(true);
+  selection.removeAllRanges();
+  selection.addRange(range);
+
+  // 直接触发点击事件
+  blankNode.click();
+};
+
+// 编辑功能
+const editBreak = () => {
+  if (selectedBlank.value) {
+    showBlankMenu.value = false; // 隐藏菜单
+    editBlankFlag.value = true;
+    blankTime.value = parseInt(
+      selectedBlank.value.getAttribute("data-model") || ""
+    );
   }
+};
 
-  if (node.nodeType === Node.ELEMENT_NODE && node instanceof HTMLElement) {
-    const dataType = node.getAttribute("data-type");
-    const dataModel = node.getAttribute("data-model");
-    const innerSSML = Array.from(node.childNodes)
-      .map((childNode) =>
-        processNode(childNode, dataType === "text" ? dataModel : currentVoice)
-      )
-      .join("");
+const saveBreak = () => {
+  if (selectedBlank.value) {
+    selectedBlank.value.setAttribute("data-model", blankTime.value.toString());
+    selectedBlank.value.innerText = `${blankTime.value}ms`;
+    editBlankFlag.value = false;
+    // selectedBlank.value = null;
+  }
+};
 
-    switch (dataType) {
-      case "text":
-        if (dataModel && !currentVoice) {
-          // 开始一个新的 voice 标签
-          return `<voice name="${dataModel}">${innerSSML}</voice>`;
-        } else if (dataModel && dataModel !== currentVoice && currentVoice) {
-          // 开始一个新的 voice 标签
-          return `</voice><voice name="${dataModel}">${innerSSML}</voice><voice name="${currentVoice}">`;
-        } else {
-          // 如果当前 voice 一致或没有指定，则直接返回内容
-          return innerSSML;
-        }
-      case "blank":
-        return `<break time="${dataModel || DEFAULT_BREAK_TIME}"/>`;
-      default:
-        return innerSSML;
+// 删除功能
+const deleteBreak = () => {
+  if (selectedBlank.value) {
+    selectedBlank.value.remove(); // 删除当前选中的 span
+    showBlankMenu.value = false; // 隐藏菜单
+    editBlankFlag.value = false;
+  }
+};
+
+// 添加右键菜单事件监听
+const addBreakContentMenuListener = (blankNode: HTMLSpanElement) => {
+  blankNode.addEventListener("contextmenu", (e) => {
+    // console.log("右键菜单");
+    e.preventDefault();
+    e.stopPropagation(); // 阻止事件冒泡
+    selectedBlank.value = blankNode;
+    showBlankMenu.value = true;
+    menuPosition.value = { x: e.clientX - 160, y: e.clientY - 40 };
+  });
+};
+
+// 添加右键菜单事件监听
+const addBreakClickListener = (blankNode: HTMLSpanElement) => {
+  blankNode.addEventListener("click", (e) => {
+    // console.log("左键菜单");
+    e.preventDefault();
+    e.stopPropagation(); // 阻止事件冒泡
+    selectedBlank.value = blankNode;
+    editBreak();
+  });
+};
+
+const showEmotionMenu = ref(false);
+const editEmotionFlag = ref(false);
+const emotionEdit = ref<EditVoiceStyle>({});
+const selectedEmotion = ref<HTMLElement | null>(null); // 保存当前选中的 span
+const selectedRange = ref();
+
+// 为选中文字添加指定语音模型
+const addEmotion = () => {
+  const selection = window.getSelection();
+  if (!selection?.rangeCount) return;
+  // 获取当前选区
+  selectedRange.value = selection.getRangeAt(0);
+  // console.log(selectedRange.value);
+  if (selectedRange.value.startOffset === selectedRange.value.endOffset) {
+    alertWarning("未选中任何文字，无法添加情感!");
+    return;
+  }
+  if (!selectedVoice.value) {
+    alertWarning("当前区域未选择语音模型，无法添加情感!");
+    return;
+  }
+  const voiceProvider = selectedVoice.value.getAttribute("data-provider");
+  if (!voiceProvider) {
+    alertWarning("未知语音模型，无法添加情感!");
+    return;
+  }
+  emotionEdit.value.provider = voiceProvider;
+  // 创建标签
+  const emotion = document.createElement("b");
+  emotion.className =
+    "emotion rounded-sm blank px-1 mx-1 font-bold cursor-pointer pointer-events-auto";
+  emotion.setAttribute("data-type", "emotion");
+  // 模型提供商
+  if (emotionEdit.value.provider) {
+    emotion.setAttribute("data-provider", emotionEdit.value.provider);
+  }
+  // 情感
+  if (emotionEdit.value.style) {
+    emotion.setAttribute("data-style", emotionEdit.value.style);
+  }
+  // 情感级别
+  if (emotionEdit.value.styledegree) {
+    emotion.setAttribute("data-styledegree", emotionEdit.value.styledegree);
+  }
+  // 模仿
+  if (emotionEdit.value.role) {
+    emotion.setAttribute("data-role", emotionEdit.value.role);
+  }
+  selectedRange.value.surroundContents(emotion);
+
+  // 添加事件监听
+  addEmotionClickListener(emotion);
+  addEmotionContentMenuListener(emotion);
+  // 直接触发点击事件
+  emotion.click();
+};
+
+// 编辑功能
+const editEmotion = () => {
+  // console.log(selectedEmotion.value);
+  if (selectedEmotion.value) {
+    showEmotionMenu.value = false; // 隐藏菜单
+    emotionEdit.value = {
+      provider: selectedEmotion.value.getAttribute("data-provider") || "",
+      style: selectedEmotion.value.getAttribute("data-style") || "",
+      styledegree: selectedEmotion.value.getAttribute("data-styledegree") || "",
+      role: selectedEmotion.value.getAttribute("data-role") || "",
+    };
+  }
+  editEmotionFlag.value = true;
+};
+const saveEmotion = () => {
+  if (!emotionEdit.value.role && !emotionEdit.value.style) {
+    alertWarning("未选择情感或角色，无需设置!");
+    return;
+  }
+  if (selectedEmotion.value) {
+    // 模型提供商
+    if (emotionEdit.value.provider) {
+      selectedEmotion.value.setAttribute(
+        "data-provider",
+        emotionEdit.value.provider
+      );
+    }
+    // 情感
+    if (emotionEdit.value.style) {
+      selectedEmotion.value.setAttribute("data-style", emotionEdit.value.style);
+    }
+    // 情感级别
+    if (emotionEdit.value.styledegree) {
+      selectedEmotion.value.setAttribute(
+        "data-styledegree",
+        emotionEdit.value.styledegree
+      );
+    }
+    // 模仿
+    if (emotionEdit.value.role) {
+      selectedEmotion.value.setAttribute("data-role", emotionEdit.value.role);
     }
   }
 
-  return "";
+  showEmotionMenu.value = false; // 隐藏菜单
+  editEmotionFlag.value = false;
+};
+
+// 删除功能
+const deleteEmotion = () => {
+  if (selectedEmotion.value) {
+    selectedEmotion.value.remove(); // 删除当前选中的 span
+    showEmotionMenu.value = false; // 隐藏菜单
+    editEmotionFlag.value = false;
+  }
+};
+// 取消功能
+const cancelEmotion = () => {
+  showEmotionMenu.value = false; // 隐藏菜单
+  editEmotionFlag.value = false;
+  emotionEdit.value = {};
+};
+const playEmotion = () => {
+  const voice = selectedEmotion.value?.parentNode as Element;
+  const model = voice.getAttribute("data-model");
+  // const voiceProvider = voice?.getAttribute("data-provider");
+  if (selectedEmotion.value) {
+    let ssml = processVoiceNode(selectedEmotion.value, null);
+    ssml = `<voice name="${model}">${ssml}</voice>`;
+    // console.log(ssml);
+    playSSML(ssml);
+  }
+};
+
+// 添加右键菜单事件监听
+const addEmotionContentMenuListener = (emotionNode: HTMLElement) => {
+  emotionNode.addEventListener("contextmenu", (e) => {
+    e.preventDefault();
+    e.stopPropagation(); // 阻止事件冒泡
+    selectedEmotion.value = emotionNode;
+    showEmotionMenu.value = true;
+    menuPosition.value = { x: e.clientX - 160, y: e.clientY - 40 };
+  });
+};
+
+// 添加左键菜单事件监听
+const addEmotionClickListener = (emotionNode: HTMLElement) => {
+  emotionNode.addEventListener("click", (e) => {
+    e.preventDefault();
+    e.stopPropagation(); // 阻止事件冒泡
+    selectedEmotion.value = emotionNode;
+    editEmotion();
+  });
+};
+
+const showVoiceMenu = ref(false);
+const selectedVoice = ref<HTMLElement | null>(null); // 保存当前选中的 span
+const playVoice = () => {
+  if (selectedVoice.value) {
+    const ssml = processVoiceNode(selectedVoice.value, null);
+    console.log(ssml);
+    playSSML(ssml);
+  }
+};
+const deleteVoice = () => {
+  if (selectedVoice.value) {
+    local("playSSML", processVoiceNode(selectedVoice.value, null))
+      .then((res) => {
+        playAudio(res);
+      })
+      .finally(() => {});
+  }
+};
+// 添加右键菜单事件监听
+const addVoiceContentMenuListener = (voiceNode: HTMLElement) => {
+  voiceNode.addEventListener("contextmenu", (e) => {
+    e.preventDefault();
+    e.stopPropagation(); // 阻止事件冒泡
+    console.log(voiceNode);
+    selectedVoice.value = voiceNode;
+    showVoiceMenu.value = true;
+    menuPosition.value = { x: e.clientX - 160, y: e.clientY - 40 };
+  });
+};
+
+// 添加左键菜单事件监听
+const addVoiceClickListener = (voiceNode: HTMLElement) => {
+  voiceNode.addEventListener("click", (e) => {
+    e.preventDefault();
+    e.stopPropagation(); // 阻止事件冒泡
+    selectedVoice.value = voiceNode;
+  });
 };
 </script>
 
@@ -354,7 +642,7 @@ const processNode = (node: ChildNode, currentVoice: string | null): string => {
           :model="model"
           :provider="selectServiceProvider"
           :play="playTest"
-          :set="addTextSsml"
+          :set="addTextVoice"
         ></EditModelCard>
       </div>
     </div>
@@ -371,9 +659,21 @@ const processNode = (node: ChildNode, currentVoice: string | null): string => {
         </button>
         <button
           class="ml-2 px-2 py-1 rounded-md bg-gray-700 hover:bg-gray-600"
+          @click="openProjectFolder()"
+        >
+          打开文件夹
+        </button>
+        <button
+          class="ml-2 px-2 py-1 rounded-md bg-gray-700 hover:bg-gray-600"
           @click="addLayoutVoice()"
         >
           添加旁白
+        </button>
+        <button
+          class="ml-2 px-2 py-1 rounded-md bg-gray-700 hover:bg-gray-600"
+          @click="stopPalyAudio()"
+        >
+          停止试听
         </button>
       </div>
       <div
@@ -384,9 +684,16 @@ const processNode = (node: ChildNode, currentVoice: string | null): string => {
           <button
             class="p-1 rounded-sm cursor-pointer hover:bg-gray-700"
             title="添加空白"
-            @click="addBlank()"
+            @click="addBreak()"
           >
             <EditBlankIcon class="w-6 h-6" color="white" />
+          </button>
+          <button
+            class="p-1 rounded-sm cursor-pointer hover:bg-gray-700"
+            title="添加情感"
+            @click="addEmotion()"
+          >
+            <EditEmotionIcon class="w-6 h-6" color="white" />
           </button>
         </div>
         <div
@@ -420,19 +727,133 @@ const processNode = (node: ChildNode, currentVoice: string | null): string => {
           云端合成
         </button> -->
         <button
-          class="px-2 py-1 ml-2 rounded-md bg-green-700 hover:bg-green-600"
+          class="px-2 py-1 ml-2 rounded-md bg-yellow-700 hover:bg-yellow-600"
           @click="saveProject()"
         >
-          保存项目
+          保存
         </button>
         <button
-          class="px-2 py-1 ml-2 rounded-md bg-red-500 hover:bg-red-400"
-          @click="closeProject()"
+          class="px-2 py-1 ml-2 rounded-md bg-red-500/80 hover:bg-red-500"
+          title="关闭项目但不会自动保存"
+          @click="closeProject(true)"
         >
-          关闭项目
+          关闭
+        </button>
+        <button
+          class="px-2 py-1 ml-2 rounded-md bg-green-700 hover:bg-green-600"
+          @click="saveAndCloseProject()"
+        >
+          保存并关闭
         </button>
       </div>
     </div>
+    <!-- <VoiceMenu
+      v-if="showImageMenu"
+      :showMenu="showImageMenu"
+      :image="selectImage"
+      :x="menuPosition.x"
+      :y="menuPosition.y"
+    /> -->
+    <BlankMenu
+      v-if="showBlankMenu"
+      :x="menuPosition.x"
+      :y="menuPosition.y"
+      @edit="editBreak"
+      @delete="deleteBreak"
+    />
+    <div
+      v-show="editBlankFlag"
+      class="absolute top-0 left-0 w-full h-full flex items-center justify-center bg-gray-400/50"
+      style="z-index: 999"
+    >
+      <div class="p-2 bg-gray-900 rounded-md overflow-hidden">
+        <div class="flex items-center">
+          <label for="blankTime">插入空白间隔 (ms/毫秒)</label>
+          <input
+            name="blankTime"
+            class="flex-1 w-full h-8 bg-transparent border border-gray-400 p-2 my-2 rounded-md focus:outline-none"
+            v-model="blankTime"
+          />
+        </div>
+        <div class="flex justify-center py-2">
+          <div
+            class="px-2 py-1 bg-red-500 hover:bg-red-400 cursor-pointer rounded-sm"
+            @click="deleteBreak"
+          >
+            删除
+          </div>
+          <div
+            class="ml-2 px-2 py-1 bg-blue-500 hover:bg-blue-400 cursor-pointer rounded-sm"
+            @click="saveBreak"
+          >
+            确定
+          </div>
+        </div>
+      </div>
+    </div>
+    <EmotionMenu
+      v-if="showEmotionMenu"
+      :x="menuPosition.x"
+      :y="menuPosition.y"
+      @play="playEmotion"
+      @edit="editEmotion"
+      @delete="deleteEmotion"
+    />
+    <div
+      v-show="editEmotionFlag"
+      class="absolute top-0 left-0 w-full h-full flex flex-col items-center justify-center bg-gray-400/50"
+      style="z-index: 999"
+    >
+      <div class="p-4 bg-gray-900 rounded-md overflow-hidden">
+        <h3 class="text-lg text-center pb-4">添加情感</h3>
+        <div class="flex items-center">
+          <label for="style" class="min-w-20">情感</label>
+          <input
+            name="style"
+            class="w-full h-8 bg-transparent border border-gray-400 p-2 my-2 rounded-md focus:outline-none"
+            v-model="emotionEdit.style"
+          />
+        </div>
+        <div class="flex items-center">
+          <label for="styledegree" class="min-w-20">情感级别</label>
+          <input
+            name="styledegree"
+            placeholder="0.01-2, 默认为1"
+            class="w-full h-8 bg-transparent border border-gray-400 p-2 my-2 rounded-md focus:outline-none"
+            v-model="emotionEdit.styledegree"
+          />
+        </div>
+        <div class="flex items-center">
+          <label for="role" class="min-w-20">模仿</label>
+          <input
+            name="role"
+            class="w-full h-8 bg-transparent border border-gray-400 p-2 my-2 rounded-md focus:outline-none"
+            v-model="emotionEdit.role"
+          />
+        </div>
+        <div class="flex justify-center py-2">
+          <div
+            class="px-2 py-1 bg-red-500 hover:bg-red-400 cursor-pointer rounded-sm"
+            @click="cancelEmotion"
+          >
+            取消
+          </div>
+          <div
+            class="ml-2 px-2 py-1 bg-blue-500 hover:bg-blue-400 cursor-pointer rounded-sm"
+            @click="saveEmotion"
+          >
+            确定
+          </div>
+        </div>
+      </div>
+    </div>
+    <VoiceMenu
+      v-if="showVoiceMenu"
+      :x="menuPosition.x"
+      :y="menuPosition.y"
+      @play="playVoice"
+      @delete="deleteVoice"
+    />
   </div>
 </template>
 

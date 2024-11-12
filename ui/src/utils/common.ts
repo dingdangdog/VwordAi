@@ -7,7 +7,7 @@ export const selectFloder = async () => {
 };
 
 export const VoiceTestText = "你好，我是{}，很高兴认识你！";
-
+let audio: HTMLAudioElement | null = null; // 用于持有 Audio 对象
 export const playAudio = (res: any) => {
   // console.log(res);
   // 已知res是音频文件流，如：const audioData = Buffer.from(result.audioData);，如何播放？
@@ -18,7 +18,7 @@ export const playAudio = (res: any) => {
   const audioUrl = URL.createObjectURL(audioBlob);
 
   // 创建 <audio> 元素并播放音频
-  const audio = new Audio(audioUrl);
+  audio = new Audio(audioUrl);
   audio
     .play()
     .then(() => {
@@ -28,10 +28,20 @@ export const playAudio = (res: any) => {
       console.error("Error playing audio:", error);
     });
 
-  // 可选：释放内存
+  // 可选：在音频结束后释放内存
   audio.onended = () => {
     URL.revokeObjectURL(audioUrl);
+    audio = null; // 重置 audio 对象
   };
+};
+
+export const stopPalyAudio = () => {
+  if (audio) {
+    audio.pause();
+    audio.currentTime = 0; // 重置到音频开始位置
+    audio = null; // 重置 audio 对象
+    console.log("Audio has been stopped");
+  }
 };
 
 export const addMessage = (message: MessageModel) => {
@@ -65,14 +75,68 @@ export const alertWarning = (info: string) => {
 export const getMessageClass = (message: MessageModel) => {
   switch (message.type) {
     case "success":
-      return "bg-green-500/70";
+      return "bg-green-600/90";
     case "error":
-      return "bg-red-400/80";
+      return "bg-red-400/90";
     case "info":
-      return "bg-gray-400/60";
+      return "bg-gray-400/90";
     case "warning":
-      return "bg-yellow-700/60";
+      return "bg-yellow-700/90";
     default:
-      return "bg-gray-800/80";
+      return "bg-gray-800/90";
   }
+};
+
+const DEFAULT_BREAK_TIME = "500ms";
+// 递归处理节点并转换成 SSML，避免 voice 嵌套
+export const processVoiceNode = (
+  node: ChildNode,
+  currentVoice: string | null
+): string => {
+  if (node.nodeType === Node.TEXT_NODE) {
+    return node.textContent || "";
+  }
+
+  if (node.nodeType === Node.ELEMENT_NODE && node instanceof HTMLElement) {
+    const dataType = node.getAttribute("data-type");
+    const dataModel = node.getAttribute("data-model");
+    const innerSSML = Array.from(node.childNodes)
+      .map((childNode) =>
+        processVoiceNode(
+          childNode,
+          dataType === "voice" ? dataModel : currentVoice
+        )
+      )
+      .join("");
+
+    switch (dataType) {
+      case "voice":
+        if (dataModel && !currentVoice) {
+          // 开始一个新的 voice 标签
+          return `<voice name="${dataModel}">${innerSSML}</voice>`;
+        } else if (dataModel && dataModel !== currentVoice && currentVoice) {
+          // 开始一个新的 voice 标签
+          return `</voice><voice name="${dataModel}">${innerSSML}</voice><voice name="${currentVoice}">`;
+        } else {
+          // 如果当前 voice 一致或没有指定，则直接返回内容
+          return innerSSML;
+        }
+      case "break":
+        return `<break time="${dataModel || DEFAULT_BREAK_TIME}"/>`;
+      case "emotion":
+        const dataStyle = node.getAttribute("data-style");
+        let styleStr = dataStyle ? `style="${dataStyle}"` : "";
+        const dataStyledegree = node.getAttribute("data-styledegree");
+        let styledegreeStr = dataStyledegree
+          ? `styledegree="${dataStyledegree}"`
+          : "";
+        const dataRole = node.getAttribute("data-role");
+        let roleStr = dataRole ? `role="${dataRole}"` : "";
+        return `<mstts:express-as ${styleStr} ${styledegreeStr} ${roleStr}>${innerSSML}</mstts:express-as>`;
+      default:
+        return innerSSML;
+    }
+  }
+
+  return "";
 };

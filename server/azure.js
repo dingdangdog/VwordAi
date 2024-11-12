@@ -94,8 +94,6 @@ const play = (model, text) => {
       text,
       (result) => {
         if (result.reason === sdk.ResultReason.SynthesizingAudioCompleted) {
-          console.log("Synthesis finished.");
-
           // 将 ArrayBuffer 转换为 Buffer
           const audioData = Buffer.from(result.audioData);
 
@@ -144,8 +142,6 @@ const azurePlaySSML = (ssml) => {
     `,
       (result) => {
         if (result.reason === sdk.ResultReason.SynthesizingAudioCompleted) {
-          console.log("Synthesis finished.");
-
           // 将 ArrayBuffer 转换为 Buffer
           const audioData = Buffer.from(result.audioData);
 
