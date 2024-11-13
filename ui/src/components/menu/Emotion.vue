@@ -7,6 +7,15 @@
     <div class="hover:bg-gray-800 p-2 text-center" @click="handlePlay">
       试听
     </div>
+    <div class="hover:bg-gray-800 p-2 text-center" @click="handleColloct">
+      收藏
+    </div>
+    <div class="hover:bg-gray-800 p-2 text-center" @click="handleEdit">
+      编辑
+    </div>
+    <div class="hover:bg-gray-800 p-2 text-center" @click="addVoice">
+      添加声音
+    </div>
     <div class="hover:bg-gray-800 p-2 text-center" @click="handleDelete">
       清除设置
     </div>
@@ -17,14 +26,22 @@
 import { defineProps, defineEmits } from "vue";
 
 const { x, y } = defineProps(["x", "y"]);
-const emit = defineEmits(["play", "delete"]);
+const emit = defineEmits(["edit", "collect", "delete", "play", "addVoice"]);
 
+const handleColloct = () => {
+  emit("collect");
+};
+const handleEdit = () => {
+  emit("edit");
+};
+const handleDelete = () => {
+  emit("delete");
+};
 const handlePlay = () => {
   emit("play");
 };
-
-const handleDelete = () => {
-  emit("delete");
+const addVoice = () => {
+  emit("addVoice");
 };
 </script>
 

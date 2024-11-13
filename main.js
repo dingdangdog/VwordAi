@@ -42,13 +42,16 @@ function createWindow() {
   // win.maximize()
   if (process.env.NODE_ENV === "development") {
     win.loadURL("http://localhost:5173/");
-    console.log("process.env.NODE_ENV", process.env.NODE_ENV);
-    // 打开开发者工具
-    win.webContents.openDevTools({ mode: "detach" });
   } else {
     win.loadFile(path.join(__dirname, "ui/dist/index.html"));
   }
-
+  win.webContents.on("did-finish-load", () => {
+    if (process.env.NODE_ENV === "development") {
+      console.log("process.env.NODE_ENV", process.env.NODE_ENV);
+      // 打开开发者工具
+      win.webContents.openDevTools({ mode: "detach" });
+    }
+  });
   // 加载应用程序
 
   // 关闭窗口时

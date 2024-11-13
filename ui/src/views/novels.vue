@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { ref } from "vue";
-import WebsiteCard from "@/components/WebsiteCard.vue";
 import local from "@/utils/local";
 
 const webList = ref([]);
@@ -38,11 +37,6 @@ const showSelection = () => {
       class="h-full w-64 overflow-y-auto overflow-x-hidden p-2 bg-gray-800 rounded-md"
     >
       <div class="links">
-        <WebsiteCard
-          v-for="(website, index) in webList"
-          :key="index"
-          :website="website"
-        ></WebsiteCard>
       </div>
     </div>
     <div class="h-full w-full ml-2 flex flex-col">

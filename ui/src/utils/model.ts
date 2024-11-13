@@ -65,16 +65,16 @@ export interface VoiceStyle {
 }
 
 export interface EmotionStyle {
-  name: string;
-  code: string;
-  desc: string;
+  name?: string;
+  code?: string;
+  desc?: string;
 }
 
-export interface EditVoiceStyle {
+export interface EditEmotionModel {
   provider?: string;
-  style?: string;
+  style?: EmotionStyle;
   styledegree?: string;
-  role?: string;
+  role?: EmotionStyle;
 }
 
 export interface SsmlText {

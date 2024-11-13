@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from "vue";
+import { onMounted, ref } from "vue";
 
 const { items, select, selected } = defineProps([
   "items",
@@ -8,7 +8,10 @@ const { items, select, selected } = defineProps([
 ]);
 
 const showOptions = ref(false); // 用于控制选项显示状态
-const selectedItem = ref(selected);
+const selectedItem = ref();
+if (selected) {
+  selectedItem.value = items.find((item: any) => item.code === selected.code);
+}
 console.log(selectedItem.value);
 
 const changeSelected = (item: any) => {
@@ -21,14 +24,21 @@ const changeSelected = (item: any) => {
 const taggleShowOptions = () => {
   showOptions.value = !showOptions.value;
 };
+
+onMounted(() => {
+  document.addEventListener("click", () => {
+    showOptions.value = false;
+  });
+});
 </script>
 
 <template>
-  <div class="select relative cursor-pointer" @click="taggleShowOptions()">
+  <div class="select relative cursor-pointer">
     <div
       class="selected flex justify-between items-center px-2 py-1 border rounded-md border-gray-400"
       :data="selectedItem ? selectedItem.name : '请选择'"
       style="z-index: 100"
+      @click.stop="taggleShowOptions()"
     >
       <svg
         xmlns="http://www.w3.org/2000/svg"

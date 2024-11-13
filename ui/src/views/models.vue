@@ -2,8 +2,8 @@
 import { ref } from "vue";
 import local from "@/utils/local";
 import type { VoiceModel } from "@/utils/model";
-import CollectModelCard from "@/components/CollectModelCard.vue";
-import StoreModelCard from "@/components/StoreModelCard.vue";
+import CollectModelCard from "@/components/card/CollectModelCard.vue";
+import StoreModelCard from "@/components/card/StoreModelCard.vue";
 import { ModelCategoryItems } from "@/utils/global.store";
 
 const modelCategory = ref("");
