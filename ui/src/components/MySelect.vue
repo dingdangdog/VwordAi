@@ -13,9 +13,9 @@ console.log(selectedItem.value);
 
 const changeSelected = (item: any) => {
   // console.log(item);
+  showOptions.value = false;
   selectedItem.value = item;
   select(item);
-  showOptions.value = false;
 };
 
 const taggleShowOptions = () => {
@@ -54,7 +54,7 @@ const taggleShowOptions = () => {
           ? 'opacity: 1; top: 32px; max-height: 160px;'
           : 'opacity: 0; top: 0px; max-height: 30px;'
       "
-      v-if="showOptions"
+      v-show="showOptions"
       style="z-index: 101"
     >
       <div
@@ -62,7 +62,7 @@ const taggleShowOptions = () => {
         :title="item.desc"
         style="z-index: 101"
         v-for="item in items"
-        @click="changeSelected(item)"
+        @click.stop="changeSelected(item)"
       >
         <span>{{ item.name }}</span>
       </div>
