@@ -59,9 +59,9 @@ export interface VoiceModel {
 }
 
 export interface VoiceStyle {
-  style: EmotionStyle[]; // 情感
-  styledegree: string;
-  role: EmotionStyle[]; // 模仿声音，如：小男孩/小女孩/老人
+  style?: EmotionStyle[]; // 情感
+  styledegree?: string;
+  role?: EmotionStyle[]; // 模仿声音，如：小男孩/小女孩/老人
 }
 
 export interface EmotionStyle {

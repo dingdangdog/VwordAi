@@ -6,7 +6,7 @@ const {
   changeDataDir,
   saveConfig,
 } = require("./server/config.js");
-const { getModels, saveModel } = require("./server/model.js");
+const { getModels, saveModel, getEmotions } = require("./server/model.js");
 const { speech } = require("./server/azure.js");
 const { dotts, saveProject, getProject } = require("./server/tts.js");
 
@@ -22,6 +22,7 @@ module.exports = {
 
   getModels,
   saveModel,
+  getEmotions,
 
   speech,
   dotts,

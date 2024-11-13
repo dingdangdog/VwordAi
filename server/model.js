@@ -5,6 +5,7 @@ const { readJsonFile, success } = require("./util");
 const { getConfigDir } = require("./config");
 
 const MODEL_FILE = "models.json";
+const EMOTION_FILE = "emotions.json";
 
 const getModels = (provider) => {
   const configDir = getConfigDir();
@@ -52,7 +53,15 @@ const saveModel = (model) => {
   return success(model, "success");
 };
 
+const getEmotions = (providerCode) => {
+  const configDir = getConfigDir();
+  const emotionFilePath = path.join(configDir, EMOTION_FILE);
+  let emotions = readJsonFile(emotionFilePath);
+  // console.log(emotions);
+  return success(emotions[providerCode], "success");
+};
 module.exports = {
   getModels,
   saveModel,
+  getEmotions,
 };

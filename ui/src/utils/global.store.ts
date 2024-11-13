@@ -19,10 +19,10 @@ export const messages = ref<MessageModel[]>([]);
 export const ModelCategoryItems = ref<BaseSelector[]>([
   { name: "我的收藏", code: "collect" },
   { name: "Azure", code: "azure" },
-  { name: "阿里云", code: "aliyun" },
+  // { name: "阿里云", code: "aliyun" },
 ]);
 
 export const ServiceProviderItems = ref<SerivceProvider[]>([
   { name: "Azure", code: "azure" },
-  { name: "阿里云", code: "aliyun" },
+  // { name: "阿里云", code: "aliyun" },
 ]);

@@ -3,10 +3,12 @@ import { onMounted, ref, watch } from "vue";
 import local from "@/utils/local";
 import type {
   EditVoiceStyle,
+  EmotionStyle,
   Project,
   SerivceProvider,
   SsmlText,
   VoiceModel,
+  VoiceStyle,
 } from "@/utils/model";
 import EditBlankIcon from "@/components/edit/BlankIcon.vue";
 import EditEmotionIcon from "@/components/edit/EmotionIcon.vue";
@@ -33,6 +35,152 @@ import BlankMenu from "@/components/BlankMenu.vue";
 import EmotionMenu from "@/components/EmotionMenu.vue";
 import VoiceMenu from "@/components/VoiceMenu.vue";
 import { playSSML } from "@/utils/api";
+
+/**
+ * html逻辑：所有特殊元素都使用 span 标签，特殊属性：
+ *    data-type 属性表示元素类型：global - 全局旁白；voice - 语音模型；emotion - 情感模型；blank - 空白模板
+ *    data-provider 属性标示模型提供商：azure/aliyun等，用于后续处理判断选用的服务商
+ *    data-model 属性标示模型的名称/空白时长ms，在 data-type=global/voice/blank 时有作用
+ *    data-style 属性标示情感名称，在 data-type=emotion 时有作用
+ *    data-styledegree 属性标示情感程度，在 data-type=emotion 时有作用
+ *    data-role 属性标示情感角色，在 data-type=emotion 时有作用
+ * 
+ * span 标签的 class 可能有一些特殊的值，如：global/voice/blank/emotion，回显时通过 class 查询元素，然后添加对应不同的点击事件
+ *
+ * class=voice 元素拥有右键菜单，功能有：试听、清除设置
+ * class=emotion 元素拥有右键菜单，功能有：试听、编辑、清除设置，左键点击直接开始编辑
+ * class=blank 元素拥有右键菜单，功能有：编辑、删除，左键点击直接开始编辑
+ */
+
+// @ts-ignore
+const systemConfig = ref<SystemConfig>({});
+local("getConfigApi", "").then((res) => {
+  // console.log(res);
+  systemConfig.value = res;
+});
+
+// 选择的服务提供商:azure/aliyun等
+const selectServiceProvider = ref<SerivceProvider>();
+const models = ref<VoiceModel[]>();
+const showModels = ref<VoiceModel[]>();
+const getModels = (provider: SerivceProvider) => {
+  selectServiceProvider.value = provider;
+  local("getModels", provider.code).then((res) => {
+    models.value = res;
+    showModels.value = res;
+  });
+};
+// 过滤模型的参数
+const filterModelParam = ref("");
+const filterModel = () => {
+  if (!filterModelParam.value) {
+    showModels.value = models.value;
+    return;
+  }
+  const filterParam = filterModelParam.value.toLowerCase(); // 转换为小写
+  showModels.value = models.value?.filter(
+    (model) =>
+      model.name.toLowerCase().includes(filterParam) ||
+      model.code.toLowerCase().includes(filterParam) ||
+      model.gender.toLowerCase().includes(filterParam) ||
+      model.lang.toLowerCase().includes(filterParam)
+  );
+};
+
+// 选择的服务提供商:azure/aliyun等支持的情感模型
+const emotions = ref<VoiceStyle>({});
+const getEmotions = (provider: string) => {
+  local("getEmotions", provider).then((res) => {
+    emotions.value = res;
+
+    if (emotionEdit.value.style) {
+      console.log(emotionEdit.value.style);
+      selectedEmotionStyle.value = emotions.value.style?.find(
+        (item) => item.code === emotionEdit.value.style
+      );
+      console.log(selectedEmotionStyle.value);
+    }
+    if (emotionEdit.value.role) {
+      console.log(emotionEdit.value.style);
+      selectedEmotionRole.value = emotions.value.role?.find(
+        (item) => item.code === emotionEdit.value.role
+      );
+      console.log(selectedEmotionRole.value);
+    }
+
+    editEmotionFlag.value = true;
+  });
+};
+const selectedEmotionStyle = ref<EmotionStyle>();
+const selectEmotionStyle = (style: EmotionStyle) => {
+  selectedEmotionStyle.value = style;
+};
+const selectedEmotionRole = ref<EmotionStyle>();
+const selectEmotionRole = (style: EmotionStyle) => {
+  selectedEmotionRole.value = style;
+};
+
+// 文本编辑器(DIV)
+const textEditor = ref();
+// 初始化编辑器内容
+const initEditor = (text: string) => {
+  textEditor.value.innerHTML = text;
+  // 声音模型标签事件初始化
+  const voiceElements = document.getElementsByClassName("voice");
+  // console.log(voiceElements);
+  for (let e of voiceElements) {
+    let voice = e as HTMLElement;
+    addVoiceClickListener(voice);
+    addVoiceContentMenuListener(voice);
+  }
+  // 情感标签事件初始化
+  const emotionElements = document.getElementsByClassName("emotion");
+  // console.log(emotionElements);
+  for (let e of emotionElements) {
+    let emotion = e as HTMLElement;
+    addEmotionClickListener(emotion);
+    addEmotionContentMenuListener(emotion);
+  }
+  // 空白标签事件初始化
+  const breakElements = document.getElementsByClassName("break");
+  // console.log(breakElements);
+  for (let e of breakElements) {
+    let blank = e as HTMLElement;
+    addBreakClickListener(blank);
+    addBreakContentMenuListener(blank);
+  }
+
+  textEditor.value.addEventListener("input", () => {
+    if (textEditor.value.innerText.trim() === "") {
+      // 内容为空时，将已保存标示设置为true
+      saveProjectFlag.value = true;
+      textEditor.value.classList.add("empty");
+    } else {
+      // 内容变更且不为空，将已保存标示设置为false
+      saveProjectFlag.value = false;
+      textEditor.value.classList.remove("empty");
+    }
+  });
+
+  if (textEditor.value.innerText.trim() === "") {
+    textEditor.value.classList.add("empty");
+  } else {
+    textEditor.value.classList.remove("empty");
+  }
+};
+
+onMounted(() => {
+  getModels(ModelCategoryItems.value[0]);
+  if (openProjectFlag.value) {
+    initEditor(project.value.content || "");
+  }
+
+  document.addEventListener("click", (event) => {
+    showBlankMenu.value = false;
+    showEmotionMenu.value = false;
+    showVoiceMenu.value = false;
+  });
+});
 
 // 新建项目
 const addProject = () => {
@@ -101,70 +249,7 @@ const saveAndCloseProject = async () => {
   closeProject(saveProjectFlag.value);
 };
 
-const initEditor = (text: string) => {
-  textEditor.value.innerHTML = text;
-  // 声音模型标签事件初始化
-  const voiceElements = document.getElementsByClassName("voice");
-  // console.log(voiceElements);
-  for (let e of voiceElements) {
-    let voice = e as HTMLElement;
-    addVoiceClickListener(voice);
-    addVoiceContentMenuListener(voice);
-  }
-  // 情感标签事件初始化
-  const emotionElements = document.getElementsByClassName("emotion");
-  // console.log(emotionElements);
-  for (let e of emotionElements) {
-    let emotion = e as HTMLElement;
-    addEmotionClickListener(emotion);
-    addEmotionContentMenuListener(emotion);
-  }
-  // 空白标签事件初始化
-  const breakElements = document.getElementsByClassName("break");
-  // console.log(breakElements);
-  for (let e of breakElements) {
-    let blank = e as HTMLElement;
-    addBreakClickListener(blank);
-    addBreakContentMenuListener(blank);
-  }
-
-  textEditor.value.addEventListener("input", () => {
-    if (textEditor.value.innerText.trim() === "") {
-      // 内容为空时，将已保存标示设置为true
-      saveProjectFlag.value = true;
-      textEditor.value.classList.add("empty");
-    } else {
-      // 内容变更且不为空，将已保存标示设置为false
-      saveProjectFlag.value = false;
-      textEditor.value.classList.remove("empty");
-    }
-  });
-
-  if (textEditor.value.innerText.trim() === "") {
-    textEditor.value.classList.add("empty");
-  } else {
-    textEditor.value.classList.remove("empty");
-  }
-};
-
-onMounted(() => {
-  if (openProjectFlag.value) {
-    initEditor(project.value.content || "");
-  }
-
-  document.addEventListener("click", (event) => {
-    showBlankMenu.value = false;
-    showEmotionMenu.value = false;
-    showVoiceMenu.value = false;
-  });
-});
-
-const openProjectFolder = () => {
-  // @ts-ignore
-  window.electron.openFolder(project.value.path);
-};
-
-// 打开文件，读取文本
+// 打开文件，读取文本【导入文本】
 const importText = () => {
   // @ts-ignore
   window.electron
@@ -184,13 +269,83 @@ const importText = () => {
     });
 };
 
-// 初次打开项目时编辑的文本
-const editText = ref("");
-// 选择的服务提供商:azure/aliyun等
-const selectServiceProvider = ref("");
+// 打开项目文件夹
+const openProjectFolder = () => {
+  // @ts-ignore
+  window.electron.openFolder(project.value.path);
+};
 
-// 文本编辑器(DIV)
-const textEditor = ref();
+// 播放模型试听
+const playTest = (model: VoiceModel) => {
+  let testText = "";
+  const selection = window.getSelection();
+  if (selection?.rangeCount) {
+    // 获取当前选区
+    const range = selection.getRangeAt(0);
+    testText = range.cloneContents().textContent || "";
+  }
+
+  if (!testText) {
+    testText = VoiceTestText.replace("{}", model.name);
+  }
+  local("playTest", model.code, testText, selectServiceProvider.value)
+    .then((res) => {
+      playAudio(res);
+    })
+    .finally(() => {});
+};
+
+// 执行本地语音转换（保存语音文件到本地）
+const doTTS = (ssml: string) => {
+  if (!project.value.path) {
+    project.value.path = `${systemConfig.value.dataPath}/${project.value.name}`;
+  }
+  // 组装本次转换的文件名
+  const fileName = `${project.value.path}/${
+    project.value.name
+  }_${Date.now()}.wav`;
+  local("dotts", ssml, fileName).then((res) => {
+    alertSuccess("生成成功");
+    // @ts-ignore 直接打开生成后的文件
+    // 自动打开文件/文件夹
+    window.electron.openFolder(res);
+    // window.electron.openFolder(project.value.path);
+  });
+};
+
+// 将 HTML 转换成 SSML
+const convertHTMLToSSML = () => {
+  const htmlContent = textEditor.value.innerHTML;
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(htmlContent, "text/html");
+
+  const ssmlContent = Array.from(doc.body.childNodes)
+    .map((node) => processVoiceNode(node, null))
+    .join("");
+
+  console.log(ssmlContent);
+  doTTS(ssmlContent);
+};
+
+// 是否添加了旁白标识
+const layoutFlag = ref(false);
+
+// 添加旁白
+const addLayoutVoice = () => {
+  const text = textEditor.value.innerHTML;
+  const span = document.createElement("span");
+  span.className =
+    "global bg-gray-600/50 rounded-sm p-1 block pointer-events-auto";
+  span.setAttribute("data-type", "voice");
+  span.setAttribute("data-provider", "azure");
+  span.setAttribute("data-model", "zh-CN-YunyangNeural");
+  span.innerHTML = text;
+  textEditor.value.innerHTML = span.outerHTML;
+  layoutFlag.value = true;
+  // console.log(span);
+  addVoiceClickListener(span);
+  addVoiceContentMenuListener(span);
+};
 
 // 为选中文字添加指定语音模型
 const addTextVoice = (model: VoiceModel) => {
@@ -211,121 +366,14 @@ const addTextVoice = (model: VoiceModel) => {
   addVoiceContentMenuListener(voice);
 };
 
-const tts = () => {
-  local("speech", editText.value, project.value.name).then((res) => {
-    // console.log(res);
-  });
-};
-
-// @ts-ignore
-const systemConfig = ref<SystemConfig>({});
-
-local("getConfigApi", "").then((res) => {
-  // console.log(res);
-  systemConfig.value = res;
-});
-
-const models = ref<VoiceModel[]>();
-const showModels = ref<VoiceModel[]>();
-const getModels = (provider: SerivceProvider) => {
-  selectServiceProvider.value = provider.code;
-  local("getModels", provider.code).then((res) => {
-    models.value = res;
-    showModels.value = res;
-  });
-};
-const filterModelParam = ref("");
-const filterModel = () => {
-  if (!filterModelParam.value) {
-    showModels.value = models.value;
-    return;
-  }
-  const filterParam = filterModelParam.value.toLowerCase(); // 转换为小写
-  showModels.value = models.value?.filter(
-    (model) =>
-      model.name.toLowerCase().includes(filterParam) ||
-      model.code.toLowerCase().includes(filterParam) ||
-      model.gender.toLowerCase().includes(filterParam) ||
-      model.lang.toLowerCase().includes(filterParam)
-  );
-};
-
-const playTest = (model: VoiceModel) => {
-  let testText = "";
-  const selection = window.getSelection();
-  if (selection?.rangeCount) {
-    // 获取当前选区
-    const range = selection.getRangeAt(0);
-    testText = range.cloneContents().textContent || "";
-  }
-
-  if (!testText) {
-    testText = VoiceTestText.replace("{}", model.name);
-  }
-  local("playTest", model.code, testText, selectServiceProvider.value)
-    .then((res) => {
-      playAudio(res);
-    })
-    .finally(() => {});
-};
-
-const doTTS = (ssml: string) => {
-  if (!project.value.path) {
-    project.value.path = `${systemConfig.value.dataPath}/${project.value.name}`;
-  }
-  // 组装本次转换的文件名
-  const fileName = `${project.value.path}/${
-    project.value.name
-  }_${Date.now()}.wav`;
-  local("dotts", ssml, fileName).then((res) => {
-    alertSuccess("生成成功");
-    // @ts-ignore 直接打开生成后的文件
-    window.electron.openFolder(res);
-    // window.electron.openFolder(project.value.path);
-    // 自动打开文件夹
-  });
-};
-
-// 是否添加了旁白标识
-const layoutFlag = ref(false);
-
-// 添加旁白
-const addLayoutVoice = () => {
-  const text = textEditor.value.innerHTML;
-  const span = document.createElement("span");
-  span.className =
-    "voice bg-gray-600/50 rounded-sm p-1 block pointer-events-auto";
-  span.setAttribute("data-type", "voice");
-  span.setAttribute("data-provider", "azure");
-  span.setAttribute("data-model", "zh-CN-YunyangNeural");
-  span.innerHTML = text;
-  textEditor.value.innerHTML = span.outerHTML;
-  layoutFlag.value = true;
-  // console.log(span);
-  addVoiceClickListener(span);
-  addVoiceContentMenuListener(span);
-};
-
-// 将 HTML 转换成 SSML
-const convertHTMLToSSML = () => {
-  const htmlContent = textEditor.value.innerHTML;
-  const parser = new DOMParser();
-  const doc = parser.parseFromString(htmlContent, "text/html");
-
-  const ssmlContent = Array.from(doc.body.childNodes)
-    .map((node) => processVoiceNode(node, null))
-    .join("");
-
-  console.log(ssmlContent);
-  doTTS(ssmlContent);
-};
-
+// 右键菜单的定位
 const menuPosition = ref({ x: 0, y: 0 });
+
+/************** 空白间隔相关 ***************/
 const showBlankMenu = ref(false);
 const editBlankFlag = ref(false);
 const blankTime = ref(0);
 const selectedBlank = ref<HTMLElement | null>(null); // 保存当前选中的 span
-
 // 常量配置 默认空白间隔
 const addBreak = () => {
   const selection = window.getSelection();
@@ -360,7 +408,7 @@ const addBreak = () => {
   blankNode.click();
 };
 
-// 编辑功能
+// 编辑空白间隔功能
 const editBreak = () => {
   if (selectedBlank.value) {
     showBlankMenu.value = false; // 隐藏菜单
@@ -370,7 +418,7 @@ const editBreak = () => {
     );
   }
 };
-
+// 保存编辑的空白间隔
 const saveBreak = () => {
   if (selectedBlank.value) {
     selectedBlank.value.setAttribute("data-model", blankTime.value.toString());
@@ -379,8 +427,7 @@ const saveBreak = () => {
     // selectedBlank.value = null;
   }
 };
-
-// 删除功能
+// 删除空白
 const deleteBreak = () => {
   if (selectedBlank.value) {
     selectedBlank.value.remove(); // 删除当前选中的 span
@@ -407,17 +454,20 @@ const addBreakClickListener = (blankNode: HTMLSpanElement) => {
     // console.log("左键菜单");
     e.preventDefault();
     e.stopPropagation(); // 阻止事件冒泡
+    showBlankMenu.value = false;
+    showEmotionMenu.value = false;
+    showVoiceMenu.value = false;
     selectedBlank.value = blankNode;
     editBreak();
   });
 };
 
+/************** 情感相关 ***************/
 const showEmotionMenu = ref(false);
 const editEmotionFlag = ref(false);
 const emotionEdit = ref<EditVoiceStyle>({});
 const selectedEmotion = ref<HTMLElement | null>(null); // 保存当前选中的 span
 const selectedRange = ref();
-
 // 为选中文字添加指定语音模型
 const addEmotion = () => {
   const selection = window.getSelection();
@@ -480,8 +530,10 @@ const editEmotion = () => {
       styledegree: selectedEmotion.value.getAttribute("data-styledegree") || "",
       role: selectedEmotion.value.getAttribute("data-role") || "",
     };
+    if (emotionEdit.value.provider) {
+      getEmotions(emotionEdit.value.provider);
+    }
   }
-  editEmotionFlag.value = true;
 };
 const saveEmotion = () => {
   if (!emotionEdit.value.role && !emotionEdit.value.style) {
@@ -497,8 +549,11 @@ const saveEmotion = () => {
       );
     }
     // 情感
-    if (emotionEdit.value.style) {
-      selectedEmotion.value.setAttribute("data-style", emotionEdit.value.style);
+    if (selectedEmotionStyle.value) {
+      selectedEmotion.value.setAttribute(
+        "data-style",
+        selectedEmotionStyle.value.code
+      );
     }
     // 情感级别
     if (emotionEdit.value.styledegree) {
@@ -508,8 +563,11 @@ const saveEmotion = () => {
       );
     }
     // 模仿
-    if (emotionEdit.value.role) {
-      selectedEmotion.value.setAttribute("data-role", emotionEdit.value.role);
+    if (selectedEmotionRole.value) {
+      selectedEmotion.value.setAttribute(
+        "data-role",
+        selectedEmotionRole.value.code
+      );
     }
   }
 
@@ -559,11 +617,15 @@ const addEmotionClickListener = (emotionNode: HTMLElement) => {
   emotionNode.addEventListener("click", (e) => {
     e.preventDefault();
     e.stopPropagation(); // 阻止事件冒泡
+    showBlankMenu.value = false;
+    showEmotionMenu.value = false;
+    showVoiceMenu.value = false;
     selectedEmotion.value = emotionNode;
     editEmotion();
   });
 };
 
+/************** 声音模型相关 ***************/
 const showVoiceMenu = ref(false);
 const selectedVoice = ref<HTMLElement | null>(null); // 保存当前选中的 span
 const playVoice = () => {
@@ -599,6 +661,9 @@ const addVoiceClickListener = (voiceNode: HTMLElement) => {
   voiceNode.addEventListener("click", (e) => {
     e.preventDefault();
     e.stopPropagation(); // 阻止事件冒泡
+    showBlankMenu.value = false;
+    showEmotionMenu.value = false;
+    showVoiceMenu.value = false;
     selectedVoice.value = voiceNode;
   });
 };
@@ -628,7 +693,11 @@ const addVoiceClickListener = (voiceNode: HTMLElement) => {
     <div
       class="h-full w-72 overflow-y-auto overflow-x-hidden p-2 bg-gray-800 rounded-md flex flex-col justify-between"
     >
-      <MySelect :items="ModelCategoryItems" :select="getModels" />
+      <MySelect
+        :items="ModelCategoryItems"
+        :select="getModels"
+        :selected="selectServiceProvider"
+      />
       <input
         class="w-full h-8 bg-transparent border border-gray-400 p-2 my-2 rounded-md focus:outline-none"
         placeholder="筛选"
@@ -800,38 +869,52 @@ const addVoiceClickListener = (voiceNode: HTMLElement) => {
       @delete="deleteEmotion"
     />
     <div
-      v-show="editEmotionFlag"
+      v-if="editEmotionFlag"
       class="absolute top-0 left-0 w-full h-full flex flex-col items-center justify-center bg-gray-400/50"
       style="z-index: 999"
     >
-      <div class="p-4 bg-gray-900 rounded-md overflow-hidden">
+      <div class="px-4 py-2 bg-gray-900 rounded-md">
         <h3 class="text-lg text-center pb-4">添加情感</h3>
         <div class="flex items-center">
           <label for="style" class="min-w-20">情感</label>
-          <input
+          <div class="w-full">
+            <MySelect
+              :items="emotions.style"
+              :select="selectEmotionStyle"
+              :selected="selectedEmotionStyle"
+            />
+          </div>
+          <!-- <input
             name="style"
             class="w-full h-8 bg-transparent border border-gray-400 p-2 my-2 rounded-md focus:outline-none"
             v-model="emotionEdit.style"
-          />
+          /> -->
         </div>
         <div class="flex items-center">
           <label for="styledegree" class="min-w-20">情感级别</label>
           <input
             name="styledegree"
-            placeholder="0.01-2, 默认为1"
+            :placeholder="emotions.styledegree"
             class="w-full h-8 bg-transparent border border-gray-400 p-2 my-2 rounded-md focus:outline-none"
             v-model="emotionEdit.styledegree"
           />
         </div>
         <div class="flex items-center">
           <label for="role" class="min-w-20">模仿</label>
-          <input
+          <div class="w-full">
+            <MySelect
+              :items="emotions.role"
+              :select="selectEmotionRole"
+              :selected="selectedEmotionRole"
+            />
+          </div>
+          <!-- <input
             name="role"
             class="w-full h-8 bg-transparent border border-gray-400 p-2 my-2 rounded-md focus:outline-none"
             v-model="emotionEdit.role"
-          />
+          /> -->
         </div>
-        <div class="flex justify-center py-2">
+        <div class="flex justify-center mt-8">
           <div
             class="px-2 py-1 bg-red-500 hover:bg-red-400 cursor-pointer rounded-sm"
             @click="cancelEmotion"
