@@ -3,6 +3,7 @@ import { onMounted, ref, watch } from "vue";
 import local from "@/utils/local";
 import type {
   EditEmotionModel,
+  EditVoiceEmotionModel,
   EmotionStyle,
   Project,
   SerivceProvider,
@@ -31,13 +32,23 @@ import {
   project,
   ModelCategoryItems,
 } from "@/utils/global.store";
+import { playSSML } from "@/utils/api";
 import BreakMenu from "@/components/menu/Break.vue";
 import EmotionMenu from "@/components/menu/Emotion.vue";
 import VoiceMenu from "@/components/menu/Voice.vue";
 import VoiceEmotionMenu from "@/components/menu/VoiceEmotion.vue";
-import { playSSML } from "@/utils/api";
+import EditBreakForm from "@/components/form/EditBreak.vue";
+import EditVoiceForm from "@/components/form/EditVoice.vue";
 import EditEmotionForm from "@/components/form/EditEmotion.vue";
-import AddVoiceForm from "@/components/form/AddVoice.vue";
+import EditVoiceEmotionForm from "@/components/form/EditVoiceEmotion.vue";
+
+const editCommonStyleClass = "cursor-pointer pointer-events-auto";
+const layoutStyleClass =
+  "bg-gray-600/50 rounded-sm p-1 block pointer-events-auto";
+const breakStyleClass = `bg-gray-600 hover:bg-gray-500 rounded-sm px-1 text-sm mx-1 ${editCommonStyleClass}`;
+const voiceStyleClass = `bg-red-500/50 rounded-sm px-1 mx-1 ${editCommonStyleClass}`;
+const emotionStyleClass = `rounded-sm px-1 italic underline underline-offset-4 decoration-pink-500 ${editCommonStyleClass}`;
+const voiceEmotionStyleClass = `bg-red-500/50 rounded-sm px-1 mx-1 italic underline underline-offset-4 decoration-pink-500 ${editCommonStyleClass}`;
 
 /**
  * html逻辑：所有特殊元素都使用 span 标签，特殊属性：
@@ -111,6 +122,14 @@ const initEditor = (text: string) => {
     addVoiceClickListener(voice);
     addVoiceContentMenuListener(voice);
   }
+  // 声音模型标签事件初始化
+  const voiceEmotionElements = document.getElementsByClassName("voice-emotion");
+  // console.log(voiceElements);
+  for (let e of voiceEmotionElements) {
+    let voiceEmotion = e as HTMLElement;
+    addVoiceEmotionClickListener(voiceEmotion);
+    addVoiceEmotionContentMenuListener(voiceEmotion);
+  }
   // 情感标签事件初始化
   const emotionElements = document.getElementsByClassName("emotion");
   // console.log(emotionElements);
@@ -154,7 +173,7 @@ onMounted(() => {
   }
 
   document.addEventListener("click", (event) => {
-    showBlankMenu.value = false;
+    showBreakMenu.value = false;
     showEmotionMenu.value = false;
     showVoiceMenu.value = false;
   });
@@ -308,8 +327,7 @@ const layoutFlag = ref(false);
 const addLayoutVoice = () => {
   const text = textEditor.value.innerHTML;
   const span = document.createElement("span");
-  span.className =
-    "global bg-gray-600/50 rounded-sm p-1 block pointer-events-auto";
+  span.className = `global ${layoutStyleClass}`;
   span.setAttribute("data-type", "voice");
   span.setAttribute("data-provider", "azure");
   span.setAttribute("data-model", "zh-CN-YunyangNeural");
@@ -330,8 +348,7 @@ const addTextVoice = (model: VoiceModel) => {
   const range = selection.getRangeAt(0);
 
   const voice = document.createElement("span");
-  voice.className =
-    "voice bg-red-500/50 rounded-sm px-1 mx-1 pointer-events-auto";
+  voice.className = `voice ${voiceStyleClass}`;
   voice.setAttribute("data-type", "voice");
   voice.setAttribute("data-provider", model.provider);
   voice.setAttribute("data-model", model.code);
@@ -344,10 +361,10 @@ const addTextVoice = (model: VoiceModel) => {
 const menuPosition = ref({ x: 0, y: 0 });
 
 /************** 空白间隔相关 ***************/
-const showBlankMenu = ref(false);
-const editBlankFlag = ref(false);
-const blankTime = ref(0);
-const selectedBlank = ref<HTMLElement | null>(null); // 保存当前选中的 span
+const showBreakMenu = ref(false);
+const editBreakFlag = ref(false);
+const breakTime = ref(0);
+const selectedBreak = ref<HTMLElement | null>(null); // 保存当前选中的 span
 // 常量配置 默认空白间隔
 const addBreak = () => {
   const selection = window.getSelection();
@@ -358,55 +375,54 @@ const addBreak = () => {
   range.deleteContents(); // 删除选中的内容
 
   // 创建一个文本节点，并将其插入到选区位置
-  const blankNode = document.createElement("span");
-  blankNode.className =
-    "break bg-gray-600 hover:bg-gray-500 rounded-sm px-1 text-sm mx-1 cursor-pointer pointer-events-auto";
-  blankNode.setAttribute("data-type", "break");
-  blankNode.setAttribute("data-model", "500");
-  blankNode.textContent = "500ms";
-  blankNode.contentEditable = "false";
+  const breakNode = document.createElement("span");
+  breakNode.className = `break ${breakStyleClass}`;
+  breakNode.setAttribute("data-type", "break");
+  breakNode.setAttribute("data-model", "500");
+  breakNode.textContent = "500ms";
+  breakNode.contentEditable = "false";
   // 左键功能
-  addBreakClickListener(blankNode);
+  addBreakClickListener(breakNode);
   // 右键菜单
-  addBreakContentMenuListener(blankNode);
+  addBreakContentMenuListener(breakNode);
 
-  range.insertNode(blankNode);
+  range.insertNode(breakNode);
 
   // 移动光标到插入的文本节点之后
-  range.setStartAfter(blankNode);
+  range.setStartAfter(breakNode);
   range.collapse(true);
   selection.removeAllRanges();
   selection.addRange(range);
 
   // 直接触发点击事件
-  blankNode.click();
+  breakNode.click();
 };
 
 // 编辑空白间隔功能
 const editBreak = () => {
-  if (selectedBlank.value) {
-    showBlankMenu.value = false; // 隐藏菜单
-    editBlankFlag.value = true;
-    blankTime.value = parseInt(
-      selectedBlank.value.getAttribute("data-model") || ""
+  if (selectedBreak.value) {
+    showBreakMenu.value = false; // 隐藏菜单
+    editBreakFlag.value = true;
+    breakTime.value = parseInt(
+      selectedBreak.value.getAttribute("data-model") || ""
     );
   }
 };
 // 保存编辑的空白间隔
 const saveBreak = () => {
-  if (selectedBlank.value) {
-    selectedBlank.value.setAttribute("data-model", blankTime.value.toString());
-    selectedBlank.value.innerText = `${blankTime.value}ms`;
-    editBlankFlag.value = false;
+  if (selectedBreak.value) {
+    selectedBreak.value.setAttribute("data-model", breakTime.value.toString());
+    selectedBreak.value.innerText = `${breakTime.value}ms`;
+    editBreakFlag.value = false;
     // selectedBlank.value = null;
   }
 };
 // 删除空白
 const deleteBreak = () => {
-  if (selectedBlank.value) {
-    selectedBlank.value.remove(); // 删除当前选中的 span
-    showBlankMenu.value = false; // 隐藏菜单
-    editBlankFlag.value = false;
+  if (selectedBreak.value) {
+    selectedBreak.value.remove(); // 删除当前选中的 span
+    showBreakMenu.value = false; // 隐藏菜单
+    editBreakFlag.value = false;
   }
 };
 
@@ -416,8 +432,8 @@ const addBreakContentMenuListener = (blankNode: HTMLSpanElement) => {
     // console.log("右键菜单");
     e.preventDefault();
     e.stopPropagation(); // 阻止事件冒泡
-    selectedBlank.value = blankNode;
-    showBlankMenu.value = true;
+    selectedBreak.value = blankNode;
+    showBreakMenu.value = true;
     menuPosition.value = { x: e.clientX - 160, y: e.clientY - 40 };
   });
 };
@@ -428,10 +444,10 @@ const addBreakClickListener = (blankNode: HTMLSpanElement) => {
     // console.log("左键菜单");
     e.preventDefault();
     e.stopPropagation(); // 阻止事件冒泡
-    showBlankMenu.value = false;
+    showBreakMenu.value = false;
     showEmotionMenu.value = false;
     showVoiceMenu.value = false;
-    selectedBlank.value = blankNode;
+    selectedBreak.value = blankNode;
     editBreak();
   });
 };
@@ -443,31 +459,24 @@ const emotion = ref<EditEmotionModel>({});
 // const emotionEdit = ref<EditVoiceStyle>({});
 const selectedEmotion = ref<HTMLElement | null>(null); // 保存当前选中的 span
 const selectedRange = ref();
-const showAddVoiceForm = ref(false);
-const addEmotionProvider = ref<SerivceProvider>();
-// 情感添加新声音
-const addEmotionVoice = () => {
-  addEmotionProvider.value = {
-    name: "",
-    code: selectedVoice.value?.getAttribute("data-provider") || "",
-  };
-  showAddVoiceForm.value = true;
-};
-const cancelAddEmotionVoice = () => {
-  showAddVoiceForm.value = false;
-};
-const saveEmotionVoice = (model: VoiceModel) => {
-  if (!model.code) {
-    alertWarning("未选择语音模型!");
+
+// 清除选中voice的设置，保留文本
+const deleteVmVoice = () => {
+  if (selectedVoiceEmotion.value) {
+    selectedEmotion.value?.classList.add("emotion");
+    selectedEmotion.value?.classList.remove("voice-emotion");
+    selectedEmotion.value?.setAttribute("data-type", "emotion");
   }
-  console.log(model);
-  selectedEmotion.value?.classList.add("voice-emotion");
-  selectedEmotion.value?.classList.remove("emotion");
-  selectedEmotion.value?.setAttribute("data-type", "voice-emotion");
-  selectedEmotion.value?.setAttribute("data-model", model.code || "");
-  showAddVoiceForm.value = false;
-  // 添加 voice-emotion 相关的点击事件
 };
+// 清除选中voice的设置，保留文本
+const deleteVmEmotion = () => {
+  if (selectedVoiceEmotion.value) {
+    selectedEmotion.value?.classList.add("voice");
+    selectedEmotion.value?.classList.remove("voice-emotion");
+    selectedEmotion.value?.setAttribute("data-type", "voice");
+  }
+};
+
 // 为选中文字添加指定语音模型
 const addEmotion = () => {
   const selection = window.getSelection();
@@ -491,8 +500,7 @@ const addEmotion = () => {
   // 创建标签
   const emotionElement = document.createElement("span");
   // 添加样式
-  emotionElement.className =
-    "emotion rounded-sm px-1 mx-1 underline underline-offset-4 cursor-pointer pointer-events-auto";
+  emotionElement.className = `emotion ${emotionStyleClass}`;
   // 标签类型：情感
   emotionElement.setAttribute("data-type", "emotion");
   // 模型提供商
@@ -568,7 +576,9 @@ const saveEmotion = (item: EditEmotionModel) => {
 const cancelEmotion = (item: EditEmotionModel) => {
   showEmotionMenu.value = false; // 隐藏菜单
   editEmotionFlag.value = false;
-  if (!item.style && !item.role) {
+  // console.log(item);
+  if (!item.style?.code && !item.style?.code) {
+    // 没有情感数据，删除默认增加的标签
     deleteEmotion();
   }
   emotion.value = {};
@@ -601,7 +611,7 @@ const addEmotionClickListener = (emotionNode: HTMLElement) => {
   emotionNode.addEventListener("click", (e) => {
     e.preventDefault();
     e.stopPropagation(); // 阻止事件冒泡
-    showBlankMenu.value = false;
+    showBreakMenu.value = false;
     showEmotionMenu.value = false;
     showVoiceMenu.value = false;
     selectedEmotion.value = emotionNode;
@@ -612,12 +622,7 @@ const addEmotionClickListener = (emotionNode: HTMLElement) => {
 /************** 声音模型相关 ***************/
 const showVoiceMenu = ref(false);
 const selectedVoice = ref<HTMLElement | null>(null); // 保存当前选中的 span
-const addVoiceEmotion = () => {
-  // if (selectedVoice.value) {
-  //   const ssml = processVoiceNode(selectedVoice.value, null);
-  //   playSSML(ssml);
-  // }
-};
+
 // 试听选中voice元素
 const playVoice = () => {
   if (selectedVoice.value) {
@@ -654,11 +659,132 @@ const addVoiceClickListener = (voiceNode: HTMLElement) => {
   voiceNode.addEventListener("click", (e) => {
     e.preventDefault();
     e.stopPropagation(); // 阻止事件冒泡
-    showBlankMenu.value = false;
+    showBreakMenu.value = false;
     showEmotionMenu.value = false;
     showVoiceMenu.value = false;
     selectedVoice.value = voiceNode;
   });
+};
+
+/************** 声音+模型相关 ***************/ // 情感添加新声音
+const editVoiceEmotion = (
+  type: "voice" | "emotion" | "all",
+  element?: HTMLElement | null
+) => {
+  if (element) {
+    selectedVoiceEmotion.value = element;
+  }
+  if (selectedVoiceEmotion.value) {
+    // console.log(selectedVoiceEmotion.value);
+    voiceEmotion.value = {
+      provider: selectedVoiceEmotion.value?.getAttribute("data-provider") || "",
+      model: selectedVoiceEmotion.value?.getAttribute("data-model") || "",
+      style: {
+        code: selectedVoiceEmotion.value?.getAttribute("data-style") || "",
+      },
+      styledegree:
+        selectedVoiceEmotion.value?.getAttribute("data-styledegree") || "",
+      role: {
+        code: selectedVoiceEmotion.value?.getAttribute("data-role") || "",
+      },
+    };
+    // console.log(voiceEmotion.value);
+    editType.value = type;
+    editVoiceEmotionFlag.value = true;
+  }
+};
+const addEmotionVoice = () => {
+  editVoiceEmotion("voice", selectedEmotion.value);
+};
+const addVoiceEmotion = () => {
+  editVoiceEmotion("emotion", selectedVoice.value);
+};
+const showVoiceEmotionMenu = ref(false);
+const editVoiceEmotionFlag = ref(false);
+const voiceEmotion = ref<EditVoiceEmotionModel>({});
+const editType = ref<"voice" | "emotion" | "all">("voice");
+const selectedVoiceEmotion = ref<HTMLElement | null>(null);
+const cancelVoiceEmotion = () => {
+  editVoiceEmotionFlag.value = false;
+  voiceEmotion.value = {};
+  selectedVoiceEmotion.value = null;
+};
+const saveVoiceEmotion = (item: EditVoiceEmotionModel) => {
+  if (!item) {
+    alertWarning("未选择语音模型!");
+  }
+  console.log(item);
+  if (selectedVoiceEmotion.value) {
+    selectedVoiceEmotion;
+    selectedVoiceEmotion.value?.classList.add("voice-emotion");
+    selectedVoiceEmotion.value?.classList.remove("emotion");
+    selectedVoiceEmotion.value?.classList.remove("voice");
+    selectedVoiceEmotion.value?.setAttribute("data-type", "voice-emotion");
+    selectedVoiceEmotion.value?.setAttribute(
+      "data-provider",
+      item.provider || ""
+    );
+    selectedVoiceEmotion.value?.setAttribute("data-model", item.model || "");
+    selectedVoiceEmotion.value?.setAttribute(
+      "data-style",
+      item.style?.code || ""
+    );
+    selectedVoiceEmotion.value?.setAttribute(
+      "data-styledegree",
+      item.styledegree || ""
+    );
+    selectedVoiceEmotion.value?.setAttribute(
+      "data-role",
+      item.role?.code || ""
+    );
+    editVoiceEmotionFlag.value = false;
+    // 添加 voice-emotion 相关的点击事件
+    addVoiceEmotionClickListener(selectedVoiceEmotion.value);
+    addVoiceEmotionContentMenuListener(selectedVoiceEmotion.value);
+  }
+};
+const addVoiceEmotionContentMenuListener = (element: HTMLElement) => {
+  element.addEventListener("contextmenu", (e) => {
+    e.preventDefault();
+    e.stopPropagation(); // 阻止事件冒泡
+    selectedVoiceEmotion.value = element;
+    showVoiceEmotionMenu.value = true;
+    menuPosition.value = { x: e.clientX - 160, y: e.clientY - 40 };
+  });
+};
+
+// 添加左键菜单事件监听
+const addVoiceEmotionClickListener = (element: HTMLElement) => {
+  element.addEventListener("click", (e) => {
+    e.preventDefault();
+    e.stopPropagation(); // 阻止事件冒泡
+    showBreakMenu.value = false;
+    showEmotionMenu.value = false;
+    showVoiceMenu.value = false;
+    showVoiceEmotionMenu.value = false;
+    selectedVoiceEmotion.value = element;
+    editVoiceEmotion("all");
+  });
+};
+
+// 试听选中voice元素
+const playVoiceEmotion = () => {
+  if (selectedVoiceEmotion.value) {
+    const ssml = processVoiceNode(selectedVoiceEmotion.value, null);
+    console.log(ssml);
+    playSSML(ssml);
+  }
+};
+// 清除选中voice的设置，保留文本
+const deleteVoiceEmotion = () => {
+  if (selectedVoice.value) {
+    // 获取 `span` 标签的文本内容
+    const textContent = selectedVoice.value.textContent || "";
+    // 创建一个新的文本节点
+    const textNode = document.createTextNode(textContent);
+    // 使用父节点替换 `span` 为 `textNode`
+    selectedVoice.value.replaceWith(textNode);
+  }
 };
 </script>
 
@@ -812,43 +938,19 @@ const addVoiceClickListener = (voiceNode: HTMLElement) => {
     </div>
 
     <BreakMenu
-      v-if="showBlankMenu"
+      v-if="showBreakMenu"
       :x="menuPosition.x"
       :y="menuPosition.y"
       @edit="editBreak"
       @delete="deleteBreak"
     />
-    <div
-      v-show="editBlankFlag"
-      class="absolute top-0 left-0 w-full h-full flex items-center justify-center bg-gray-400/50"
-      style="z-index: 999"
-    >
-      <div class="px-4 py-2 bg-gray-900 rounded-md overflow-hidden">
-        <h3 class="text-lg text-center pb-4">插入空白间隔</h3>
-        <div class="flex items-center">
-          <label for="blankTime">时长(ms/毫秒)</label>
-          <input
-            name="blankTime"
-            class="flex-1 w-full h-8 bg-transparent border border-gray-400 ml-4 p-2 my-2 rounded-md focus:outline-none"
-            v-model="blankTime"
-          />
-        </div>
-        <div class="flex justify-center py-2">
-          <!-- <div
-            class="px-2 py-1 bg-red-500 hover:bg-red-400 cursor-pointer rounded-sm"
-            @click="deleteBreak"
-          >
-            删除
-          </div> -->
-          <div
-            class="ml-2 px-2 py-1 bg-blue-500 hover:bg-blue-400 cursor-pointer rounded-sm"
-            @click="saveBreak"
-          >
-            确定
-          </div>
-        </div>
-      </div>
-    </div>
+    <EditBreakForm
+      v-if="editBreakFlag"
+      :flag="editBreakFlag"
+      :item="breakTime"
+      @save="saveBreak"
+      @delete="deleteBreak"
+    />
     <EmotionMenu
       v-if="showEmotionMenu"
       :x="menuPosition.x"
@@ -865,13 +967,6 @@ const addVoiceClickListener = (voiceNode: HTMLElement) => {
       @save="saveEmotion"
       @cancel="cancelEmotion"
     />
-    <AddVoiceForm
-      v-if="showAddVoiceForm"
-      :flag="showAddVoiceForm"
-      :provider="addEmotionProvider"
-      @cancel="cancelAddEmotionVoice"
-      @save="saveEmotionVoice"
-    />
     <VoiceMenu
       v-if="showVoiceMenu"
       :x="menuPosition.x"
@@ -879,6 +974,29 @@ const addVoiceClickListener = (voiceNode: HTMLElement) => {
       @addEmotion="addVoiceEmotion"
       @play="playVoice"
       @delete="deleteVoice"
+    />
+    <!-- <EditVoiceForm
+      v-if="showVoiceMenu"
+      :x="menuPosition.x"
+      :y="menuPosition.y"
+      @play="playVoice"
+      @delete="deleteVoice"
+    /> -->
+    <VoiceEmotionMenu
+      v-if="showVoiceEmotionMenu"
+      :x="menuPosition.x"
+      :y="menuPosition.y"
+      @play="playVoiceEmotion"
+      @deleteEmotion="deleteVmEmotion"
+      @deleteVoice="deleteVmVoice"
+      @delete="deleteVoiceEmotion"
+    />
+    <EditVoiceEmotionForm
+      v-if="editVoiceEmotionFlag"
+      :flag="editVoiceEmotionFlag"
+      :item="voiceEmotion"
+      @save="saveVoiceEmotion"
+      @cancel="cancelVoiceEmotion"
     />
   </div>
 </template>

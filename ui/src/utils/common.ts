@@ -124,15 +124,25 @@ export const processVoiceNode = (
       case "break":
         return `<break time="${dataModel || DEFAULT_BREAK_TIME}"/>`;
       case "emotion":
-        const dataStyle = node.getAttribute("data-style");
-        let styleStr = dataStyle ? `style="${dataStyle}"` : "";
-        const dataStyledegree = node.getAttribute("data-styledegree");
-        let styledegreeStr = dataStyledegree
-          ? `styledegree="${dataStyledegree}"`
+        const eDataStyle = node.getAttribute("data-style");
+        let eStyle = eDataStyle ? `style="${eDataStyle}"` : "";
+        const eDataStyledegree = node.getAttribute("data-styledegree");
+        let eStyledegree = eDataStyledegree
+          ? `styledegree="${eDataStyledegree}"`
           : "";
-        const dataRole = node.getAttribute("data-role");
-        let roleStr = dataRole ? `role="${dataRole}"` : "";
-        return `<mstts:express-as ${styleStr} ${styledegreeStr} ${roleStr}>${innerSSML}</mstts:express-as>`;
+        const eDataRole = node.getAttribute("data-role");
+        let eRole = eDataRole ? `role="${eDataRole}"` : "";
+        return `<mstts:express-as ${eStyle} ${eStyledegree} ${eRole}>${innerSSML}</mstts:express-as>`;
+      case "voice-emotion":
+        const veDataStyle = node.getAttribute("data-style");
+        let veStyle = veDataStyle ? `style="${veDataStyle}"` : "";
+        const veDataStyledegree = node.getAttribute("data-styledegree");
+        let veStyledegree = veDataStyledegree
+          ? `styledegree="${veDataStyledegree}"`
+          : "";
+        const veDataRole = node.getAttribute("data-role");
+        let veRole = veDataRole ? `role="${veDataRole}"` : "";
+        return `<voice name="${dataModel}"><mstts:express-as ${veStyle} ${veStyledegree} ${veRole}>${innerSSML}</mstts:express-as></voice>`;
       default:
         return innerSSML;
     }

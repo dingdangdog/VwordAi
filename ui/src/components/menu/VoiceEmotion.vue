@@ -7,9 +7,9 @@
     <div class="hover:bg-gray-800 p-2 text-center" @click="handlePlay">
       试听
     </div>
-    <div class="hover:bg-gray-800 p-2 text-center" @click="handleColloct">
+    <!-- <div class="hover:bg-gray-800 p-2 text-center" @click="handleColloct">
       收藏
-    </div>
+    </div> -->
     <div class="hover:bg-gray-800 p-2 text-center" @click="addEmotion">
       清除情感
     </div>

@@ -48,6 +48,13 @@ export interface AliyunConfig {
   endpoint: string;
 }
 
+export interface EditVoiceEmotionModel {
+  provider?: string;
+  model?: string;
+  style?: EmotionStyle;
+  styledegree?: string;
+  role?: EmotionStyle;
+}
 export interface VoiceModel {
   provider: string;
   collect: boolean;
