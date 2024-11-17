@@ -1,5 +1,10 @@
 <script setup lang="ts">
-import type { EditEmotionModel, EmotionStyle, VoiceStyle } from "@/utils/model";
+import type {
+  EditVoiceEmotionModel,
+  EmotionStyle,
+  VoiceModel,
+  VoiceStyle,
+} from "@/utils/model";
 import MySelect from "../MySelect.vue";
 
 import { defineProps, defineEmits, ref } from "vue";
@@ -9,8 +14,33 @@ import { alertWarning } from "@/utils/common";
 const { flag, item } = defineProps(["flag", "item"]);
 const emit = defineEmits(["cancel", "save"]);
 
-console.log(item);
-const emotion = ref<EditEmotionModel>(item);
+// console.log(item);
+const selectedModel = ref(item.model || {});
+
+// console.log(selectedModel.value);
+const voiceEmotion = ref<EditVoiceEmotionModel>(item);
+
+const models = ref<VoiceModel[]>();
+const showModels = ref<any[]>([]);
+const getModels = (p: string) => {
+  local("getModels", p).then((res) => {
+    models.value = res;
+    models.value?.forEach((m) => {
+      showModels.value.push({
+        provider: m.provider,
+        name: m.name,
+        code: m.code,
+      });
+    });
+  });
+};
+getModels(item.provider);
+
+const selectModel = (model: any) => {
+  selectedModel.value = model;
+  voiceEmotion.value.model = model;
+};
+
 // 选择的服务提供商:azure/aliyun等支持的情感模型
 const emotions = ref<VoiceStyle>({});
 const getEmotions = () => {
@@ -21,21 +51,21 @@ const getEmotions = () => {
 getEmotions();
 
 const selectEmotionStyle = (style: EmotionStyle) => {
-  emotion.value.style = style;
+  voiceEmotion.value.style = style;
 };
 const selectEmotionRole = (style: EmotionStyle) => {
-  emotion.value.role = style;
+  voiceEmotion.value.role = style;
 };
 
 const handleCancel = () => {
-  emit("cancel", emotion.value);
+  emit("cancel", voiceEmotion.value);
 };
 const handleSave = () => {
-  if (!emotion.value.style && !emotion.value.role) {
+  if (!voiceEmotion.value.style && !voiceEmotion.value.role) {
     alertWarning("未选择情感或角色，无需设置!");
     return;
   }
-  emit("save", emotion.value);
+  emit("save", voiceEmotion.value);
 };
 </script>
 
@@ -46,14 +76,25 @@ const handleSave = () => {
     style="z-index: 999"
   >
     <div class="px-4 py-2 bg-gray-900 rounded-md">
-      <h3 class="text-lg text-center pb-4">情感设置</h3>
+      <h3 class="text-lg text-center pb-4">旁白设置</h3>
       <div class="flex items-center">
+        <label class="min-w-20">语音模型</label>
+        <div class="w-full" v-if="showModels.length > 0">
+          <MySelect
+            :items="showModels"
+            :select="selectModel"
+            :selected="selectedModel"
+          />
+        </div>
+      </div>
+      <div class="flex items-center mt-2">
         <label for="style" class="min-w-20">情感</label>
         <div class="w-full" v-if="emotions.style">
           <MySelect
+            :blank-item="true"
             :items="emotions.style"
             :select="selectEmotionStyle"
-            :selected="emotion.style"
+            :selected="voiceEmotion.style"
           />
         </div>
         <!-- <input
@@ -62,22 +103,23 @@ const handleSave = () => {
             v-model="emotionEdit.style"
           /> -->
       </div>
-      <div class="flex items-center">
+      <div class="flex items-center mt-2">
         <label for="styledegree" class="min-w-20">情感级别</label>
         <input
           name="styledegree"
           :placeholder="emotions.styledegree"
-          class="w-full h-8 bg-transparent border border-gray-400 p-2 my-2 rounded-md focus:outline-none"
-          v-model="emotion.styledegree"
+          class="w-full h-8 bg-transparent border border-gray-400 p-2 rounded-md focus:outline-none"
+          v-model="voiceEmotion.styledegree"
         />
       </div>
-      <div class="flex items-center">
+      <div class="flex items-center mt-2">
         <label for="role" class="min-w-20">模仿</label>
         <div class="w-full" v-if="emotions.role">
           <MySelect
+            :blank-item="true"
             :items="emotions.role"
             :select="selectEmotionRole"
-            :selected="emotion.role"
+            :selected="voiceEmotion.role"
           />
         </div>
         <!-- <input

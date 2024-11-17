@@ -142,7 +142,19 @@ export const processVoiceNode = (
           : "";
         const veDataRole = node.getAttribute("data-role");
         let veRole = veDataRole ? `role="${veDataRole}"` : "";
-        return `<voice name="${dataModel}"><mstts:express-as ${veStyle} ${veStyledegree} ${veRole}>${innerSSML}</mstts:express-as></voice>`;
+        if (dataModel) {
+          if (veDataStyle || veDataRole) {
+            return `<voice name="${dataModel}"><mstts:express-as ${veStyle} ${veStyledegree} ${veRole}>${innerSSML}</mstts:express-as></voice>`;
+          } else {
+            return `<voice name="${dataModel}">${innerSSML}</voice>`;
+          }
+        } else if (!dataModel) {
+          if (veDataStyle || veDataRole) {
+            return `<mstts:express-as ${veStyle} ${veStyledegree} ${veRole}>${innerSSML}</mstts:express-as>`;
+          } else {
+            return innerSSML;
+          }
+        }
       default:
         return innerSSML;
     }

@@ -3,9 +3,8 @@ import type { SerivceProvider, VoiceModel } from "@/utils/model";
 import MySelect from "../MySelect.vue";
 import { ref } from "vue";
 import local from "@/utils/local";
-import { ModelCategoryItems } from "@/utils/global.store";
 
-const { flag, provider } = defineProps(["flag", "provider"]);
+const { flag, item } = defineProps(["flag", "item"]);
 const emit = defineEmits(["cancel", "save"]);
 
 const selectServiceProvider = ref<SerivceProvider>();
@@ -25,10 +24,13 @@ const getModels = (p: SerivceProvider) => {
     });
   });
 };
-getModels(provider);
+getModels(item.provider);
 
-const selectedModel = ref<VoiceModel>();
-const selectModel = (model: VoiceModel) => {
+const selectedModel = ref<any>({
+  name: "",
+  code: item.model,
+});
+const selectModel = (model: any) => {
   selectedModel.value = model;
 };
 
@@ -43,7 +45,7 @@ const handleSave = () => emit("save", selectedModel.value);
     style="z-index: 999"
   >
     <div class="px-4 py-2 bg-gray-900 rounded-md min-w-72">
-      <h3 class="text-lg text-center pb-4">添加声音</h3>
+      <h3 class="text-lg text-center pb-4">声音设置</h3>
       <!-- <div class="flex items-center">
         <label class="min-w-20">服务商</label>
         <div class="w-full">
@@ -52,13 +54,17 @@ const handleSave = () => emit("save", selectedModel.value);
       </div> -->
       <div class="flex items-center">
         <label class="min-w-20">语音模型</label>
-        <div class="w-full">
-          <MySelect :items="showModels" :select="selectModel" />
+        <div class="w-full" v-if="showModels.length > 0">
+          <MySelect
+            :items="showModels"
+            :select="selectModel"
+            :selected="selectedModel"
+          />
         </div>
       </div>
       <div class="flex justify-center mt-8">
         <div
-          class="px-2 py-1 bg-red-500 hover:bg-red-400 cursor-pointer rounded-sm"
+          class="px-2 py-1 bg-gray-700 hover:bg-gray-600 cursor-pointer rounded-sm"
           @click="handleCancel"
         >
           取消
