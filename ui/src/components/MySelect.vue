@@ -1,18 +1,25 @@
 <script setup lang="ts">
 import { onMounted, ref } from "vue";
 
-const { items, select, selected } = defineProps([
+const { items, select, selected, blankItem } = defineProps([
   "items",
   "select",
   "selected",
+  "blankItem",
 ]);
+
+const options = ref<any[]>([]);
+options.value.push(...items);
+if (blankItem) {
+  options.value.unshift({ code: "", name: "请选择", desc: "" });
+}
 
 const showOptions = ref(false); // 用于控制选项显示状态
 const selectedItem = ref();
 if (selected) {
   selectedItem.value = items.find((item: any) => item.code === selected.code);
 }
-console.log(selectedItem.value);
+// console.log(selectedItem.value);
 
 const changeSelected = (item: any) => {
   // console.log(item);
@@ -71,7 +78,7 @@ onMounted(() => {
         class="cursor-pointer px-2 py-1 bg-gray-800 hover:bg-gray-700 duration-300"
         :title="item.desc"
         style="z-index: 101"
-        v-for="item in items"
+        v-for="item in options"
         @click.stop="changeSelected(item)"
       >
         <span>{{ item.name }}</span>
