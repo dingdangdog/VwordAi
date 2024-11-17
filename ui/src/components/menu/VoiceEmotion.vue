@@ -10,11 +10,11 @@
     <!-- <div class="hover:bg-gray-800 p-2 text-center" @click="handleColloct">
       收藏
     </div> -->
-    <div class="hover:bg-gray-800 p-2 text-center" @click="addEmotion">
-      清除情感
-    </div>
-    <div class="hover:bg-gray-800 p-2 text-center" @click="addEmotion">
+    <div class="hover:bg-gray-800 p-2 text-center" @click="handleDeleteVoice">
       清除声音
+    </div>
+    <div class="hover:bg-gray-800 p-2 text-center" @click="handleDeleteEmotion">
+      清除情感
     </div>
     <div class="hover:bg-gray-800 p-2 text-center" @click="handleDelete">
       清除全部
@@ -26,13 +26,26 @@
 import { defineProps, defineEmits } from "vue";
 
 const { x, y } = defineProps(["x", "y"]);
-const emit = defineEmits(["play", "collect", "delete", "addEmotion"]);
+const emit = defineEmits([
+  "play",
+  "collect",
+  "delete",
+  "addEmotion",
+  "deleteVoice",
+  "deleteEmotion",
+]);
 
 const handlePlay = () => {
   emit("play");
 };
 const handleColloct = () => {
   emit("collect");
+};
+const handleDeleteVoice = () => {
+  emit("deleteVoice");
+};
+const handleDeleteEmotion = () => {
+  emit("deleteEmotion");
 };
 const handleDelete = () => {
   emit("delete");

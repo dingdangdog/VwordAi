@@ -12,6 +12,7 @@ export interface MessageModel {
 }
 
 export interface Project {
+  layout?: EditVoiceEmotionModel;
   path?: string;
   name?: string;
   content?: string;
@@ -50,7 +51,7 @@ export interface AliyunConfig {
 
 export interface EditVoiceEmotionModel {
   provider?: string;
-  model?: string;
+  model?: any;
   style?: EmotionStyle;
   styledegree?: string;
   role?: EmotionStyle;

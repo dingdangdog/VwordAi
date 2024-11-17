@@ -79,7 +79,7 @@ const handleSave = () => {
     style="z-index: 999"
   >
     <div class="px-4 py-2 bg-gray-900 rounded-md">
-      <h3 class="text-lg text-center pb-4">声音与情感</h3>
+      <h3 class="text-lg text-center pb-4">声音与情感设置</h3>
       <div class="flex items-center">
         <label class="min-w-20">语音模型</label>
         <div class="w-full" v-if="showModels.length > 0">
@@ -94,6 +94,7 @@ const handleSave = () => {
         <label for="style" class="min-w-20">情感</label>
         <div class="w-full" v-if="emotions.style">
           <MySelect
+            :blank-item="true"
             :items="emotions.style"
             :select="selectEmotionStyle"
             :selected="voiceEmotion.style"
@@ -118,6 +119,7 @@ const handleSave = () => {
         <label for="role" class="min-w-20">模仿</label>
         <div class="w-full" v-if="emotions.role">
           <MySelect
+            :blank-item="true"
             :items="emotions.role"
             :select="selectEmotionRole"
             :selected="voiceEmotion.role"
@@ -131,7 +133,7 @@ const handleSave = () => {
       </div>
       <div class="flex justify-center mt-8">
         <div
-          class="px-2 py-1 bg-red-500 hover:bg-red-400 cursor-pointer rounded-sm"
+          class="px-2 py-1 bg-gray-700 hover:bg-gray-600 cursor-pointer rounded-sm"
           @click="handleCancel"
         >
           取消
