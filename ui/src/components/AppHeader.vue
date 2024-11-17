@@ -1,6 +1,6 @@
 <template>
   <div
-    class="w-full h-12 bg-gray-950 fixed top-0 left-0 flex justify-between items-center drag-area rounded-t-md shadow-sm shadow-white border-b-2 border-gray-600"
+    class="w-full h-12 bg-gray-950 fixed top-0 left-0 flex justify-between items-center drag-area rounded-t-md overflow-hidden border-b-2 border-gray-600"
   >
     <div class="w-1/2 px-3 flex items-center h-full">
       <img src="/favicon.ico" class="w-6 h-6" />
@@ -61,22 +61,26 @@ import IconClose from "@/components/icon/close.vue";
 
 // 最小化
 const minimizeWindow = () => {
+  // @ts-ignore
   window.electron.minimize();
 };
 // 最大化标志
 const isMax = ref(false);
 // 最大化
 const maximizeWindow = () => {
+  // @ts-ignore
   window.electron.maximize();
   isMas();
 };
 // 关闭窗口
 const closeWindow = () => {
+  // @ts-ignore
   window.electron.close();
 };
 
 // 判断窗口是否最大化
 const isMas = () => {
+  // @ts-ignore
   window.electron.isMaximized().then((flag: boolean) => {
     isMax.value = flag;
   });
