@@ -94,11 +94,11 @@ const menus = [
     name: "系统设置",
     icon: "IconCog",
   },
-  // {
-  //   code: "account",
-  //   name: "账户管理",
-  //   icon: "IconAccount",
-  // },
+  {
+    code: "account",
+    name: "账户",
+    icon: "IconAccount",
+  },
 ];
 
 const goPage = (code: string) => {
