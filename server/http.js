@@ -1,4 +1,4 @@
-const fetch = require("node-fetch");
+const axios = require("axios");
 
 class HttpClient {
   /**
@@ -12,40 +12,51 @@ class HttpClient {
   static async request(url, method = "GET", params = null, headers = {}) {
     try {
       url = "http://localhost:9910" + url;
+
       const options = {
         method,
+        url,
         headers: {
           "Content-Type": "application/json",
           ...headers,
         },
       };
 
-      // 如果是 POST、PUT 等需要传递 body 的请求
+      // 如果是 POST、PUT、PATCH 等需要传递 body 的请求
       if (["POST", "PUT", "PATCH"].includes(method.toUpperCase()) && params) {
-        options.body = JSON.stringify(params);
+        options.data = params; // axios 使用 `data` 字段传递请求体
       }
 
-      // 如果是 GET 请求并有参数，将参数拼接到 URL
+      // 如果是 GET 请求并有参数，axios 自动处理 query 参数
       if (method.toUpperCase() === "GET" && params) {
-        const queryParams = new URLSearchParams(params).toString();
-        url += `?${queryParams}`;
+        options.params = params; // axios 使用 `params` 字段传递 query 参数
       }
 
       // 发起请求
-      const response = await fetch(url, options);
+      const response = await axios(options);
 
-      // 检查 HTTP 状态码
-      if (!response.ok) {
-        throw new Error(
-          `HTTP error! status: ${response.status}, message: ${response.statusText}`
-        );
-      }
-
-      // 返回 JSON 数据
-      return await response.json();
+      // 返回数据
+      return response.data;
     } catch (error) {
-      console.error("Request failed:", error);
-      return { success: false, message: error.message };
+      console.error("Cloud Api Error:", error.message);
+      // 处理 axios 错误格式
+      if (error.response) {
+        return {
+          success: false,
+          message: error.response.statusText,
+          status: error.response.status,
+        };
+      } else if (error.request) {
+        return {
+          success: false,
+          message: "No response received",
+        };
+      } else {
+        return {
+          success: false,
+          message: error.message,
+        };
+      }
     }
   }
 

@@ -73,7 +73,7 @@ app.whenReady().then(async () => {
   });
 
   app.on("before-quit", () => {
-    nuxt.close();
+    // nuxt.close();
   });
 });
 

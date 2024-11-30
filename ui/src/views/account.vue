@@ -1,7 +1,17 @@
 <script setup lang="ts">
+import type { UserInfo } from "@/utils/cloud";
 import { alertSuccess } from "@/utils/common";
 import local from "@/utils/local";
 import { ref } from "vue";
+
+const user = ref<UserInfo>();
+const getUserInfo = () => {
+  local("userInfo").then((res) => {
+    user.value = res;
+  });
+};
+
+// getUserInfo();
 
 const showForm = ref("login");
 
@@ -92,6 +102,7 @@ const login = () => {
     .then((res) => {
       console.log(res);
       alertSuccess("登录成功");
+      getUserInfo();
     })
     .finally(() => {
       logining.value = false;
@@ -136,7 +147,7 @@ const register = () => {
 <template>
   <!-- <div>尚未登录</div> -->
   <div class="h-full w-full flex flex-col items-center">
-    <div class="w-80 mt-36 flex flex-col items-center">
+    <div class="w-80 mt-36 flex flex-col items-center" v-show="!user">
       <div class="w-48 flex justify-between rounded-md overflow-hidden">
         <span
           class="flex-1 cursor-pointer py-2 text-center hover:bg-gray-700 font-bold"
@@ -280,6 +291,29 @@ const register = () => {
         >
           注册
         </button>
+      </div>
+    </div>
+
+    <div v-show="user">
+      <div class="flex py-2">
+        <span class="min-w-36">昵称：</span>
+        <span>{{ user?.name }}</span>
+      </div>
+      <div class="flex py-2">
+        <span class="min-w-36">账号：</span>
+        <span>{{ user?.account }}</span>
+      </div>
+      <div class="flex py-2">
+        <span class="min-w-36">余额（椟）：</span>
+        <span>{{ user?.balance }}</span>
+      </div>
+      <div class="flex py-2">
+        <span class="min-w-36">手机号：</span>
+        <span>{{ user?.phone }}</span>
+      </div>
+      <div class="flex py-2">
+        <span class="min-w-36">邮箱：</span>
+        <span>{{ user?.email }}</span>
       </div>
     </div>
   </div>

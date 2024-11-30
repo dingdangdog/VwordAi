@@ -23,22 +23,20 @@ const local = async (functionName: string, ...args: any) => {
     alertError("未知异常，请提交反馈");
     throw Error("res undefined");
   }
-  if (res.c == 500) {
+  if (res.c == 200) {
+    return res.d;
+  } else if (res.c == 500) {
     // 500 服务异常
     alertError(res.m);
     throw Error(res.m);
-  } else if (res.c == 403) {
-    // 403 登陆失效、无权限，跳转登陆页面
-    // errorAlert(res.m)
-    // cleanLoginInfo()
-    throw Error(res.m);
-  } else if (res.c == 401) {
-    // errorAlert(res.m)
+  } else if (res.c == 400) {
+    // 登录异常
+    alertError("请先登录");
     throw Error(res.m);
   } else {
-    // 200 成功
-    // 401 用户名密码错误
-    return res.d;
+    // 未知异常
+    alertError("服务异常，请联系管理员");
+    throw Error(JSON.stringify(res));
   }
 };
 
