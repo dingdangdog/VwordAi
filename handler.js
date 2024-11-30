@@ -9,6 +9,7 @@ const {
 const { getModels, saveModel, getEmotions } = require("./server/model.js");
 const { speech } = require("./server/azure.js");
 const { dotts, saveProject, getProject } = require("./server/tts.js");
+const { login, register } = require("./server/cloud.js");
 
 module.exports = {
   test,
@@ -28,4 +29,7 @@ module.exports = {
   dotts,
   saveProject,
   getProject,
+
+  login,
+  register,
 };

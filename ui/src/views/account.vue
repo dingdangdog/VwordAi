@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { alertSuccess } from "@/utils/common";
+import local from "@/utils/local";
 import { ref } from "vue";
 
 const showForm = ref("login");
@@ -8,45 +10,93 @@ const loginParam = ref<any>({
   password: "",
 });
 
-const errorInfo = ref("");
 const loginAccountError = ref(false);
-const validAccount = () => {
-  if (!loginParam.value.account) {
-    loginAccountError.value = true;
-    errorInfo.value = "必填";
+const loginAccountErrorInfo = ref("");
+const registerAccountError = ref(false);
+const registerAccountErrorInfo = ref("");
+const validAccount = (s: string, type: string) => {
+  let flag = false;
+  let errorInfo = "";
+  if (!s) {
+    flag = true;
+    errorInfo = "必填";
   } else {
-    loginAccountError.value = false;
+    flag = false;
+  }
+  if (type == "login") {
+    loginAccountError.value = flag;
+    loginAccountErrorInfo.value = errorInfo;
+  } else if (type == "register") {
+    registerAccountError.value = flag;
+    registerAccountErrorInfo.value = errorInfo;
   }
 };
 const loginPasswordError = ref(false);
-const validPassword = () => {
-  if (!loginParam.value.password) {
-    loginPasswordError.value = true;
-    errorInfo.value = "必填";
-  } else if (loginParam.value.password.length < 8) {
-    loginPasswordError.value = true;
-    errorInfo.value = "密码必须大于8个字符";
+const loginPasswordErrorInfo = ref("");
+const registerPasswordError = ref(false);
+const registerPasswordErrorInfo = ref("");
+const validPassword = (s: string, type: string) => {
+  let flag = false;
+  let errorInfo = "";
+  if (!s) {
+    flag = true;
+    errorInfo = "必填";
+  } else if (s.length < 8) {
+    flag = true;
+    errorInfo = "密码必须大于8个字符";
   } else {
-    loginAccountError.value = false;
+    flag = false;
+  }
+  if (type == "login") {
+    loginPasswordError.value = flag;
+    loginPasswordErrorInfo.value = errorInfo;
+  } else if (type == "register") {
+    registerPasswordError.value = flag;
+    registerPasswordErrorInfo.value = errorInfo;
+  }
+};
+const registerAgainPasswordError = ref(false);
+const registerAgainPasswordErrorInfo = ref("");
+const validAgainPassword = (s: string, type: string) => {
+  let flag = false;
+  if (!s) {
+    flag = true;
+    registerAgainPasswordErrorInfo.value = "必填";
+  } else if (s.length < 8) {
+    flag = true;
+    registerAgainPasswordErrorInfo.value = "密码必须大于8个字符";
+  } else if (s != registerParam.value.password) {
+    flag = true;
+    registerAgainPasswordErrorInfo.value = "两次密码不一致";
+  } else {
+    flag = false;
+  }
+  if (type == "register") {
+    registerAgainPasswordError.value = flag;
   }
 };
 
 const logining = ref(false);
 const login = () => {
-  if (loginAccountError || loginPasswordError) {
+  validAccount(loginParam.value.account, "login");
+  validPassword(loginParam.value.password, "login");
+  if (loginAccountError.value || loginPasswordError.value) {
     return;
   }
   if (logining.value) {
     return;
   }
-  
-  // 登录
+  logining.value = true;
+  // TODO 登录
+  local("login", loginParam.value)
+    .then((res) => {
+      console.log(res);
+      alertSuccess("登录成功");
+    })
+    .finally(() => {
+      logining.value = false;
+    });
 };
-
-const passwordRules = [
-  (v: string) => !!v || "必填",
-  (v: string) => (v && v.length >= 8) || "密码必须大于等于8个字符",
-];
 
 const registerParam = ref({
   username: "",
@@ -54,12 +104,39 @@ const registerParam = ref({
   password: "",
   againPassword: "",
 });
+const registering = ref(false);
+const register = () => {
+  validAccount(registerParam.value.account, "register");
+  validPassword(registerParam.value.password, "register");
+  validAgainPassword(registerParam.value.againPassword, "register");
+  if (
+    registerAccountError.value ||
+    registerPasswordError.value ||
+    registerAgainPasswordError.value
+  ) {
+    return;
+  }
+  if (registering.value) {
+    return;
+  }
+  registering.value = true;
+
+  // TODO 注册
+  local("register", registerParam.value)
+    .then((res) => {
+      console.log(res);
+      alertSuccess("注册成功");
+    })
+    .finally(() => {
+      registering.value = false;
+    });
+};
 </script>
 
 <template>
   <!-- <div>尚未登录</div> -->
-  <div class="h-full w-full flex flex-col justify-center items-center">
-    <div class="w-80 -mt-36 flex flex-col items-center">
+  <div class="h-full w-full flex flex-col items-center">
+    <div class="w-80 mt-36 flex flex-col items-center">
       <div class="w-48 flex justify-between rounded-md overflow-hidden">
         <span
           class="flex-1 cursor-pointer py-2 text-center hover:bg-gray-700 font-bold"
@@ -84,14 +161,14 @@ const registerParam = ref({
               :class="
                 loginAccountError ? 'border-red-500' : 'focus:border-gray-300'
               "
-              @change="validAccount()"
-              @focus="validAccount()"
+              @change="validAccount(loginParam.account, 'login')"
+              @focus="validAccount(loginParam.account, 'login')"
               placeholder="* 账号"
             />
             <span
-              class="text-red-500 text-sm absolute -right-8 top-6"
+              class="text-red-500 text-[12px] absolute right-2 bottom-2"
               v-show="loginAccountError"
-              >{{ errorInfo }}
+              >{{ loginAccountErrorInfo }}
             </span>
           </div>
           <div class="relative w-full flex flex-col">
@@ -102,19 +179,22 @@ const registerParam = ref({
               :class="
                 loginPasswordError ? 'border-red-500' : 'focus:border-gray-300'
               "
-              @change="validPassword()"
-              @focus="validPassword()"
+              @change="validPassword(loginParam.password, 'login')"
+              @focus="validPassword(loginParam.password, 'login')"
               placeholder="* 密码"
             />
             <span
-              class="text-red-500 text-sm absolute -right-8 top-6"
+              class="text-red-500 text-[12px] absolute right-2 bottom-2"
               v-show="loginPasswordError"
-              >{{ errorInfo }}
+              >{{ loginPasswordErrorInfo }}
             </span>
           </div>
         </div>
         <button
-          class="w-full text-center py-2 rounded-md bg-gray-800 hover:bg-gray-700 mt-8"
+          class="w-full text-center py-2 rounded-md bg-gray-800 mt-8"
+          :class="logining ? 'bg-gray-800' : 'hover:bg-gray-600'"
+          @click="login()"
+          :disabled="logining"
         >
           登录
         </button>
@@ -122,32 +202,81 @@ const registerParam = ref({
       <div v-show="showForm == 'register'" class="mt-4 w-full">
         <div class="flex flex-col">
           <input
-            class="rounded-md p-2 mt-4 bg-gray-500/50 focus:outline-none border border-gray-600 focus:border-gray-300"
+            class="rounded-md p-2 mt-4 bg-gray-500/50 focus:outline-none border border-gray-600"
             type="text"
             v-model="registerParam.username"
             placeholder="昵称"
           />
-          <input
-            class="rounded-md p-2 mt-4 bg-gray-500/50 focus:outline-none border border-gray-600 focus:border-gray-300"
-            type="text"
-            v-model="registerParam.account"
-            placeholder="账号"
-          />
-          <input
-            class="rounded-md p-2 mt-4 bg-gray-500/50 focus:outline-none border border-gray-600 focus:border-gray-300"
-            type="password"
-            v-model="registerParam.password"
-            placeholder="密码"
-          />
-          <input
-            class="rounded-md p-2 mt-4 bg-gray-500/50 focus:outline-none border border-gray-600 focus:border-gray-300"
-            type="password"
-            v-model="registerParam.againPassword"
-            placeholder="确认密码"
-          />
+          <div class="relative w-full flex flex-col">
+            <input
+              class="rounded-md p-2 mt-4 bg-gray-500/50 focus:outline-none border border-gray-600"
+              type="text"
+              v-model="registerParam.account"
+              :class="
+                registerAccountError
+                  ? 'border-red-500'
+                  : 'focus:border-gray-300'
+              "
+              @change="validAccount(registerParam.account, 'register')"
+              @focus="validAccount(registerParam.account, 'register')"
+              placeholder="* 账号"
+            />
+            <span
+              class="text-red-500 text-[12px] absolute right-2 bottom-2"
+              v-show="registerAccountError"
+              >{{ registerAccountErrorInfo }}
+            </span>
+          </div>
+          <div class="relative w-full flex flex-col">
+            <input
+              class="rounded-md p-2 mt-4 bg-gray-500/50 focus:outline-none border border-gray-600"
+              type="password"
+              v-model="registerParam.password"
+              :class="
+                registerPasswordError
+                  ? 'border-red-500'
+                  : 'focus:border-gray-300'
+              "
+              @change="validPassword(registerParam.password, 'register')"
+              @focus="validPassword(registerParam.password, 'register')"
+              placeholder="* 密码"
+            />
+            <span
+              class="text-red-500 text-[12px] absolute right-2 bottom-2"
+              v-show="registerPasswordError"
+              >{{ registerPasswordErrorInfo }}
+            </span>
+          </div>
+          <div class="relative w-full flex flex-col">
+            <input
+              class="rounded-md p-2 mt-4 bg-gray-500/50 focus:outline-none border border-gray-600"
+              type="password"
+              v-model="registerParam.againPassword"
+              :class="
+                registerAgainPasswordError
+                  ? 'border-red-500'
+                  : 'focus:border-gray-300'
+              "
+              @change="
+                validAgainPassword(registerParam.againPassword, 'register')
+              "
+              @focus="
+                validAgainPassword(registerParam.againPassword, 'register')
+              "
+              placeholder="* 确认密码"
+            />
+            <span
+              class="text-red-500 text-[12px] absolute right-2 bottom-2"
+              v-show="registerAgainPasswordError"
+              >{{ registerAgainPasswordErrorInfo }}
+            </span>
+          </div>
         </div>
         <button
-          class="w-full text-center py-2 rounded-md bg-gray-800 hover:bg-gray-700 mt-8"
+          class="w-full text-center py-2 rounded-md bg-gray-800 mt-8"
+          :class="registering ? 'bg-gray-800' : 'hover:bg-gray-600'"
+          @click="register()"
+          :disabled="registering"
         >
           注册
         </button>
