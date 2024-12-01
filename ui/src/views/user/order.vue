@@ -1,16 +1,9 @@
 <script setup lang="ts">
-// 需要登录
-definePageMeta({
-  layout: "user",
-  middleware: ["auth"],
-});
-
-const getOrdersPage = (
-  page: PageParam,
-  param: Order
-): Promise<{ total: number; data: Order[] }> => {
-  return doApi.post(`api/order/page`, { ...page, ...param });
-};
+import type { Order } from "@/utils/cloud";
+import { formatDate, getOrderStatusText } from "@/utils/common";
+import request from "@/utils/request";
+import type { PageParam } from "@/utils/model";
+import { ref } from "vue";
 
 const pageQuery = ref<PageParam>({ pageSize: 15, pageNum: 1 });
 const query = ref<Order>({});
@@ -40,10 +33,14 @@ const headers = ref([
 
 const getPages = () => {
   loading.value = true;
-  getOrdersPage(pageQuery.value, query.value).then((res) => {
+  request("userOrder", pageQuery.value, query.value).then((res) => {
     tabledata.value = res;
     loading.value = false;
   });
+  // getOrdersPage(pageQuery.value, query.value).then((res) => {
+  //   tabledata.value = res;
+  //   loading.value = false;
+  // });
 };
 
 const changePage = (param: {
@@ -72,7 +69,7 @@ const changePage = (param: {
       <v-btn variant="tonal" class="ml-2" @click="getPages"> 查询 </v-btn>
     </div>
     <v-data-table-server
-      noDataText="noDataText"
+      noDataText="暂无数据"
       :items-per-page="pageQuery.pageSize"
       :items="tabledata?.data"
       :itemsLength="tabledata?.total || 0"

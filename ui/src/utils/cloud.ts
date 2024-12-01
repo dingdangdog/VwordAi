@@ -9,6 +9,15 @@ export interface UserInfo {
   createBy?: string;
   balance?: number;
 }
+// 初始化登录返回信息
+export interface UserInitInfo {
+  token: string;
+  userId?: number;
+  name?: string;
+  createBy?: string;
+  account?: string;
+  password?: string;
+}
 // 用户信息
 export interface User {
   id?: number;

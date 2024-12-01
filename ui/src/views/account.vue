@@ -1,15 +1,11 @@
 <script setup lang="ts">
 import type { UserInfo } from "@/utils/cloud";
 import { alertSuccess } from "@/utils/common";
-import local from "@/utils/local";
-import { ref } from "vue";
+import request from "@/utils/request";
+import { onMounted, ref } from "vue";
 
-const user = ref<UserInfo>();
-const getUserInfo = () => {
-  local("userInfo").then((res) => {
-    user.value = res;
-  });
-};
+import UserIndex from "@/views/user/index.vue";
+import { GlobalConfig, GlobalUserLogin } from "@/utils/global.store";
 
 // getUserInfo();
 
@@ -18,6 +14,16 @@ const showForm = ref("login");
 const loginParam = ref<any>({
   account: "",
   password: "",
+});
+const saveFlag = ref({
+  save: false,
+  autoLogin: false,
+});
+onMounted(() => {
+  loginParam.value.account = GlobalUserLogin.value?.account || "";
+  loginParam.value.password = GlobalUserLogin.value?.account || "";
+  saveFlag.value.save = GlobalConfig.value.account?.save || false;
+  saveFlag.value.autoLogin = GlobalConfig.value.account?.autoLogin || false;
 });
 
 const loginAccountError = ref(false);
@@ -98,11 +104,11 @@ const login = () => {
   }
   logining.value = true;
   // TODO 登录
-  local("login", loginParam.value)
+  request("login", loginParam.value, saveFlag.value)
     .then((res) => {
       console.log(res);
       alertSuccess("登录成功");
-      getUserInfo();
+      GlobalUserLogin.value = res;
     })
     .finally(() => {
       logining.value = false;
@@ -133,10 +139,11 @@ const register = () => {
   registering.value = true;
 
   // TODO 注册
-  local("register", registerParam.value)
+  request("register", registerParam.value, saveFlag.value)
     .then((res) => {
       console.log(res);
       alertSuccess("注册成功");
+      GlobalUserLogin.value = res;
     })
     .finally(() => {
       registering.value = false;
@@ -147,7 +154,7 @@ const register = () => {
 <template>
   <!-- <div>尚未登录</div> -->
   <div class="h-full w-full flex flex-col items-center">
-    <div class="w-80 mt-36 flex flex-col items-center" v-show="!user">
+    <div v-if="!GlobalUserLogin" class="w-80 mt-36 flex flex-col items-center">
       <div class="w-48 flex justify-between rounded-md overflow-hidden">
         <span
           class="flex-1 cursor-pointer py-2 text-center hover:bg-gray-700 font-bold"
@@ -201,8 +208,27 @@ const register = () => {
             </span>
           </div>
         </div>
+        <div class="flex justify-between my-4">
+          <div class="px-4 flex justify-center items-center">
+            <input
+              type="checkbox"
+              class="mx-2 w-4 h-4"
+              v-model="saveFlag.save"
+            />
+            <span class="">记住密码</span>
+          </div>
+          <div class="px-4 flex justify-center items-center">
+            <input
+              type="checkbox"
+              class="mx-2 w-4 h-4"
+              v-model="saveFlag.autoLogin"
+              :disabled="!saveFlag.save"
+            />
+            <span class="">自动登录</span>
+          </div>
+        </div>
         <button
-          class="w-full text-center py-2 rounded-md bg-gray-800 mt-8"
+          class="w-full text-center py-2 rounded-md bg-gray-800"
           :class="logining ? 'bg-gray-800' : 'hover:bg-gray-600'"
           @click="login()"
           :disabled="logining"
@@ -283,8 +309,27 @@ const register = () => {
             </span>
           </div>
         </div>
+        <div class="flex justify-between my-4">
+          <div class="px-4 flex justify-center items-center">
+            <input
+              type="checkbox"
+              class="mx-2 w-4 h-4"
+              v-model="saveFlag.save"
+            />
+            <span class="">记住密码</span>
+          </div>
+          <div class="px-4 flex justify-center items-center">
+            <input
+              type="checkbox"
+              class="mx-2 w-4 h-4"
+              v-model="saveFlag.autoLogin"
+              :disabled="!saveFlag.save"
+            />
+            <span class="">自动登录</span>
+          </div>
+        </div>
         <button
-          class="w-full text-center py-2 rounded-md bg-gray-800 mt-8"
+          class="w-full text-center py-2 rounded-md bg-gray-800"
           :class="registering ? 'bg-gray-800' : 'hover:bg-gray-600'"
           @click="register()"
           :disabled="registering"
@@ -294,27 +339,8 @@ const register = () => {
       </div>
     </div>
 
-    <div v-show="user">
-      <div class="flex py-2">
-        <span class="min-w-36">昵称：</span>
-        <span>{{ user?.name }}</span>
-      </div>
-      <div class="flex py-2">
-        <span class="min-w-36">账号：</span>
-        <span>{{ user?.account }}</span>
-      </div>
-      <div class="flex py-2">
-        <span class="min-w-36">余额（椟）：</span>
-        <span>{{ user?.balance }}</span>
-      </div>
-      <div class="flex py-2">
-        <span class="min-w-36">手机号：</span>
-        <span>{{ user?.phone }}</span>
-      </div>
-      <div class="flex py-2">
-        <span class="min-w-36">邮箱：</span>
-        <span>{{ user?.email }}</span>
-      </div>
+    <div class="h-full w-full" v-if="GlobalUserLogin">
+      <UserIndex />
     </div>
   </div>
 </template>

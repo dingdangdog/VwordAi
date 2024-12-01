@@ -44,7 +44,7 @@ const getConfigApi = () => {
 };
 
 const saveConfig = (config) => {
-  const configFile = path.join(baseDir, CONFIG_FILE);
+  const configFile = path.join(getConfigDir(), CONFIG_FILE);
   fs.writeFileSync(configFile, JSON.stringify(config));
   return success(config, "success");
 };
@@ -58,6 +58,18 @@ const changeDataDir = (newdir) => {
   return success(config, "success");
 };
 
+const saveAccount = (account, password, token, saveFlag) => {
+  // console.log(account, password, token, saveFlag);
+  let config = getConfig();
+  config.account.data.account = account;
+  config.account.data.password = password;
+  config.account.data.token = token;
+  config.account.save = saveFlag.save;
+  config.account.autoLogin = saveFlag.autoLogin;
+  // console.log(config);
+  saveConfig(config);
+};
+
 module.exports = {
   setBaseDir,
   getConfigDir,
@@ -65,4 +77,5 @@ module.exports = {
   getConfigApi,
   saveConfig,
   changeDataDir,
+  saveAccount,
 };

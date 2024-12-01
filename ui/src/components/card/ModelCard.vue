@@ -13,7 +13,7 @@ const { model } = defineProps(["model"]);
 <template>
   <div
     class="min-w-32 p-1 m-1 rounded-md"
-    :class="model.gender == '女' ? 'bg-pink-500/20' : 'bg-blue-500/20'"
+    :class="model.gender == '0' ? 'bg-pink-500/20' : 'bg-blue-500/20'"
   >
     <div class="flex justify-between items-center">
       <h4>{{ model.name }}</h4>
@@ -36,6 +36,9 @@ const { model } = defineProps(["model"]);
         {{ e.name }}
       </span>
     </div>
+    <p class="text-sm text-gray-500 flex justify-between">
+      {{ model.provider }}
+    </p>
   </div>
 </template>
 

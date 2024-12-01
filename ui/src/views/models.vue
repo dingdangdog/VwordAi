@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref } from "vue";
-import local from "@/utils/local";
+import request from "@/utils/request";
 import type { VoiceModel } from "@/utils/model";
 import CollectModelCard from "@/components/card/CollectModelCard.vue";
 import StoreModelCard from "@/components/card/StoreModelCard.vue";
@@ -11,7 +11,7 @@ const models = ref<VoiceModel[]>();
 const showModels = ref<VoiceModel[]>();
 const getModels = (provider: string) => {
   modelCategory.value = provider;
-  local("getModels", provider).then((res) => {
+  request("getModels", provider).then((res) => {
     console.log(res);
     models.value = res;
     showModels.value = models.value;

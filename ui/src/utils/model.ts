@@ -3,6 +3,28 @@ export interface Result<T> {
   m: string;
   d: T;
 }
+// 分页数据包装类
+export interface PagePack<T> {
+  pages?: number; // 总页数
+  size?: number; // 查询数量
+  total?: number; // 总数量
+  records?: T[]; // 数据集合
+  current?: number; // 当前页
+  countId?: any;
+  maxLimit?: number;
+  optimizeCountSql?: boolean;
+  orders?: any[];
+  searchCount?: true;
+}
+// 分页查询参数
+export interface PageParam {
+  pageNum: number;
+  pageSize: number;
+}
+export interface SortParam {
+  key?: string;
+  order?: string;
+}
 
 export interface MessageModel {
   id: string;
@@ -21,13 +43,17 @@ export interface Project {
 }
 
 export interface SystemConfig {
-  dataPath: string;
-  serviceProviders: SerivceProvider[];
-  serviceConfig: {
-    azure: AzureConfig;
-    openai: {};
-    aliyun: AliyunConfig;
-    sovits: {};
+  dataPath?: string;
+  serviceProviders?: SerivceProvider[];
+  serviceConfig?: any;
+  account?: {
+    save: false;
+    autoLogin: false;
+    data: {
+      account: "";
+      password: "";
+      token: "";
+    };
   };
 }
 

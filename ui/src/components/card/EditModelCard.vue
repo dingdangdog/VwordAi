@@ -3,7 +3,7 @@ import { ref } from "vue";
 
 import IconPlay from "@/components/icon/play.vue";
 import IconPause from "@/components/icon/pause.vue";
-import local from "@/utils/local";
+import request from "@/utils/request";
 import { VoiceTestText } from "@/utils/common";
 
 const { model, provider, play, set } = defineProps([
@@ -17,7 +17,7 @@ const { model, provider, play, set } = defineProps([
 <template>
   <div
     class="min-w-32 p-1 m-1 rounded-md"
-    :class="model.gender == '女' ? 'bg-pink-600/30' : 'bg-blue-600/30'"
+    :class="model.gender == '0' ? 'bg-pink-600/30' : 'bg-blue-600/30'"
   >
     <div class="flex justify-between items-center">
       <h4>{{ model.name }}</h4>
@@ -61,6 +61,9 @@ const { model, provider, play, set } = defineProps([
         {{ e.name }}
       </span>
     </div>
+    <p class="text-sm text-gray-500 flex justify-between">
+      {{ model.provider }}
+    </p>
   </div>
 </template>
 

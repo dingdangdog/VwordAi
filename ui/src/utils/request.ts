@@ -7,7 +7,7 @@ import { alertError } from "./common";
 // import { cleanLoginInfo } from '@/utils/common'
 
 // 创建api调用者
-const local = async (functionName: string, ...args: any) => {
+const request = async (functionName: string, ...args: any) => {
   // console.log(request)
   let serializedArgs =
     args.length > 0 ? args.map((arg: any) => JSON.stringify(arg)) : undefined;
@@ -26,6 +26,7 @@ const local = async (functionName: string, ...args: any) => {
   if (res.c == 200) {
     return res.d;
   } else if (res.c == 500) {
+    console.log(res)
     // 500 服务异常
     alertError(res.m);
     throw Error(res.m);
@@ -40,4 +41,4 @@ const local = async (functionName: string, ...args: any) => {
   }
 };
 
-export default local;
+export default request;

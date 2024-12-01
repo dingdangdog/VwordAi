@@ -8,7 +8,7 @@ import type {
 import MySelect from "../MySelect.vue";
 
 import { defineProps, defineEmits, ref } from "vue";
-import local from "@/utils/local";
+import request from "@/utils/request";
 import { alertWarning } from "@/utils/common";
 
 const { flag, item } = defineProps(["flag", "item"]);
@@ -26,7 +26,7 @@ const voiceEmotion = ref<EditVoiceEmotionModel>(item);
 const models = ref<VoiceModel[]>();
 const showModels = ref<any[]>([]);
 const getModels = (p: string) => {
-  local("getModels", p).then((res) => {
+  request("getModels", p).then((res) => {
     models.value = res;
     models.value?.forEach((m) => {
       showModels.value.push({
@@ -47,7 +47,7 @@ const selectModel = (model: any) => {
 // 选择的服务提供商:azure/aliyun等支持的情感模型
 const emotions = ref<VoiceStyle>({});
 const getEmotions = () => {
-  local("getEmotions", item.provider).then((res) => {
+  request("getEmotions", item.provider).then((res) => {
     emotions.value = res;
   });
 };

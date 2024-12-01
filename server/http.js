@@ -42,19 +42,19 @@ class HttpClient {
       // 处理 axios 错误格式
       if (error.response) {
         return {
-          success: false,
-          message: error.response.statusText,
-          status: error.response.status,
+          c: 500,
+          m: error.response.statusText,
+          d: error.response.status,
         };
       } else if (error.request) {
         return {
-          success: false,
-          message: "No response received",
+          c: 500,
+          m: "无法连接到服务器",
         };
       } else {
         return {
-          success: false,
-          message: error.message,
+          c: 500,
+          m: error.message,
         };
       }
     }

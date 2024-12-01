@@ -4,7 +4,9 @@ import type {
   MessageModel,
   Project,
   SerivceProvider,
+  SystemConfig,
 } from "./model";
+import type { UserInfo, UserInitInfo } from "./cloud";
 
 // 是否打开项目标识符
 export const openProjectFlag = ref(false);
@@ -26,3 +28,8 @@ export const ServiceProviderItems = ref<SerivceProvider[]>([
   { name: "Azure", code: "azure" },
   // { name: "阿里云", code: "aliyun" },
 ]);
+
+export const GlobalConfig = ref<SystemConfig>({});
+
+export const GlobalUserInfo = ref<UserInfo>();
+export const GlobalUserLogin = ref<UserInitInfo>();

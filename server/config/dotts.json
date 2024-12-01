@@ -1,5 +1,18 @@
 {
   "dataPath": "",
+  "account": {
+    "save": false,
+    "autoLogin": false,
+    "data": {
+      "account": "",
+      "password": "",
+      "token": ""
+    }
+  },
+  "serviceProviders": [
+    { "name": "我的收藏", "code": "collect" },
+    { "name": "Azure", "code": "azure" }
+  ],
   "serviceConfig": {
     "azure": {
       "key": "",

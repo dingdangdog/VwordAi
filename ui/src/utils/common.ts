@@ -162,3 +162,48 @@ export const processVoiceNode = (
 
   return "";
 };
+
+export const formatDate = (date: Date): string => {
+  const pad = (num: number) => String(num).padStart(2, "0");
+
+  const year = date.getFullYear();
+  const month = pad(date.getMonth() + 1); // 月份从 0 开始，需要加 1
+  const day = pad(date.getDate());
+  const hours = pad(date.getHours());
+  const minutes = pad(date.getMinutes());
+  const seconds = pad(date.getSeconds());
+
+  return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+};
+
+export const getOrderStatusText = (status: string) => {
+  switch (status) {
+    case "-1":
+      return "已取消";
+    case "0":
+      return "待支付";
+    case "1":
+      return "支付成功";
+    case "2":
+      return "支付失败";
+    case "3":
+      return "已退款";
+    default:
+      return status;
+  }
+};
+
+export const getProjectStatusText = (status: string) => {
+  switch (status) {
+    case "-1":
+      return "处理失败";
+    case "0":
+      return "待处理";
+    case "1":
+      return "处理中";
+    case "2":
+      return "成功";
+    default:
+      return status;
+  }
+};

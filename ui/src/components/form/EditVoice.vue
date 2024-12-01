@@ -2,7 +2,7 @@
 import type { SerivceProvider, VoiceModel } from "@/utils/model";
 import MySelect from "../MySelect.vue";
 import { ref } from "vue";
-import local from "@/utils/local";
+import request from "@/utils/request";
 
 const { flag, item } = defineProps(["flag", "item"]);
 const emit = defineEmits(["cancel", "save"]);
@@ -13,7 +13,7 @@ const showModels = ref<any[]>([]);
 
 const getModels = (p: SerivceProvider) => {
   selectServiceProvider.value = p;
-  local("getModels", p.code).then((res) => {
+  request("getModels", p.code).then((res) => {
     models.value = res;
     models.value?.forEach((m) => {
       showModels.value.push({

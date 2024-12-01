@@ -3,7 +3,7 @@ import type { EditEmotionModel, EmotionStyle, VoiceStyle } from "@/utils/model";
 import MySelect from "../MySelect.vue";
 
 import { defineProps, defineEmits, ref } from "vue";
-import local from "@/utils/local";
+import request from "@/utils/request";
 import { alertWarning } from "@/utils/common";
 
 const { flag, item } = defineProps(["flag", "item"]);
@@ -14,7 +14,7 @@ const emotion = ref<EditEmotionModel>(item);
 // 选择的服务提供商:azure/aliyun等支持的情感模型
 const emotions = ref<VoiceStyle>({});
 const getEmotions = () => {
-  local("getEmotions", item.provider).then((res) => {
+  request("getEmotions", item.provider).then((res) => {
     emotions.value = res;
   });
 };

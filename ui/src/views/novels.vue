@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { ref } from "vue";
-import local from "@/utils/local";
+import request from "@/utils/request";
 
 const webList = ref([]);
-local("test", "null").then((res) => {
+request("test", "null").then((res) => {
   console.log(res);
   webList.value = res;
 });

@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { ref } from "vue";
 import type { SerivceProvider, SystemConfig } from "@/utils/model";
-import local from "@/utils/local";
+import request from "@/utils/request";
 import MySelect from "@/components/MySelect.vue";
 import { alertSuccess, selectFloder } from "@/utils/common";
-import { ServiceProviderItems } from "@/utils/global.store";
+import { GlobalConfig, ServiceProviderItems } from "@/utils/global.store";
 
 const showConfig = ref("basic");
 const selectedProvider = ref<SerivceProvider>();
@@ -13,16 +13,8 @@ const changeServiceProvider = (provider: SerivceProvider) => {
   selectedProvider.value = provider;
 };
 
-// @ts-ignore
-const systemConfig = ref<SystemConfig>({});
-
-local("getConfigApi", "").then((res) => {
-  // console.log(res);
-  systemConfig.value = res;
-});
-
 const saveConfig = () => {
-  local("saveConfig", systemConfig.value).then((res) => {
+  request("saveConfig", GlobalConfig.value).then((res) => {
     // console.log(res);
     alertSuccess("保存成功");
   });
@@ -31,10 +23,10 @@ const saveConfig = () => {
 const selectDataFloder = () => {
   selectFloder().then((path) => {
     if (path) {
-      systemConfig.value.dataPath = path;
-      local("changeDataDir", path).then((res) => {
+      GlobalConfig.value.dataPath = path;
+      request("changeDataDir", path).then((res) => {
         alertSuccess("数据迁移成功");
-        systemConfig.value = res;
+        GlobalConfig.value = res;
       });
     }
   });
@@ -48,7 +40,7 @@ const openFolder = () => {
 </script>
 
 <template>
-  <div class="h-full flex justify-between">
+  <div class="h-full w-full flex justify-between">
     <div class="w-40 h-full bg-black/20 flex flex-col">
       <a
         class="p-2 hover:bg-gray-700 cursor-pointer duration-300"
@@ -72,7 +64,7 @@ const openFolder = () => {
             <h3>数据存储路径</h3>
             <input
               class="w-96 bg-transparent border-b ml-2 focus:outline-none"
-              v-model="systemConfig.dataPath"
+              v-model="GlobalConfig.dataPath"
               @click="selectDataFloder()"
             />
             <button
@@ -119,21 +111,21 @@ const openFolder = () => {
             <label class="min-w-24">Key</label>
             <input
               class="w-full bg-transparent border-b py-1 focus:outline-none"
-              v-model="systemConfig.serviceConfig.azure.key"
+              v-model="GlobalConfig.serviceConfig.azure.key"
             />
           </div>
           <div class="flex items-center px-2 py-1">
             <label class="min-w-24">Region</label>
             <input
               class="w-full bg-transparent border-b py-1 focus:outline-none"
-              v-model="systemConfig.serviceConfig.azure.region"
+              v-model="GlobalConfig.serviceConfig.azure.region"
             />
           </div>
           <div class="flex items-center px-2 py-1">
             <label class="min-w-24">Endpoint</label>
             <input
               class="w-full bg-transparent border-b py-1 focus:outline-none"
-              v-model="systemConfig.serviceConfig.azure.endpoint"
+              v-model="GlobalConfig.serviceConfig.azure.endpoint"
             />
           </div>
         </div>

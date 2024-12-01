@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { onMounted, ref, watch } from "vue";
-import local from "@/utils/local";
+import request from "@/utils/request";
 import type {
   EditEmotionModel,
   EditVoiceEmotionModel,
@@ -26,6 +26,7 @@ import {
   saveProjectFlag,
   project,
   ModelCategoryItems,
+  GlobalConfig,
 } from "@/utils/global.store";
 import { playSSML } from "@/utils/api";
 import BreakMenu from "@/components/menu/Break.vue";
@@ -91,20 +92,13 @@ editCommonStyleClass.forEach((c) => voiceEmotionStyleClass.add(c));
  * class=blank 元素拥有右键菜单，功能有：编辑、删除，左键点击直接开始编辑
  */
 
-// @ts-ignore
-const systemConfig = ref<SystemConfig>({});
-local("getConfigApi", "").then((res) => {
-  // console.log(res);
-  systemConfig.value = res;
-});
-
 // 选择的服务提供商:azure/aliyun等
 const selectServiceProvider = ref<SerivceProvider>();
 const models = ref<VoiceModel[]>();
 const showModels = ref<VoiceModel[]>();
 const getModels = (provider: SerivceProvider) => {
   selectServiceProvider.value = provider;
-  local("getModels", provider.code).then((res) => {
+  request("getModels", provider.code).then((res) => {
     models.value = res;
     showModels.value = res;
   });
@@ -228,7 +222,7 @@ const addProject = () => {
 const openProject = () => {
   selectFloder().then((path) => {
     if (path) {
-      local("getProject", path).then((res) => {
+      request("getProject", path).then((res) => {
         alertSuccess("打开成功");
         project.value = res;
         project.value.path = path;
@@ -247,7 +241,7 @@ const saveProject = async () => {
     project.value.updateTime = Date.now();
   }
 
-  const res = await local("saveProject", project.value);
+  const res = await request("saveProject", project.value);
   // console.log(res);
   if (res) {
     project.value = res;
@@ -314,7 +308,7 @@ const playTest = (model: VoiceModel) => {
   if (!testText) {
     testText = VoiceTestText.replace("{}", model.name);
   }
-  local("playTest", model.code, testText, model.provider)
+  request("playTest", model.code, testText, model.provider)
     .then((res) => {
       playAudio(res);
     })
@@ -324,13 +318,13 @@ const playTest = (model: VoiceModel) => {
 // 执行本地语音转换（保存语音文件到本地）
 const doTTS = (ssml: string) => {
   if (!project.value.path) {
-    project.value.path = `${systemConfig.value.dataPath}/${project.value.name}`;
+    project.value.path = `${GlobalConfig.value.dataPath}/${project.value.name}`;
   }
   // 组装本次转换的文件名
   const fileName = `${project.value.path}/${
     project.value.name
   }_${Date.now()}.wav`;
-  local("dotts", ssml, fileName).then((res) => {
+  request("dotts", ssml, fileName).then((res) => {
     alertSuccess("生成成功");
     saveProject();
     // @ts-ignore 直接打开生成后的文件

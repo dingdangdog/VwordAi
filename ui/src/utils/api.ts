@@ -1,8 +1,8 @@
-import local from "./local";
+import request from "./request";
 import { playAudio } from "./common";
 
 export const playSSML = (ssml: string) => {
-  local("playSSML", ssml).then((res) => {
+  request("playSSML", ssml).then((res) => {
     playAudio(res);
   });
 };

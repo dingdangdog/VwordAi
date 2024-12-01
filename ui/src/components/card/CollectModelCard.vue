@@ -5,7 +5,7 @@ import IconPlay from "@/components/icon/play.vue";
 import IconPause from "@/components/icon/pause.vue";
 import IconStarMinus from "@/components/icon/starminus.vue";
 import IconStarPlus from "@/components/icon/starplus.vue";
-import local from "@/utils/local";
+import request from "@/utils/request";
 import {
   alertInfo,
   alertSuccess,
@@ -32,7 +32,7 @@ const playTest = (modelRef: VoiceModel) => {
   if (!testText) {
     testText = VoiceTestText.replace("{}", modelRef.name);
   }
-  local("playTest", modelRef.code, testText, modelRef.provider)
+  request("playTest", modelRef.code, testText, modelRef.provider)
     .then((res) => {
       playing.value = true;
       playAudio(res);
@@ -48,7 +48,7 @@ const collectModel = () => {
     ...modelRef.value,
     collect: true,
   };
-  local("saveModel", m).then(() => {
+  request("saveModel", m).then(() => {
     modelRef.value.collect = true;
     alertSuccess("已收藏");
   });
@@ -58,7 +58,7 @@ const unCollectModel = () => {
     ...modelRef.value,
     collect: false,
   };
-  local("saveModel", m).then(() => {
+  request("saveModel", m).then(() => {
     modelRef.value.collect = false;
     alertInfo("取消收藏");
   });
@@ -68,7 +68,7 @@ const unCollectModel = () => {
 <template>
   <div
     class="min-w-52 p-1 m-1 rounded-md"
-    :class="modelRef.gender == '女' ? 'bg-pink-600/30' : 'bg-blue-600/30'"
+    :class="modelRef.gender == '0' ? 'bg-pink-600/30' : 'bg-blue-600/30'"
   >
     <div class="flex justify-between items-center">
       <h4>{{ modelRef.name }}</h4>
@@ -124,6 +124,9 @@ const unCollectModel = () => {
         {{ e.name }}
       </span>
     </div>
+    <p class="text-sm text-gray-500 flex justify-between">
+      {{ model.provider }}
+    </p>
   </div>
 </template>
 
