@@ -34,6 +34,7 @@ export interface MessageModel {
 }
 
 export interface Project {
+  id?: number;
   layout?: EditVoiceEmotionModel;
   path?: string;
   name?: string;

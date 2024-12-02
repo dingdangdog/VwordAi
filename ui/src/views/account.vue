@@ -10,6 +10,8 @@ import { GlobalConfig, GlobalUserLogin } from "@/utils/global.store";
 // getUserInfo();
 
 const showForm = ref("login");
+const lookPs = ref(false);
+const lookRegisterPs = ref(false);
 
 const loginParam = ref<any>({
   account: "",
@@ -20,11 +22,23 @@ const saveFlag = ref({
   autoLogin: false,
 });
 onMounted(() => {
-  loginParam.value.account = GlobalUserLogin.value?.account || "";
-  loginParam.value.password = GlobalUserLogin.value?.account || "";
+  // console.log(GlobalUserLogin.value);
+  // console.log(GlobalConfig.value);
+  loginParam.value.account = GlobalConfig.value?.account?.data.account || "";
+  loginParam.value.password = GlobalConfig.value?.account?.data.password || "";
   saveFlag.value.save = GlobalConfig.value.account?.save || false;
   saveFlag.value.autoLogin = GlobalConfig.value.account?.autoLogin || false;
 });
+
+const accountRules = [(v: string) => !!v || "必填"];
+const passwordRules = [
+  (v: string) => !!v || "必填",
+  (v: string) => (v && v.length >= 8) || "密码必须大于等于8个字符",
+];
+const againPasswordRules = [
+  (v: string) => !!v || "必填",
+  (v: string) => v == loginParam.value.password || "密码不一致",
+];
 
 const loginAccountError = ref(false);
 const loginAccountErrorInfo = ref("");
@@ -47,56 +61,16 @@ const validAccount = (s: string, type: string) => {
     registerAccountErrorInfo.value = errorInfo;
   }
 };
-const loginPasswordError = ref(false);
-const loginPasswordErrorInfo = ref("");
-const registerPasswordError = ref(false);
-const registerPasswordErrorInfo = ref("");
-const validPassword = (s: string, type: string) => {
-  let flag = false;
-  let errorInfo = "";
-  if (!s) {
-    flag = true;
-    errorInfo = "必填";
-  } else if (s.length < 8) {
-    flag = true;
-    errorInfo = "密码必须大于8个字符";
-  } else {
-    flag = false;
-  }
-  if (type == "login") {
-    loginPasswordError.value = flag;
-    loginPasswordErrorInfo.value = errorInfo;
-  } else if (type == "register") {
-    registerPasswordError.value = flag;
-    registerPasswordErrorInfo.value = errorInfo;
-  }
-};
-const registerAgainPasswordError = ref(false);
-const registerAgainPasswordErrorInfo = ref("");
-const validAgainPassword = (s: string, type: string) => {
-  let flag = false;
-  if (!s) {
-    flag = true;
-    registerAgainPasswordErrorInfo.value = "必填";
-  } else if (s.length < 8) {
-    flag = true;
-    registerAgainPasswordErrorInfo.value = "密码必须大于8个字符";
-  } else if (s != registerParam.value.password) {
-    flag = true;
-    registerAgainPasswordErrorInfo.value = "两次密码不一致";
-  } else {
-    flag = false;
-  }
-  if (type == "register") {
-    registerAgainPasswordError.value = flag;
-  }
-};
 
 const logining = ref(false);
-const login = () => {
-  validAccount(loginParam.value.account, "login");
-  validPassword(loginParam.value.password, "login");
-  if (loginAccountError.value || loginPasswordError.value) {
+
+const loginForm = ref();
+const resetLoginForm = () => {
+  loginForm.value.reset();
+};
+const login = async () => {
+  const { valid } = await loginForm.value.validate();
+  if (!valid) {
     return;
   }
   if (logining.value) {
@@ -115,6 +89,7 @@ const login = () => {
     });
 };
 
+const registerForm = ref();
 const registerParam = ref({
   username: "",
   account: "",
@@ -122,15 +97,14 @@ const registerParam = ref({
   againPassword: "",
 });
 const registering = ref(false);
-const register = () => {
-  validAccount(registerParam.value.account, "register");
-  validPassword(registerParam.value.password, "register");
-  validAgainPassword(registerParam.value.againPassword, "register");
-  if (
-    registerAccountError.value ||
-    registerPasswordError.value ||
-    registerAgainPasswordError.value
-  ) {
+
+const resetRegisterForm = () => {
+  registerForm.value.reset();
+};
+
+const register = async () => {
+  const { valid } = await registerForm.value.validate();
+  if (!valid) {
     return;
   }
   if (registering.value) {
@@ -154,7 +128,7 @@ const register = () => {
 <template>
   <!-- <div>尚未登录</div> -->
   <div class="h-full w-full flex flex-col items-center">
-    <div v-if="!GlobalUserLogin" class="w-80 mt-36 flex flex-col items-center">
+    <div v-if="!GlobalUserLogin" class="w-80 mt-24 flex flex-col items-center">
       <div class="w-48 flex justify-between rounded-md overflow-hidden">
         <span
           class="flex-1 cursor-pointer py-2 text-center hover:bg-gray-700 font-bold"
@@ -170,146 +144,106 @@ const register = () => {
         >
       </div>
       <div v-show="showForm == 'login'" class="mt-4 w-full">
-        <div class="flex flex-col">
-          <div class="relative w-full flex flex-col">
-            <input
-              class="rounded-md p-2 mt-4 bg-gray-500/50 focus:outline-none border border-gray-600"
-              type="text"
-              v-model="loginParam.account"
-              :class="
-                loginAccountError ? 'border-red-500' : 'focus:border-gray-300'
-              "
-              @change="validAccount(loginParam.account, 'login')"
-              @focus="validAccount(loginParam.account, 'login')"
-              placeholder="* 账号"
-            />
-            <span
-              class="text-red-500 text-[12px] absolute right-2 bottom-2"
-              v-show="loginAccountError"
-              >{{ loginAccountErrorInfo }}
-            </span>
+        <v-form ref="loginForm">
+          <v-text-field
+            v-model="loginParam.account"
+            :rules="accountRules"
+            :counter="16"
+            name="account"
+            label="账号"
+            required
+          ></v-text-field>
+          <v-text-field
+            v-model="loginParam.password"
+            :rules="passwordRules"
+            name="password"
+            :counter="36"
+            label="密码"
+            required
+            :type="lookPs ? 'text' : 'password'"
+            :append-inner-icon="lookPs ? 'mdi-eye' : 'mdi-eye-off'"
+            @click:append-inner="lookPs = !lookPs"
+          ></v-text-field>
+
+          <div class="flex justify-between">
+            <div class="px-4 flex justify-center items-center">
+              <input
+                type="checkbox"
+                class="mx-2 w-4 h-4"
+                v-model="saveFlag.save"
+              />
+              <span class="">记住密码</span>
+            </div>
+            <div class="px-4 flex justify-center items-center">
+              <input
+                type="checkbox"
+                class="mx-2 w-4 h-4"
+                v-model="saveFlag.autoLogin"
+                :disabled="!saveFlag.save"
+              />
+              <span class="">自动登录</span>
+            </div>
           </div>
-          <div class="relative w-full flex flex-col">
-            <input
-              class="rounded-md p-2 mt-4 bg-gray-500/50 focus:outline-none border border-gray-600"
-              type="password"
-              v-model="loginParam.password"
-              :class="
-                loginPasswordError ? 'border-red-500' : 'focus:border-gray-300'
-              "
-              @change="validPassword(loginParam.password, 'login')"
-              @focus="validPassword(loginParam.password, 'login')"
-              placeholder="* 密码"
-            />
-            <span
-              class="text-red-500 text-[12px] absolute right-2 bottom-2"
-              v-show="loginPasswordError"
-              >{{ loginPasswordErrorInfo }}
-            </span>
+          <div class="flex flex-col">
+            <v-btn
+              class="mt-4"
+              color="primary"
+              block
+              @click="login()"
+              :disabled="logining"
+            >
+              登录
+            </v-btn>
+
+            <!-- <v-btn class="mt-4" color="error" block @click="resetLoginForm">
+              重置
+            </v-btn> -->
           </div>
-        </div>
-        <div class="flex justify-between my-4">
-          <div class="px-4 flex justify-center items-center">
-            <input
-              type="checkbox"
-              class="mx-2 w-4 h-4"
-              v-model="saveFlag.save"
-            />
-            <span class="">记住密码</span>
-          </div>
-          <div class="px-4 flex justify-center items-center">
-            <input
-              type="checkbox"
-              class="mx-2 w-4 h-4"
-              v-model="saveFlag.autoLogin"
-              :disabled="!saveFlag.save"
-            />
-            <span class="">自动登录</span>
-          </div>
-        </div>
-        <button
-          class="w-full text-center py-2 rounded-md bg-gray-800"
-          :class="logining ? 'bg-gray-800' : 'hover:bg-gray-600'"
-          @click="login()"
-          :disabled="logining"
-        >
-          登录
-        </button>
+        </v-form>
       </div>
       <div v-show="showForm == 'register'" class="mt-4 w-full">
-        <div class="flex flex-col">
-          <input
-            class="rounded-md p-2 mt-4 bg-gray-500/50 focus:outline-none border border-gray-600"
-            type="text"
+        <v-form ref="registerForm">
+          <v-text-field
             v-model="registerParam.username"
-            placeholder="昵称"
-          />
-          <div class="relative w-full flex flex-col">
-            <input
-              class="rounded-md p-2 mt-4 bg-gray-500/50 focus:outline-none border border-gray-600"
-              type="text"
-              v-model="registerParam.account"
-              :class="
-                registerAccountError
-                  ? 'border-red-500'
-                  : 'focus:border-gray-300'
-              "
-              @change="validAccount(registerParam.account, 'register')"
-              @focus="validAccount(registerParam.account, 'register')"
-              placeholder="* 账号"
-            />
-            <span
-              class="text-red-500 text-[12px] absolute right-2 bottom-2"
-              v-show="registerAccountError"
-              >{{ registerAccountErrorInfo }}
-            </span>
-          </div>
-          <div class="relative w-full flex flex-col">
-            <input
-              class="rounded-md p-2 mt-4 bg-gray-500/50 focus:outline-none border border-gray-600"
-              type="password"
-              v-model="registerParam.password"
-              :class="
-                registerPasswordError
-                  ? 'border-red-500'
-                  : 'focus:border-gray-300'
-              "
-              @change="validPassword(registerParam.password, 'register')"
-              @focus="validPassword(registerParam.password, 'register')"
-              placeholder="* 密码"
-            />
-            <span
-              class="text-red-500 text-[12px] absolute right-2 bottom-2"
-              v-show="registerPasswordError"
-              >{{ registerPasswordErrorInfo }}
-            </span>
-          </div>
-          <div class="relative w-full flex flex-col">
-            <input
-              class="rounded-md p-2 mt-4 bg-gray-500/50 focus:outline-none border border-gray-600"
-              type="password"
-              v-model="registerParam.againPassword"
-              :class="
-                registerAgainPasswordError
-                  ? 'border-red-500'
-                  : 'focus:border-gray-300'
-              "
-              @change="
-                validAgainPassword(registerParam.againPassword, 'register')
-              "
-              @focus="
-                validAgainPassword(registerParam.againPassword, 'register')
-              "
-              placeholder="* 确认密码"
-            />
-            <span
-              class="text-red-500 text-[12px] absolute right-2 bottom-2"
-              v-show="registerAgainPasswordError"
-              >{{ registerAgainPasswordErrorInfo }}
-            </span>
-          </div>
-        </div>
-        <div class="flex justify-between my-4">
+            name="name"
+            :counter="24"
+            label="昵称"
+            required
+          ></v-text-field>
+          <v-text-field
+            v-model="registerParam.account"
+            :rules="accountRules"
+            name="account"
+            :counter="16"
+            label="账号"
+            clearable
+            required
+          ></v-text-field>
+          <v-text-field
+            v-model="registerParam.password"
+            :rules="passwordRules"
+            :counter="36"
+            name="password"
+            label="密码"
+            clearable
+            required
+            :type="lookRegisterPs ? 'text' : 'password'"
+            :append-inner-icon="lookRegisterPs ? 'mdi-eye' : 'mdi-eye-off'"
+            @click:append-inner="lookRegisterPs = !lookRegisterPs"
+          ></v-text-field>
+          <v-text-field
+            v-model="registerParam.againPassword"
+            :rules="passwordRules"
+            :counter="36"
+            label="确认密码"
+            clearable
+            required
+            :type="lookRegisterPs ? 'text' : 'password'"
+            :append-inner-icon="lookRegisterPs ? 'mdi-eye' : 'mdi-eye-off'"
+            @click:append-inner="lookRegisterPs = !lookRegisterPs"
+          ></v-text-field>
+        </v-form>
+        <div class="flex justify-between">
           <div class="px-4 flex justify-center items-center">
             <input
               type="checkbox"
@@ -328,14 +262,15 @@ const register = () => {
             <span class="">自动登录</span>
           </div>
         </div>
-        <button
-          class="w-full text-center py-2 rounded-md bg-gray-800"
-          :class="registering ? 'bg-gray-800' : 'hover:bg-gray-600'"
-          @click="register()"
-          :disabled="registering"
-        >
-          注册
-        </button>
+        <div class="flex flex-col">
+          <v-btn class="mt-4" color="success" block @click="register">
+            注册
+          </v-btn>
+
+          <!-- <v-btn class="mt-4" color="error" block @click="resetRegisterForm">
+            重置表单
+          </v-btn> -->
+        </div>
       </div>
     </div>
 

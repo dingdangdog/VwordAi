@@ -35,7 +35,7 @@ const selectDataFloder = () => {
 const openFolder = () => {
   // console.log("openFloder");
   // @ts-ignore
-  window.electron.openFolder(systemConfig.value.dataPath);
+  window.electron.openFolder(GlobalConfig.value.dataPath);
 };
 </script>
 

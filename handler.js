@@ -18,6 +18,7 @@ const {
   userOrder,
   userProject,
   userUsed,
+  uploadProject,
 } = require("./server/cloud.js");
 
 module.exports = {
@@ -47,4 +48,5 @@ module.exports = {
   userOrder,
   userProject,
   userUsed,
+  uploadProject,
 };

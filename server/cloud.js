@@ -114,4 +114,5 @@ module.exports = {
   userOrder,
   userProject,
   userUsed,
+  uploadProject,
 };

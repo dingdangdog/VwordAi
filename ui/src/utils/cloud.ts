@@ -36,7 +36,7 @@ export interface User {
   google_key?: string;
   create_by?: string;
 }
-// 消费记录（椟-使用记录）
+// 消费记录（文-使用记录）
 export interface Used {
   id?: number;
   userId?: number;
@@ -62,7 +62,7 @@ export interface Project {
   update_by?: string;
 }
 
-// 订单记录（椟-充值记录）
+// 订单记录（文-充值记录）
 export interface Order {
   id?: number;
   userId?: string | number;

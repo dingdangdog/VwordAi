@@ -252,6 +252,15 @@ const saveProject = async () => {
   }
 };
 
+// 上传项目
+const uploadProject = async () => {
+  await saveProject();
+  request("uploadProject", project.value).then((res) => {
+    alertSuccess("上传成功");
+    project.value.id = res.id;
+  });
+};
+
 // 关闭项目
 const closeProject = (canSave: boolean) => {
   if (!canSave) {
@@ -1047,6 +1056,12 @@ const closeAllMenu = () => {
         >
           本地合成
         </button>
+        <button
+          class="px-2 py-1 ml-2 rounded-md bg-gray-700 hover:bg-gray-600"
+          @click="uploadProject()"
+        >
+          上传云端
+        </button>
         <!-- <button
           class="ml-2 px-2 py-1 bg-gray-700 rounded-md hover:bg-gray-600"
           @click="tts()"
@@ -1060,17 +1075,17 @@ const closeAllMenu = () => {
           保存
         </button>
         <button
-          class="px-2 py-1 ml-2 rounded-md bg-green-700/80 hover:bg-green-600/80"
-          @click="saveAndCloseProject()"
-        >
-          保存并关闭
-        </button>
-        <button
           class="px-2 py-1 ml-2 rounded-md bg-red-500/60 hover:bg-red-500/80"
           title="关闭项目但不会自动保存"
           @click="closeProject(true)"
         >
-          强制关闭
+          关闭
+        </button>
+        <button
+          class="px-2 py-1 ml-2 rounded-md bg-green-700/80 hover:bg-green-600/80"
+          @click="saveAndCloseProject()"
+        >
+          保存并关闭
         </button>
       </div>
     </div>

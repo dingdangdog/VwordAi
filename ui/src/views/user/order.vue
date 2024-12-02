@@ -12,7 +12,7 @@ const loading = ref(false);
 const headers = ref([
   { title: "订单号", key: "no" },
   { title: "金额(￥)", key: "price" },
-  { title: "椟", key: "words" },
+  { title: "文", key: "words" },
   {
     title: "创建时间",
     key: "create_by",
