@@ -27,7 +27,13 @@ const headers = ref([
       return getOrderStatusText(order.status || "");
     },
   },
-  { title: "支付时间", key: "pay_time" },
+  {
+    title: "支付时间",
+    key: "pay_time",
+    value: (order: Order) => {
+      return order.pay_time ? formatDate(new Date(Number(order.pay_time))) : "";
+    },
+  },
   // { title: "Actions", key: "actions", sortable: false },
 ]);
 
