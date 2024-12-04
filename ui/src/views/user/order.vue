@@ -69,6 +69,7 @@ const changePage = (param: {
       <v-btn variant="tonal" class="ml-2" @click="getPages"> 查询 </v-btn>
     </div>
     <v-data-table-server
+      class="bg-transparent h-[calc(100vh-9rem)]"
       noDataText="暂无数据"
       :items-per-page="pageQuery.pageSize"
       :items="tabledata?.data"
@@ -76,7 +77,6 @@ const changePage = (param: {
       :headers="headers"
       :loading="loading"
       @update:options="changePage"
-      height="70vh"
     >
       <!-- eslint-disable-next-line vue/valid-v-slot -->
       <template v-slot:item.actions="{ item }">

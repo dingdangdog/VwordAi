@@ -13,9 +13,11 @@
   -khtml-user-select: none; /*早期浏览器*/
   user-select: none;
 }
+html, body, #app {
+  overflow: hidden !important;
+}
 
 ::-webkit-scrollbar {
-  background-color: transparent;
   width: 5px;
   height: 5px;
 }

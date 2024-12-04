@@ -85,3 +85,17 @@ export interface Order {
   create_by?: string;
   update_by?: string;
 }
+
+export interface AliyunOrderCode {
+  code?: string; // 10000 成功
+  msg?: string;
+  out_trade_no?: string;
+  qr_code?: string;
+}
+
+export interface Combo {
+  id?: number;
+  name?: string;
+  price?: string;
+  words?: number;
+}

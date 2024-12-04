@@ -198,11 +198,11 @@ export const getProjectStatusText = (status: string) => {
     case "-1":
       return "处理失败";
     case "0":
-      return "待处理";
+      return "已上传";
     case "1":
       return "处理中";
     case "2":
-      return "成功";
+      return "处理成功";
     default:
       return status;
   }

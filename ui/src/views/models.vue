@@ -59,7 +59,7 @@ const filterModel = () => {
           @keyup.enter="filterModel()"
         />
       </div>
-      <div class="flex-1 w-full overflow-y-auto">
+      <div class="mt-2 flex-1 w-full overflow-y-auto">
         <h1 class="text-center" v-show="models?.length == 0">暂无数据</h1>
         <div class="bg-gray-800 rounded-md" v-show="modelCategory != 'collect'">
           <div class="flex flex-wrap w-full">

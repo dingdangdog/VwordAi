@@ -54,7 +54,8 @@
     "chardet": "^2.0.0",
     "dotenv": "^16.4.5",
     "iconv-lite": "^0.6.3",
-    "microsoft-cognitiveservices-speech-sdk": "^1.41.0"
+    "microsoft-cognitiveservices-speech-sdk": "^1.41.0",
+    "qrcode": "^1.5.4"
   },
   "devDependencies": {
     "electron": "^33.2.1",

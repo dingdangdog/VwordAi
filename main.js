@@ -26,8 +26,8 @@ function createWindow() {
   win = new BrowserWindow({
     width: 1280,
     height: 800,
-    minWidth: 1200, // 设置最小宽度
-    minHeight: 600, // 设置最小高度
+    minWidth: 1280, // 设置最小宽度
+    minHeight: 800, // 设置最小高度
     // resizable: false, // 设置为 false 禁止缩小
     //绝对路径
     // icon: path.join(__dirname, 'icon.ico'),

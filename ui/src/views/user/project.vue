@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { Project } from "@/utils/cloud";
-import { formatDate, getProjectStatusText } from "@/utils/common";
+import { alertSuccess, formatDate, getProjectStatusText } from "@/utils/common";
 import request from "@/utils/request";
 import type { PageParam } from "@/utils/model";
 import { ref } from "vue";
@@ -32,7 +32,7 @@ const headers = ref([
       return getProjectStatusText(p.status || "");
     },
   },
-  { title: "Actions", key: "actions", sortable: false },
+  { title: "操作", key: "actions", sortable: false },
 ]);
 
 const getPages = () => {
@@ -44,6 +44,26 @@ const getPages = () => {
 };
 
 const downloadProject = (item: Project) => {};
+const deleteConfirmDialog = ref(false);
+const deleteItem = ref<Project>({});
+const toDelete = (item: Project) => {
+  deleteItem.value = item;
+  deleteConfirmDialog.value = true;
+};
+const cancelDelete = () => {
+  deleteItem.value = {};
+  deleteConfirmDialog.value = false;
+};
+const deleteProject = () => {
+  if (!deleteItem.value.id) {
+    return;
+  }
+  request("deleteProject", deleteItem.value.id).then((res) => {
+    deleteConfirmDialog.value = false;
+    alertSuccess("删除成功");
+    getPages();
+  });
+};
 
 const changePage = (param: {
   page: number;
@@ -71,6 +91,7 @@ const changePage = (param: {
       <v-btn variant="tonal" class="ml-2" @click="getPages"> 查询 </v-btn>
     </div>
     <v-data-table-server
+      class="bg-transparent h-[calc(100vh-9rem)]"
       noDataText="暂无数据"
       :items-per-page="pageQuery.pageSize"
       :items="tabledata?.data"
@@ -78,20 +99,54 @@ const changePage = (param: {
       :headers="headers"
       :loading="loading"
       @update:options="changePage"
-      height="70vh"
     >
       <!-- eslint-disable-next-line vue/valid-v-slot -->
       <template v-slot:item.actions="{ item }">
         <v-icon
           size="small"
-          class="me-2"
+          class="mx-1 hover:text-orange-400"
           @click="downloadProject(item)"
-          :disabled="item.status == '2'"
+          :disabled="item.status != '0'"
+          title="开始处理"
         >
-          mdi-information
+          mdi-play-circle
+        </v-icon>
+        <v-icon
+          size="small"
+          class="mx-1 hover:text-orange-400"
+          @click="downloadProject(item)"
+          :disabled="item.status != '2'"
+          title="下载"
+        >
+          mdi-download
+        </v-icon>
+        <v-icon
+          size="small"
+          class="mx-1 hover:text-red-500"
+          @click="toDelete(item)"
+          title="删除"
+        >
+          mdi-delete
         </v-icon>
       </template>
     </v-data-table-server>
+    <v-dialog v-model="deleteConfirmDialog" width="auto">
+      <v-card>
+        <v-card-title class="text-h5">
+          确定删除项目 【{{ deleteItem?.name }}】吗?
+        </v-card-title>
+        <v-card-actions>
+          <v-spacer></v-spacer>
+          <v-btn color="blue-darken-1" variant="text" @click="cancelDelete"
+            >取消</v-btn
+          >
+          <v-btn color="blue-darken-1" variant="text" @click="deleteProject"
+            >确定</v-btn
+          >
+          <v-spacer></v-spacer>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
   </div>
 </template>
 

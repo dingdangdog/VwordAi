@@ -6,7 +6,7 @@ const { success } = require("./util");
 
 let token = "";
 const login = async (param, saveFlag) => {
-  console.log(param, saveFlag);
+  // console.log(param, saveFlag);
   const res = await HttpClient.post("/api/login", param);
   if (res.c == 200) {
     token = res.d.token;
@@ -34,7 +34,7 @@ const register = async (param, saveFlag) => {
 
 const userInit = async () => {
   const config = getConfig();
-  console.log(config);
+  // console.log(config);
   if (config.account.autoLogin) {
     const account = {
       account: config.account.data.account,
@@ -88,6 +88,10 @@ const uploadProject = (project) => {
   });
 };
 
+const deleteProject = (id) => {
+  return HttpClient.post("/api/project/del", { id }, { Authorization: token });
+};
+
 const getProjectPage = (page, param) => {
   return HttpClient.post("/api/project/upload", project, {
     Authorization: token,
@@ -104,6 +108,22 @@ const getCombos = () => {
   return HttpClient.post("/combos");
 };
 
+const createOrder = (order) => {
+  return HttpClient.post("/api/order/create", order, {
+    Authorization: token,
+  });
+};
+const queryOrder = (no) => {
+  return HttpClient.get("/api/order/query", no, {
+    Authorization: token,
+  });
+};
+const cancelOrder = (no) => {
+  return HttpClient.post("/api/order/cancel", no, {
+    Authorization: token,
+  });
+};
+
 module.exports = {
   login,
   logout,
@@ -115,4 +135,8 @@ module.exports = {
   userProject,
   userUsed,
   uploadProject,
+  deleteProject,
+  createOrder,
+  queryOrder,
+  cancelOrder,
 };

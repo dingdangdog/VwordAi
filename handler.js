@@ -13,12 +13,17 @@ const {
   login,
   logout,
   register,
+  getCombos,
   userInit,
   userInfo,
   userOrder,
   userProject,
   userUsed,
   uploadProject,
+  deleteProject,
+  createOrder,
+  queryOrder,
+  cancelOrder,
 } = require("./server/cloud.js");
 
 module.exports = {
@@ -43,10 +48,15 @@ module.exports = {
   login,
   logout,
   register,
+  getCombos,
   userInit,
   userInfo,
   userOrder,
   userProject,
   userUsed,
   uploadProject,
+  deleteProject,
+  createOrder,
+  queryOrder,
+  cancelOrder,
 };

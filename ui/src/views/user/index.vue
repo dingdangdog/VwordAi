@@ -46,7 +46,7 @@ const menus = ref([
         {{ menu.name }}
       </a>
     </div>
-    <div class="flex-1 h-full overflow-y-auto">
+    <div class="flex-1 h-full">
       <UserInfo v-if="selectedMenu === 'info'" />
       <UserOrder v-if="selectedMenu === 'order'" />
       <UserProject v-if="selectedMenu === 'project'" />
