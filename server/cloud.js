@@ -64,6 +64,7 @@ const userOrder = (pageParam, queryParam) => {
   );
 };
 
+// 用户项目分页列表
 const userProject = (pageParam, queryParam) => {
   // console.log(token);
   return HttpClient.post(
@@ -88,20 +89,12 @@ const uploadProject = (project) => {
   });
 };
 
+const getProject = (id) => {
+  return HttpClient.get("/api/project/get", { id }, { Authorization: token });
+};
+
 const deleteProject = (id) => {
   return HttpClient.post("/api/project/del", { id }, { Authorization: token });
-};
-
-const getProjectPage = (page, param) => {
-  return HttpClient.post("/api/project/upload", project, {
-    Authorization: token,
-  });
-};
-
-const getProjectContent = () => {
-  return HttpClient.post("/api/project/upload", project, {
-    Authorization: token,
-  });
 };
 
 const getCombos = () => {
@@ -135,6 +128,7 @@ module.exports = {
   userProject,
   userUsed,
   uploadProject,
+  getProject,
   deleteProject,
   createOrder,
   queryOrder,

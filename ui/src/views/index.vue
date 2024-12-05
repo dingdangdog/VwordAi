@@ -15,7 +15,6 @@ import {
   alertSuccess,
   alertWarning,
   playAudio,
-  processVoiceNode,
   selectFloder,
   stopPalyAudio,
   VoiceTestText,
@@ -38,6 +37,7 @@ import EditBreakForm from "@/components/form/EditBreak.vue";
 import EditVoiceForm from "@/components/form/EditVoice.vue";
 import EditEmotionForm from "@/components/form/EditEmotion.vue";
 import EditVoiceEmotionForm from "@/components/form/EditVoiceEmotion.vue";
+import { htmlToVoice, processVoiceNode } from "@/utils/ssml";
 
 const editCommonStyleClass = new Set(["cursor-pointer", "pointer-events-auto"]);
 const layoutStyleClass = new Set([
@@ -345,20 +345,22 @@ const doTTS = (ssml: string) => {
 
 // 将 HTML 转换成 SSML
 const convertHTMLToSSML = () => {
-  if (!project.value.layout?.model) {
-    alertError("请至少进行旁白设置！");
-    return;
-  }
+  // if (!project.value.layout?.model) {
+  //   alertError("请至少进行旁白设置！");
+  //   return;
+  // }
   const htmlContent = textEditor.value.innerHTML;
   const parser = new DOMParser();
   const doc = parser.parseFromString(htmlContent, "text/html");
 
-  const ssmlContent = Array.from(doc.body.childNodes)
-    .map((node) => processVoiceNode(node, null))
-    .join("");
+  const voices = htmlToVoice(doc.body, undefined, undefined);
+  console.log(voices);
+  // const ssmlContent = Array.from(doc.body.childNodes)
+  //   .map((node) => processVoiceNode(node, null))
+  //   .join("");
 
   // console.log(ssmlContent);
-  doTTS(ssmlContent);
+  // doTTS(ssmlContent);
 };
 
 // 是否添加了旁白标识

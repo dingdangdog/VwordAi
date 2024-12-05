@@ -112,6 +112,18 @@ export interface EditEmotionModel {
   role?: EmotionStyle;
 }
 
+export interface VoiceObject {
+  provider: string; // 服务商：azure/aliyun
+  model: string;
+  type: string;
+  speed?: string; // 语速
+  emotion?: string; // 情感code
+  emotionLevel?: string; // 情感等级 azure默认1 参考：https://learn.microsoft.com/zh-cn/azure/ai-services/speech-service/speech-synthesis-markup-voice
+  emotionRole?: string; // 模仿角色 用指定模型模仿其他角色说话，如：女孩/男孩/年轻女性等等
+  text: string; // 文本内容
+  children?: VoiceObject[];
+}
+
 export interface SsmlText {
   provider: string; // 服务商：azure/aliyun
   type: "text" | "blank"; // 数据类型：text/blank 普通文本/空白间隔
