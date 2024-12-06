@@ -8,6 +8,9 @@ import type {
 } from "./model";
 import type { UserInfo, UserInitInfo } from "./cloud";
 
+// 激活菜单标识
+export const activeMenu = ref("oldmoon");
+
 // 是否打开项目标识符
 export const openProjectFlag = ref(false);
 // 是否已保存项目标识符，一般用于判断项目是否可以关闭

@@ -385,7 +385,7 @@ const saveLayout = (l: EditVoiceEmotionModel) => {
     layoutNode = document.createElement("span");
     layoutNode.id = "layoutNode";
     layoutNode.classList.add("global");
-    layoutNode.setAttribute("data-type", "voice");
+    layoutNode.setAttribute("data-type", "voice-emotion");
   }
 
   layoutStyleClass.forEach((c) => layoutNode.classList.add(c));

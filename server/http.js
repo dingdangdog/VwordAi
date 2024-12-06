@@ -34,9 +34,64 @@ class HttpClient {
 
       // 发起请求
       const response = await axios(options);
+      // console.log(response.headers);
+      // 检查 Content-Type
+      const contentType = response.headers["content-type"]?.toLowerCase();
+      if (contentType === "audio/wav") {
+        return response;
+      }
 
       // 返回数据
       return response.data;
+    } catch (error) {
+      console.error("Cloud Api Error:", error.message);
+      // 处理 axios 错误格式
+      if (error.response) {
+        return {
+          c: 500,
+          m: error.response.statusText,
+          d: error.response.status,
+        };
+      } else if (error.request) {
+        return {
+          c: 500,
+          m: "无法连接到服务器",
+        };
+      } else {
+        return {
+          c: 500,
+          m: error.message,
+        };
+      }
+    }
+  }
+  static async download(url, method = "GET", params = null, headers = {}) {
+    try {
+      url = "http://localhost:9910" + url;
+
+      const options = {
+        method,
+        url,
+        responseType: "stream",
+        headers: {
+          "Content-Type": "application/json",
+          ...headers,
+        },
+      };
+
+      // 如果是 POST、PUT、PATCH 等需要传递 body 的请求
+      if (["POST", "PUT", "PATCH"].includes(method.toUpperCase()) && params) {
+        options.data = params; // axios 使用 `data` 字段传递请求体
+      }
+
+      // 如果是 GET 请求并有参数，axios 自动处理 query 参数
+      if (method.toUpperCase() === "GET" && params) {
+        options.params = params; // axios 使用 `params` 字段传递 query 参数
+      }
+
+      // 发起请求
+      const response = await axios(options);
+      return response;
     } catch (error) {
       console.error("Cloud Api Error:", error.message);
       // 处理 axios 错误格式

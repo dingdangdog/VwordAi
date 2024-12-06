@@ -4,6 +4,7 @@ const handler = require("./handler.js"); // 函数封装在handler.js中
 const chardet = require("chardet");
 const iconv = require("iconv-lite");
 const fs = require("fs");
+const { error, success } = require("./server/util.js");
 
 require("dotenv").config(); // Load environment variables from .env file
 
@@ -149,15 +150,13 @@ ipcMain.handle("select-folder", async () => {
 ipcMain.handle("open-folder", (event, dir) => {
   // 打开文件夹
   const dirs = dir.split("/");
-  const filePath = path.join(...dirs);
-  shell
-    .openPath(filePath)
-    .then(() => {
-      console.log("Folder opened successfully");
-    })
-    .catch((error) => {
-      console.error("Error opening folder:", error);
-    });
+  const folder = path.join(...dirs);
+  if (fs.existsSync(folder)) {
+    shell.openPath(folder);
+    return success("文件夹已打开");
+  } else {
+    return error("本地项目不存在，请先下载！");
+  }
 });
 
 // 监听渲染进程的事件，弹出选择文件夹对话框

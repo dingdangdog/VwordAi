@@ -8,7 +8,7 @@ const {
 } = require("./server/config.js");
 const { getModels, saveModel, getEmotions } = require("./server/model.js");
 const { speech } = require("./server/azure.js");
-const { dotts, saveProject, getProject } = require("./server/tts.js");
+const { dotts, saveProject, getProject } = require("./server/project.js");
 const {
   login,
   logout,
@@ -19,11 +19,15 @@ const {
   userOrder,
   userProject,
   userUsed,
+  getProjectDetail,
   uploadProject,
   deleteProject,
   createOrder,
   queryOrder,
   cancelOrder,
+  cloudDotts,
+  downloadAudio,
+  pullProject,
 } = require("./server/cloud.js");
 
 module.exports = {
@@ -55,8 +59,12 @@ module.exports = {
   userProject,
   userUsed,
   uploadProject,
+  getProjectDetail,
   deleteProject,
   createOrder,
   queryOrder,
   cancelOrder,
+  cloudDotts,
+  downloadAudio,
+  pullProject,
 };

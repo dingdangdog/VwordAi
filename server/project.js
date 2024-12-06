@@ -68,7 +68,10 @@ const saveProject = (project) => {
   // 项目路径不存在，默认为数据路径 + 项目名
   if (!project.path) {
     const config = getConfig();
-    project.path = path.join(config.dataPath, String(project.name));
+    project.path = path.join(
+      config.dataPath,
+      String(project.id ? project.id : Date.now().toString())
+    );
   }
   // 项目数据文件路径
   const configPath = path.join(project.path, "project.json");

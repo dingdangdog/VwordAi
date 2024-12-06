@@ -1,3 +1,5 @@
+import type { VoiceObject } from "./model";
+
 // 用户信息
 export interface UserInfo {
   token: string;
@@ -60,6 +62,8 @@ export interface Project {
   user_id?: string | number;
   create_by?: string;
   update_by?: string;
+  voices?: VoiceObject[];
+  downloading?: boolean;
 }
 
 // 订单记录（文-充值记录）

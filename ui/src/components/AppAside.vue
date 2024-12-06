@@ -47,6 +47,7 @@ import IconAccount from "@/components/icon/account.vue";
 import IconAccountVoice from "@/components/icon/accountvoice.vue";
 import IconWifi from "@/components/icon/wifi.vue";
 import IconMenu from "@/components/icon/menu.vue";
+import { activeMenu } from "@/utils/global.store";
 
 const getIcon = (icon: string) => {
   switch (icon) {
@@ -64,8 +65,6 @@ const getIcon = (icon: string) => {
       return IconCog;
   }
 };
-
-const activeMenu = ref("oldmoon");
 const menuOpen = ref(true);
 
 const menus = [

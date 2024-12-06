@@ -1,8 +1,8 @@
 const { saveAccount, getConfig } = require("./config");
 const HttpClient = require("./http");
-const { success } = require("./util");
-// const path = require("path");
-// const fs = require("fs");
+const { success, error } = require("./util");
+const path = require("path");
+const fs = require("fs");
 
 let token = "";
 const login = async (param, saveFlag) => {
@@ -89,12 +89,80 @@ const uploadProject = (project) => {
   });
 };
 
-const getProject = (id) => {
+const getProjectDetail = (id) => {
   return HttpClient.get("/api/project/get", { id }, { Authorization: token });
+};
+
+const cloudDotts = (id) => {
+  return HttpClient.get("/api/project/dotts", { id }, { Authorization: token });
 };
 
 const deleteProject = (id) => {
   return HttpClient.post("/api/project/del", { id }, { Authorization: token });
+};
+
+const pullProject = async (id) => {
+  const res = await HttpClient.get(
+    "/api/project/get",
+    { id },
+    { Authorization: token }
+  );
+  if (res.c != 200) {
+    return res;
+  }
+  const project = res.d;
+  const config = getConfig();
+  const dataPath = config.dataPath;
+  const projectPath = path.join(dataPath, project.id);
+  // 确保保存路径的文件夹存在
+  if (!fs.existsSync(projectPath)) {
+    fs.mkdirSync(projectPath, { recursive: true });
+  }
+
+  const projectFile = path.join(projectPath, `${project.id}.json`);
+
+  // 保存项目配置和数据
+  fs.writeFileSync(projectFile, JSON.stringify(project));
+  return success(null);
+};
+
+const downloadAudio = async (id) => {
+  const response = await HttpClient.download(
+    "/api/project/download",
+    "GET",
+    { id },
+    {
+      Authorization: token,
+    }
+  );
+  const contentDisposition = response.headers["content-disposition"];
+  const fileName = decodeURI(
+    contentDisposition.split("=")[1].replaceAll('"', "")
+  );
+  const config = getConfig();
+  const dataPath = config.dataPath;
+  const filePath = path.join(dataPath, fileName.split(".")[0], fileName);
+  // 确保保存路径的文件夹存在
+  if (!fs.existsSync(path.dirname(filePath))) {
+    fs.mkdirSync(path.dirname(filePath), { recursive: true });
+  }
+
+  // 创建写入流并将数据保存到本地
+  const writer = fs.createWriteStream(filePath);
+  // console.log("response.data");
+  response.data.pipe(writer);
+
+  return new Promise((resolve, reject) => {
+    writer.on("finish", () => {
+      // console.log("音频文件已保存到:", filePath);
+      resolve(success(null));
+    });
+
+    writer.on("error", (err) => {
+      // console.error("保存音频文件时出错:", err);
+      reject(error(err));
+    });
+  });
 };
 
 const getCombos = () => {
@@ -128,9 +196,12 @@ module.exports = {
   userProject,
   userUsed,
   uploadProject,
-  getProject,
+  getProjectDetail,
   deleteProject,
   createOrder,
   queryOrder,
   cancelOrder,
+  cloudDotts,
+  downloadAudio,
+  pullProject,
 };
