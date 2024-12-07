@@ -6,11 +6,19 @@ import { alertError } from "./common";
 // import { errorAlert } from "@/utils/alert";
 // import { cleanLoginInfo } from '@/utils/common'
 
+export const requestByToken = (functionName: string, ...args: any) => {
+  // 从 localStorage 中获取 token
+  const token = localStorage.getItem("token");
+  // console.log(...args);
+  // console.log(token);
+  return request(functionName, ...args, token);
+};
+
 // 创建api调用者
-const request = async (functionName: string, ...args: any) => {
+export const request = async (functionName: string, ...args: any) => {
   // console.log(request)
   let serializedArgs =
-    args.length > 0 ? args.map((arg: any) => JSON.stringify(arg)) : undefined;
+    args.length > 0 ? args.map((arg: any) => JSON.stringify(arg)) : [];
   // console.log(functionName, serializedArgs)
   // @ts-ignore
   const res: Result<any> = await window.api.invokeHandler(
@@ -26,7 +34,7 @@ const request = async (functionName: string, ...args: any) => {
   if (res.c == 200) {
     return res.d;
   } else if (res.c == 500) {
-    console.log(res)
+    console.log(res);
     // 500 服务异常
     alertError(res.m);
     throw Error(res.m);
@@ -40,5 +48,3 @@ const request = async (functionName: string, ...args: any) => {
     throw Error(JSON.stringify(res));
   }
 };
-
-export default request;

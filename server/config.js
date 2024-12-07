@@ -4,7 +4,7 @@ const fs = require("fs");
 const { readJsonFile, success, moveFiles, copyFiles } = require("./util");
 
 const CONFIG_FILE = "dotts.json";
-const DATA_DIR = "dotts";
+const DATA_DIR = "data";
 const CONFIG_DIR = "config";
 let baseDir = "";
 

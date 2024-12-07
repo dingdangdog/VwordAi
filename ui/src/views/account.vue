@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import type { UserInfo } from "@/utils/cloud";
 import { alertSuccess } from "@/utils/common";
-import request from "@/utils/request";
+
 import { onMounted, ref } from "vue";
 
 import UserIndex from "@/views/user/index.vue";
 import { GlobalConfig, GlobalUserLogin } from "@/utils/global.store";
+import { request } from "@/utils/request";
 
 // getUserInfo();
 
@@ -40,34 +40,8 @@ const againPasswordRules = [
   (v: string) => v == loginParam.value.password || "密码不一致",
 ];
 
-const loginAccountError = ref(false);
-const loginAccountErrorInfo = ref("");
-const registerAccountError = ref(false);
-const registerAccountErrorInfo = ref("");
-const validAccount = (s: string, type: string) => {
-  let flag = false;
-  let errorInfo = "";
-  if (!s) {
-    flag = true;
-    errorInfo = "必填";
-  } else {
-    flag = false;
-  }
-  if (type == "login") {
-    loginAccountError.value = flag;
-    loginAccountErrorInfo.value = errorInfo;
-  } else if (type == "register") {
-    registerAccountError.value = flag;
-    registerAccountErrorInfo.value = errorInfo;
-  }
-};
-
 const logining = ref(false);
-
 const loginForm = ref();
-const resetLoginForm = () => {
-  loginForm.value.reset();
-};
 const login = async () => {
   const { valid } = await loginForm.value.validate();
   if (!valid) {
@@ -77,10 +51,11 @@ const login = async () => {
     return;
   }
   logining.value = true;
-  // TODO 登录
+  // 登录
   request("login", loginParam.value, saveFlag.value)
     .then((res) => {
       // console.log(res);
+      localStorage.setItem("token", res.token);
       alertSuccess("登录成功");
       GlobalUserLogin.value = res;
     })
@@ -97,11 +72,6 @@ const registerParam = ref({
   againPassword: "",
 });
 const registering = ref(false);
-
-const resetRegisterForm = () => {
-  registerForm.value.reset();
-};
-
 const register = async () => {
   const { valid } = await registerForm.value.validate();
   if (!valid) {
@@ -112,10 +82,11 @@ const register = async () => {
   }
   registering.value = true;
 
-  // TODO 注册
+  // 注册
   request("register", registerParam.value, saveFlag.value)
     .then((res) => {
       // console.log(res);
+      localStorage.setItem("token", res.token);
       alertSuccess("注册成功");
       GlobalUserLogin.value = res;
     })
@@ -128,7 +99,7 @@ const register = async () => {
 <template>
   <!-- <div>尚未登录</div> -->
   <div class="h-full w-full flex flex-col items-center">
-    <div v-if="!GlobalUserLogin" class="w-80 mt-24 flex flex-col items-center">
+    <div v-if="!GlobalUserLogin" class="w-80 mt-36 flex flex-col items-center">
       <div class="w-48 flex justify-between rounded-md overflow-hidden">
         <span
           class="flex-1 cursor-pointer py-2 text-center hover:bg-gray-700 font-bold"
@@ -233,7 +204,7 @@ const register = async () => {
           ></v-text-field>
           <v-text-field
             v-model="registerParam.againPassword"
-            :rules="passwordRules"
+            :rules="againPasswordRules"
             :counter="36"
             label="确认密码"
             clearable

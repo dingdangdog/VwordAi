@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { onMounted, ref, watch } from "vue";
-import request from "@/utils/request";
+import { request, requestByToken } from "@/utils/request";
 import type {
   EditEmotionModel,
   EditVoiceEmotionModel,
@@ -258,7 +258,7 @@ const saveProject = async () => {
 // 上传项目
 const uploadProject = async () => {
   await saveProject();
-  request("uploadProject", project.value).then((res) => {
+  requestByToken("uploadProject", project.value).then((res) => {
     alertSuccess("上传成功");
     project.value.id = res.id;
   });
@@ -971,7 +971,7 @@ const headers = ref([
 
 const getProjectPages = () => {
   loading.value = true;
-  request("userProject", pageQuery.value, query.value).then((res) => {
+  requestByToken("userProject", pageQuery.value, query.value).then((res) => {
     tabledata.value = res;
     // console.log(res);
     loading.value = false;
@@ -991,13 +991,13 @@ const changePage = (param: {
 const dottsConfirmDialog = ref(false);
 const doItem = ref<Project>({});
 const toDotts = (item: Project) => {
-  request("getProjectDetail", item.id).then((res) => {
+  requestByToken("getProjectDetail", item.id).then((res) => {
     doItem.value = res;
     dottsConfirmDialog.value = true;
   });
 };
 const startDotts = () => {
-  request("cloudDotts", doItem.value.id).then((res) => {
+  requestByToken("cloudDotts", doItem.value.id).then((res) => {
     dottsConfirmDialog.value = false;
     alertSuccess("任务已提交");
     getProjectPages();
@@ -1009,7 +1009,7 @@ const cancelDotts = () => {
 };
 // 去编辑项目
 const toEditProject = (item: Project) => {
-  request("getProjectDetail", item.id).then((res) => {
+  requestByToken("getProjectDetail", item.id).then((res) => {
     // console.log(res);
     project.value = res;
     openProjectFlag.value = true;
@@ -1033,7 +1033,7 @@ const countWords = (item: Project) => {
 // 下载项目的处理结果音频文件到本地
 const downloadAudio = (item: Project) => {
   item.downloading = true;
-  request("downloadAudio", item.id)
+  requestByToken("downloadAudio", item.id)
     .then((res) => {
       // console.log(res);
       alertSuccess("下载成功");
@@ -1044,7 +1044,7 @@ const downloadAudio = (item: Project) => {
 };
 // 打开项目的本地文件夹
 const openCloudProjectFolder = (item: Project) => {
-  request("pullProject", item.id).then((res) => {
+  requestByToken("pullProject", item.id).then((res) => {
     const projectPath = `${GlobalConfig.value.dataPath}/${item.id}`;
     // @ts-ignore
     window.electron
@@ -1070,7 +1070,7 @@ const deleteProject = () => {
   if (!deleteItem.value.id) {
     return;
   }
-  request("deleteProject", deleteItem.value.id).then((res) => {
+  requestByToken("deleteProject", deleteItem.value.id).then((res) => {
     deleteConfirmDialog.value = false;
     alertSuccess("删除成功");
     getProjectPages();

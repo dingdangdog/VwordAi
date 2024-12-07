@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref } from "vue";
 import type { SerivceProvider, SystemConfig } from "@/utils/model";
-import request from "@/utils/request";
+import { request } from "@/utils/request";
 import MySelect from "@/components/MySelect.vue";
 import { alertSuccess, selectFloder } from "@/utils/common";
 import { GlobalConfig, ServiceProviderItems } from "@/utils/global.store";

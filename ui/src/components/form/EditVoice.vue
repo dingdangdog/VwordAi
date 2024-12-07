@@ -2,7 +2,7 @@
 import type { SerivceProvider, VoiceModel } from "@/utils/model";
 import MySelect from "../MySelect.vue";
 import { ref } from "vue";
-import request from "@/utils/request";
+import { request } from "@/utils/request";
 
 const { flag, item } = defineProps(["flag", "item"]);
 const emit = defineEmits(["cancel", "save"]);

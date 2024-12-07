@@ -1,17 +1,17 @@
 <script setup lang="ts">
-import { RouterLink, RouterView } from "vue-router";
+import { RouterView } from "vue-router";
 
 import AppHeader from "./components/AppHeader.vue";
 import AppAside from "./components/AppAside.vue";
 import Message from "./components/Message.vue";
 import { GlobalConfig, GlobalUserLogin } from "./utils/global.store";
-import request from "@/utils/request";
+import { request } from "@/utils/request";
 import { alertError, alertInfo, alertSuccess } from "./utils/common";
 
 alertInfo("配置加载中……");
 request("getConfigApi")
   .then((res) => {
-    // console.log(res);
+    console.log(res);
     GlobalConfig.value = res;
     alertSuccess("系统配置加载完成!");
     initUser();
@@ -24,6 +24,7 @@ const initUser = () => {
   // alertInfo("用户信息加载中…");
   request("userInit").then((res) => {
     if (res && res.name) {
+      localStorage.setItem("token", res.token);
       GlobalUserLogin.value = res;
       alertSuccess(`欢迎 ${res.name}!`);
     } else {

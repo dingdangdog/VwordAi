@@ -3,8 +3,8 @@
     class="w-full h-12 bg-gray-950 fixed top-0 left-0 flex justify-between items-center drag-area rounded-t-md overflow-hidden border-b-2 border-gray-600"
   >
     <div class="w-1/2 px-3 flex items-center h-full">
-      <img src="/favicon.ico" class="w-6 h-6" />
-      <h1 class="text-lg md:text-xl px-2">DoTTS</h1>
+      <img src="/favicon.ico" class="w-8 h-8" />
+      <h1 class="text-md px-2">文声 - Voice of Words</h1>
       <!-- <a
         class="h-full flex justify-center items-center px-4 hover:bg-gray-800 case-in-out duration-300"
         href="/donate"
@@ -52,12 +52,11 @@
 
 <script setup lang="ts">
 import { onMounted, ref } from "vue";
-
-import IconGithub from "@/components/icon/github.vue";
 import IconMinimize from "@/components/icon/minimize.vue";
 import IconMaximize from "@/components/icon/maximize.vue";
 import IconDock from "@/components/icon/dock.vue";
 import IconClose from "@/components/icon/close.vue";
+import { logout } from "@/utils/api";
 
 // 最小化
 const minimizeWindow = () => {
@@ -74,6 +73,7 @@ const maximizeWindow = () => {
 };
 // 关闭窗口
 const closeWindow = () => {
+  logout();
   // @ts-ignore
   window.electron.close();
 };

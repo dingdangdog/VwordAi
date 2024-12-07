@@ -5,7 +5,7 @@ import IconPlay from "@/components/icon/play.vue";
 import IconPause from "@/components/icon/pause.vue";
 import IconStarMinus from "@/components/icon/starminus.vue";
 import IconStarPlus from "@/components/icon/starplus.vue";
-import request from "@/utils/request";
+import { request } from "@/utils/request";
 import {
   alertInfo,
   alertSuccess,

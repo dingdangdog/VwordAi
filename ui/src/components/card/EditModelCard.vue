@@ -3,7 +3,7 @@ import { ref } from "vue";
 
 import IconPlay from "@/components/icon/play.vue";
 import IconPause from "@/components/icon/pause.vue";
-import request from "@/utils/request";
+import { request } from "@/utils/request";
 import { VoiceTestText } from "@/utils/common";
 
 const { model, provider, play, set } = defineProps([

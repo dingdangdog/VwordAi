@@ -4,7 +4,6 @@ const { success, error } = require("./util");
 const path = require("path");
 const fs = require("fs");
 
-let token = "";
 const login = async (param, saveFlag) => {
   // console.log(param, saveFlag);
   const res = await HttpClient.post("/api/login", param);
@@ -19,23 +18,18 @@ const login = async (param, saveFlag) => {
   return res;
 };
 
-const logout = () => {
-  token = "";
-  return success(null);
+const logout = (token) => {
+  return HttpClient.get("/api/logout", {}, { Authorization: token });
 };
 
 const register = async (param, saveFlag) => {
-  const res = await HttpClient.post("/api/register", param);
-  if (res.c == 200) {
-    token = res.d.token;
-  }
-  return res;
+  return await HttpClient.post("/api/register", param);
 };
 
 const userInit = async () => {
   const config = getConfig();
   // console.log(config);
-  if (config.account.autoLogin) {
+  if (config.account?.autoLogin) {
     const account = {
       account: config.account.data.account,
       password: config.account.data.password,
@@ -50,12 +44,12 @@ const userInit = async () => {
   return success(null);
 };
 
-const userInfo = () => {
+const userInfo = (token) => {
   // console.log(token);
   return HttpClient.get("/api/user/info", {}, { Authorization: token });
 };
 
-const userOrder = (pageParam, queryParam) => {
+const userOrder = (pageParam, queryParam, token) => {
   // console.log(token);
   return HttpClient.post(
     "/api/order/page",
@@ -64,7 +58,7 @@ const userOrder = (pageParam, queryParam) => {
   );
 };
 
-const userFundlogs = (pageParam, queryParam) => {
+const userFundlogs = (pageParam, queryParam, token) => {
   return HttpClient.post(
     "/api/fundlogs/page",
     { ...pageParam, ...queryParam },
@@ -73,7 +67,7 @@ const userFundlogs = (pageParam, queryParam) => {
 };
 
 // 用户项目分页列表
-const userProject = (pageParam, queryParam) => {
+const userProject = (pageParam, queryParam, token) => {
   // console.log(token);
   return HttpClient.post(
     "/api/project/page",
@@ -82,34 +76,25 @@ const userProject = (pageParam, queryParam) => {
   );
 };
 
-const userUsed = (pageParam, queryParam) => {
-  // console.log(token);
-  return HttpClient.post(
-    "/api/used/page",
-    { ...pageParam, ...queryParam },
-    { Authorization: token }
-  );
-};
-
-const uploadProject = (project) => {
+const uploadProject = (project, token) => {
   return HttpClient.post("/api/project/upload", project, {
     Authorization: token,
   });
 };
 
-const getProjectDetail = (id) => {
+const getProjectDetail = (id, token) => {
   return HttpClient.get("/api/project/get", { id }, { Authorization: token });
 };
 
-const cloudDotts = (id) => {
+const cloudDotts = (id, token) => {
   return HttpClient.get("/api/project/dotts", { id }, { Authorization: token });
 };
 
-const deleteProject = (id) => {
+const deleteProject = (id, token) => {
   return HttpClient.post("/api/project/del", { id }, { Authorization: token });
 };
 
-const pullProject = async (id) => {
+const pullProject = async (id, token) => {
   const res = await HttpClient.get(
     "/api/project/get",
     { id },
@@ -134,7 +119,7 @@ const pullProject = async (id) => {
   return success(null);
 };
 
-const downloadAudio = async (id) => {
+const downloadAudio = async (id, token) => {
   const response = await HttpClient.download(
     "/api/project/download",
     "GET",
@@ -177,17 +162,17 @@ const downloadAudio = async (id) => {
 const getCombos = () => {
   return HttpClient.post("/combos");
 };
-const createOrder = (order) => {
+const createOrder = (order, token) => {
   return HttpClient.post("/api/order/create", order, {
     Authorization: token,
   });
 };
-const queryOrder = (no) => {
+const queryOrder = (no, token) => {
   return HttpClient.get("/api/order/query", no, {
     Authorization: token,
   });
 };
-const cancelOrder = (no) => {
+const cancelOrder = (no, token) => {
   return HttpClient.post("/api/order/cancel", no, {
     Authorization: token,
   });

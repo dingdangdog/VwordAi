@@ -3,7 +3,7 @@ import type { EditEmotionModel, EmotionStyle, VoiceStyle } from "@/utils/model";
 import MySelect from "../MySelect.vue";
 
 import { defineProps, defineEmits, ref } from "vue";
-import request from "@/utils/request";
+import { request } from "@/utils/request";
 import { alertWarning } from "@/utils/common";
 
 const { flag, item } = defineProps(["flag", "item"]);

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref } from "vue";
-import request from "@/utils/request";
+import { request } from "@/utils/request";
 
 const webList = ref([]);
 request("test", "null").then((res) => {
@@ -36,8 +36,7 @@ const showSelection = () => {
     <div
       class="h-full w-64 overflow-y-auto overflow-x-hidden p-2 bg-gray-800 rounded-md"
     >
-      <div class="links">
-      </div>
+      <div class="links"></div>
     </div>
     <div class="h-full w-full ml-2 flex flex-col">
       <div class="p-2 bg-gray-800 rounded-md h-24">

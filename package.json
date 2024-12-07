@@ -1,5 +1,5 @@
 {
-  "name": "dotts",
+  "name": "vow",
   "version": "0.0.1",
   "private": true,
   "type": "commonjs",
@@ -10,13 +10,13 @@
   },
   "scripts": {
     "ui": "cd ui && npm run dev",
-    "build": "cd ui && npm run build-only",
+    "build": "",
     "electron": "electron .",
-    "package": "electron-builder"
+    "package": "cd ui && npm run build-only && cd ../ && electron-builder"
   },
   "build": {
-    "appId": "top.oldmoon.dotts",
-    "productName": "DoTTS",
+    "appId": "top.oldmoon.vow",
+    "productName": "VoiceOfWords",
     "directories": {
       "output": "package"
     },

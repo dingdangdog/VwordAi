@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { FundLog, Order } from "@/utils/cloud";
 import { formatDate } from "@/utils/common";
-import request from "@/utils/request";
+import { requestByToken } from "@/utils/request";
 import type { PageParam } from "@/utils/model";
 import { ref } from "vue";
 
@@ -24,7 +24,7 @@ const headers = ref([
 
 const getPages = () => {
   loading.value = true;
-  request("userFundlogs", pageQuery.value, query.value).then((res) => {
+  requestByToken("userFundlogs", pageQuery.value, query.value).then((res) => {
     tabledata.value = res;
     loading.value = false;
   });

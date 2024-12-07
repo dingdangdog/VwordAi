@@ -1,27 +1,22 @@
 <script setup lang="ts">
 import type { AliyunOrderCode, Combo, Order } from "@/utils/cloud";
 import { GlobalUserInfo, GlobalUserLogin } from "@/utils/global.store";
-import request from "@/utils/request";
+import { request, requestByToken } from "@/utils/request";
 import { ref } from "vue";
+// @ts-ignore
 import QRCode from "qrcode";
 import { alertError, alertSuccess, alertWarning } from "@/utils/common";
+import { logout } from "@/utils/api";
 
 // const user = ref<UserInfo>();
 const getUserInfo = () => {
-  request("userInfo").then((res) => {
+  requestByToken("userInfo").then((res) => {
     // user.value = res;
     GlobalUserInfo.value = res;
   });
 };
 
 getUserInfo();
-
-const logout = () => {
-  request("logout").then(() => {
-    GlobalUserLogin.value = undefined;
-    GlobalUserInfo.value = undefined;
-  });
-};
 
 const toBuy = () => {
   getCombos();
@@ -141,7 +136,8 @@ const cancelOrder = () => {
       </p>
       <div>
         <span class="text-sm text-gray-300 font-bold">
-          余额: {{ GlobalUserInfo?.balance }}<span class="text-[10px]">(文)</span>
+          余额: {{ GlobalUserInfo?.balance
+          }}<span class="text-[10px]">(文)</span>
         </span>
         <button
           class="ml-2 px-2 py-1 rounded-md bg-green-600 hover:bg-green-500 text-gray-100 cursor-pointer"

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref } from "vue";
-import request from "@/utils/request";
+import { request } from "@/utils/request";
 import type { VoiceModel } from "@/utils/model";
 import CollectModelCard from "@/components/card/CollectModelCard.vue";
 import StoreModelCard from "@/components/card/StoreModelCard.vue";

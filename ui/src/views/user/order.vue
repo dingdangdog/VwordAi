@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { Order } from "@/utils/cloud";
 import { formatDate, getOrderStatusText } from "@/utils/common";
-import request from "@/utils/request";
+import { request, requestByToken } from "@/utils/request";
 import type { PageParam } from "@/utils/model";
 import { ref } from "vue";
 
@@ -39,7 +39,7 @@ const headers = ref([
 
 const getPages = () => {
   loading.value = true;
-  request("userOrder", pageQuery.value, query.value).then((res) => {
+  requestByToken("userOrder", pageQuery.value, query.value).then((res) => {
     tabledata.value = res;
     loading.value = false;
   });

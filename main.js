@@ -10,10 +10,11 @@ require("dotenv").config(); // Load environment variables from .env file
 
 if (process.env.NODE_ENV === "development") {
   // const devPath = path.join(__dirname, "config");
+  console.log(__dirname);
   handler.setBaseDir(__dirname);
 } else {
-  // const defaultPath = path.join(app.getPath("userData"), "config");
-  handler.setBaseDir(app.getPath("userData"));
+  const defaultPath = app.getPath("userData");
+  handler.setBaseDir(defaultPath);
 }
 
 let win;
@@ -54,6 +55,7 @@ function createWindow() {
       // 打开开发者工具
       win.webContents.openDevTools({ mode: "detach" });
     }
+    win.webContents.openDevTools({ mode: "detach" });
   });
   // 加载应用程序
 
@@ -118,7 +120,7 @@ ipcMain.handle("is-maximized", () => {
 ipcMain.handle("data-handler", async (event, functionName, args) => {
   let argarr = [];
   // console.log("1--", functionName, args);
-  if (args) {
+  if (args && args.length > 0) {
     argarr = args.map((item) => {
       try {
         return JSON.parse(item);
