@@ -4,6 +4,7 @@ import request from "@/utils/request";
 import type {
   EditEmotionModel,
   EditVoiceEmotionModel,
+  PageParam,
   SerivceProvider,
   VoiceModel,
 } from "@/utils/model";
@@ -14,6 +15,8 @@ import {
   alertError,
   alertSuccess,
   alertWarning,
+  formatDate,
+  getProjectStatusText,
   playAudio,
   selectFloder,
   stopPalyAudio,
@@ -26,6 +29,7 @@ import {
   project,
   ModelCategoryItems,
   GlobalConfig,
+  GlobalUserLogin,
 } from "@/utils/global.store";
 import { playSSML } from "@/utils/api";
 import BreakMenu from "@/components/menu/Break.vue";
@@ -38,6 +42,7 @@ import EditVoiceForm from "@/components/form/EditVoice.vue";
 import EditEmotionForm from "@/components/form/EditEmotion.vue";
 import EditVoiceEmotionForm from "@/components/form/EditVoiceEmotion.vue";
 import { htmlToVoice, processVoiceNode } from "@/utils/ssml";
+import type { Project } from "@/utils/cloud";
 
 const editCommonStyleClass = new Set(["cursor-pointer", "pointer-events-auto"]);
 const layoutStyleClass = new Set([
@@ -211,7 +216,7 @@ const addProject = () => {
   project.value = {
     layout: { provider: "azure" },
   };
-  project.value.createTime = Date.now();
+  project.value.create_by = Date.now();
   // 初始化创建项目所在目录，并保存基本数据
   saveProject();
   initEditor("");
@@ -237,15 +242,13 @@ const openProject = () => {
 // 保存项目
 const saveProject = async () => {
   project.value.content = textEditor.value.innerHTML;
-  if (project.value.path) {
-    project.value.updateTime = Date.now();
-  }
+  project.value.update_by = Date.now();
 
   const res = await request("saveProject", project.value);
   // console.log(res);
   if (res) {
     project.value = res;
-    // alertSuccess("保存成功");
+    alertSuccess("保存成功");
     saveProjectFlag.value = true;
   } else {
     alertError("保存失败");
@@ -353,14 +356,14 @@ const convertHTMLToSSML = () => {
   const parser = new DOMParser();
   const doc = parser.parseFromString(htmlContent, "text/html");
 
-  const voices = htmlToVoice(doc.body, undefined, undefined);
-  console.log(voices);
-  // const ssmlContent = Array.from(doc.body.childNodes)
-  //   .map((node) => processVoiceNode(node, null))
-  //   .join("");
+  // const voices = htmlToVoice(doc.body, undefined, undefined);
+  // console.log(voices);
+  const ssmlContent = Array.from(doc.body.childNodes)
+    .map((node) => processVoiceNode(node, null))
+    .join("");
 
   // console.log(ssmlContent);
-  // doTTS(ssmlContent);
+  doTTS(ssmlContent);
 };
 
 // 是否添加了旁白标识
@@ -672,7 +675,7 @@ const voice = ref<any>();
 const playVoice = () => {
   if (selectedVoice.value) {
     const ssml = processVoiceNode(selectedVoice.value, null);
-    console.log(ssml);
+    // console.log(ssml);
     playSSML(ssml);
   }
 };
@@ -837,7 +840,7 @@ const saveVoiceEmotion = (item: EditVoiceEmotionModel) => {
 const playVoiceEmotion = () => {
   if (selectedVoiceEmotion.value) {
     const ssml = processVoiceNode(selectedVoiceEmotion.value, null);
-    console.log(ssml);
+    // console.log(ssml);
     playSSML(ssml);
   }
 };
@@ -935,14 +938,155 @@ const closeAllMenu = () => {
   showVoiceMenu.value = false;
   showVoiceEmotionMenu.value = false;
 };
+
+const pageQuery = ref<PageParam>({ pageSize: 5, pageNum: 1 });
+const query = ref<Project>({});
+const tabledata = ref<{ total?: number; data?: Project[] }>({});
+const loading = ref(false);
+const headers = ref([
+  { title: "项目名", key: "name" },
+  {
+    title: "创建时间",
+    key: "create_by",
+    value: (p: Project) => {
+      return formatDate(new Date(Number(p.create_by)));
+    },
+  },
+  {
+    title: "更新时间",
+    key: "update_by",
+    value: (p: Project) => {
+      return formatDate(new Date(Number(p.update_by)));
+    },
+  },
+  {
+    title: "作品状态",
+    key: "status",
+    value: (p: Project) => {
+      return getProjectStatusText(p.status || "");
+    },
+  },
+  { title: "操作", key: "actions", sortable: false },
+]);
+
+const getProjectPages = () => {
+  loading.value = true;
+  request("userProject", pageQuery.value, query.value).then((res) => {
+    tabledata.value = res;
+    // console.log(res);
+    loading.value = false;
+  });
+};
+
+const changePage = (param: {
+  page: number;
+  itemsPerPage: number;
+  sortBy: any;
+}) => {
+  pageQuery.value.pageNum = param.page;
+  pageQuery.value.pageSize = param.itemsPerPage;
+  getProjectPages();
+};
+
+const dottsConfirmDialog = ref(false);
+const doItem = ref<Project>({});
+const toDotts = (item: Project) => {
+  request("getProjectDetail", item.id).then((res) => {
+    doItem.value = res;
+    dottsConfirmDialog.value = true;
+  });
+};
+const startDotts = () => {
+  request("cloudDotts", doItem.value.id).then((res) => {
+    dottsConfirmDialog.value = false;
+    alertSuccess("任务已提交");
+    getProjectPages();
+  });
+};
+const cancelDotts = () => {
+  doItem.value = {};
+  dottsConfirmDialog.value = false;
+};
+// 去编辑项目
+const toEditProject = (item: Project) => {
+  request("getProjectDetail", item.id).then((res) => {
+    // console.log(res);
+    project.value = res;
+    openProjectFlag.value = true;
+    initEditor(project.value.content || "");
+  });
+};
+
+// 粗略计算项目消费
+const countWords = (item: Project) => {
+  if (item?.voices && item.voices.length > 0) {
+    let total = 0;
+    item.voices.forEach((v) => {
+      total += v.text.length;
+    });
+    total = total / 0.8;
+    return Math.ceil(total);
+  }
+  return 0;
+};
+
+// 下载项目的处理结果音频文件到本地
+const downloadAudio = (item: Project) => {
+  item.downloading = true;
+  request("downloadAudio", item.id)
+    .then((res) => {
+      // console.log(res);
+      alertSuccess("下载成功");
+    })
+    .finally(() => {
+      item.downloading = false;
+    });
+};
+// 打开项目的本地文件夹
+const openCloudProjectFolder = (item: Project) => {
+  request("pullProject", item.id).then((res) => {
+    const projectPath = `${GlobalConfig.value.dataPath}/${item.id}`;
+    // @ts-ignore
+    window.electron
+      .openFolder(projectPath)
+      .then(() => {})
+      .catch((res: any) => {
+        console.log(res);
+      });
+  });
+};
+
+const deleteConfirmDialog = ref(false);
+const deleteItem = ref<Project>({});
+const toDelete = (item: Project) => {
+  deleteItem.value = item;
+  deleteConfirmDialog.value = true;
+};
+const cancelDelete = () => {
+  deleteItem.value = {};
+  deleteConfirmDialog.value = false;
+};
+const deleteProject = () => {
+  if (!deleteItem.value.id) {
+    return;
+  }
+  request("deleteProject", deleteItem.value.id).then((res) => {
+    deleteConfirmDialog.value = false;
+    alertSuccess("删除成功");
+    getProjectPages();
+  });
+};
 </script>
 
 <template>
   <div
-    class="h-full w-full flex justify-center items-center"
+    class="h-full w-full flex flex-col justify-center items-center p-2"
     v-show="!openProjectFlag"
   >
-    <div class="-mt-52 flex justify-center items-center">
+    <div
+      class="flex justify-center items-center"
+      :class="GlobalUserLogin ? '' : '-mt-52'"
+    >
       <button
         class="px-4 py-2 rounded-md bg-gray-700 hover:bg-gray-600"
         @click="addProject()"
@@ -955,6 +1099,127 @@ const closeAllMenu = () => {
       >
         打开项目
       </button>
+    </div>
+    <div
+      v-if="GlobalUserLogin"
+      class="border bg-gray-800 border-gray-200 rounded-md px-2 w-full mt-8"
+    >
+      <div class="text-xl font-bold text-center py-2">云端项目</div>
+      <div class="flex items-center justify-center">
+        <div class="w-80">
+          <v-text-field
+            clearable
+            label="作品名称"
+            v-model="query.name"
+            variant="outlined"
+            hide-details="auto"
+            append-inner-icon="mdi-magnify"
+            @click:append-inner="getProjectPages"
+            @keyup.enter="getProjectPages"
+          ></v-text-field>
+        </div>
+      </div>
+      <v-data-table-server
+        class="bg-transparent h-[50vh]"
+        noDataText="暂无数据"
+        :items-per-page="pageQuery.pageSize"
+        :items="tabledata?.data"
+        :itemsLength="tabledata?.total || 0"
+        :headers="headers"
+        :loading="loading"
+        @update:options="changePage"
+      >
+        <!-- eslint-disable-next-line vue/valid-v-slot -->
+        <template v-slot:item.actions="{ item }">
+          <v-icon
+            size="small"
+            class="mx-1 hover:text-orange-400"
+            @click="toEditProject(item)"
+            title="编辑项目"
+          >
+            mdi-pencil
+          </v-icon>
+          <v-icon
+            size="small"
+            class="mx-1 hover:text-orange-400"
+            @click="toDotts(item)"
+            :disabled="item.status != '0'"
+            title="开始处理"
+          >
+            mdi-play-circle
+          </v-icon>
+          <v-icon
+            size="small"
+            class="mx-1 hover:text-orange-400"
+            @click="downloadAudio(item)"
+            :disabled="item.status != '2' || item.downloading"
+            title="下载音频"
+          >
+            mdi-music-box
+          </v-icon>
+          <!-- <v-icon
+          size="small"
+          class="mx-1 hover:text-orange-400"
+          @click="pullProject(item)"
+          title="下载项目"
+          >
+            mdi-cloud-download
+          </v-icon> -->
+          <v-icon
+            size="small"
+            class="mx-1 hover:text-orange-400"
+            @click="openCloudProjectFolder(item)"
+            title="打开项目文件夹"
+          >
+            mdi-folder-open
+          </v-icon>
+          <v-icon
+            size="small"
+            class="mx-1 hover:text-red-500"
+            @click="toDelete(item)"
+            title="删除"
+          >
+            mdi-delete
+          </v-icon>
+        </template>
+      </v-data-table-server>
+
+      <v-dialog v-model="deleteConfirmDialog" width="auto">
+        <v-card>
+          <v-card-title class="text-h5">
+            确定删除项目 【{{ deleteItem?.name }}】吗?
+          </v-card-title>
+          <v-card-actions>
+            <v-spacer></v-spacer>
+            <v-btn color="blue-darken-1" variant="text" @click="cancelDelete"
+              >取消</v-btn
+            >
+            <v-btn color="blue-darken-1" variant="text" @click="deleteProject"
+              >确定</v-btn
+            >
+            <v-spacer></v-spacer>
+          </v-card-actions>
+        </v-card>
+      </v-dialog>
+      <v-dialog v-model="dottsConfirmDialog" width="auto">
+        <v-card>
+          <v-card-title class="text-h5">
+            处理 【{{ doItem?.name }}】，预计消耗{{
+              countWords(doItem)
+            }}文，确定开始处理吗?
+          </v-card-title>
+          <v-card-actions>
+            <v-spacer></v-spacer>
+            <v-btn color="blue-darken-1" variant="text" @click="cancelDotts"
+              >取消</v-btn
+            >
+            <v-btn color="blue-darken-1" variant="text" @click="startDotts"
+              >确定</v-btn
+            >
+            <v-spacer></v-spacer>
+          </v-card-actions>
+        </v-card>
+      </v-dialog>
     </div>
   </div>
   <div class="h-full w-full p-2 flex justify-between" v-show="openProjectFlag">

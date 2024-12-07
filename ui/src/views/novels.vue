@@ -4,7 +4,7 @@ import request from "@/utils/request";
 
 const webList = ref([]);
 request("test", "null").then((res) => {
-  console.log(res);
+  // console.log(res);
   webList.value = res;
 });
 

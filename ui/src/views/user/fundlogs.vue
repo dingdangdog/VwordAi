@@ -1,39 +1,30 @@
 <script setup lang="ts">
-import type { Order } from "@/utils/cloud";
-import { formatDate, getOrderStatusText } from "@/utils/common";
+import type { FundLog, Order } from "@/utils/cloud";
+import { formatDate } from "@/utils/common";
 import request from "@/utils/request";
 import type { PageParam } from "@/utils/model";
 import { ref } from "vue";
 
 const pageQuery = ref<PageParam>({ pageSize: 15, pageNum: 1 });
-const query = ref<Order>({});
+const query = ref<FundLog>({});
 const tabledata = ref<{ total?: number; data?: Order[] }>({});
 const loading = ref(false);
 const headers = ref([
-  { title: "订单号", key: "no" },
-  { title: "金额(￥)", key: "price" },
-  { title: "文", key: "words" },
+  { title: "交易类型", key: "type" },
+  { title: "交易额", key: "num" },
   {
-    title: "创建时间",
-    key: "create_by",
-    value: (order: Order) => {
-      return formatDate(new Date(Number(order.create_by)));
+    title: "交易时间",
+    key: "time",
+    value: (log: FundLog) => {
+      return formatDate(new Date(Number(log.time)));
     },
   },
-  {
-    title: "订单状态",
-    key: "status",
-    value: (order: Order) => {
-      return getOrderStatusText(order.status || "");
-    },
-  },
-  { title: "支付时间", key: "pay_time" },
   // { title: "Actions", key: "actions", sortable: false },
 ]);
 
 const getPages = () => {
   loading.value = true;
-  request("userOrder", pageQuery.value, query.value).then((res) => {
+  request("userFundlogs", pageQuery.value, query.value).then((res) => {
     tabledata.value = res;
     loading.value = false;
   });
@@ -52,7 +43,7 @@ const changePage = (param: {
 
 <template>
   <div class="p-2">
-    <div class="flex items-center py-2">
+    <!-- <div class="flex items-center py-2">
       <div class="w-80">
         <v-text-field
           clearable
@@ -63,9 +54,9 @@ const changePage = (param: {
         ></v-text-field>
       </div>
       <v-btn variant="tonal" class="ml-2" @click="getPages"> 查询 </v-btn>
-    </div>
+    </div> -->
     <v-data-table-server
-      class="bg-transparent h-[calc(100vh-9rem)]"
+      class="bg-transparent h-[calc(100vh-5rem)]"
       noDataText="暂无数据"
       :items-per-page="pageQuery.pageSize"
       :items="tabledata?.data"

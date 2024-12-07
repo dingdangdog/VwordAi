@@ -70,9 +70,12 @@ const changePage = (param: {
           v-model="query.no"
           variant="outlined"
           hide-details="auto"
+          append-inner-icon="mdi-magnify"
+          @click:append-inner="getPages"
+          @keyup.enter="getPages"
         ></v-text-field>
       </div>
-      <v-btn variant="tonal" class="ml-2" @click="getPages"> 查询 </v-btn>
+      <!-- <v-btn variant="tonal" class="ml-2" @click="getPages"> 查询 </v-btn> -->
     </div>
     <v-data-table-server
       class="bg-transparent h-[calc(100vh-9rem)]"

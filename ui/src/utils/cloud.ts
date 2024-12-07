@@ -8,7 +8,7 @@ export interface UserInfo {
   account?: string;
   phone?: string;
   email?: string;
-  createBy?: string;
+  create_by?: string;
   balance?: number;
 }
 // 初始化登录返回信息
@@ -16,7 +16,7 @@ export interface UserInitInfo {
   token: string;
   userId?: number;
   name?: string;
-  createBy?: string;
+  create_by?: string;
   account?: string;
   password?: string;
 }
@@ -32,7 +32,6 @@ export interface User {
   wxOpenid?: string;
   githubKey?: string;
   googleKey?: string;
-  createBy?: string;
   wx_openid?: string;
   github_key?: string;
   google_key?: string;
@@ -56,12 +55,10 @@ export interface Project {
   content?: string;
   status?: string; // 作品状态：-1 处理失败；0 等待中（创建）；1 处理中；2 处理成功；
   fail_reason?: string; // 处理失败原因
-  createBy?: string;
-  updateBy?: string;
-  project_id?: number;
-  user_id?: string | number;
   create_by?: string;
   update_by?: string;
+  project_id?: number;
+  user_id?: string | number;
   voices?: VoiceObject[];
   downloading?: boolean;
 }
@@ -78,16 +75,21 @@ export interface Order {
   orderNo?: string; // 支付机构内部订单号
   payType?: string;
   payTime?: string;
-  createBy?: string;
-  updateBy?: string;
+  create_by?: string;
+  update_by?: string;
   // 数据库原生字段
   user_id?: string | number;
   combo_id?: string | number;
   order_no?: string; // 支付机构内部订单号
   pay_type?: string;
   pay_time?: string;
-  create_by?: string;
-  update_by?: string;
+}
+
+export interface FundLog {
+  id?: number;
+  time?: string;
+  type?: string;
+  num?: string;
 }
 
 export interface AliyunOrderCode {

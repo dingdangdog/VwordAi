@@ -55,15 +55,15 @@ const dotts = (ssml, fileName) => {
 //   path?: string;
 //   name?: string;
 //   content?: string;
-//   createTime?: number;
-//   updateTime?: number;
+//   create_by?: number;
+//   update_by?: number;
 // }
 
 const saveProject = (project) => {
   // console.log(project);
   // 项目名不存在，默认为创建时间
   if (!project.name) {
-    project.name = project.createTime;
+    project.name = project.create_by;
   }
   // 项目路径不存在，默认为数据路径 + 项目名
   if (!project.path) {

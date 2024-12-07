@@ -46,7 +46,7 @@ const getPages = () => {
   loading.value = true;
   request("userProject", pageQuery.value, query.value).then((res) => {
     tabledata.value = res;
-    console.log(res);
+    // console.log(res);
     loading.value = false;
   });
 };
@@ -86,14 +86,14 @@ const countWords = (item: Project) => {
 
 const getDetail = (item: Project) => {
   request("getProjectDetail", item.id).then((res) => {
-    console.log(res);
+    // console.log(res);
   });
 };
 
 // 去编辑项目
 const toEditProject = (item: Project) => {
   request("getProjectDetail", item.id).then((res) => {
-    console.log(res);
+    // console.log(res);
     project.value = res;
     openProjectFlag.value = true;
     activeMenu.value = "";
@@ -104,7 +104,7 @@ const toEditProject = (item: Project) => {
 // 将云端项目下载到本地
 const pullProject = (item: Project) => {
   request("pullProject", item.id).then((res) => {
-    console.log(res);
+    // console.log(res);
     alertSuccess("下载成功");
   });
 };
@@ -113,7 +113,7 @@ const downloadAudio = (item: Project) => {
   item.downloading = true;
   request("downloadAudio", item.id)
     .then((res) => {
-      console.log(res);
+      // console.log(res);
       alertSuccess("下载成功");
     })
     .finally(() => {
@@ -176,9 +176,12 @@ const changePage = (param: {
           v-model="query.name"
           variant="outlined"
           hide-details="auto"
+          size="small"
+          append-inner-icon="mdi-magnify"
+          @click:append-inner="getPages"
+          @keyup.enter="getPages"
         ></v-text-field>
       </div>
-      <v-btn variant="tonal" class="ml-2" @click="getPages"> 查询 </v-btn>
     </div>
     <v-data-table-server
       class="bg-transparent h-[calc(100vh-9rem)]"
@@ -218,14 +221,14 @@ const changePage = (param: {
         >
           mdi-music-box
         </v-icon>
-        <v-icon
+        <!-- <v-icon
           size="small"
           class="mx-1 hover:text-orange-400"
           @click="pullProject(item)"
           title="下载项目"
         >
           mdi-cloud-download
-        </v-icon>
+        </v-icon> -->
         <v-icon
           size="small"
           class="mx-1 hover:text-orange-400"

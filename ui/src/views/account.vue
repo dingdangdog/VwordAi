@@ -80,7 +80,7 @@ const login = async () => {
   // TODO 登录
   request("login", loginParam.value, saveFlag.value)
     .then((res) => {
-      console.log(res);
+      // console.log(res);
       alertSuccess("登录成功");
       GlobalUserLogin.value = res;
     })
@@ -115,7 +115,7 @@ const register = async () => {
   // TODO 注册
   request("register", registerParam.value, saveFlag.value)
     .then((res) => {
-      console.log(res);
+      // console.log(res);
       alertSuccess("注册成功");
       GlobalUserLogin.value = res;
     })

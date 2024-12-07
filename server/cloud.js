@@ -64,6 +64,14 @@ const userOrder = (pageParam, queryParam) => {
   );
 };
 
+const userFundlogs = (pageParam, queryParam) => {
+  return HttpClient.post(
+    "/api/fundlogs/page",
+    { ...pageParam, ...queryParam },
+    { Authorization: token }
+  );
+};
+
 // 用户项目分页列表
 const userProject = (pageParam, queryParam) => {
   // console.log(token);
@@ -119,7 +127,7 @@ const pullProject = async (id) => {
     fs.mkdirSync(projectPath, { recursive: true });
   }
 
-  const projectFile = path.join(projectPath, `${project.id}.json`);
+  const projectFile = path.join(projectPath, "project.json");
 
   // 保存项目配置和数据
   fs.writeFileSync(projectFile, JSON.stringify(project));
@@ -136,12 +144,13 @@ const downloadAudio = async (id) => {
     }
   );
   const contentDisposition = response.headers["content-disposition"];
-  const fileName = decodeURI(
-    contentDisposition.split("=")[1].replaceAll('"', "")
-  );
+  const fileName =
+    Date.now() +
+    "-" +
+    decodeURI(contentDisposition.split("=")[1].replaceAll('"', ""));
   const config = getConfig();
   const dataPath = config.dataPath;
-  const filePath = path.join(dataPath, fileName.split(".")[0], fileName);
+  const filePath = path.join(dataPath, id, fileName);
   // 确保保存路径的文件夹存在
   if (!fs.existsSync(path.dirname(filePath))) {
     fs.mkdirSync(path.dirname(filePath), { recursive: true });
@@ -168,7 +177,6 @@ const downloadAudio = async (id) => {
 const getCombos = () => {
   return HttpClient.post("/combos");
 };
-
 const createOrder = (order) => {
   return HttpClient.post("/api/order/create", order, {
     Authorization: token,
@@ -194,7 +202,7 @@ module.exports = {
   getCombos,
   userOrder,
   userProject,
-  userUsed,
+  userFundlogs,
   uploadProject,
   getProjectDetail,
   deleteProject,

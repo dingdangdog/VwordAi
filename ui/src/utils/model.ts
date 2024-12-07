@@ -39,8 +39,8 @@ export interface Project {
   path?: string;
   name?: string;
   content?: string;
-  createTime?: number;
-  updateTime?: number;
+  create_by?: number;
+  update_by?: number;
 }
 
 export interface SystemConfig {

@@ -12,7 +12,7 @@ const showModels = ref<VoiceModel[]>();
 const getModels = (provider: string) => {
   modelCategory.value = provider;
   request("getModels", provider).then((res) => {
-    console.log(res);
+    // console.log(res);
     models.value = res;
     showModels.value = models.value;
   });

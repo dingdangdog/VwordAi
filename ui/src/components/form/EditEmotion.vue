@@ -9,7 +9,7 @@ import { alertWarning } from "@/utils/common";
 const { flag, item } = defineProps(["flag", "item"]);
 const emit = defineEmits(["cancel", "save"]);
 
-console.log(item);
+// console.log(item);
 const emotion = ref<EditEmotionModel>(item);
 // 选择的服务提供商:azure/aliyun等支持的情感模型
 const emotions = ref<VoiceStyle>({});

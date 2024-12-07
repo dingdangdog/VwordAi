@@ -4,7 +4,7 @@ import { ref } from "vue";
 import UserInfo from "./info.vue";
 import UserOrder from "./order.vue";
 import UserProject from "./project.vue";
-import UserUsed from "./used.vue";
+import UserFundlogs from "./fundlogs.vue";
 
 const selectedMenu = ref("info");
 
@@ -26,8 +26,8 @@ const menus = ref([
   },
   {
     id: "4",
-    name: "消费记录",
-    path: "used",
+    name: "账户明细",
+    path: "fundlogs",
   },
 ]);
 // console.log(selectedMenu.value);
@@ -50,7 +50,7 @@ const menus = ref([
       <UserInfo v-if="selectedMenu === 'info'" />
       <UserOrder v-if="selectedMenu === 'order'" />
       <UserProject v-if="selectedMenu === 'project'" />
-      <UserUsed v-if="selectedMenu === 'used'" />
+      <UserFundlogs v-if="selectedMenu === 'fundlogs'" />
     </div>
   </div>
 </template>
