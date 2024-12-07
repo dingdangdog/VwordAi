@@ -11,7 +11,7 @@ class HttpClient {
    */
   static async request(url, method = "GET", params = null, headers = {}) {
     try {
-      url = "http://localhost:9910" + url;
+      url = "https://vow.oldmoon.top" + url;
 
       const options = {
         method,

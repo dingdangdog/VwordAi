@@ -9,9 +9,11 @@ export const playSSML = (ssml: string) => {
 };
 
 export const logout = () => {
-  requestByToken("logout").then(() => {
-    GlobalUserLogin.value = undefined;
-    GlobalUserInfo.value = undefined;
-    localStorage.removeItem("token");
-  });
+  GlobalUserLogin.value = undefined;
+  GlobalUserInfo.value = undefined;
+  requestByToken("logout")
+    .then(() => {})
+    .finally(() => {
+      localStorage.removeItem("token");
+    });
 };

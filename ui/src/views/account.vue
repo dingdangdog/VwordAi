@@ -37,7 +37,7 @@ const passwordRules = [
 ];
 const againPasswordRules = [
   (v: string) => !!v || "必填",
-  (v: string) => v == loginParam.value.password || "密码不一致",
+  (v: string) => v == registerParam.value.password || "密码不一致",
 ];
 
 const logining = ref(false);
