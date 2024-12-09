@@ -10,7 +10,7 @@ export const requestByToken = (functionName: string, ...args: any) => {
   // 从 localStorage 中获取 token
   const token = localStorage.getItem("token");
   // console.log(...args);
-  console.log(token);
+  // console.log(token);
   return request(functionName, ...args, token);
 };
 

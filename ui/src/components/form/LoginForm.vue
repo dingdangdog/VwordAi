@@ -81,7 +81,7 @@ const register = async () => {
   // 注册
   request("register", registerParam.value, saveFlag.value)
     .then((res) => {
-      console.log(res);
+      // console.log(res);
       localStorage.setItem("token", res.token);
       alertSuccess("注册成功");
       GlobalUserLogin.value = res;
