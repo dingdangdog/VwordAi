@@ -6,7 +6,7 @@ import {
   GlobalUserLogin,
 } from "@/utils/global.store";
 import { request, requestByToken } from "@/utils/request";
-import { ref } from "vue";
+import { onMounted, ref } from "vue";
 // @ts-ignore
 import QRCode from "qrcode";
 import { alertError, alertSuccess, alertWarning } from "@/utils/common";
@@ -19,8 +19,9 @@ const getUserInfo = () => {
     GlobalUserInfo.value = res;
   });
 };
-
-getUserInfo();
+onMounted(() => {
+  getUserInfo();
+})
 
 const toBuy = () => {
   getCombos();
