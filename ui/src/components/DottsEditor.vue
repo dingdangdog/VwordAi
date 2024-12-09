@@ -7,7 +7,6 @@ import type {
   PageParam,
   SerivceProvider,
   VoiceModel,
-  VoiceObject,
 } from "@/utils/model";
 import EditBlankIcon from "@/components/edit/BlankIcon.vue";
 import EditEmotionIcon from "@/components/edit/EmotionIcon.vue";
@@ -46,6 +45,13 @@ import { htmlToVoice, processVoiceNode } from "@/utils/ssml";
 import type { Project } from "@/utils/cloud";
 
 const editCommonStyleClass = new Set(["cursor-pointer", "pointer-events-auto"]);
+const layoutStyleClass = new Set([
+  "bg-gray-600/50",
+  "rounded-sm",
+  "p-1",
+  "block",
+  "pointer-events-auto",
+]);
 
 const breakStyleClass = new Set([
   "bg-gray-600",
@@ -124,6 +130,14 @@ const textEditor = ref();
 // 初始化编辑器内容
 const initEditor = (text: string) => {
   textEditor.value.innerHTML = text;
+  // 旁白声音模型标签事件初始化
+  const globalElements = document.getElementsByClassName("global");
+  // console.log(voiceElements);
+  for (let e of globalElements) {
+    let voice = e as HTMLElement;
+    voice.addEventListener("click", layoutClickFunc);
+    // addVoiceContentMenuListener(voice); 旁白不需要右键
+  }
   // 声音模型标签事件初始化
   const voiceElements = document.getElementsByClassName("voice");
   // console.log(voiceElements);
@@ -190,6 +204,13 @@ onMounted(() => {
   });
 });
 
+const layoutClickFunc = (e: MouseEvent) => {
+  e.preventDefault();
+  e.stopPropagation(); // 阻止事件冒泡
+  closeAllMenu();
+  selectedVoice.value = e.target as HTMLElement;
+};
+
 // 新建项目
 const addProject = () => {
   project.value = {
@@ -210,9 +231,6 @@ const openProject = () => {
         alertSuccess("打开成功");
         project.value = res;
         project.value.path = path;
-        if (!project.value.layout) {
-          project.value.layout = { provider: "azure" };
-        }
         // TODO 弹出文件夹选择，选择后读取文件夹中的项目内容
         initEditor(project.value.content || "");
         openProjectFlag.value = true;
@@ -225,7 +243,7 @@ const openProject = () => {
 const saveProject = async () => {
   project.value.content = textEditor.value.innerHTML;
   project.value.update_by = Date.now();
-  project.value.voices = [];
+
   const res = await request("saveProject", project.value);
   // console.log(res);
   if (res) {
@@ -240,7 +258,6 @@ const saveProject = async () => {
 // 上传项目
 const uploadProject = async () => {
   await saveProject();
-  console.log(project.value);
   requestByToken("uploadProject", project.value).then((res) => {
     alertSuccess("上传成功");
     project.value.id = res.id;
@@ -256,9 +273,6 @@ const closeProject = (canSave: boolean) => {
     openProjectFlag.value = false;
   }
   project.value = {};
-  if (GlobalUserLogin.value) {
-    getProjectPages();
-  }
   // alertInfo("项目已关闭");
 };
 // 保存并关闭项目
@@ -351,26 +365,48 @@ const convertHTMLToSSML = () => {
   // console.log(ssmlContent);
   doTTS(ssmlContent);
 };
-/*******************************************
- ************【旁白设置相关代码】*************
- *******************************************/
+
 // 是否添加了旁白标识
+const layoutFlag = ref(false);
 const editLayoutFlag = ref(false);
-// 编辑旁白
+
 const editLayoutVoice = () => {
   editLayoutFlag.value = true;
 };
-// 保存旁白设置
-const saveLayout = (layout: VoiceObject) => {
-  if (!layout.model) {
+
+const saveLayout = (l: EditVoiceEmotionModel) => {
+  if (!l.model) {
     alertError("设置无效未选择语音模型！");
     return;
   }
-  project.value.layout = layout;
+  project.value.layout = l;
+
+  const text = textEditor.value.innerHTML;
+
+  let layoutNode = document.getElementById("layoutNode");
+  if (!layoutNode) {
+    layoutNode = document.createElement("span");
+    layoutNode.id = "layoutNode";
+    layoutNode.classList.add("global");
+    layoutNode.setAttribute("data-type", "voice-emotion");
+  }
+
+  layoutStyleClass.forEach((c) => layoutNode.classList.add(c));
+  layoutNode.setAttribute("title", `旁白: ${l.model?.name}`);
+  layoutNode.setAttribute("data-provider", l.provider || "");
+  layoutNode.setAttribute("data-model", l.model?.code || "");
+  layoutNode.setAttribute("data-style", l.style?.code || "");
+  layoutNode.setAttribute("data-styledegree", l.styledegree || "");
+  layoutNode.setAttribute("data-role", l.role?.code || "");
+  layoutNode.innerHTML = text;
+  textEditor.value.innerHTML = layoutNode.outerHTML;
+  layoutFlag.value = true;
+  layoutNode.addEventListener("click", voiceClickFunc);
+  layoutFlag.value = false;
   editLayoutFlag.value = false;
 };
-// 取消旁白编辑
 const cancelLayout = () => {
+  layoutFlag.value = false;
   editLayoutFlag.value = false;
 };
 
@@ -986,7 +1022,7 @@ const countWords = (item: Project) => {
   if (item?.voices && item.voices.length > 0) {
     let total = 0;
     item.voices.forEach((v) => {
-      total += v?.text?.length || 0;
+      total += v.text.length;
     });
     total = total / 0.8;
     return Math.ceil(total);

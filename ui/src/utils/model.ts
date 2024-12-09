@@ -35,12 +35,13 @@ export interface MessageModel {
 
 export interface Project {
   id?: number;
-  layout?: EditVoiceEmotionModel;
+  layout?: VoiceObject | string;
   path?: string;
   name?: string;
   content?: string;
   create_by?: number;
   update_by?: number;
+  voices?: any[];
 }
 
 export interface SystemConfig {
@@ -79,6 +80,7 @@ export interface AliyunConfig {
 export interface EditVoiceEmotionModel {
   provider?: string;
   model?: any;
+  speed?: string;
   style?: EmotionStyle;
   styledegree?: string;
   role?: EmotionStyle;
@@ -112,16 +114,16 @@ export interface EditEmotionModel {
   role?: EmotionStyle;
 }
 
+// 云端使用的配置封装，
 export interface VoiceObject {
   provider: string; // 服务商：azure/aliyun
-  model: string;
-  type: string;
+  model?: string;
+  type?: string; // voice-emotion/voice/emotion/break
   speed?: string; // 语速
   emotion?: string; // 情感code
   emotionLevel?: string; // 情感等级 azure默认1 参考：https://learn.microsoft.com/zh-cn/azure/ai-services/speech-service/speech-synthesis-markup-voice
   emotionRole?: string; // 模仿角色 用指定模型模仿其他角色说话，如：女孩/男孩/年轻女性等等
-  text: string; // 文本内容
-  children?: VoiceObject[];
+  text?: string; // 文本内容
 }
 
 export interface SsmlText {

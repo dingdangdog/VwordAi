@@ -31,8 +31,9 @@ export const ServiceProviderItems = ref<SerivceProvider[]>([
   { name: "Azure", code: "azure" },
   // { name: "阿里云", code: "aliyun" },
 ]);
-
+// 软件配置信息全局变量
 export const GlobalConfig = ref<SystemConfig>({});
-
+// 全局用户信息存储
 export const GlobalUserInfo = ref<UserInfo>();
+// 全局用户登录标识
 export const GlobalUserLogin = ref<UserInitInfo>();

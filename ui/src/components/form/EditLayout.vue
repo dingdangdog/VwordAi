@@ -1,24 +1,16 @@
 <script setup lang="ts">
-import type {
-  EditVoiceEmotionModel,
-  EmotionStyle,
-  VoiceModel,
-  VoiceStyle,
-} from "@/utils/model";
-import MySelect from "../MySelect.vue";
-
+import type { VoiceModel, VoiceObject, VoiceStyle } from "@/utils/model";
 import { defineProps, defineEmits, ref } from "vue";
 import { request } from "@/utils/request";
-import { alertWarning } from "@/utils/common";
 
 const { flag, item } = defineProps(["flag", "item"]);
 const emit = defineEmits(["cancel", "save"]);
 
-// console.log(item);
-const selectedModel = ref(item.model || {});
-
-// console.log(selectedModel.value);
-const voiceEmotion = ref<EditVoiceEmotionModel>(item);
+const layout = ref<VoiceObject>(item);
+// console.log(layout.value);
+if (!layout.value.type) {
+  layout.value.type = "voice-emotion";
+}
 
 const models = ref<VoiceModel[]>();
 const showModels = ref<any[]>([]);
@@ -36,11 +28,6 @@ const getModels = (p: string) => {
 };
 getModels(item.provider);
 
-const selectModel = (model: any) => {
-  selectedModel.value = model;
-  voiceEmotion.value.model = model;
-};
-
 // 选择的服务提供商:azure/aliyun等支持的情感模型
 const emotions = ref<VoiceStyle>({});
 const getEmotions = () => {
@@ -50,22 +37,11 @@ const getEmotions = () => {
 };
 getEmotions();
 
-const selectEmotionStyle = (style: EmotionStyle) => {
-  voiceEmotion.value.style = style;
-};
-const selectEmotionRole = (style: EmotionStyle) => {
-  voiceEmotion.value.role = style;
-};
-
 const handleCancel = () => {
-  emit("cancel", voiceEmotion.value);
+  emit("cancel", layout.value);
 };
 const handleSave = () => {
-  if (!voiceEmotion.value.style && !voiceEmotion.value.role) {
-    alertWarning("未选择情感或角色，无需设置!");
-    return;
-  }
-  emit("save", voiceEmotion.value);
+  emit("save", layout.value);
 };
 </script>
 
@@ -75,73 +51,76 @@ const handleSave = () => {
     class="absolute top-0 left-0 w-full h-full flex flex-col items-center justify-center bg-gray-400/50"
     style="z-index: 999"
   >
-    <div class="px-4 py-2 bg-gray-900 rounded-md">
-      <h3 class="text-lg text-center pb-4">旁白设置</h3>
-      <div class="flex items-center">
-        <label class="min-w-20">语音模型</label>
-        <div class="w-full" v-if="showModels.length > 0">
-          <MySelect
-            :items="showModels"
-            :select="selectModel"
-            :selected="selectedModel"
-          />
-        </div>
-      </div>
-      <div class="flex items-center mt-2">
-        <label for="style" class="min-w-20">情感</label>
-        <div class="w-full" v-if="emotions.style">
-          <MySelect
-            :blank-item="true"
-            :items="emotions.style"
-            :select="selectEmotionStyle"
-            :selected="voiceEmotion.style"
-          />
-        </div>
-        <!-- <input
-            name="style"
-            class="w-full h-8 bg-transparent border border-gray-400 p-2 my-2 rounded-md focus:outline-none"
-            v-model="emotionEdit.style"
-          /> -->
-      </div>
-      <div class="flex items-center mt-2">
-        <label for="styledegree" class="min-w-20">情感级别</label>
-        <input
-          name="styledegree"
-          :placeholder="emotions.styledegree"
-          class="w-full h-8 bg-transparent border border-gray-400 p-2 rounded-md focus:outline-none"
-          v-model="voiceEmotion.styledegree"
-        />
-      </div>
-      <div class="flex items-center mt-2">
-        <label for="role" class="min-w-20">模仿</label>
-        <div class="w-full" v-if="emotions.role">
-          <MySelect
-            :blank-item="true"
-            :items="emotions.role"
-            :select="selectEmotionRole"
-            :selected="voiceEmotion.role"
-          />
-        </div>
-        <!-- <input
-            name="role"
-            class="w-full h-8 bg-transparent border border-gray-400 p-2 my-2 rounded-md focus:outline-none"
-            v-model="emotionEdit.role"
-          /> -->
-      </div>
-      <div class="flex justify-center mt-8">
-        <div
-          class="px-2 py-1 bg-gray-700 hover:bg-gray-600 cursor-pointer rounded-sm"
-          @click="handleCancel"
-        >
-          取消
-        </div>
-        <div
-          class="ml-2 px-2 py-1 bg-blue-500 hover:bg-blue-400 cursor-pointer rounded-sm"
-          @click="handleSave"
-        >
-          确定
-        </div>
-      </div>
+    <div class="bg-gray-900 rounded-md w-96 -mt-40">
+      <v-card title="旁白设置" class="bg-transparent">
+        <v-card-text>
+          <div class="flex items-center">
+            <v-autocomplete
+              label="语音模型"
+              v-model="layout.model"
+              :items="showModels"
+              :item-title="(item) => item.name"
+              :item-value="(item) => item.code"
+              variant="outlined"
+              hide-details="auto"
+            ></v-autocomplete>
+          </div>
+          <div class="flex items-center mt-2">
+            <v-text-field
+              :label="`语速: 默认1.0`"
+              v-model="layout.speed"
+              variant="outlined"
+              hide-details="auto"
+            ></v-text-field>
+          </div>
+          <div class="flex items-center mt-2">
+            <v-autocomplete
+              label="情感"
+              v-model="layout.emotion"
+              :items="emotions.style"
+              :item-title="(item) => item.name"
+              :item-value="(item) => item.code"
+              variant="outlined"
+              hide-details="auto"
+            ></v-autocomplete>
+          </div>
+          <div class="flex items-center mt-2">
+            <v-text-field
+              :label="`情感级别: ${emotions.styledegree}`"
+              v-model="layout.emotionLevel"
+              variant="outlined"
+              hide-details="auto"
+            ></v-text-field>
+          </div>
+          <div class="flex items-center mt-2">
+            <v-autocomplete
+              label="伪音模仿"
+              v-model="layout.emotionRole"
+              :items="emotions.role"
+              :item-title="(item) => item.name"
+              :item-value="(item) => item.code"
+              variant="outlined"
+              hide-details="auto"
+            ></v-autocomplete>
+          </div>
+        </v-card-text>
+        <v-card-actions>
+          <div class="w-full flex justify-center">
+            <div
+              class="px-2 py-1 bg-gray-700 hover:bg-gray-600 cursor-pointer rounded-sm"
+              @click="handleCancel"
+            >
+              取消
+            </div>
+            <div
+              class="ml-2 px-2 py-1 bg-blue-500 hover:bg-blue-400 cursor-pointer rounded-sm"
+              @click="handleSave"
+            >
+              保存
+            </div>
+          </div>
+        </v-card-actions>
+      </v-card>
     </div>
   </div>
 </template>

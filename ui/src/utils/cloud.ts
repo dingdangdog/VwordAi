@@ -52,6 +52,7 @@ export interface Project {
   projectId?: number;
   userId?: string | number;
   name?: string;
+  layout?: VoiceObject;
   content?: string;
   status?: string; // 作品状态：-1 处理失败；0 等待中（创建）；1 处理中；2 处理成功；
   fail_reason?: string; // 处理失败原因
