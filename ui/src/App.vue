@@ -11,7 +11,7 @@ import { alertError, alertInfo, alertSuccess } from "./utils/common";
 alertInfo("配置加载中……");
 request("getConfigApi")
   .then((res) => {
-    console.log(res);
+    // console.log(res);
     GlobalConfig.value = res;
     alertSuccess("系统配置加载完成!");
     initUser();

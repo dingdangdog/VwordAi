@@ -1,8 +1,9 @@
-const { saveAccount, getConfig } = require("./config");
+const fs = require("fs");
+const path = require("path");
 const HttpClient = require("./http");
 const { success, error } = require("./util");
-const path = require("path");
-const fs = require("fs");
+const { saveAccount, getConfig, saveConfig } = require("./config");
+const { getEmotions, getModels, saveModels, saveEmotions } = require("./model");
 
 const login = async (param, saveFlag) => {
   // console.log(param, saveFlag);
@@ -24,6 +25,41 @@ const logout = (token) => {
 
 const register = async (param, saveFlag) => {
   return await HttpClient.post("/api/register", param);
+};
+
+const saveCloudConfig = (token) => {
+  const config = getConfig();
+  const models = getModels();
+  const emotions = getEmotions();
+  return HttpClient.post(
+    "/api/user/saveConfig",
+    {
+      config: JSON.stringify(config),
+      models: JSON.stringify(models.d),
+      emotions: JSON.stringify(emotions.d),
+    },
+    {
+      Authorization: token,
+    }
+  );
+};
+
+const loadCloudConfig = async (token) => {
+  const res = await HttpClient.get(
+    "/api/user/loadConfig",
+    {},
+    {
+      Authorization: token,
+    }
+  );
+  // console.log(res);
+  if (res.c == 200 && res.d) {
+    // 覆盖本地配置文件
+    saveConfig(JSON.parse(res.d.config));
+    saveModels(JSON.parse(res.d.models));
+    saveEmotions(JSON.parse(res.d.emotions));
+  }
+  return res;
 };
 
 const userInit = async () => {
@@ -197,4 +233,6 @@ module.exports = {
   cloudDotts,
   downloadAudio,
   pullProject,
+  saveCloudConfig,
+  loadCloudConfig,
 };

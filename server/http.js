@@ -1,6 +1,8 @@
 const axios = require("axios");
 
 class HttpClient {
+  // static CLOUD_URL = "https://vow.oldmoon.top";
+  static CLOUD_URL = "http://localhost:9910";
   /**
    * 发送 HTTP 请求
    * @param {string} url 请求的 URL
@@ -11,7 +13,7 @@ class HttpClient {
    */
   static async request(url, method = "GET", params = null, headers = {}) {
     try {
-      url = "https://vow.oldmoon.top" + url;
+      url = HttpClient.CLOUD_URL + url;
 
       const options = {
         method,
@@ -65,9 +67,10 @@ class HttpClient {
       }
     }
   }
+
   static async download(url, method = "GET", params = null, headers = {}) {
     try {
-      url = "http://localhost:9910" + url;
+      url = HttpClient.CLOUD_URL + url;
 
       const options = {
         method,

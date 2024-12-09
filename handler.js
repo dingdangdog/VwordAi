@@ -28,6 +28,8 @@ const {
   cloudDotts,
   downloadAudio,
   pullProject,
+  saveCloudConfig,
+  loadCloudConfig,
 } = require("./server/cloud.js");
 
 module.exports = {
@@ -67,4 +69,6 @@ module.exports = {
   cloudDotts,
   downloadAudio,
   pullProject,
+  saveCloudConfig,
+  loadCloudConfig,
 };

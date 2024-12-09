@@ -19,7 +19,14 @@ const getModels = (provider) => {
     }
   }
   // console.log(models);
-  return success(models, "success");
+  return success(models);
+};
+
+const saveModels = (models) => {
+  const configDir = getConfigDir();
+  const modelFilePath = path.join(configDir, MODEL_FILE);
+  fs.writeFileSync(modelFilePath, JSON.stringify(models));
+  return success(models);
 };
 
 // export interface VoiceModel {
@@ -50,7 +57,7 @@ const saveModel = (model) => {
   });
 
   fs.writeFileSync(modelFilePath, JSON.stringify(models));
-  return success(model, "success");
+  return success(model);
 };
 
 const getEmotions = (providerCode) => {
@@ -58,10 +65,23 @@ const getEmotions = (providerCode) => {
   const emotionFilePath = path.join(configDir, EMOTION_FILE);
   let emotions = readJsonFile(emotionFilePath);
   // console.log(emotions);
-  return success(emotions[providerCode], "success");
+  if (providerCode) {
+    return success(emotions[providerCode]);
+  } else {
+    return success(emotions);
+  }
+};
+
+const saveEmotions = (emotions) => {
+  const configDir = getConfigDir();
+  const modelFilePath = path.join(configDir, EMOTION_FILE);
+  fs.writeFileSync(modelFilePath, JSON.stringify(emotions));
+  return success(emotions);
 };
 module.exports = {
   getModels,
   saveModel,
+  saveModels,
   getEmotions,
+  saveEmotions,
 };

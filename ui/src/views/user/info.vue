@@ -1,6 +1,10 @@
 <script setup lang="ts">
 import type { AliyunOrderCode, Combo, Order } from "@/utils/cloud";
-import { GlobalUserInfo, GlobalUserLogin } from "@/utils/global.store";
+import {
+  GlobalConfig,
+  GlobalUserInfo,
+  GlobalUserLogin,
+} from "@/utils/global.store";
 import { request, requestByToken } from "@/utils/request";
 import { ref } from "vue";
 // @ts-ignore
@@ -54,7 +58,7 @@ const createOrder = () => {
   }
   creatrOrdering.value = true;
   // 创建订单开始支付
-  request("createOrder", buyOrder.value)
+  requestByToken("createOrder", buyOrder.value)
     .then((res) => {
       // console.log(res);
       payOrder.value = res;
@@ -85,7 +89,7 @@ const queryOrder = (no: string | undefined) => {
   queryTime.value = QueryTime;
   queryTimer.value = setInterval(() => {
     if (queryTime.value >= 0) {
-      request("queryOrder", { no }).then((res) => {
+      requestByToken("queryOrder", { no }).then((res) => {
         if (res.status == "1") {
           alertSuccess("支付成功");
           showPayDialog.value = false;
@@ -113,7 +117,7 @@ const urlToQrCode = (url: string) => {
 };
 
 const cancelOrder = () => {
-  request("cancelOrder", { no: payOrder.value.out_trade_no })
+  requestByToken("cancelOrder", { no: payOrder.value.out_trade_no })
     .then(() => {
       alertWarning("取消订单");
     })
@@ -123,6 +127,21 @@ const cancelOrder = () => {
         clearInterval(queryTimer.value);
       }
     });
+};
+
+const saveCloudConfig = async () => {
+  requestByToken("saveCloudConfig").then((res) => {
+    alertSuccess("保存成功");
+  });
+};
+const loadCloudConfig = () => {
+  requestByToken("loadCloudConfig").then((res) => {
+    alertSuccess("获取成功");
+    if (res) {
+      // console.log(res);
+      GlobalConfig.value = JSON.parse(res);
+    }
+  });
 };
 </script>
 
@@ -174,6 +193,21 @@ const cancelOrder = () => {
           绑定
         </button>
       </div>
+    </div>
+    <div class="mt-2 p-2 text-center">
+      <button
+        class="px-2 py-1 rounded-md bg-blue-500 hover:bg-blue-400"
+        @click="saveCloudConfig()"
+      >
+        上传配置
+      </button>
+
+      <button
+        class="ml-2 px-2 py-1 rounded-md bg-green-600 hover:bg-green-500"
+        @click="loadCloudConfig()"
+      >
+        下载配置
+      </button>
     </div>
     <div class="mt-2 p-2 text-center">
       <button
