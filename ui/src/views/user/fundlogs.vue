@@ -10,7 +10,11 @@ const query = ref<FundLog>({});
 const tabledata = ref<{ total?: number; data?: Order[] }>({});
 const loading = ref(false);
 const headers = ref([
-  { title: "交易类型", key: "type" },
+  {
+    title: "交易类型",
+    key: "type",
+    value: (log: FundLog) => (log.type == "in" ? "充值" : "消耗"),
+  },
   { title: "交易额", key: "num" },
   {
     title: "交易时间",

@@ -44,6 +44,7 @@ import EditEmotionForm from "@/components/form/EditEmotion.vue";
 import EditVoiceEmotionForm from "@/components/form/EditVoiceEmotion.vue";
 import { htmlToVoice, processVoiceNode } from "@/utils/ssml";
 import type { Project } from "@/utils/cloud";
+import LoginForm from "@/components/form/LoginForm.vue";
 
 const editCommonStyleClass = new Set(["cursor-pointer", "pointer-events-auto"]);
 
@@ -1044,13 +1045,10 @@ const deleteProject = () => {
 
 <template>
   <div
-    class="h-full w-full flex flex-col justify-center items-center p-2"
+    class="h-full w-full flex flex-col justify-center items-center px-2"
     v-show="!openProjectFlag"
   >
-    <div
-      class="flex justify-center items-center"
-      :class="GlobalUserLogin ? '' : '-mt-52'"
-    >
+    <div class="flex w-full items-center py-2 border-b">
       <button
         class="px-4 py-2 rounded-md bg-gray-700 hover:bg-gray-600"
         @click="addProject()"
@@ -1065,8 +1063,14 @@ const deleteProject = () => {
       </button>
     </div>
     <div
+      v-if="!GlobalUserLogin"
+      class="flex-1 flex justify-center items-center"
+    >
+      <LoginForm class="w-96" />
+    </div>
+    <div
       v-if="GlobalUserLogin"
-      class="border bg-gray-800 border-gray-200 rounded-md px-2 w-full mt-8"
+      class="border bg-gray-800 border-gray-200 rounded-md px-2 my-2 w-full flex-1"
     >
       <div class="text-xl font-bold text-center py-2">云端项目</div>
       <div class="flex items-center justify-center">
@@ -1084,7 +1088,7 @@ const deleteProject = () => {
         </div>
       </div>
       <v-data-table-server
-        class="bg-transparent h-[50vh]"
+        class="bg-transparent h-[calc(100vh-15rem)]"
         noDataText="暂无数据"
         :items-per-page="pageQuery.pageSize"
         :items="tabledata?.data"

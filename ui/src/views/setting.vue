@@ -54,7 +54,7 @@ const openFolder = () => {
         :class="showConfig == 'provider' ? 'bg-gray-800' : ''"
         @click="showConfig = 'provider'"
       >
-        服务商设置
+        个人设置
       </a>
     </div>
     <div class="flex-1 h-full overflow-y-auto">

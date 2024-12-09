@@ -153,10 +153,20 @@ const loadCloudConfig = () => {
       <p class="text-[12px] text-gray-300">
         账号: {{ GlobalUserInfo?.account }}
       </p>
-      <div>
-        <span class="text-sm text-gray-300 font-bold">
-          余额: {{ GlobalUserInfo?.balance
-          }}<span class="text-[10px]">(文)</span>
+      <div class="my-2">
+        <span class="text-base font-bold">
+          余额:
+          <span
+            class="text-lg"
+            :class="
+              GlobalUserInfo?.balance && GlobalUserInfo?.balance > 0
+                ? 'text-blue-500'
+                : 'text-red-400'
+            "
+          >
+            {{ GlobalUserInfo?.balance }}
+          </span>
+          <span class="text-[10px] text-gray-300">(文)</span>
         </span>
         <button
           class="ml-2 px-2 py-1 rounded-md bg-green-600 hover:bg-green-500 text-gray-100 cursor-pointer"
@@ -166,7 +176,7 @@ const loadCloudConfig = () => {
         </button>
       </div>
     </div>
-    <div
+    <!-- <div
       class="mt-2 border border-gray-200 p-2 rounded-md flex flex-col items-center"
     >
       <div class="flex py-2 items-center">
@@ -208,14 +218,14 @@ const loadCloudConfig = () => {
       >
         下载配置
       </button>
-    </div>
+    </div> -->
     <div class="mt-2 p-2 text-center">
-      <button
+      <!-- <button
         class="px-2 py-1 rounded-md bg-blue-500 hover:bg-blue-400"
         @click="logout()"
       >
         修改密码
-      </button>
+      </button> -->
       <button
         class="ml-2 px-2 py-1 rounded-md bg-red-500 hover:bg-red-400"
         @click="logout()"

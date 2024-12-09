@@ -1,8 +1,8 @@
 const axios = require("axios");
 
 class HttpClient {
-  // static CLOUD_URL = "https://vow.oldmoon.top";
-  static CLOUD_URL = "http://localhost:9910";
+  static CLOUD_URL = "https://vow.oldmoon.top";
+  // static CLOUD_URL = "http://localhost:9910";
   /**
    * 发送 HTTP 请求
    * @param {string} url 请求的 URL
