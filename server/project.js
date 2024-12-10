@@ -59,6 +59,51 @@ const dotts = (ssml, fileName) => {
 //   update_by?: number;
 // }
 
+// 获取本地全部项目列表
+const getLocalProjects = () => {
+  const config = getConfig();
+  const projectPath = path.join(config.dataPath, "projects");
+  if (!fs.existsSync(projectPath)) {
+    return error("", "项目文件夹不存在");
+  }
+  const projects = [];
+  try {
+    // 1. 获取全部子文件夹，不包括文件
+    const subFolders = fs
+      .readdirSync(projectPath, { withFileTypes: true })
+      .filter((entry) => entry.isDirectory())
+      .map((folder) => path.join(projectPath, folder.name));
+    // console.log("subFolders", subFolders);
+    // 2. 解析每个子文件夹下的 project.json 文件
+    for (const folder of subFolders) {
+      const projectJsonPath = path.join(folder, "project.json");
+      if (fs.existsSync(projectJsonPath)) {
+        try {
+          const projectData = JSON.parse(
+            fs.readFileSync(projectJsonPath, "utf-8")
+          );
+          projects.push(projectData);
+        } catch (err) {
+          console.warn(
+            `Failed to parse project.json in folder: ${folder}`,
+            err
+          );
+        }
+      } else {
+        console.warn(`project.json not found in folder: ${folder}`);
+      }
+    }
+    // console.log("projects", projects);
+    // 3. 按照创建时间（create_by）倒序排序
+    projects.sort((a, b) => new Date(b.create_by) - new Date(a.create_by));
+
+    // 4. 返回项目列表
+    return success(projects, "success");
+  } catch (err) {
+    return error("", `Failed to load projects: ${err.message}`);
+  }
+};
+
 const saveProject = (project) => {
   // console.log(project);
   // 项目名不存在，默认为创建时间
@@ -70,6 +115,7 @@ const saveProject = (project) => {
     const config = getConfig();
     project.path = path.join(
       config.dataPath,
+      "projects",
       String(project.id ? project.id : Date.now().toString())
     );
   }
@@ -94,4 +140,4 @@ const getProject = (projectPath) => {
   }
 };
 
-module.exports = { dotts, saveProject, getProject };
+module.exports = { dotts, saveProject, getProject, getLocalProjects };

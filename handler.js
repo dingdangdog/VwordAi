@@ -8,7 +8,7 @@ const {
 } = require("./server/config.js");
 const { getModels, saveModel, getEmotions } = require("./server/model.js");
 const { speech } = require("./server/azure.js");
-const { dotts, saveProject, getProject } = require("./server/project.js");
+const { dotts, saveProject, getProject, getLocalProjects } = require("./server/project.js");
 const {
   login,
   logout,
@@ -50,6 +50,7 @@ module.exports = {
   dotts,
   saveProject,
   getProject,
+  getLocalProjects,
 
   login,
   logout,

@@ -142,7 +142,12 @@ const pullProject = async (id, token) => {
   const project = res.d;
   const config = getConfig();
   const dataPath = config.dataPath;
-  const projectPath = path.join(dataPath, project.id);
+  const projectDir = path.join(dataPath, "cloud");
+  // 确保保存路径的文件夹存在
+  if (!fs.existsSync(projectDir)) {
+    fs.mkdirSync(projectDir, { recursive: true });
+  }
+  const projectPath = path.join(projectDir, project.id);
   // 确保保存路径的文件夹存在
   if (!fs.existsSync(projectPath)) {
     fs.mkdirSync(projectPath, { recursive: true });
