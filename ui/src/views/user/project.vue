@@ -8,7 +8,7 @@ import {
   activeMenu,
   GlobalConfig,
   openProjectFlag,
-  project,
+  GlobalEditProject,
 } from "@/utils/global.store";
 import router from "@/router";
 
@@ -94,7 +94,7 @@ const getDetail = (item: Project) => {
 const toEditProject = (item: Project) => {
   requestByToken("getProjectDetail", item.id).then((res) => {
     // console.log(res);
-    project.value = res;
+    GlobalEditProject.value = res;
     openProjectFlag.value = true;
     activeMenu.value = "";
     router.push({ path: "/" });

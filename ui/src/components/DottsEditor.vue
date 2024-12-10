@@ -1,12 +1,12 @@
 <script setup lang="ts">
-import { onMounted, ref, watch } from "vue";
+import { onMounted, ref } from "vue";
 import { request, requestByToken } from "@/utils/request";
 import type {
   EditEmotionModel,
   EditVoiceEmotionModel,
-  PageParam,
   SerivceProvider,
   VoiceModel,
+  VoiceObject,
 } from "@/utils/model";
 import EditBlankIcon from "@/components/edit/BlankIcon.vue";
 import EditEmotionIcon from "@/components/edit/EmotionIcon.vue";
@@ -15,10 +15,7 @@ import {
   alertError,
   alertSuccess,
   alertWarning,
-  formatDate,
-  getProjectStatusText,
   playAudio,
-  selectFloder,
   stopPalyAudio,
   VoiceTestText,
 } from "@/utils/common";
@@ -26,10 +23,9 @@ import MySelect from "@/components/MySelect.vue";
 import {
   openProjectFlag,
   saveProjectFlag,
-  project,
+  GlobalEditProject,
   ModelCategoryItems,
   GlobalConfig,
-  GlobalUserLogin,
 } from "@/utils/global.store";
 import { playSSML } from "@/utils/api";
 import BreakMenu from "@/components/menu/Break.vue";
@@ -41,17 +37,9 @@ import EditBreakForm from "@/components/form/EditBreak.vue";
 import EditVoiceForm from "@/components/form/EditVoice.vue";
 import EditEmotionForm from "@/components/form/EditEmotion.vue";
 import EditVoiceEmotionForm from "@/components/form/EditVoiceEmotion.vue";
-import { htmlToVoice, processVoiceNode } from "@/utils/ssml";
-import type { Project } from "@/utils/cloud";
+import { processVoiceNode } from "@/utils/ssml";
 
 const editCommonStyleClass = new Set(["cursor-pointer", "pointer-events-auto"]);
-const layoutStyleClass = new Set([
-  "bg-gray-600/50",
-  "rounded-sm",
-  "p-1",
-  "block",
-  "pointer-events-auto",
-]);
 
 const breakStyleClass = new Set([
   "bg-gray-600",
@@ -130,20 +118,12 @@ const textEditor = ref();
 // 初始化编辑器内容
 const initEditor = (text: string) => {
   textEditor.value.innerHTML = text;
-  // 旁白声音模型标签事件初始化
-  const globalElements = document.getElementsByClassName("global");
-  // console.log(voiceElements);
-  for (let e of globalElements) {
-    let voice = e as HTMLElement;
-    voice.addEventListener("click", layoutClickFunc);
-    // addVoiceContentMenuListener(voice); 旁白不需要右键
-  }
   // 声音模型标签事件初始化
   const voiceElements = document.getElementsByClassName("voice");
   // console.log(voiceElements);
   for (let e of voiceElements) {
     let voice = e as HTMLElement;
-    voice.addEventListener("click", voiceClickFunc);
+    // voice.addEventListener("click", voiceClickFunc);
     voice.addEventListener("contextmenu", voiceRightClickFunc);
   }
   // 情感标签事件初始化
@@ -151,7 +131,7 @@ const initEditor = (text: string) => {
   // console.log(emotionElements);
   for (let e of emotionElements) {
     let emotion = e as HTMLElement;
-    emotion.addEventListener("click", emotionClickFunc);
+    // emotion.addEventListener("click", emotionClickFunc);
     emotion.addEventListener("contextmenu", emotionRightClickFunc);
   }
   // 空白标签事件初始化
@@ -167,7 +147,7 @@ const initEditor = (text: string) => {
   // console.log(voiceElements);
   for (let e of voiceEmotionElements) {
     let voiceEmotion = e as HTMLElement;
-    voiceEmotion.addEventListener("click", voiceEmotionClickFunc);
+    // voiceEmotion.addEventListener("click", voiceEmotionClickFunc);
     voiceEmotion.addEventListener("contextmenu", voiceEmotionRightClickFunc);
   }
 
@@ -193,7 +173,7 @@ const initEditor = (text: string) => {
 onMounted(() => {
   getModels(ModelCategoryItems.value[0]);
   if (openProjectFlag.value) {
-    initEditor(project.value.content || "");
+    initEditor(GlobalEditProject.value.content || "");
   }
 
   document.addEventListener("click", (event) => {
@@ -204,50 +184,15 @@ onMounted(() => {
   });
 });
 
-const layoutClickFunc = (e: MouseEvent) => {
-  e.preventDefault();
-  e.stopPropagation(); // 阻止事件冒泡
-  closeAllMenu();
-  selectedVoice.value = e.target as HTMLElement;
-};
-
-// 新建项目
-const addProject = () => {
-  project.value = {
-    layout: { provider: "azure" },
-  };
-  project.value.create_by = Date.now();
-  // 初始化创建项目所在目录，并保存基本数据
-  saveProject();
-  initEditor("");
-  openProjectFlag.value = true;
-};
-
-// 打开项目
-const openProject = () => {
-  selectFloder().then((path) => {
-    if (path) {
-      request("getProject", path).then((res) => {
-        alertSuccess("打开成功");
-        project.value = res;
-        project.value.path = path;
-        // TODO 弹出文件夹选择，选择后读取文件夹中的项目内容
-        initEditor(project.value.content || "");
-        openProjectFlag.value = true;
-      });
-    }
-  });
-};
-
 // 保存项目
 const saveProject = async () => {
-  project.value.content = textEditor.value.innerHTML;
-  project.value.update_by = Date.now();
-
-  const res = await request("saveProject", project.value);
+  GlobalEditProject.value.content = textEditor.value.innerHTML;
+  GlobalEditProject.value.update_by = Date.now();
+  GlobalEditProject.value.voices = [];
+  const res = await request("saveProject", GlobalEditProject.value);
   // console.log(res);
   if (res) {
-    project.value = res;
+    GlobalEditProject.value = res;
     alertSuccess("保存成功");
     saveProjectFlag.value = true;
   } else {
@@ -258,9 +203,10 @@ const saveProject = async () => {
 // 上传项目
 const uploadProject = async () => {
   await saveProject();
-  requestByToken("uploadProject", project.value).then((res) => {
+  console.log(GlobalEditProject.value);
+  requestByToken("uploadProject", GlobalEditProject.value).then((res) => {
     alertSuccess("上传成功");
-    project.value.id = res.id;
+    GlobalEditProject.value.id = res.id;
   });
 };
 
@@ -272,9 +218,9 @@ const closeProject = (canSave: boolean) => {
   if (openProjectFlag.value) {
     openProjectFlag.value = false;
   }
-  project.value = {};
-  // alertInfo("项目已关闭");
+  GlobalEditProject.value = {};
 };
+
 // 保存并关闭项目
 const saveAndCloseProject = async () => {
   await saveProject();
@@ -304,7 +250,7 @@ const importText = () => {
 // 打开项目文件夹
 const openProjectFolder = () => {
   // @ts-ignore
-  window.electron.openFolder(project.value.path);
+  window.electron.openFolder(GlobalEditProject.value.path);
 };
 
 // 播放模型试听
@@ -329,12 +275,12 @@ const playTest = (model: VoiceModel) => {
 
 // 执行本地语音转换（保存语音文件到本地）
 const doTTS = (ssml: string) => {
-  if (!project.value.path) {
-    project.value.path = `${GlobalConfig.value.dataPath}/${project.value.name}`;
+  if (!GlobalEditProject.value.path) {
+    GlobalEditProject.value.path = `${GlobalConfig.value.dataPath}/${GlobalEditProject.value.name}`;
   }
   // 组装本次转换的文件名
-  const fileName = `${project.value.path}/${
-    project.value.name
+  const fileName = `${GlobalEditProject.value.path}/${
+    GlobalEditProject.value.name
   }_${Date.now()}.wav`;
   request("dotts", ssml, fileName).then((res) => {
     alertSuccess("生成成功");
@@ -365,48 +311,26 @@ const convertHTMLToSSML = () => {
   // console.log(ssmlContent);
   doTTS(ssmlContent);
 };
-
+/*******************************************
+ ************【旁白设置相关代码】*************
+ *******************************************/
 // 是否添加了旁白标识
-const layoutFlag = ref(false);
 const editLayoutFlag = ref(false);
-
+// 编辑旁白
 const editLayoutVoice = () => {
   editLayoutFlag.value = true;
 };
-
-const saveLayout = (l: EditVoiceEmotionModel) => {
-  if (!l.model) {
+// 保存旁白设置
+const saveLayout = (layout: VoiceObject) => {
+  if (!layout.model) {
     alertError("设置无效未选择语音模型！");
     return;
   }
-  project.value.layout = l;
-
-  const text = textEditor.value.innerHTML;
-
-  let layoutNode = document.getElementById("layoutNode");
-  if (!layoutNode) {
-    layoutNode = document.createElement("span");
-    layoutNode.id = "layoutNode";
-    layoutNode.classList.add("global");
-    layoutNode.setAttribute("data-type", "voice-emotion");
-  }
-
-  layoutStyleClass.forEach((c) => layoutNode.classList.add(c));
-  layoutNode.setAttribute("title", `旁白: ${l.model?.name}`);
-  layoutNode.setAttribute("data-provider", l.provider || "");
-  layoutNode.setAttribute("data-model", l.model?.code || "");
-  layoutNode.setAttribute("data-style", l.style?.code || "");
-  layoutNode.setAttribute("data-styledegree", l.styledegree || "");
-  layoutNode.setAttribute("data-role", l.role?.code || "");
-  layoutNode.innerHTML = text;
-  textEditor.value.innerHTML = layoutNode.outerHTML;
-  layoutFlag.value = true;
-  layoutNode.addEventListener("click", voiceClickFunc);
-  layoutFlag.value = false;
+  GlobalEditProject.value.layout = layout;
   editLayoutFlag.value = false;
 };
+// 取消旁白编辑
 const cancelLayout = () => {
-  layoutFlag.value = false;
   editLayoutFlag.value = false;
 };
 
@@ -428,7 +352,7 @@ const addTextVoice = (model: VoiceModel) => {
   voiceNode.setAttribute("data-model", model.code);
   range.surroundContents(voiceNode);
 
-  voiceNode.addEventListener("click", voiceClickFunc);
+  // voiceNode.addEventListener("click", voiceClickFunc);
   voiceNode.addEventListener("contextmenu", voiceRightClickFunc);
 };
 
@@ -566,7 +490,7 @@ const addEmotion = () => {
   selectedRange.value.surroundContents(emotionNode);
 
   // 添加事件监听
-  emotionNode.addEventListener("click", emotionClickFunc);
+  // emotionNode.addEventListener("click", emotionClickFunc);
   emotionNode.addEventListener("contextmenu", emotionRightClickFunc);
   // 直接触发点击事件
   emotionNode.click();
@@ -619,7 +543,7 @@ const saveEmotion = (item: EditEmotionModel) => {
     title += `情感级别：${item.styledegree}`;
     // 模仿
     selectedEmotion.value.setAttribute("data-role", item.role?.code || "");
-    title += `模仿：${item.role?.name}`;
+    title += `伪音模仿：${item.role?.name}`;
   }
 
   showEmotionMenu.value = false; // 隐藏菜单
@@ -648,13 +572,13 @@ const playEmotion = () => {
   }
 };
 
-const emotionClickFunc = (e: MouseEvent) => {
-  e.preventDefault();
-  e.stopPropagation(); // 阻止事件冒泡
-  closeAllMenu();
-  selectedEmotion.value = e.target as HTMLElement;
-  editEmotion();
-};
+// const emotionClickFunc = (e: MouseEvent) => {
+//   e.preventDefault();
+//   e.stopPropagation(); // 阻止事件冒泡
+//   closeAllMenu();
+//   selectedEmotion.value = e.target as HTMLElement;
+//   editEmotion();
+// };
 
 const emotionRightClickFunc = (e: MouseEvent) => {
   e.preventDefault();
@@ -716,13 +640,13 @@ const saveVoice = (item: any) => {
 const cancelVoice = () => {
   editVoiceFlag.value = false; // 隐藏窗口
 };
-const voiceClickFunc = (e: MouseEvent) => {
-  e.preventDefault();
-  e.stopPropagation(); // 阻止事件冒泡
-  closeAllMenu();
-  editVoice();
-  selectedVoice.value = e.target as HTMLElement;
-};
+// const voiceClickFunc = (e: MouseEvent) => {
+//   e.preventDefault();
+//   e.stopPropagation(); // 阻止事件冒泡
+//   closeAllMenu();
+//   editVoice();
+//   selectedVoice.value = e.target as HTMLElement;
+// };
 
 const voiceRightClickFunc = (e: MouseEvent) => {
   e.preventDefault();
@@ -818,17 +742,17 @@ const saveVoiceEmotion = (item: EditVoiceEmotionModel) => {
     );
     editVoiceEmotionFlag.value = false;
     // 添加 voice-emotion 相关的点击事件
-    selectedVoiceEmotion.value.removeEventListener("click", voiceClickFunc);
+    // selectedVoiceEmotion.value.removeEventListener("click", voiceClickFunc);
     selectedVoiceEmotion.value.removeEventListener(
       "contextmenu",
       voiceRightClickFunc
     );
-    selectedVoiceEmotion.value.removeEventListener("click", emotionClickFunc);
+    // selectedVoiceEmotion.value.removeEventListener("click", emotionClickFunc);
     selectedVoiceEmotion.value.removeEventListener(
       "contextmenu",
       emotionRightClickFunc
     );
-    selectedVoiceEmotion.value.addEventListener("click", voiceEmotionClickFunc);
+    // selectedVoiceEmotion.value.addEventListener("click", voiceEmotionClickFunc);
     selectedVoiceEmotion.value.addEventListener(
       "contextmenu",
       voiceEmotionRightClickFunc
@@ -870,15 +794,15 @@ const deleteVmVoice = () => {
       selectedVoiceEmotion.value?.classList.add(c)
     );
     // 清除 voice-emotion 相关的点击事件
-    selectedVoiceEmotion.value.removeEventListener(
-      "click",
-      voiceEmotionClickFunc
-    );
+    // selectedVoiceEmotion.value.removeEventListener(
+    //   "click",
+    //   voiceEmotionClickFunc
+    // );
     selectedVoiceEmotion.value.removeEventListener(
       "contextmenu",
       voiceEmotionRightClickFunc
     );
-    selectedVoiceEmotion.value.addEventListener("click", emotionClickFunc);
+    // selectedVoiceEmotion.value.addEventListener("click", emotionClickFunc);
     selectedVoiceEmotion.value.addEventListener(
       "contextmenu",
       emotionRightClickFunc
@@ -900,15 +824,15 @@ const deleteVmEmotion = () => {
     voiceStyleClass.forEach((c) =>
       selectedVoiceEmotion.value?.classList.add(c)
     );
-    selectedVoiceEmotion.value.removeEventListener(
-      "click",
-      voiceEmotionClickFunc
-    );
+    // selectedVoiceEmotion.value.removeEventListener(
+    //   "click",
+    //   voiceEmotionClickFunc
+    // );
     selectedVoiceEmotion.value.removeEventListener(
       "contextmenu",
       voiceEmotionRightClickFunc
     );
-    selectedVoiceEmotion.value.addEventListener("click", voiceClickFunc);
+    // selectedVoiceEmotion.value.addEventListener("click", voiceClickFunc);
     selectedVoiceEmotion.value.addEventListener(
       "contextmenu",
       voiceRightClickFunc
@@ -916,13 +840,6 @@ const deleteVmEmotion = () => {
   }
 };
 
-const voiceEmotionClickFunc = (e: MouseEvent) => {
-  e.preventDefault();
-  e.stopPropagation(); // 阻止事件冒泡
-  closeAllMenu();
-  selectedVoiceEmotion.value = e.target as HTMLElement;
-  editVoiceEmotion("all");
-};
 const voiceEmotionRightClickFunc = (e: MouseEvent) => {
   e.preventDefault();
   e.stopPropagation(); // 阻止事件冒泡
@@ -938,294 +855,12 @@ const closeAllMenu = () => {
   showVoiceMenu.value = false;
   showVoiceEmotionMenu.value = false;
 };
-
-const pageQuery = ref<PageParam>({ pageSize: 5, pageNum: 1 });
-const query = ref<Project>({});
-const tabledata = ref<{ total?: number; data?: Project[] }>({});
-const loading = ref(false);
-const headers = ref([
-  { title: "项目名", key: "name" },
-  {
-    title: "创建时间",
-    key: "create_by",
-    value: (p: Project) => {
-      return formatDate(new Date(Number(p.create_by)));
-    },
-  },
-  {
-    title: "更新时间",
-    key: "update_by",
-    value: (p: Project) => {
-      return formatDate(new Date(Number(p.update_by)));
-    },
-  },
-  {
-    title: "作品状态",
-    key: "status",
-    value: (p: Project) => {
-      return getProjectStatusText(p.status || "");
-    },
-  },
-  { title: "操作", key: "actions", sortable: false },
-]);
-
-const getProjectPages = () => {
-  loading.value = true;
-  requestByToken("userProject", pageQuery.value, query.value).then((res) => {
-    tabledata.value = res;
-    // console.log(res);
-    loading.value = false;
-  });
-};
-
-const changePage = (param: {
-  page: number;
-  itemsPerPage: number;
-  sortBy: any;
-}) => {
-  pageQuery.value.pageNum = param.page;
-  pageQuery.value.pageSize = param.itemsPerPage;
-  getProjectPages();
-};
-
-const dottsConfirmDialog = ref(false);
-const doItem = ref<Project>({});
-const toDotts = (item: Project) => {
-  requestByToken("getProjectDetail", item.id).then((res) => {
-    doItem.value = res;
-    dottsConfirmDialog.value = true;
-  });
-};
-const startDotts = () => {
-  requestByToken("cloudDotts", doItem.value.id).then((res) => {
-    dottsConfirmDialog.value = false;
-    alertSuccess("任务已提交");
-    getProjectPages();
-  });
-};
-const cancelDotts = () => {
-  doItem.value = {};
-  dottsConfirmDialog.value = false;
-};
-// 去编辑项目
-const toEditProject = (item: Project) => {
-  requestByToken("getProjectDetail", item.id).then((res) => {
-    // console.log(res);
-    project.value = res;
-    openProjectFlag.value = true;
-    initEditor(project.value.content || "");
-  });
-};
-
-// 粗略计算项目消费
-const countWords = (item: Project) => {
-  if (item?.voices && item.voices.length > 0) {
-    let total = 0;
-    item.voices.forEach((v) => {
-      total += v.text.length;
-    });
-    total = total / 0.8;
-    return Math.ceil(total);
-  }
-  return 0;
-};
-
-// 下载项目的处理结果音频文件到本地
-const downloadAudio = (item: Project) => {
-  item.downloading = true;
-  requestByToken("downloadAudio", item.id)
-    .then((res) => {
-      // console.log(res);
-      alertSuccess("下载成功");
-    })
-    .finally(() => {
-      item.downloading = false;
-    });
-};
-// 打开项目的本地文件夹
-const openCloudProjectFolder = (item: Project) => {
-  requestByToken("pullProject", item.id).then((res) => {
-    const projectPath = `${GlobalConfig.value.dataPath}/${item.id}`;
-    // @ts-ignore
-    window.electron
-      .openFolder(projectPath)
-      .then(() => {})
-      .catch((res: any) => {
-        console.log(res);
-      });
-  });
-};
-
-const deleteConfirmDialog = ref(false);
-const deleteItem = ref<Project>({});
-const toDelete = (item: Project) => {
-  deleteItem.value = item;
-  deleteConfirmDialog.value = true;
-};
-const cancelDelete = () => {
-  deleteItem.value = {};
-  deleteConfirmDialog.value = false;
-};
-const deleteProject = () => {
-  if (!deleteItem.value.id) {
-    return;
-  }
-  requestByToken("deleteProject", deleteItem.value.id).then((res) => {
-    deleteConfirmDialog.value = false;
-    alertSuccess("删除成功");
-    getProjectPages();
-  });
-};
 </script>
 
 <template>
-  <div
-    class="h-full w-full flex flex-col justify-center items-center p-2"
-    v-show="!openProjectFlag"
-  >
-    <div
-      class="flex justify-center items-center"
-      :class="GlobalUserLogin ? '' : '-mt-52'"
-    >
-      <button
-        class="px-4 py-2 rounded-md bg-gray-700 hover:bg-gray-600"
-        @click="addProject()"
-      >
-        新建项目
-      </button>
-      <button
-        class="px-4 py-2 ml-4 rounded-md bg-gray-700 hover:bg-gray-600"
-        @click="openProject()"
-      >
-        打开项目
-      </button>
-    </div>
-    <div
-      v-if="GlobalUserLogin"
-      class="border bg-gray-800 border-gray-200 rounded-md px-2 w-full mt-8"
-    >
-      <div class="text-xl font-bold text-center py-2">云端项目</div>
-      <div class="flex items-center justify-center">
-        <div class="w-80">
-          <v-text-field
-            clearable
-            label="作品名称"
-            v-model="query.name"
-            variant="outlined"
-            hide-details="auto"
-            append-inner-icon="mdi-magnify"
-            @click:append-inner="getProjectPages"
-            @keyup.enter="getProjectPages"
-          ></v-text-field>
-        </div>
-      </div>
-      <v-data-table-server
-        class="bg-transparent h-[50vh]"
-        noDataText="暂无数据"
-        :items-per-page="pageQuery.pageSize"
-        :items="tabledata?.data"
-        :itemsLength="tabledata?.total || 0"
-        :headers="headers"
-        :loading="loading"
-        @update:options="changePage"
-      >
-        <!-- eslint-disable-next-line vue/valid-v-slot -->
-        <template v-slot:item.actions="{ item }">
-          <v-icon
-            size="small"
-            class="mx-1 hover:text-orange-400"
-            @click="toEditProject(item)"
-            title="编辑项目"
-          >
-            mdi-pencil
-          </v-icon>
-          <v-icon
-            size="small"
-            class="mx-1 hover:text-orange-400"
-            @click="toDotts(item)"
-            :disabled="item.status != '0'"
-            title="开始处理"
-          >
-            mdi-play-circle
-          </v-icon>
-          <v-icon
-            size="small"
-            class="mx-1 hover:text-orange-400"
-            @click="downloadAudio(item)"
-            :disabled="item.status != '2' || item.downloading"
-            title="下载音频"
-          >
-            mdi-music-box
-          </v-icon>
-          <!-- <v-icon
-          size="small"
-          class="mx-1 hover:text-orange-400"
-          @click="pullProject(item)"
-          title="下载项目"
-          >
-            mdi-cloud-download
-          </v-icon> -->
-          <v-icon
-            size="small"
-            class="mx-1 hover:text-orange-400"
-            @click="openCloudProjectFolder(item)"
-            title="打开项目文件夹"
-          >
-            mdi-folder-open
-          </v-icon>
-          <v-icon
-            size="small"
-            class="mx-1 hover:text-red-500"
-            @click="toDelete(item)"
-            title="删除"
-          >
-            mdi-delete
-          </v-icon>
-        </template>
-      </v-data-table-server>
-
-      <v-dialog v-model="deleteConfirmDialog" width="auto">
-        <v-card>
-          <v-card-title class="text-h5">
-            确定删除项目 【{{ deleteItem?.name }}】吗?
-          </v-card-title>
-          <v-card-actions>
-            <v-spacer></v-spacer>
-            <v-btn color="blue-darken-1" variant="text" @click="cancelDelete"
-              >取消</v-btn
-            >
-            <v-btn color="blue-darken-1" variant="text" @click="deleteProject"
-              >确定</v-btn
-            >
-            <v-spacer></v-spacer>
-          </v-card-actions>
-        </v-card>
-      </v-dialog>
-      <v-dialog v-model="dottsConfirmDialog" width="auto">
-        <v-card>
-          <v-card-title class="text-h5">
-            处理 【{{ doItem?.name }}】，预计消耗{{
-              countWords(doItem)
-            }}文，确定开始处理吗?
-          </v-card-title>
-          <v-card-actions>
-            <v-spacer></v-spacer>
-            <v-btn color="blue-darken-1" variant="text" @click="cancelDotts"
-              >取消</v-btn
-            >
-            <v-btn color="blue-darken-1" variant="text" @click="startDotts"
-              >确定</v-btn
-            >
-            <v-spacer></v-spacer>
-          </v-card-actions>
-        </v-card>
-      </v-dialog>
-    </div>
-  </div>
-  <div class="h-full w-full p-2 flex justify-between" v-show="openProjectFlag">
+  <div class="h-full w-full p-2 flex justify-between">
     <div
       class="h-full w-72 overflow-y-auto overflow-x-hidden p-2 bg-gray-800 rounded-md flex flex-col justify-between"
-      v-if="openProjectFlag"
     >
       <MySelect
         :items="ModelCategoryItems"
@@ -1272,12 +907,12 @@ const deleteProject = () => {
         >
           旁白设置
         </button>
-        <button
+        <!-- <button
           class="ml-2 px-2 py-1 rounded-md bg-gray-700 hover:bg-gray-600"
           @click="stopPalyAudio()"
         >
           停止试听
-        </button>
+        </button> -->
       </div>
       <div
         class="my-2 p-2 bg-gray-800 rounded-md flex-1 flex flex-col"
@@ -1315,7 +950,7 @@ const deleteProject = () => {
         <h3>项目名:</h3>
         <input
           class="w-64 bg-transparent border-b ml-2 py-1 focus:outline-none"
-          v-model="project.name"
+          v-model="GlobalEditProject.name"
         />
         <button
           class="px-2 py-1 ml-2 rounded-md bg-gray-700 hover:bg-gray-600"
@@ -1360,7 +995,7 @@ const deleteProject = () => {
     <EditLayoutForm
       v-if="editLayoutFlag"
       :flag="editLayoutFlag"
-      :item="project.layout"
+      :item="GlobalEditProject.layout"
       @save="saveLayout"
       @cancel="cancelLayout"
     />
@@ -1399,6 +1034,7 @@ const deleteProject = () => {
       v-if="showVoiceMenu"
       :x="menuPosition.x"
       :y="menuPosition.y"
+      @edit="editVoice"
       @addEmotion="addVoiceEmotion"
       @play="playVoice"
       @delete="deleteVoice"
@@ -1415,6 +1051,7 @@ const deleteProject = () => {
       :x="menuPosition.x"
       :y="menuPosition.y"
       @play="playVoiceEmotion"
+      @edit="editVoiceEmotion"
       @deleteEmotion="deleteVmEmotion"
       @deleteVoice="deleteVmVoice"
       @delete="deleteVoiceEmotion"

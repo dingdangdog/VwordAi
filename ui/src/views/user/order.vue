@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { Order } from "@/utils/cloud";
 import { formatDate, getOrderStatusText } from "@/utils/common";
-import { request, requestByToken } from "@/utils/request";
+import { requestByToken } from "@/utils/request";
 import type { PageParam } from "@/utils/model";
 import { ref } from "vue";
 
@@ -10,43 +10,44 @@ const query = ref<Order>({});
 const tabledata = ref<{ total?: number; data?: Order[] }>({});
 const loading = ref(false);
 const headers = ref([
-  { title: "订单号", key: "no" },
-  { title: "金额(￥)", key: "price" },
-  { title: "文", key: "words" },
-  {
-    title: "创建时间",
-    key: "create_by",
-    value: (order: Order) => {
-      return formatDate(new Date(Number(order.create_by)));
-    },
-  },
+  { title: "订单号", key: "no", width: "240", sortable: false },
+  { title: "文", key: "words", maxWidth: "120", sortable: false },
+  { title: "金额(￥)", key: "price", width: "90", sortable: false },
   {
     title: "订单状态",
     key: "status",
+    width: "90",
     value: (order: Order) => {
       return getOrderStatusText(order.status || "");
     },
+    sortable: false,
+  },
+  {
+    title: "创建时间",
+    key: "create_by",
+    width: "240",
+    value: (order: Order) => {
+      return formatDate(new Date(Number(order.create_by)));
+    },
+    sortable: false,
   },
   {
     title: "支付时间",
     key: "pay_time",
-    value: (order: Order) => {
-      return order.pay_time ? formatDate(new Date(Number(order.pay_time))) : "";
-    },
+    width: "240",
+    sortable: false,
   },
+  { title: "订单备注", key: "desc", width: "240", sortable: false },
   // { title: "Actions", key: "actions", sortable: false },
 ]);
 
 const getPages = () => {
   loading.value = true;
   requestByToken("userOrder", pageQuery.value, query.value).then((res) => {
+    console.log(res);
     tabledata.value = res;
     loading.value = false;
   });
-  // getOrdersPage(pageQuery.value, query.value).then((res) => {
-  //   tabledata.value = res;
-  //   loading.value = false;
-  // });
 };
 
 const changePage = (param: {

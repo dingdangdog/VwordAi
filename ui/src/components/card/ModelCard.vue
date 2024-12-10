@@ -17,7 +17,7 @@ const { model } = defineProps(["model"]);
   >
     <div class="flex justify-between items-center">
       <h4>{{ model.name }}</h4>
-      <span class="text-sm text-gray-500">{{ model.gender }}</span>
+      <span class="text-sm text-gray-500">{{ model.gender == '1' ? '男' : '女' }}</span>
     </div>
     <p class="text-sm text-gray-500 flex justify-between">
       {{ model.code }}

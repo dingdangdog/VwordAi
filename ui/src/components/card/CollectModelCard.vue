@@ -72,7 +72,7 @@ const unCollectModel = () => {
   >
     <div class="flex justify-between items-center">
       <h4>{{ modelRef.name }}</h4>
-      <span class="text-sm text-gray-500">{{ modelRef.gender }}</span>
+      <span class="text-sm text-gray-500">{{ modelRef.gender == '1' ? '男' : '女' }}</span>
       <div class="flex">
         <button
           class="px-1 flex items-center text-sm bg-gray-500 hover:bg-gray-400 rounded-md"

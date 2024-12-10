@@ -16,6 +16,7 @@ const headers = ref([
     value: (log: FundLog) => (log.type == "in" ? "充值" : "消耗"),
   },
   { title: "交易额", key: "num" },
+  { title: "交易说明", key: "desc" },
   {
     title: "交易时间",
     key: "time",

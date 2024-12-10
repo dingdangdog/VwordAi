@@ -15,8 +15,8 @@ export const activeMenu = ref("oldmoon");
 export const openProjectFlag = ref(false);
 // 是否已保存项目标识符，一般用于判断项目是否可以关闭
 export const saveProjectFlag = ref(true);
-// 当前打开的项目信息
-export const project = ref<Project>({});
+// 全局变量，用于存储当前打开的项目信息
+export const GlobalEditProject = ref<Project>({});
 
 // 全局消息缓存
 export const messages = ref<MessageModel[]>([]);

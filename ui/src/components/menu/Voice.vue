@@ -1,6 +1,6 @@
 <template>
   <div
-    class="absolute min-w-24 bg-gray-900 rounded-md overflow-hidden cursor-pointer"
+    class="absolute min-w-24 rounded-md overflow-hidden cursor-pointer bg-gray-700 border border-gray-200"
     style="z-index: 999"
     :style="{ top: `${y}px`, left: `${x}px` }"
   >

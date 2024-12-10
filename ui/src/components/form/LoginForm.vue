@@ -26,7 +26,10 @@ onMounted(() => {
   saveFlag.value.autoLogin = GlobalConfig.value.account?.autoLogin || false;
 });
 
-const accountRules = [(v: string) => !!v || "必填"];
+const accountRules = [
+  (v: string) => !!v || "必填",
+  (v: string) => (v && v.length >= 4) || "密码必须大于等于4个字符",
+];
 const passwordRules = [
   (v: string) => !!v || "必填",
   (v: string) => (v && v.length >= 8) || "密码必须大于等于8个字符",
@@ -128,6 +131,7 @@ const register = async () => {
           :type="lookPs ? 'text' : 'password'"
           :append-inner-icon="lookPs ? 'mdi-eye' : 'mdi-eye-off'"
           @click:append-inner="lookPs = !lookPs"
+          @keyup.enter="login()"
         ></v-text-field>
 
         <div class="flex justify-between">

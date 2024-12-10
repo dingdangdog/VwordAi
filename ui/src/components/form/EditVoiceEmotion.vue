@@ -116,7 +116,7 @@ const handleSave = () => {
         />
       </div>
       <div class="flex items-center mt-2">
-        <label for="role" class="min-w-20">模仿</label>
+        <label for="role" class="min-w-20">伪音模仿</label>
         <div class="w-full" v-if="emotions.role">
           <MySelect
             :blank-item="true"
