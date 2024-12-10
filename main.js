@@ -174,7 +174,7 @@ ipcMain.handle("open-file", async () => {
 
     // Detect encoding of the file
     const encoding = chardet.detectFileSync(filePath);
-    console.log(`Detected encoding: ${encoding}`);
+    // console.log(`Detected encoding: ${encoding}`);
 
     // Read file with the detected encoding
     const contentBuffer = fs.readFileSync(filePath);

@@ -77,14 +77,6 @@ export interface AliyunConfig {
   endpoint: string;
 }
 
-export interface EditVoiceEmotionModel {
-  provider?: string;
-  model?: any;
-  speed?: string;
-  style?: EmotionStyle;
-  styledegree?: string;
-  role?: EmotionStyle;
-}
 export interface VoiceModel {
   provider: string;
   collect: boolean;
@@ -107,11 +99,15 @@ export interface EmotionStyle {
   desc?: string;
 }
 
-export interface EditEmotionModel {
+export interface EditCommonModel {
   provider?: string;
+  model?: EmotionStyle;
+  type?: string;
+  speed?: string;
   style?: EmotionStyle;
   styledegree?: string;
   role?: EmotionStyle;
+  color?: string;
 }
 
 // 云端使用的配置封装，

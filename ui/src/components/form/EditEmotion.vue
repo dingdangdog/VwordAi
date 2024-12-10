@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { EditEmotionModel, EmotionStyle, VoiceStyle } from "@/utils/model";
+import type { EditCommonModel, EmotionStyle, VoiceStyle } from "@/utils/model";
 import MySelect from "../MySelect.vue";
 
 import { defineProps, defineEmits, ref } from "vue";
@@ -10,7 +10,7 @@ const { flag, item } = defineProps(["flag", "item"]);
 const emit = defineEmits(["cancel", "save"]);
 
 // console.log(item);
-const emotion = ref<EditEmotionModel>(item);
+const emotion = ref<EditCommonModel>(item);
 // 选择的服务提供商:azure/aliyun等支持的情感模型
 const emotions = ref<VoiceStyle>({});
 const getEmotions = () => {
@@ -37,6 +37,20 @@ const handleSave = () => {
   }
   emit("save", emotion.value);
 };
+
+const showColorPicker = ref(false);
+const selectColor = ref(
+  emotion.value.color?.replace("text-decoration-color: ", "").replace(";", "")
+);
+const toSelectColor = () => {
+  showColorPicker.value = true;
+};
+
+const closeColorPicker = () => {
+  // console.log(emotion.value.color);
+  emotion.value.color = `text-decoration-color: ${selectColor.value}`;
+  showColorPicker.value = false;
+};
 </script>
 
 <template>
@@ -47,6 +61,40 @@ const handleSave = () => {
   >
     <div class="px-4 py-2 bg-gray-900 rounded-md">
       <h3 class="text-lg text-center pb-4">情感设置</h3>
+      <div class="flex items-center h-10">
+        <label for="style" class="min-w-20">颜色</label>
+        <div class="w-full relative">
+          <span
+            class="block px-1 italic underline underline-offset-4 cursor-pointer"
+            :style="
+              selectColor
+                ? `text-decoration-color: ${selectColor};`
+                : 'text-decoration-color: #EC4899;'
+            "
+            @click="toSelectColor()"
+            >修改颜色</span
+          >
+
+          <p
+            class="absolute text-right -right-[6.5rem] top-0 w-full bg-gray-900 rounded-t-md"
+            v-show="showColorPicker"
+          >
+            <button
+              class="px-2 py-1 bg-gray-800 hover:bg-gray-700 rounded-md"
+              @click="closeColorPicker()"
+            >
+              确定
+            </button>
+          </p>
+          <div
+            class="w-full absolute bg-[#333333] top-8"
+            style="z-index: 109"
+            v-show="showColorPicker"
+          >
+            <v-color-picker v-model="selectColor"></v-color-picker>
+          </div>
+        </div>
+      </div>
       <div class="flex items-center">
         <label for="style" class="min-w-20">情感</label>
         <div class="w-full" v-if="emotions.style">
@@ -56,11 +104,6 @@ const handleSave = () => {
             :selected="emotion.style"
           />
         </div>
-        <!-- <input
-            name="style"
-            class="w-full h-8 bg-transparent border border-gray-400 p-2 my-2 rounded-md focus:outline-none"
-            v-model="emotionEdit.style"
-          /> -->
       </div>
       <div class="flex items-center">
         <label for="styledegree" class="min-w-20">情感级别</label>

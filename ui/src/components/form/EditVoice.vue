@@ -1,5 +1,9 @@
 <script setup lang="ts">
-import type { SerivceProvider, VoiceModel } from "@/utils/model";
+import type {
+  EditCommonModel,
+  SerivceProvider,
+  VoiceModel,
+} from "@/utils/model";
 import MySelect from "../MySelect.vue";
 import { ref } from "vue";
 import { request } from "@/utils/request";
@@ -10,6 +14,8 @@ const emit = defineEmits(["cancel", "save"]);
 const selectServiceProvider = ref<SerivceProvider>();
 const models = ref<VoiceModel[]>();
 const showModels = ref<any[]>([]);
+
+const voice = ref<EditCommonModel>(item);
 
 const getModels = (p: SerivceProvider) => {
   selectServiceProvider.value = p;
@@ -32,10 +38,23 @@ const selectedModel = ref<any>({
 });
 const selectModel = (model: any) => {
   selectedModel.value = model;
+  voice.value.model = model;
 };
 
 const handleCancel = () => emit("cancel");
-const handleSave = () => emit("save", selectedModel.value);
+const handleSave = () => emit("save", voice.value);
+
+const showColorPicker = ref(false);
+const selectColor = ref(
+  voice.value.color?.replace("background-color: ", "").replace(";", "")
+);
+const toSelectColor = () => {
+  showColorPicker.value = true;
+};
+const closeColorPicker = () => {
+  voice.value.color = `background-color: ${selectColor.value}`;
+  showColorPicker.value = false;
+};
 </script>
 
 <template>
@@ -46,12 +65,41 @@ const handleSave = () => emit("save", selectedModel.value);
   >
     <div class="px-4 py-2 bg-gray-900 rounded-md min-w-72">
       <h3 class="text-lg text-center pb-4">声音设置</h3>
-      <!-- <div class="flex items-center">
-        <label class="min-w-20">服务商</label>
-        <div class="w-full">
-          <MySelect :items="ModelCategoryItems" :select="getModels" />
+
+      <div class="flex items-center h-10">
+        <label for="style" class="min-w-20">颜色</label>
+        <div class="w-full relative">
+          <span
+            class="px-1 cursor-pointer rounded-sm"
+            :style="
+              selectColor
+                ? `background-color: ${selectColor};`
+                : 'background-color: #571040;'
+            "
+            @click="toSelectColor()"
+            >修改颜色</span
+          >
+
+          <p
+            class="absolute text-right -right-[6.5rem] top-0 w-full bg-gray-900 rounded-t-md"
+            v-show="showColorPicker"
+          >
+            <button
+              class="px-2 py-1 bg-gray-800 hover:bg-gray-700 rounded-md"
+              @click="closeColorPicker()"
+            >
+              确定
+            </button>
+          </p>
+          <div
+            class="w-full absolute bg-[#333333] top-8"
+            style="z-index: 109"
+            v-show="showColorPicker"
+          >
+            <v-color-picker v-model="selectColor"></v-color-picker>
+          </div>
         </div>
-      </div> -->
+      </div>
       <div class="flex items-center">
         <label class="min-w-20">语音模型</label>
         <div class="w-full" v-if="showModels.length > 0">
@@ -59,6 +107,17 @@ const handleSave = () => emit("save", selectedModel.value);
             :items="showModels"
             :select="selectModel"
             :selected="selectedModel"
+          />
+        </div>
+      </div>
+      <div class="flex items-center mt-2">
+        <label class="min-w-20">语速</label>
+        <div class="w-full">
+          <input
+            name="speed"
+            placeholder="默认1.0"
+            class="w-full h-8 bg-transparent border border-gray-400 p-2 rounded-md focus:outline-none"
+            v-model="voice.speed"
           />
         </div>
       </div>

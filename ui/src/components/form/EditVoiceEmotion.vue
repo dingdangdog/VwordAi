@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type {
-  EditVoiceEmotionModel,
+  EditCommonModel,
   EmotionStyle,
   VoiceModel,
   VoiceStyle,
@@ -15,13 +15,10 @@ const { flag, item } = defineProps(["flag", "item"]);
 const emit = defineEmits(["cancel", "save"]);
 
 // console.log(item);
-const selectedModel = ref({
-  name: "",
-  code: item.model,
-});
+const selectedModel = ref(item.model);
 
 // console.log(selectedModel.value);
-const voiceEmotion = ref<EditVoiceEmotionModel>(item);
+const voiceEmotion = ref<EditCommonModel>(item);
 
 const models = ref<VoiceModel[]>();
 const showModels = ref<any[]>([]);
@@ -41,7 +38,7 @@ getModels(item.provider);
 
 const selectModel = (model: any) => {
   selectedModel.value = model;
-  voiceEmotion.value.model = model.code;
+  voiceEmotion.value.model = model;
 };
 
 // 选择的服务提供商:azure/aliyun等支持的情感模型
@@ -70,6 +67,18 @@ const handleSave = () => {
   }
   emit("save", voiceEmotion.value);
 };
+
+const showColorPicker = ref(false);
+const selectColor = ref(
+  voiceEmotion.value.color?.replace("background-color: ", "").replace(";", "")
+);
+const toSelectColor = () => {
+  showColorPicker.value = true;
+};
+const closeColorPicker = () => {
+  voiceEmotion.value.color = `background-color: ${selectColor.value}`;
+  showColorPicker.value = false;
+};
 </script>
 
 <template>
@@ -80,6 +89,41 @@ const handleSave = () => {
   >
     <div class="px-4 py-2 bg-gray-900 rounded-md">
       <h3 class="text-lg text-center pb-4">声音与情感设置</h3>
+
+      <div class="flex items-center h-10">
+        <label for="style" class="min-w-20">颜色</label>
+        <div class="w-full relative">
+          <span
+            class="px-1 cursor-pointer rounded-sm italic underline underline-offset-4"
+            :style="
+              selectColor
+                ? `background-color: ${selectColor};`
+                : 'background-color: #571040;'
+            "
+            @click="toSelectColor()"
+            >修改颜色</span
+          >
+
+          <p
+            class="absolute text-right -right-[6.5rem] top-0 w-full bg-gray-900 rounded-t-md"
+            v-show="showColorPicker"
+          >
+            <button
+              class="px-2 py-1 bg-gray-800 hover:bg-gray-700 rounded-md"
+              @click="closeColorPicker()"
+            >
+              确定
+            </button>
+          </p>
+          <div
+            class="w-full absolute bg-[#333333] top-8"
+            style="z-index: 109"
+            v-show="showColorPicker"
+          >
+            <v-color-picker v-model="selectColor"></v-color-picker>
+          </div>
+        </div>
+      </div>
       <div class="flex items-center">
         <label class="min-w-20">语音模型</label>
         <div class="w-full" v-if="showModels.length > 0">
@@ -87,6 +131,17 @@ const handleSave = () => {
             :items="showModels"
             :select="selectModel"
             :selected="selectedModel"
+          />
+        </div>
+      </div>
+      <div class="flex items-center mt-2">
+        <label class="min-w-20">语速</label>
+        <div class="w-full">
+          <input
+            name="speed"
+            placeholder="默认1.0"
+            class="w-full h-8 bg-transparent border border-gray-400 p-2 rounded-md focus:outline-none"
+            v-model="voiceEmotion.speed"
           />
         </div>
       </div>

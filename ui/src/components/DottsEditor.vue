@@ -2,8 +2,7 @@
 import { onMounted, ref } from "vue";
 import { request, requestByToken } from "@/utils/request";
 import type {
-  EditEmotionModel,
-  EditVoiceEmotionModel,
+  EditCommonModel,
   SerivceProvider,
   VoiceModel,
   VoiceObject,
@@ -39,6 +38,8 @@ import EditEmotionForm from "@/components/form/EditEmotion.vue";
 import EditVoiceEmotionForm from "@/components/form/EditVoiceEmotion.vue";
 import { processVoiceNode } from "@/utils/ssml";
 
+const { close } = defineProps(["close"]);
+
 const editCommonStyleClass = new Set(["cursor-pointer", "pointer-events-auto"]);
 
 const breakStyleClass = new Set([
@@ -51,16 +52,14 @@ const breakStyleClass = new Set([
 ]);
 editCommonStyleClass.forEach((c) => breakStyleClass.add(c));
 
-const voiceStyleClass = new Set(["bg-red-500/50", "px-1", "mx-1", "text-sm"]);
+const voiceStyleClass = new Set(["px-1", "mx-1", "text-sm", "rounded-sm"]);
 editCommonStyleClass.forEach((c) => voiceStyleClass.add(c));
 
 const emotionStyleClass = new Set([
-  "rounded-sm",
   "px-1",
   "italic",
   "underline",
   "underline-offset-4",
-  "decoration-pink-500",
 ]);
 editCommonStyleClass.forEach((c) => emotionStyleClass.add(c));
 
@@ -203,7 +202,7 @@ const saveProject = async () => {
 // 上传项目
 const uploadProject = async () => {
   await saveProject();
-  console.log(GlobalEditProject.value);
+  // console.log(GlobalEditProject.value);
   requestByToken("uploadProject", GlobalEditProject.value).then((res) => {
     alertSuccess("上传成功");
     GlobalEditProject.value.id = res.id;
@@ -219,6 +218,7 @@ const closeProject = (canSave: boolean) => {
     openProjectFlag.value = false;
   }
   GlobalEditProject.value = {};
+  close();
 };
 
 // 保存并关闭项目
@@ -311,6 +311,7 @@ const convertHTMLToSSML = () => {
   // console.log(ssmlContent);
   doTTS(ssmlContent);
 };
+
 /*******************************************
  ************【旁白设置相关代码】*************
  *******************************************/
@@ -332,28 +333,6 @@ const saveLayout = (layout: VoiceObject) => {
 // 取消旁白编辑
 const cancelLayout = () => {
   editLayoutFlag.value = false;
-};
-
-// 为选中文字添加指定语音模型
-const addTextVoice = (model: VoiceModel) => {
-  const selection = window.getSelection();
-  if (!selection?.rangeCount) return;
-
-  // 获取当前选区
-  const range = selection.getRangeAt(0);
-
-  const voiceNode = document.createElement("span");
-  voiceNode.setAttribute("title", `角色名称: ${model.name}`);
-  voiceNode.classList.add("voice");
-  // 添加声音样式
-  voiceStyleClass.forEach((c) => voiceNode.classList.add(c));
-  voiceNode.setAttribute("data-type", "voice");
-  voiceNode.setAttribute("data-provider", model.provider);
-  voiceNode.setAttribute("data-model", model.code);
-  range.surroundContents(voiceNode);
-
-  // voiceNode.addEventListener("click", voiceClickFunc);
-  voiceNode.addEventListener("contextmenu", voiceRightClickFunc);
 };
 
 // 右键菜单的定位
@@ -453,7 +432,7 @@ const breakRightClickFunc = (e: MouseEvent) => {
 /************** 情感相关 ***************/
 const showEmotionMenu = ref(false);
 const editEmotionFlag = ref(false);
-const emotion = ref<EditEmotionModel>({});
+const emotion = ref<EditCommonModel>({});
 // const emotionEdit = ref<EditVoiceStyle>({});
 const selectedEmotion = ref<HTMLElement | null>(null); // 保存当前选中的 span
 const selectedRange = ref();
@@ -469,11 +448,12 @@ const addEmotion = () => {
     alertWarning("未选中任何文字，无法添加情感!");
     return;
   }
-  if (!selectedVoice.value) {
-    alertWarning("当前区域未选择语音模型，无法添加情感!");
-    return;
-  }
-  const voiceProvider = selectedVoice.value.getAttribute("data-provider");
+  // if (!selectedVoice.value) {
+  //   alertWarning("当前区域未选择语音模型，无法添加情感!");
+  //   return;
+  // }
+  // const voiceProvider = selectedVoice.value.getAttribute("data-provider");
+  const voiceProvider = "azure";
   if (!voiceProvider) {
     alertWarning("未知语音模型，无法添加情感!");
     return;
@@ -483,6 +463,7 @@ const addEmotion = () => {
   emotionNode.classList.add("emotion");
   // 添加样式
   emotionStyleClass.forEach((c) => emotionNode.classList.add(c));
+  emotionNode.setAttribute("style", "text-decoration-color: #EC4899;");
   // 标签类型：情感
   emotionNode.setAttribute("data-type", "emotion");
   // 模型提供商
@@ -493,7 +474,9 @@ const addEmotion = () => {
   // emotionNode.addEventListener("click", emotionClickFunc);
   emotionNode.addEventListener("contextmenu", emotionRightClickFunc);
   // 直接触发点击事件
-  emotionNode.click();
+  // emotionNode.click();
+  selectedEmotion.value = emotionNode;
+  editEmotion();
 };
 
 // 编辑功能
@@ -508,6 +491,9 @@ const editEmotion = () => {
       },
       styledegree: selectedEmotion.value.getAttribute("data-styledegree") || "",
       role: { code: selectedEmotion.value.getAttribute("data-role") || "" },
+      color:
+        selectedEmotion.value.getAttribute("style") ||
+        "text-decoration-color: #EC4899;",
     };
     editEmotionFlag.value = true;
   }
@@ -526,7 +512,7 @@ const deleteEmotion = () => {
     editEmotionFlag.value = false;
   }
 };
-const saveEmotion = (item: EditEmotionModel) => {
+const saveEmotion = (item: EditCommonModel) => {
   let title = "";
   if (selectedEmotion.value) {
     // 模型提供商
@@ -544,13 +530,19 @@ const saveEmotion = (item: EditEmotionModel) => {
     // 模仿
     selectedEmotion.value.setAttribute("data-role", item.role?.code || "");
     title += `伪音模仿：${item.role?.name}`;
+    selectedEmotion.value.removeAttribute("style");
+
+    selectedEmotion.value.setAttribute(
+      "style",
+      item.color || "text-decoration-color: #EC4899;"
+    );
   }
 
   showEmotionMenu.value = false; // 隐藏菜单
   editEmotionFlag.value = false;
 };
 // 取消功能
-const cancelEmotion = (item: EditEmotionModel) => {
+const cancelEmotion = (item: EditCommonModel) => {
   showEmotionMenu.value = false; // 隐藏菜单
   editEmotionFlag.value = false;
   // console.log(item);
@@ -572,14 +564,6 @@ const playEmotion = () => {
   }
 };
 
-// const emotionClickFunc = (e: MouseEvent) => {
-//   e.preventDefault();
-//   e.stopPropagation(); // 阻止事件冒泡
-//   closeAllMenu();
-//   selectedEmotion.value = e.target as HTMLElement;
-//   editEmotion();
-// };
-
 const emotionRightClickFunc = (e: MouseEvent) => {
   e.preventDefault();
   e.stopPropagation(); // 阻止事件冒泡
@@ -594,6 +578,29 @@ const showVoiceMenu = ref(false);
 const selectedVoice = ref<HTMLElement | null>(null); // 保存当前选中的 span
 const editVoiceFlag = ref(false);
 const voice = ref<any>();
+
+// 为选中文字添加指定语音模型
+const addTextVoice = (model: VoiceModel) => {
+  const selection = window.getSelection();
+  if (!selection?.rangeCount) return;
+
+  // 获取当前选区
+  const range = selection.getRangeAt(0);
+
+  const voiceNode = document.createElement("span");
+  voiceNode.setAttribute("title", `角色名称: ${model.name}`);
+  voiceNode.classList.add("voice");
+  // 添加声音样式
+  voiceStyleClass.forEach((c) => voiceNode.classList.add(c));
+  voiceNode.setAttribute("data-type", "voice");
+  voiceNode.setAttribute("style", "background-color: #571040;");
+  voiceNode.setAttribute("data-provider", model.provider);
+  voiceNode.setAttribute("data-model", model.code);
+  range.surroundContents(voiceNode);
+
+  // voiceNode.addEventListener("click", voiceClickFunc);
+  voiceNode.addEventListener("contextmenu", voiceRightClickFunc);
+};
 
 // 试听选中voice元素
 const playVoice = () => {
@@ -623,30 +630,31 @@ const editVoice = () => {
     voice.value = {
       provider: selectedVoice.value.getAttribute("data-provider") || "",
       model: selectedVoice.value.getAttribute("data-model") || "",
+      speed: selectedVoice.value.getAttribute("data-speed") || "",
+      color: selectedVoice.value.getAttribute("style") || "",
     };
     editVoiceFlag.value = true;
   }
 };
-const saveVoice = (item: any) => {
+const saveVoice = (item: EditCommonModel) => {
   if (selectedVoice.value) {
-    selectedVoice.value.setAttribute("title", `角色名称：${item.name}`);
+    selectedVoice.value.setAttribute("title", `模型：${item.model?.name}`);
     // 模型提供商
     selectedVoice.value.setAttribute("data-provider", item.provider || "");
     // 模型
-    selectedVoice.value.setAttribute("data-model", item.code || "");
+    selectedVoice.value.setAttribute("data-model", item.model?.code || "");
+    selectedVoice.value.setAttribute("data-speed", item.speed || "");
+    selectedVoice.value.removeAttribute("style");
+    selectedVoice.value.setAttribute(
+      "style",
+      item.color || "background-color: #571040;"
+    );
   }
   editVoiceFlag.value = false; // 隐藏菜单
 };
 const cancelVoice = () => {
   editVoiceFlag.value = false; // 隐藏窗口
 };
-// const voiceClickFunc = (e: MouseEvent) => {
-//   e.preventDefault();
-//   e.stopPropagation(); // 阻止事件冒泡
-//   closeAllMenu();
-//   editVoice();
-//   selectedVoice.value = e.target as HTMLElement;
-// };
 
 const voiceRightClickFunc = (e: MouseEvent) => {
   e.preventDefault();
@@ -670,7 +678,9 @@ const editVoiceEmotion = (
     // console.log(selectedVoiceEmotion.value);
     voiceEmotion.value = {
       provider: selectedVoiceEmotion.value?.getAttribute("data-provider") || "",
-      model: selectedVoiceEmotion.value?.getAttribute("data-model") || "",
+      model: {
+        code: selectedVoiceEmotion.value?.getAttribute("data-model") || "",
+      },
       style: {
         code: selectedVoiceEmotion.value?.getAttribute("data-style") || "",
       },
@@ -679,6 +689,8 @@ const editVoiceEmotion = (
       role: {
         code: selectedVoiceEmotion.value?.getAttribute("data-role") || "",
       },
+      speed: selectedVoiceEmotion.value?.getAttribute("data-speed") || "",
+      color: selectedVoiceEmotion.value?.getAttribute("style") || "",
     };
     // console.log(voiceEmotion.value);
     editType.value = type;
@@ -693,7 +705,7 @@ const addVoiceEmotion = () => {
 };
 const showVoiceEmotionMenu = ref(false);
 const editVoiceEmotionFlag = ref(false);
-const voiceEmotion = ref<EditVoiceEmotionModel>({});
+const voiceEmotion = ref<EditCommonModel>({});
 const editType = ref<"voice" | "emotion" | "all">("voice");
 const selectedVoiceEmotion = ref<HTMLElement | null>(null);
 const cancelVoiceEmotion = () => {
@@ -701,7 +713,7 @@ const cancelVoiceEmotion = () => {
   voiceEmotion.value = {};
   selectedVoiceEmotion.value = null;
 };
-const saveVoiceEmotion = (item: EditVoiceEmotionModel) => {
+const saveVoiceEmotion = (item: EditCommonModel) => {
   if (!item) {
     alertWarning("未选择语音模型!");
   }
@@ -710,6 +722,11 @@ const saveVoiceEmotion = (item: EditVoiceEmotionModel) => {
     selectedVoiceEmotion.value?.classList.add("voice-emotion");
     selectedVoiceEmotion.value?.classList.remove("emotion");
     selectedVoiceEmotion.value?.classList.remove("voice");
+    selectedVoiceEmotion.value.removeAttribute("style");
+    selectedVoiceEmotion.value.setAttribute(
+      "style",
+      item.color || "background-color: #571040;"
+    );
     // 清除声音样式
     voiceStyleClass.forEach((c) =>
       selectedVoiceEmotion.value?.classList.remove(c)
@@ -723,11 +740,15 @@ const saveVoiceEmotion = (item: EditVoiceEmotionModel) => {
       selectedVoiceEmotion.value?.classList.add(c)
     );
     selectedVoiceEmotion.value?.setAttribute("data-type", "voice-emotion");
+    selectedVoiceEmotion.value?.setAttribute("data-speed", item.speed || "");
     selectedVoiceEmotion.value?.setAttribute(
       "data-provider",
       item.provider || ""
     );
-    selectedVoiceEmotion.value?.setAttribute("data-model", item.model || "");
+    selectedVoiceEmotion.value?.setAttribute(
+      "data-model",
+      item.model?.code || ""
+    );
     selectedVoiceEmotion.value?.setAttribute(
       "data-style",
       item.style?.code || ""

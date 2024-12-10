@@ -134,7 +134,7 @@ const cancelDotts = () => {
 // 去编辑项目
 const toEditProject = (item: Project) => {
   requestByToken("getProjectDetail", item.id).then((res) => {
-    // console.log(res);
+    console.log(res);
     GlobalEditProject.value = res;
     openProjectFlag.value = true;
     // initEditor(project.value.content || "");
@@ -350,7 +350,7 @@ const deleteProject = () => {
     </div>
   </div>
   <div class="flex-1 h-full" v-if="openProjectFlag">
-    <DottsEditor />
+    <DottsEditor :close="getProjectPages"/>
   </div>
 </template>
 

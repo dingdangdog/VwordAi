@@ -7,9 +7,10 @@
     <div class="hover:bg-gray-800 p-2 text-center" @click="handlePlay">
       试听
     </div>
-    <!-- <div class="hover:bg-gray-800 p-2 text-center" @click="handleColloct">
-      收藏
-    </div> -->
+
+    <div class="hover:bg-gray-800 p-2 text-center" @click="handleEdit">
+      编辑
+    </div>
     <div class="hover:bg-gray-800 p-2 text-center" @click="addEmotion">
       添加情感
     </div>
@@ -23,13 +24,13 @@
 import { defineProps, defineEmits } from "vue";
 
 const { x, y } = defineProps(["x", "y"]);
-const emit = defineEmits(["play", "collect", "delete", "addEmotion"]);
+const emit = defineEmits(["play", "edit", "delete", "addEmotion"]);
 
 const handlePlay = () => {
   emit("play");
 };
-const handleColloct = () => {
-  emit("collect");
+const handleEdit = () => {
+  emit("edit");
 };
 const handleDelete = () => {
   emit("delete");
