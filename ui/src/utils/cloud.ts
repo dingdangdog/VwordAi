@@ -47,23 +47,6 @@ export interface Used {
   time: string;
 }
 
-export interface Project {
-  id?: number;
-  projectId?: number;
-  userId?: string | number;
-  name?: string;
-  layout?: VoiceObject;
-  content?: string;
-  status?: string; // 作品状态：-1 处理失败；0 等待中（创建）；1 处理中；2 处理成功；
-  fail_reason?: string; // 处理失败原因
-  create_by?: string;
-  update_by?: string;
-  project_id?: number;
-  user_id?: string | number;
-  voices?: VoiceObject[];
-  downloading?: boolean;
-}
-
 // 订单记录（文-充值记录）
 export interface Order {
   id?: number;

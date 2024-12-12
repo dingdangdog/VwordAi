@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { onMounted, ref } from "vue";
 import { request, requestByToken } from "@/utils/request";
-import type { PageParam } from "@/utils/model";
+import type { PageParam, Project } from "@/utils/model";
 import {
   alertError,
   alertSuccess,
@@ -16,7 +16,6 @@ import {
   GlobalConfig,
   GlobalUserLogin,
 } from "@/utils/global.store";
-import type { Project } from "@/utils/cloud";
 import LoginForm from "@/components/form/LoginForm.vue";
 import DottsEditor from "@/components/DottsEditor.vue";
 
@@ -218,6 +217,14 @@ const deleteProject = () => {
   });
 };
 
+const closeEditor = () => {
+  if (tableFlag.value == "local") {
+    getLocalProjects();
+  } else {
+    getProjectPages();
+  }
+};
+
 // local cloud
 const tableFlag = ref("local");
 const taggleTable = (flag: string) => {
@@ -233,7 +240,10 @@ const deleteLocalProject = (item: Project) => {
   request("deleteLocalProject", item).then((res) => {});
 };
 
-const editLocalProject = (item: Project) => {};
+const editLocalProject = (item: Project) => {
+  GlobalEditProject.value = item;
+  openProjectFlag.value = true;
+};
 </script>
 
 <template>
@@ -243,23 +253,17 @@ const editLocalProject = (item: Project) => {};
   >
     <div class="flex w-full items-center py-2 border-b">
       <button
-        class="px-4 py-2 rounded-md bg-gray-700 hover:bg-gray-600"
+        class="px-2 py-1 rounded-md bg-gray-700 hover:bg-gray-600"
         @click="addProject()"
       >
         新建项目
       </button>
       <button
-        class="px-4 py-2 ml-4 rounded-md bg-gray-700 hover:bg-gray-600"
+        class="px-2 py-1 ml-2 rounded-md bg-gray-700 hover:bg-gray-600"
         @click="openProject()"
       >
         打开项目
       </button>
-    </div>
-    <div
-      v-if="!GlobalUserLogin"
-      class="flex-1 flex justify-center items-center"
-    >
-      <LoginForm class="w-96" />
     </div>
     <div class="w-full flex-1 pt-2">
       <div class="text-base font-bold text-center py-2">
@@ -272,7 +276,6 @@ const editLocalProject = (item: Project) => {};
         <span
           class="px-4 py-2 border-t border-x border-gray-600 rounded-t-md cursor-pointer hover:bg-gray-700"
           :class="tableFlag == 'cloud' ? 'bg-gray-800' : 'bg-gray-900'"
-          v-if="GlobalUserLogin"
           @click="taggleTable('cloud')"
           >云端项目</span
         >
@@ -308,7 +311,7 @@ const editLocalProject = (item: Project) => {};
             <v-icon
               size="small"
               class="mx-1 hover:text-orange-400"
-              @click="toEditProject(item)"
+              @click="editLocalProject(item)"
               title="编辑项目"
             >
               mdi-pencil
@@ -345,84 +348,84 @@ const editLocalProject = (item: Project) => {};
         class="border bg-gray-800 border-gray-200 rounded-md p-2"
         v-show="tableFlag === 'cloud'"
       >
-        <div class="flex items-center justify-center">
-          <div class="w-80">
-            <v-text-field
-              clearable
-              label="作品名称"
-              v-model="query.name"
-              variant="outlined"
-              hide-details="auto"
-              append-inner-icon="mdi-magnify"
-              @click:append-inner="getProjectPages"
-              @keyup.enter="getProjectPages"
-            ></v-text-field>
-          </div>
-        </div>
-        <v-data-table-server
-          class="bg-transparent h-[calc(100vh-15rem)]"
-          noDataText="暂无数据"
-          :items-per-page="pageQuery.pageSize"
-          :items="tabledata?.data"
-          :itemsLength="tabledata?.total || 0"
-          :headers="headers"
-          :loading="loading"
-          @update:options="changePage"
+        <div
+          v-if="!GlobalUserLogin"
+          class="h-[70vh] flex justify-center items-center"
         >
-          <!-- eslint-disable-next-line vue/valid-v-slot -->
-          <template v-slot:item.actions="{ item }">
-            <v-icon
-              size="small"
-              class="mx-1 hover:text-orange-400"
-              @click="toEditProject(item)"
-              title="编辑项目"
-            >
-              mdi-pencil
-            </v-icon>
-            <v-icon
-              size="small"
-              class="mx-1 hover:text-orange-400"
-              @click="toDotts(item)"
-              :disabled="item.status != '0'"
-              title="开始处理"
-            >
-              mdi-play-circle
-            </v-icon>
-            <v-icon
-              size="small"
-              class="mx-1 hover:text-orange-400"
-              @click="downloadAudio(item)"
-              :disabled="item.status != '2' || item.downloading"
-              title="下载音频"
-            >
-              mdi-music-box
-            </v-icon>
-            <!-- <v-icon
-          size="small"
-          class="mx-1 hover:text-orange-400"
-          @click="pullProject(item)"
-          title="下载项目"
+          <LoginForm class="w-96" />
+        </div>
+        <div v-if="GlobalUserLogin">
+          <div class="flex items-center justify-center">
+            <div class="w-80">
+              <v-text-field
+                clearable
+                label="作品名称"
+                v-model="query.name"
+                variant="outlined"
+                hide-details="auto"
+                append-inner-icon="mdi-magnify"
+                @click:append-inner="getProjectPages"
+                @keyup.enter="getProjectPages"
+              ></v-text-field>
+            </div>
+          </div>
+          <v-data-table-server
+            class="bg-transparent h-[calc(100vh-15rem)]"
+            noDataText="暂无数据"
+            :items-per-page="pageQuery.pageSize"
+            :items="tabledata?.data"
+            :itemsLength="tabledata?.total || 0"
+            :headers="headers"
+            :loading="loading"
+            @update:options="changePage"
           >
-            mdi-cloud-download
-          </v-icon> -->
-            <v-icon
-              size="small"
-              class="mx-1 hover:text-orange-400"
-              @click="openCloudProjectFolder(item)"
-              title="打开项目文件夹"
-            >
-              mdi-folder-open
-            </v-icon>
-            <v-icon
-              size="small"
-              class="mx-1 hover:text-red-500"
-              @click="toDelete(item)"
-              title="删除"
-            >
-              mdi-delete
-            </v-icon>
-          </template>
-        </v-data-table-server>
+            <!-- eslint-disable-next-line vue/valid-v-slot -->
+            <template v-slot:item.actions="{ item }">
+              <v-icon
+                size="small"
+                class="mx-1 hover:text-orange-400"
+                @click="toEditProject(item)"
+                title="编辑项目"
+              >
+                mdi-pencil
+              </v-icon>
+              <v-icon
+                size="small"
+                class="mx-1 hover:text-orange-400"
+                @click="toDotts(item)"
+                :disabled="item.status != '0'"
+                title="开始处理"
+              >
+                mdi-play-circle
+              </v-icon>
+              <v-icon
+                size="small"
+                class="mx-1 hover:text-orange-400"
+                @click="downloadAudio(item)"
+                :disabled="item.status != '2' || item.downloading"
+                title="下载音频"
+              >
+                mdi-music-box
+              </v-icon>
+              <v-icon
+                size="small"
+                class="mx-1 hover:text-orange-400"
+                @click="openCloudProjectFolder(item)"
+                title="打开项目文件夹"
+              >
+                mdi-folder-open
+              </v-icon>
+              <v-icon
+                size="small"
+                class="mx-1 hover:text-red-500"
+                @click="toDelete(item)"
+                title="删除"
+              >
+                mdi-delete
+              </v-icon>
+            </template>
+          </v-data-table-server>
+        </div>
       </div>
       <v-dialog v-model="deleteConfirmDialog" width="auto">
         <v-card>
@@ -463,7 +466,7 @@ const editLocalProject = (item: Project) => {};
     </div>
   </div>
   <div class="flex-1 h-full" v-if="openProjectFlag">
-    <DottsEditor @close="getProjectPages" />
+    <DottsEditor @close="closeEditor" />
   </div>
 </template>
 

@@ -55,7 +55,7 @@ const handleSave = () => {
       <v-card title="旁白设置" class="bg-transparent">
         <v-card-text>
           <div class="flex items-center">
-            <v-autocomplete
+            <v-select
               label="语音模型"
               v-model="layout.model"
               :items="showModels"
@@ -63,7 +63,7 @@ const handleSave = () => {
               :item-value="(item) => item.code"
               variant="outlined"
               hide-details="auto"
-            ></v-autocomplete>
+            ></v-select>
           </div>
           <div class="flex items-center mt-2">
             <v-text-field
@@ -74,7 +74,7 @@ const handleSave = () => {
             ></v-text-field>
           </div>
           <div class="flex items-center mt-2">
-            <v-autocomplete
+            <v-select
               label="情感"
               v-model="layout.emotion"
               :items="emotions.style"
@@ -82,7 +82,8 @@ const handleSave = () => {
               :item-value="(item) => item.code"
               variant="outlined"
               hide-details="auto"
-            ></v-autocomplete>
+              clearable
+            ></v-select>
           </div>
           <div class="flex items-center mt-2">
             <v-text-field
@@ -93,7 +94,7 @@ const handleSave = () => {
             ></v-text-field>
           </div>
           <div class="flex items-center mt-2">
-            <v-autocomplete
+            <v-select
               label="伪音模仿"
               v-model="layout.emotionRole"
               :items="emotions.role"
@@ -101,7 +102,8 @@ const handleSave = () => {
               :item-value="(item) => item.code"
               variant="outlined"
               hide-details="auto"
-            ></v-autocomplete>
+              clearable
+            ></v-select>
           </div>
         </v-card-text>
         <v-card-actions>

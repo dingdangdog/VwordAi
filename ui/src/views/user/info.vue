@@ -21,7 +21,7 @@ const getUserInfo = () => {
 };
 onMounted(() => {
   getUserInfo();
-})
+});
 
 const toBuy = () => {
   getCombos();
@@ -239,17 +239,18 @@ const loadCloudConfig = () => {
   <v-dialog v-model="showBuyDialog" width="30rem">
     <v-card title="【文】充值">
       <v-card-text>
-        <v-autocomplete
+        <v-select
           v-model="selectedCombo"
+          label="选择套餐"
           :items="combos"
-          :label="'选择套餐'"
           :item-title="
             (item) => `${item.name}(¥${item.price} - ${item.words}文)`
           "
           :item-value="(item) => item"
           hide-details="auto"
+          variant="outlined"
         >
-        </v-autocomplete>
+        </v-select>
       </v-card-text>
       <v-card-actions>
         <v-btn

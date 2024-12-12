@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref } from "vue";
+import { onMounted, ref, defineEmits } from "vue";
 import { request, requestByToken } from "@/utils/request";
 import type {
   EditCommonModel,
@@ -15,10 +15,8 @@ import {
   alertSuccess,
   alertWarning,
   playAudio,
-  stopPalyAudio,
   VoiceTestText,
 } from "@/utils/common";
-import MySelect from "@/components/MySelect.vue";
 import {
   openProjectFlag,
   saveProjectFlag,
@@ -38,7 +36,7 @@ import EditEmotionForm from "@/components/form/EditEmotion.vue";
 import EditVoiceEmotionForm from "@/components/form/EditVoiceEmotion.vue";
 import { processVoiceNode } from "@/utils/ssml";
 
-const { close } = defineProps(["close"]);
+const emit = defineEmits(["close"]);
 
 const editCommonStyleClass = new Set(["cursor-pointer", "pointer-events-auto"]);
 
@@ -88,12 +86,13 @@ editCommonStyleClass.forEach((c) => voiceEmotionStyleClass.add(c));
 const selectServiceProvider = ref<SerivceProvider>();
 const models = ref<VoiceModel[]>();
 const showModels = ref<VoiceModel[]>();
-const getModels = (provider: SerivceProvider) => {
-  selectServiceProvider.value = provider;
-  request("getModels", provider.code).then((res) => {
-    models.value = res;
-    showModels.value = res;
-  });
+const getModels = () => {
+  if (selectServiceProvider.value) {
+    request("getModels", selectServiceProvider.value.code).then((res) => {
+      models.value = res;
+      showModels.value = res;
+    });
+  }
 };
 // 过滤模型的参数
 const filterModelParam = ref("");
@@ -103,11 +102,16 @@ const filterModel = () => {
     return;
   }
   const filterParam = filterModelParam.value.toLowerCase(); // 转换为小写
+  const filterGender = () => {
+    if (filterParam == "男") return "1";
+    else if (filterParam == "女") return "0";
+    else return "-1";
+  };
   showModels.value = models.value?.filter(
     (model) =>
       model.name.toLowerCase().includes(filterParam) ||
       model.code.toLowerCase().includes(filterParam) ||
-      model.gender.toLowerCase().includes(filterParam) ||
+      model.gender.toLowerCase().includes(filterGender()) ||
       model.lang.toLowerCase().includes(filterParam)
   );
 };
@@ -170,7 +174,8 @@ const initEditor = (text: string) => {
 };
 
 onMounted(() => {
-  getModels(ModelCategoryItems.value[0]);
+  selectServiceProvider.value = ModelCategoryItems.value[0];
+  getModels();
   if (openProjectFlag.value) {
     initEditor(GlobalEditProject.value.content || "");
   }
@@ -218,7 +223,7 @@ const closeProject = (canSave: boolean) => {
     openProjectFlag.value = false;
   }
   GlobalEditProject.value = {};
-  close();
+  emit("close");
 };
 
 // 保存并关闭项目
@@ -883,17 +888,30 @@ const closeAllMenu = () => {
     <div
       class="h-full w-72 overflow-y-auto overflow-x-hidden p-2 bg-gray-800 rounded-md flex flex-col justify-between"
     >
-      <MySelect
-        :items="ModelCategoryItems"
-        :select="getModels"
-        :selected="selectServiceProvider"
-      />
-      <input
-        class="w-full h-8 bg-transparent border border-gray-400 p-2 my-2 rounded-md focus:outline-none"
-        placeholder="筛选"
-        v-model="filterModelParam"
-        @keyup.enter="filterModel()"
-      />
+      <div>
+        <v-select
+          hide-details="auto"
+          variant="outlined"
+          label="模型分类"
+          :items="ModelCategoryItems"
+          :item-title="(item) => item.name"
+          :item-value="(item) => item"
+          v-model="selectServiceProvider"
+          @update:model-value="getModels"
+        >
+        </v-select>
+      </div>
+      <div class="my-2">
+        <v-text-field
+          hide-details="auto"
+          variant="outlined"
+          label="模型筛选"
+          v-model="filterModelParam"
+          @keyup.enter="filterModel()"
+          append-inner-icon="mdi-magnify"
+          @click:append-inner="filterModel()"
+        ></v-text-field>
+      </div>
       <div class="flex-1 overflow-y-auto">
         <EditModelCard
           v-for="(model, index) in showModels"
@@ -939,6 +957,43 @@ const closeAllMenu = () => {
         class="my-2 p-2 bg-gray-800 rounded-md flex-1 flex flex-col"
         style="height: calc(100% - 8rem)"
       >
+        <div class="flex justify-between items-center">
+          <v-icon icon="mdi-account-question"></v-icon>
+          <div
+            class="ml-2 w-6 h-6 flex items-center justify-center border rounded-md bg-gray-700 hover:bg-gray-600 cursor-pointer"
+            title="添加预设角色"
+          >
+            +
+          </div>
+          <div
+            class="flex flex-1 overflow-x-auto border bg-gray-900 rounded-md p-1 ml-2"
+          >
+            <div
+              v-for="i in 20"
+              class="mx-1 px-2 py-1 rounded-md border cursor-pointer bg-gray-700 hover:bg-gray-700 whitespace-nowrap"
+            >
+              张三
+            </div>
+          </div>
+        </div>
+        <div class="flex justify-between items-center my-2">
+          <v-icon icon="mdi-emoticon"></v-icon>
+          <div
+            class="ml-2 w-6 h-6 flex items-center justify-center border rounded-md bg-gray-700 hover:bg-gray-600 cursor-pointer"
+          >
+            +
+          </div>
+          <div
+            class="ml-2 flex flex-1 overflow-x-auto border bg-gray-900 rounded-md p-1"
+          >
+            <div
+              v-for="i in 20"
+              class="mx-1 px-2 py-1 rounded-md border cursor-pointer bg-gray-700 hover:bg-gray-700 whitespace-nowrap"
+            >
+              张三
+            </div>
+          </div>
+        </div>
         <div class="flex items-center justify-center h-8">
           <button
             class="p-1 rounded-sm cursor-pointer hover:bg-gray-700"
@@ -956,7 +1011,7 @@ const closeAllMenu = () => {
           </button>
         </div>
         <div
-          class="mt-2 bg-gray-800 rounded-md flex-1 flex h-[calc(100%-4rem)]"
+          class="mt-2 bg-gray-800 rounded-md flex-1 flex h-[calc(100%-16rem)]"
         >
           <div
             class="w-full p-2 bg-gray-900 rounded-md overflow-y-auto focus:outline-none h-full whitespace-pre-wrap"
@@ -973,18 +1028,18 @@ const closeAllMenu = () => {
           class="w-64 bg-transparent border-b ml-2 py-1 focus:outline-none"
           v-model="GlobalEditProject.name"
         />
-        <button
+        <!-- <button
           class="px-2 py-1 ml-2 rounded-md bg-gray-700 hover:bg-gray-600"
           @click="convertHTMLToSSML()"
         >
           本地合成
-        </button>
-        <button
+        </button> -->
+        <!-- <button
           class="px-2 py-1 ml-2 rounded-md bg-gray-700 hover:bg-gray-600"
           @click="uploadProject()"
         >
           上传云端
-        </button>
+        </button> -->
         <!-- <button
           class="ml-2 px-2 py-1 bg-gray-700 rounded-md hover:bg-gray-600"
           @click="tts()"

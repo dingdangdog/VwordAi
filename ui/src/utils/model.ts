@@ -34,7 +34,7 @@ export interface MessageModel {
 }
 
 export interface Project {
-  id?: number;
+  id?: number | string;
   layout?: VoiceObject | string;
   path?: string;
   name?: string;
@@ -42,6 +42,12 @@ export interface Project {
   create_by?: number;
   update_by?: number;
   voices?: any[];
+
+  // 云项目参数
+  status?: string; // 作品状态：-1 处理失败；0 等待中（创建）；1 处理中；2 处理成功；
+  fail_reason?: string; // 处理失败原因
+  user_id?: string | number;
+  downloading?: boolean;
 }
 
 export interface SystemConfig {

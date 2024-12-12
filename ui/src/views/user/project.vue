@@ -1,8 +1,7 @@
 <script setup lang="ts">
-import type { Project } from "@/utils/cloud";
 import { alertSuccess, formatDate, getProjectStatusText } from "@/utils/common";
 import { requestByToken } from "@/utils/request";
-import type { PageParam } from "@/utils/model";
+import type { PageParam, Project } from "@/utils/model";
 import { ref } from "vue";
 import {
   activeMenu,
