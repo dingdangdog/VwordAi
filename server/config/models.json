@@ -1,413 +1,325 @@
 [
-  {
-    "provider": "azure",
-    "collect": false,
-    "lang": "中文（普通话，简体）",
-    "gender": "0",
-    "name": "晓晓",
-    "code": "zh-CN-XiaoxiaoNeural",
-    "emotions": []
-  },
-  {
-    "provider": "azure",
-    "collect": false,
-    "lang": "中文（普通话，简体）",
-    "gender": "1",
-    "name": "云溪",
-    "code": "zh-CN-YunxiNeural",
-    "emotions": []
-  },
-  {
-    "provider": "azure",
-    "collect": false,
-    "lang": "中文（普通话，简体）",
-    "gender": "1",
-    "name": "云健",
-    "code": "zh-CN-YunjianNeural",
-    "emotions": []
-  },
-  {
-    "provider": "azure",
-    "collect": false,
-    "lang": "中文（普通话，简体）",
-    "gender": "0",
-    "name": "晓伊",
-    "code": "zh-CN-XiaoyiNeural",
-    "emotions": []
-  },
-  {
-    "provider": "azure",
-    "collect": false,
-    "lang": "中文（普通话，简体）",
-    "gender": "1",
-    "name": "云扬",
-    "code": "zh-CN-YunyangNeural",
-    "emotions": []
-  },
-  {
-    "provider": "azure",
-    "collect": false,
-    "lang": "中文（普通话，简体）",
-    "gender": "0",
-    "name": "晓辰",
-    "code": "zh-CN-XiaochenNeural",
-    "emotions": []
-  },
-  {
-    "provider": "azure",
-    "collect": false,
-    "lang": "中文（普通话，简体）",
-    "gender": "0",
-    "name": "晓辰多语言",
-    "code": "zh-CN-XiaochenMultilingualNeural",
-    "level": "4",
-    "emotions": []
-  },
-  {
-    "provider": "azure",
-    "collect": false,
-    "lang": "中文（普通话，简体）",
-    "gender": "0",
-    "name": "晓涵",
-    "code": "zh-CN-XiaohanNeural",
-    "emotions": []
-  },
-  {
-    "provider": "azure",
-    "collect": false,
-    "lang": "中文（普通话，简体）",
-    "gender": "0",
-    "name": "晓萌",
-    "code": "zh-CN-XiaomengNeural",
-    "emotions": []
-  },
-  {
-    "provider": "azure",
-    "collect": false,
-    "lang": "中文（普通话，简体）",
-    "gender": "0",
-    "name": "晓墨",
-    "code": "zh-CN-XiaomoNeural",
-    "emotions": []
-  },
-  {
-    "provider": "azure",
-    "collect": false,
-    "lang": "中文（普通话，简体）",
-    "gender": "0",
-    "name": "晓秋",
-    "code": "zh-CN-XiaoqiuNeural",
-    "emotions": []
-  },
-  {
-    "provider": "azure",
-    "collect": false,
-    "lang": "中文（普通话，简体）",
-    "gender": "0",
-    "name": "晓柔",
-    "code": "zh-CN-XiaorouNeural",
-    "emotions": []
-  },
-  {
-    "provider": "azure",
-    "collect": false,
-    "lang": "中文（普通话，简体）",
-    "gender": "0",
-    "name": "晓睿",
-    "code": "zh-CN-XiaoruiNeural",
-    "emotions": []
-  },
-  {
-    "provider": "azure",
-    "collect": false,
-    "lang": "中文（普通话，简体）",
-    "gender": "0",
-    "name": "晓霜",
-    "code": "zh-CN-XiaoshuangNeural",
-    "emotions": ["儿童"]
-  },
-  {
-    "provider": "azure",
-    "collect": false,
-    "lang": "中文（普通话，简体）",
-    "gender": "0",
-    "name": "晓晓方言",
-    "code": "zh-CN-XiaoxiaoDialectsNeural",
-    "emotions": []
-  },
-  {
-    "provider": "azure",
-    "collect": false,
-    "lang": "中文（普通话，简体）",
-    "gender": "0",
-    "name": "晓晓多语言",
-    "code": "zh-CN-XiaoxiaoMultilingualNeural",
-    "level": "4",
-    "emotions": []
-  },
-  {
-    "provider": "azure",
-    "collect": false,
-    "lang": "中文（普通话，简体）",
-    "gender": "0",
-    "name": "晓燕",
-    "code": "zh-CN-XiaoyanNeural",
-    "emotions": []
-  },
-  {
-    "provider": "azure",
-    "collect": false,
-    "lang": "中文（普通话，简体）",
-    "gender": "0",
-    "name": "晓优",
-    "code": "zh-CN-XiaoyouNeural",
-    "emotions": ["儿童"]
-  },
-  {
-    "provider": "azure",
-    "collect": false,
-    "lang": "中文（普通话，简体）",
-    "gender": "0",
-    "name": "晓瑜多语言",
-    "code": "zh-CN-XiaoyuMultilingualNeural",
-    "level": "4",
-    "emotions": []
-  },
-  {
-    "provider": "azure",
-    "collect": false,
-    "lang": "中文（普通话，简体）",
-    "gender": "0",
-    "name": "晓珍",
-    "code": "zh-CN-XiaozhenNeural",
-    "emotions": []
-  },
-  {
-    "provider": "azure",
-    "collect": false,
-    "lang": "中文（普通话，简体）",
-    "gender": "1",
-    "name": "云峰",
-    "code": "zh-CN-YunfengNeural",
-    "emotions": []
-  },
-  {
-    "provider": "azure",
-    "collect": false,
-    "lang": "中文（普通话，简体）",
-    "gender": "1",
-    "name": "云浩",
-    "code": "zh-CN-YunhaoNeural",
-    "emotions": []
-  },
-  {
-    "provider": "azure",
-    "collect": false,
-    "lang": "中文（普通话，简体）",
-    "gender": "1",
-    "name": "云杰",
-    "code": "zh-CN-YunjieNeural",
-    "emotions": []
-  },
-  {
-    "provider": "azure",
-    "collect": false,
-    "lang": "中文（普通话，简体）",
-    "gender": "1",
-    "name": "云霞",
-    "code": "zh-CN-YunxiaNeural",
-    "emotions": []
-  },
-  {
-    "provider": "azure",
-    "collect": false,
-    "lang": "中文（普通话，简体）",
-    "gender": "1",
-    "name": "云烨",
-    "code": "zh-CN-YunyeNeural",
-    "emotions": []
-  },
-  {
-    "provider": "azure",
-    "collect": false,
-    "lang": "中文（普通话，简体）",
-    "gender": "1",
-    "name": "云逸多语言",
-    "code": "zh-CN-YunyiMultilingualNeural",
-    "level": "4",
-    "emotions": []
-  },
-  {
-    "provider": "azure",
-    "collect": false,
-    "lang": "中文（普通话，简体）",
-    "gender": "1",
-    "name": "云泽",
-    "code": "zh-CN-YunzeNeural",
-    "emotions": []
-  },
-  {
-    "provider": "azure",
-    "collect": false,
-    "lang": "中文（广西口音普通话，简体）",
-    "gender": "1",
-    "name": "云启",
-    "code": "zh-CN-guangxi-YunqiNeural",
-    "level": "1,3",
-    "emotions": []
-  },
-  {
-    "provider": "azure",
-    "collect": false,
-    "lang": "中文（中原官话河南，简体）",
-    "gender": "1",
-    "name": "云登",
-    "code": "zh-CN-henan-YundengNeural",
-    "level": "3",
-    "emotions": []
-  },
-  {
-    "provider": "azure",
-    "collect": false,
-    "lang": "中文（东北官话，简体）",
-    "gender": "0",
-    "name": "晓贝",
-    "code": "zh-CN-liaoning-XiaobeiNeural",
-    "level": "1,3",
-    "emotions": []
-  },
-  {
-    "provider": "azure",
-    "collect": false,
-    "lang": "中文（东北官话，简体）",
-    "gender": "1",
-    "name": "云彪",
-    "code": "zh-CN-liaoning-YunbiaoNeural",
-    "level": "1,3",
-    "emotions": []
-  },
-  {
-    "provider": "azure",
-    "collect": false,
-    "lang": "中文（中原官话陕西，简体）",
-    "gender": "0",
-    "name": "晓妮",
-    "code": "zh-CN-shaanxi-XiaoniNeural",
-    "level": "1,3",
-    "emotions": []
-  },
-  {
-    "provider": "azure",
-    "collect": false,
-    "lang": "中文（冀鲁官话，简体）",
-    "gender": "1",
-    "name": "云翔",
-    "code": "zh-CN-shandong-YunxiangNeural",
-    "level": "3",
-    "emotions": []
-  },
-  {
-    "provider": "azure",
-    "collect": false,
-    "lang": "中文（西南普通话，简体）",
-    "gender": "1",
-    "name": "云熙",
-    "code": "zh-CN-sichuan-YunxiNeural",
-    "level": "1,3",
-    "emotions": []
-  },
-  {
-    "provider": "azure",
-    "collect": false,
-    "lang": "中文(粤语，繁体)",
-    "gender": "0",
-    "name": "晓雯",
-    "code": "zh-HK-HiuMaanNeural",
-    "emotions": []
-  },
-  {
-    "provider": "azure",
-    "collect": false,
-    "lang": "中文(粤语，繁体)",
-    "gender": "1",
-    "name": "雯龙",
-    "code": "zh-HK-WanLungNeural",
-    "emotions": []
-  },
-  {
-    "provider": "azure",
-    "collect": false,
-    "lang": "中文(粤语，繁体)",
-    "gender": "0",
-    "name": "晓佳",
-    "code": "zh-HK-HiuGaaiNeural",
-    "emotions": []
-  },
-  {
-    "provider": "azure",
-    "collect": false,
-    "lang": "中文（台湾普通话，繁体）",
-    "gender": "0",
-    "name": "晓辰",
-    "code": "zh-TW-HsiaoChenNeural",
-    "emotions": []
-  },
-  {
-    "provider": "azure",
-    "collect": false,
-    "lang": "中文（台湾普通话，繁体）",
-    "gender": "1",
-    "name": "云哲",
-    "code": "zh-TW-YunJheNeural",
-    "emotions": []
-  },
-  {
-    "provider": "azure",
-    "collect": false,
-    "lang": "中文（台湾普通话，繁体）",
-    "gender": "0",
-    "name": "晓瑜",
-    "code": "zh-TW-HsiaoYuNeural",
-    "emotions": []
-  },
-  {
-    "provider": "azure",
-    "collect": false,
-    "lang": "中文（吴语，简体）",
-    "gender": "0",
-    "name": "小彤",
-    "code": "wuu-CN-XiaotongNeural",
-    "level": "3",
-    "emotions": []
-  },
-  {
-    "provider": "azure",
-    "collect": false,
-    "lang": "中文（吴语，简体）",
-    "gender": "1",
-    "name": "云哲",
-    "code": "wuu-CN-YunzheNeural",
-    "level": "3",
-    "emotions": []
-  },
-  {
-    "provider": "azure",
-    "collect": false,
-    "lang": "中文（粤语，简体）",
-    "gender": "0",
-    "name": "晓敏",
-    "code": "yue-CN-XiaoMinNeural",
-    "level": "3",
-    "emotions": []
-  },
-  {
-    "provider": "azure",
-    "collect": false,
-    "lang": "中文（粤语，简体）",
-    "gender": "1",
-    "name": "云松",
-    "code": "yue-CN-YunSongNeural",
-    "level": "3",
-    "emotions": []
-  }
+	{
+		"provider": "azure",
+		"lang": "中文（普通话，简体）",
+		"gender": 0,
+		"name": "晓晓",
+		"code": "zh-CN-XiaoxiaoNeural"
+	},
+	{
+		"provider": "azure",
+		"lang": "中文（普通话，简体）",
+		"gender": 1,
+		"name": "云溪",
+		"code": "zh-CN-YunxiNeural"
+	},
+	{
+		"provider": "azure",
+		"lang": "中文（普通话，简体）",
+		"gender": 1,
+		"name": "云健",
+		"code": "zh-CN-YunjianNeural"
+	},
+	{
+		"provider": "azure",
+		"lang": "中文（普通话，简体）",
+		"gender": 0,
+		"name": "晓伊",
+		"code": "zh-CN-XiaoyiNeural"
+	},
+	{
+		"provider": "azure",
+		"lang": "中文（普通话，简体）",
+		"gender": 1,
+		"name": "云扬",
+		"code": "zh-CN-YunyangNeural"
+	},
+	{
+		"provider": "azure",
+		"lang": "中文（普通话，简体）",
+		"gender": 0,
+		"name": "晓辰",
+		"code": "zh-CN-XiaochenNeural"
+	},
+	{
+		"provider": "azure",
+		"lang": "中文（普通话，简体）",
+		"gender": 0,
+		"name": "晓辰多语言",
+		"code": "zh-CN-XiaochenMultilingualNeural",
+		"level": "4"
+	},
+	{
+		"provider": "azure",
+		"lang": "中文（普通话，简体）",
+		"gender": 0,
+		"name": "晓涵",
+		"code": "zh-CN-XiaohanNeural"
+	},
+	{
+		"provider": "azure",
+		"lang": "中文（普通话，简体）",
+		"gender": 0,
+		"name": "晓萌",
+		"code": "zh-CN-XiaomengNeural"
+	},
+	{
+		"provider": "azure",
+		"lang": "中文（普通话，简体）",
+		"gender": 0,
+		"name": "晓墨",
+		"code": "zh-CN-XiaomoNeural"
+	},
+	{
+		"provider": "azure",
+		"lang": "中文（普通话，简体）",
+		"gender": 0,
+		"name": "晓秋",
+		"code": "zh-CN-XiaoqiuNeural"
+	},
+	{
+		"provider": "azure",
+		"lang": "中文（普通话，简体）",
+		"gender": 0,
+		"name": "晓柔",
+		"code": "zh-CN-XiaorouNeural"
+	},
+	{
+		"provider": "azure",
+		"lang": "中文（普通话，简体）",
+		"gender": 0,
+		"name": "晓睿",
+		"code": "zh-CN-XiaoruiNeural"
+	},
+	{
+		"provider": "azure",
+		"lang": "中文（普通话，简体）",
+		"gender": 0,
+		"name": "晓霜",
+		"code": "zh-CN-XiaoshuangNeural"
+	},
+	{
+		"provider": "azure",
+		"lang": "中文（普通话，简体）",
+		"gender": 0,
+		"name": "晓晓方言",
+		"code": "zh-CN-XiaoxiaoDialectsNeural"
+	},
+	{
+		"provider": "azure",
+		"lang": "中文（普通话，简体）",
+		"gender": 0,
+		"name": "晓晓多语言",
+		"code": "zh-CN-XiaoxiaoMultilingualNeural",
+		"level": "4"
+	},
+	{
+		"provider": "azure",
+		"lang": "中文（普通话，简体）",
+		"gender": 0,
+		"name": "晓燕",
+		"code": "zh-CN-XiaoyanNeural"
+	},
+	{
+		"provider": "azure",
+		"lang": "中文（普通话，简体）",
+		"gender": 0,
+		"name": "晓优",
+		"code": "zh-CN-XiaoyouNeural"
+	},
+	{
+		"provider": "azure",
+		"lang": "中文（普通话，简体）",
+		"gender": 0,
+		"name": "晓瑜多语言",
+		"code": "zh-CN-XiaoyuMultilingualNeural",
+		"level": "4"
+	},
+	{
+		"provider": "azure",
+		"lang": "中文（普通话，简体）",
+		"gender": 0,
+		"name": "晓珍",
+		"code": "zh-CN-XiaozhenNeural"
+	},
+	{
+		"provider": "azure",
+		"lang": "中文（普通话，简体）",
+		"gender": 1,
+		"name": "云峰",
+		"code": "zh-CN-YunfengNeural"
+	},
+	{
+		"provider": "azure",
+		"lang": "中文（普通话，简体）",
+		"gender": 1,
+		"name": "云浩",
+		"code": "zh-CN-YunhaoNeural"
+	},
+	{
+		"provider": "azure",
+		"lang": "中文（普通话，简体）",
+		"gender": 1,
+		"name": "云杰",
+		"code": "zh-CN-YunjieNeural"
+	},
+	{
+		"provider": "azure",
+		"lang": "中文（普通话，简体）",
+		"gender": 1,
+		"name": "云霞",
+		"code": "zh-CN-YunxiaNeural"
+	},
+	{
+		"provider": "azure",
+		"lang": "中文（普通话，简体）",
+		"gender": 1,
+		"name": "云烨",
+		"code": "zh-CN-YunyeNeural"
+	},
+	{
+		"provider": "azure",
+		"lang": "中文（普通话，简体）",
+		"gender": 1,
+		"name": "云逸多语言",
+		"code": "zh-CN-YunyiMultilingualNeural",
+		"level": "4"
+	},
+	{
+		"provider": "azure",
+		"lang": "中文（普通话，简体）",
+		"gender": 1,
+		"name": "云泽",
+		"code": "zh-CN-YunzeNeural"
+	},
+	{
+		"provider": "azure",
+		"lang": "中文（广西口音普通话，简体）",
+		"gender": 1,
+		"name": "云启",
+		"code": "zh-CN-guangxi-YunqiNeural",
+		"level": "1,3"
+	},
+	{
+		"provider": "azure",
+		"lang": "中文（中原官话河南，简体）",
+		"gender": 1,
+		"name": "云登",
+		"code": "zh-CN-henan-YundengNeural",
+		"level": "3"
+	},
+	{
+		"provider": "azure",
+		"lang": "中文（东北官话，简体）",
+		"gender": 0,
+		"name": "晓贝",
+		"code": "zh-CN-liaoning-XiaobeiNeural",
+		"level": "1,3"
+	},
+	{
+		"provider": "azure",
+		"lang": "中文（东北官话，简体）",
+		"gender": 1,
+		"name": "云彪",
+		"code": "zh-CN-liaoning-YunbiaoNeural",
+		"level": "1,3"
+	},
+	{
+		"provider": "azure",
+		"lang": "中文（中原官话陕西，简体）",
+		"gender": 0,
+		"name": "晓妮",
+		"code": "zh-CN-shaanxi-XiaoniNeural",
+		"level": "1,3"
+	},
+	{
+		"provider": "azure",
+		"lang": "中文（冀鲁官话，简体）",
+		"gender": 1,
+		"name": "云翔",
+		"code": "zh-CN-shandong-YunxiangNeural",
+		"level": "3"
+	},
+	{
+		"provider": "azure",
+		"lang": "中文（西南普通话，简体）",
+		"gender": 1,
+		"name": "云熙",
+		"code": "zh-CN-sichuan-YunxiNeural",
+		"level": "1,3"
+	},
+	{
+		"provider": "azure",
+		"lang": "中文(粤语，繁体)",
+		"gender": 0,
+		"name": "晓雯",
+		"code": "zh-HK-HiuMaanNeural"
+	},
+	{
+		"provider": "azure",
+		"lang": "中文(粤语，繁体)",
+		"gender": 1,
+		"name": "雯龙",
+		"code": "zh-HK-WanLungNeural"
+	},
+	{
+		"provider": "azure",
+		"lang": "中文(粤语，繁体)",
+		"gender": 0,
+		"name": "晓佳",
+		"code": "zh-HK-HiuGaaiNeural"
+	},
+	{
+		"provider": "azure",
+		"lang": "中文（台湾普通话，繁体）",
+		"gender": 0,
+		"name": "晓辰",
+		"code": "zh-TW-HsiaoChenNeural"
+	},
+	{
+		"provider": "azure",
+		"lang": "中文（台湾普通话，繁体）",
+		"gender": 1,
+		"name": "云哲",
+		"code": "zh-TW-YunJheNeural"
+	},
+	{
+		"provider": "azure",
+		"lang": "中文（台湾普通话，繁体）",
+		"gender": 0,
+		"name": "晓瑜",
+		"code": "zh-TW-HsiaoYuNeural"
+	},
+	{
+		"provider": "azure",
+		"lang": "中文（吴语，简体）",
+		"gender": 0,
+		"name": "小彤",
+		"code": "wuu-CN-XiaotongNeural",
+		"level": "3"
+	},
+	{
+		"provider": "azure",
+		"lang": "中文（吴语，简体）",
+		"gender": 1,
+		"name": "云哲",
+		"code": "wuu-CN-YunzheNeural",
+		"level": "3"
+	},
+	{
+		"provider": "azure",
+		"lang": "中文（粤语，简体）",
+		"gender": 0,
+		"name": "晓敏",
+		"code": "yue-CN-XiaoMinNeural",
+		"level": "3"
+	},
+	{
+		"provider": "azure",
+		"lang": "中文（粤语，简体）",
+		"gender": 1,
+		"name": "云松",
+		"code": "yue-CN-YunSongNeural",
+		"level": "3"
+	}
 ]
