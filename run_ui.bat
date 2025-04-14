@@ -1,0 +1,6 @@
+@echo off
+echo Installing UI dependencies...
+cd ui
+call npm install
+echo Running UI development server...
+call npm run dev 

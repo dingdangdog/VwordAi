@@ -1,124 +1,97 @@
-const fs = require("fs");
-const path = require("path");
+/**
+ * 主进程工具函数
+ */
+const fs = require('fs-extra');
+const path = require('path');
 
-// 读取JSON文件
-const readJsonFile = (filePath) => {
-  if (!fs.existsSync(filePath)) {
-    return null;
-  }
+// 从结果工具导入
+try {
+  const { success, error } = require('./utils/result');
+  module.exports = {
+    success,
+    error,
+    ensureDirectoryExists,
+    delay,
+    safeReadJSON,
+    safeWriteJSON
+  };
+} catch (err) {
+  console.error('Failed to load ./utils/result:', err);
+  // 如果无法导入，提供备用实现
+  const success = (data, message = '操作成功') => {
+    return { c: 200, m: message, d: data };
+  };
+  
+  const error = (message = '操作失败', data = null) => {
+    return { c: 500, m: message, d: data };
+  };
+  
+  module.exports = {
+    success,
+    error,
+    ensureDirectoryExists,
+    delay,
+    safeReadJSON,
+    safeWriteJSON
+  };
+}
 
-  const data = fs.readFileSync(filePath, "utf8");
-  return JSON.parse(data);
-};
-
-const copyFiles = (srcDir, destDir, excludedFiles = []) => {
-  // 检查目标文件夹是否存在，如果不存在则创建它
-  if (!fs.existsSync(destDir)) {
-    fs.mkdirSync(destDir, { recursive: true });
-  }
-
-  // 读取源目录的内容
-  const files = fs.readdirSync(srcDir);
-
-  files.forEach((file) => {
-    // Skip excluded files like 'server_config.json'
-    if (excludedFiles.includes(file)) {
-      return;
-    }
-    const srcFile = path.join(srcDir, file);
-    const destFile = path.join(destDir, file);
-
-    // 检查是文件还是文件夹
-    if (fs.statSync(srcFile).isFile()) {
-      // 将文件复制到目标目录
-      fs.copyFileSync(srcFile, destFile);
-    } else {
-      // 如果是文件夹，则递归移动
-      copyFiles(srcFile, path.join(destDir, file), excludedFiles);
-    }
-  });
-};
-
-const moveFiles = (srcDir, destDir, excludedFiles = []) => {
-  const rollbackStack = [];
-
+/**
+ * 确保目录存在
+ * @param {string} dirPath 目录路径
+ */
+function ensureDirectoryExists(dirPath) {
   try {
-    // Check if destination folder exists, if not create it
-    if (!fs.existsSync(destDir)) {
-      fs.mkdirSync(destDir, { recursive: true });
-    }
-
-    // Read the contents of the source directory
-    const files = fs.readdirSync(srcDir);
-
-    files.forEach((file) => {
-      if (excludedFiles.includes(file)) {
-        return;
-      }
-
-      const srcFile = path.join(srcDir, file);
-      const destFile = path.join(destDir, file);
-
-      if (fs.statSync(srcFile).isFile()) {
-        // Copy the file to the destination directory
-        fs.copyFileSync(srcFile, destFile);
-        // Record this operation for potential rollback
-        rollbackStack.push({ type: "file", src: srcFile, dest: destFile });
-        // Delete the original file after copying
-        fs.unlinkSync(srcFile);
-      } else {
-        // If it's a directory, move recursively
-        moveFiles(srcFile, path.join(destDir, file), excludedFiles);
-        // Record this operation for potential rollback
-        rollbackStack.push({ type: "directory", src: srcFile });
-        // Remove the empty source directory
-        fs.rmdirSync(srcFile);
-      }
-    });
-  } catch (error) {
-    // If an error occurs, rollback changes
-    console.error(
-      "Error occurred during file move. Rolling back changes:",
-      error
-    );
-    rollbackStack.forEach((action) => {
-      if (action.type === "file") {
-        // Move file back to its original location
-        if (fs.existsSync(action.dest)) {
-          fs.copyFileSync(action.dest, action.src);
-          fs.unlinkSync(action.dest);
-        }
-      } else if (action.type === "directory") {
-        // Recreate the original directory if needed
-        if (!fs.existsSync(action.src)) {
-          fs.mkdirSync(action.src, { recursive: true });
-        }
-      }
-    });
-    throw error; // Rethrow the error after rollback
+    fs.ensureDirSync(dirPath);
+    return true;
+  } catch (err) {
+    console.error(`确保目录存在失败: ${err.message}`);
+    return false;
   }
-};
+}
 
-const success = (data, message) => {
-  return {
-    c: 200,
-    m: message,
-    d: data,
-  };
-};
+/**
+ * 异步延迟函数
+ * @param {number} ms 延迟毫秒数
+ * @returns {Promise<void>}
+ */
+function delay(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
 
-const error = (data, message) => {
-  return {
-    c: 500,
-    m: message,
-    d: data,
-  };
-};
+/**
+ * 安全读取JSON文件
+ * @param {string} filePath 文件路径
+ * @param {any} defaultValue 默认值
+ * @returns {any} 解析后的JSON或默认值
+ */
+function safeReadJSON(filePath, defaultValue = null) {
+  try {
+    if (!fs.existsSync(filePath)) {
+      return defaultValue;
+    }
+    const data = fs.readFileSync(filePath, 'utf8');
+    return JSON.parse(data);
+  } catch (err) {
+    console.error(`读取JSON文件失败 ${filePath}: ${err.message}`);
+    return defaultValue;
+  }
+}
 
-module.exports = {
-  readJsonFile,
-  success,
-  error,
-  moveFiles,
-  copyFiles,
-};
+/**
+ * 安全写入JSON文件
+ * @param {string} filePath 文件路径
+ * @param {any} data 要写入的数据
+ * @returns {boolean} 是否成功
+ */
+function safeWriteJSON(filePath, data) {
+  try {
+    const dirPath = path.dirname(filePath);
+    ensureDirectoryExists(dirPath);
+    fs.writeFileSync(filePath, JSON.stringify(data, null, 2), 'utf8');
+    return true;
+  } catch (err) {
+    console.error(`写入JSON文件失败 ${filePath}: ${err.message}`);
+    return false;
+  }
+} 

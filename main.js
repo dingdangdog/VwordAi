@@ -65,6 +65,18 @@ function createWindow() {
 
 // 当 Electron 完成初始化时，创建窗口
 app.whenReady().then(async () => {
+  console.log('Electron app is ready');
+  console.log('Current working directory:', process.cwd());
+  console.log('__dirname:', __dirname);
+  
+  // 尝试加载server/util.js文件
+  try {
+    const serverUtil = require('./server/util.js');
+    console.log('server/util.js loaded successfully');
+  } catch (err) {
+    console.error('Failed to load server/util.js:', err);
+  }
+  
   createWindow();
 
   app.on("activate", () => {

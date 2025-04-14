@@ -1,0 +1,14 @@
+<svg width="128" height="128" viewBox="0 0 128 128" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background Circle -->
+  <circle cx="64" cy="64" r="60" fill="#1E40AF" />
+  
+  <!-- Soundwave lines -->
+  <path d="M64 24V104" stroke="white" stroke-width="6" stroke-linecap="round" />
+  <path d="M46 40V88" stroke="white" stroke-width="6" stroke-linecap="round" />
+  <path d="M28 52V76" stroke="white" stroke-width="6" stroke-linecap="round" />
+  <path d="M82 40V88" stroke="white" stroke-width="6" stroke-linecap="round" />
+  <path d="M100 52V76" stroke="white" stroke-width="6" stroke-linecap="round" />
+  
+  <!-- Text Element Stylized as "T" for Text -->
+  <rect x="45" y="40" width="38" height="8" rx="4" fill="white" />
+</svg> 

@@ -1,51 +1,30 @@
-import { createRouter, createWebHistory } from "vue-router";
-import NovelsView from "@/views/novels.vue";
-import IndexView from "@/views/index.vue";
-import AboutView from "@/views/about.vue";
-import AccountView from "@/views/account.vue";
-import LocalView from "@/views/local.vue";
-import SettingView from "@/views/setting.vue";
-import ModelsView from "@/views/models.vue";
+import { createRouter, createWebHashHistory } from 'vue-router'
 
 const router = createRouter({
-  history: createWebHistory(import.meta.env.BASE_URL),
+  history: createWebHashHistory(),
   routes: [
     {
-      path: "/",
-      name: "index",
-      component: IndexView,
+      path: '/',
+      name: 'home',
+      component: () => import('@/views/HomeView.vue')
     },
     {
-      path: "/about",
-      name: "about",
-      component: AboutView,
+      path: '/projects',
+      name: 'projects',
+      component: () => import('@/views/projects/ProjectsView.vue')
     },
     {
-      path: "/novels",
-      name: "novels",
-      component: NovelsView,
+      path: '/projects/:id',
+      name: 'project-detail',
+      component: () => import('@/views/projects/ProjectDetailView.vue'),
+      props: true
     },
     {
-      path: "/local",
-      name: "local",
-      component: LocalView,
-    },
-    {
-      path: "/models",
-      name: "models",
-      component: ModelsView,
-    },
-    {
-      path: "/setting",
-      name: "setting",
-      component: SettingView,
-    },
-    {
-      path: "/account",
-      name: "account",
-      component: AccountView,
-    },
-  ],
-});
+      path: '/settings',
+      name: 'settings',
+      component: () => import('@/views/settings/SettingsView.vue')
+    }
+  ]
+})
 
-export default router;
+export default router 

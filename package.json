@@ -1,5 +1,5 @@
 {
-  "name": "vow",
+  "name": "dotts",
   "version": "0.0.1",
   "private": true,
   "type": "commonjs",
@@ -12,10 +12,11 @@
     "ui": "cd ui && npm run dev",
     "build": "",
     "electron": "electron .",
+    "dev": "electron .",
     "package": "cd ui && npm run build-only && cd ../ && electron-builder"
   },
   "build": {
-    "appId": "top.oldmoon.vow",
+    "appId": "top.oldmoon.dotts",
     "productName": "VoiceOfWords",
     "directories": {
       "output": "package"
@@ -53,12 +54,14 @@
     "axios": "^1.7.8",
     "chardet": "^2.0.0",
     "dotenv": "^16.4.5",
+    "fs-extra": "^11.2.0",
     "iconv-lite": "^0.6.3",
     "microsoft-cognitiveservices-speech-sdk": "^1.41.0",
-    "qrcode": "^1.5.4"
+    "qrcode": "^1.5.4",
+    "uuid": "^9.0.1"
   },
   "devDependencies": {
-    "electron": "^33.2.1",
+    "electron": "^33.4.9",
     "electron-builder": "^25.1.8"
   }
 }
