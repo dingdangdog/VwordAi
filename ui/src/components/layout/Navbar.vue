@@ -1,6 +1,6 @@
 <template>
   <nav
-    class="bg-white dark:bg-gray-800 shadow fixed top-0 left-0 w-full z-50 drag-area"
+    class="bg-white dark:bg-gray-800 shadow sticky top-0 left-0 w-full z-50 drag-area"
   >
     <div class="px-4">
       <div class="flex justify-between h-16">

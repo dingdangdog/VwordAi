@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { v4 as uuidv4 } from 'uuid'
-import { Project, Chapter, TTSSettings } from '@/types'
+import type { Project, Chapter, TTSSettings } from '@/types'
 
 export const useProjectsStore = defineStore('projects', () => {
   const projects = ref<Project[]>([])

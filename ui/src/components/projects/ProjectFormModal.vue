@@ -159,7 +159,7 @@
 <script setup lang="ts">
 import { ref, reactive, onMounted, watchEffect } from 'vue';
 import { XMarkIcon } from '@heroicons/vue/24/outline';
-import { TTSSettings } from '@/types';
+import type { TTSSettings } from '@/types';
 
 // Mock service providers for now (will be replaced with actual data from API)
 const serviceProviders = ref([

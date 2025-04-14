@@ -2,7 +2,7 @@
  * 主进程通信API
  * 封装与Electron主进程的通信
  */
-import { Result } from '@/types';
+import type { Result } from '@/types';
 
 /**
  * 通用请求方法

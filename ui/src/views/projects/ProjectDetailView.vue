@@ -207,7 +207,7 @@ import { ref, computed, onMounted, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useToast } from 'vue-toastification';
 import { useProjectsStore } from '@/stores/projects';
-import { Project, Chapter } from '@/types';
+import type { Project, Chapter } from '@/types';
 import {
   PlusIcon,
   PencilSquareIcon,

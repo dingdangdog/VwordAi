@@ -94,7 +94,7 @@
 import { ref, computed, onMounted } from 'vue';
 import { useToast } from 'vue-toastification';
 import { useProjectsStore } from '@/stores/projects';
-import { Project } from '@/types';
+import type { Project } from '@/types';
 import { PlusIcon, PencilSquareIcon, TrashIcon } from '@heroicons/vue/24/outline';
 import ProjectFormModal from '@/components/projects/ProjectFormModal.vue';
 import ConfirmationModal from '@/components/common/ConfirmationModal.vue';
