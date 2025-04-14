@@ -71,17 +71,22 @@
                   
                   <div>
                     <label for="voiceRole" class="block text-sm font-medium text-gray-700 dark:text-gray-300">声音角色</label>
-                    <select
-                      id="voiceRole"
-                      v-model="form.settings.voiceRole"
-                      class="mt-1 input dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                      :disabled="!form.settings.serviceProvider"
-                    >
-                      <option value="">未选择</option>
-                      <option v-for="role in voiceRoles" :key="role.id" :value="role.id">
-                        {{ role.name }}
-                      </option>
-                    </select>
+                    <div class="relative">
+                      <select
+                        id="voiceRole"
+                        v-model="form.settings.voiceRole"
+                        class="mt-1 input dark:bg-gray-700 dark:border-gray-600 dark:text-white w-full"
+                        :disabled="!form.settings.serviceProvider || isLoadingVoiceRoles"
+                      >
+                        <option value="">未选择</option>
+                        <option v-for="role in voiceRoles" :key="role.id" :value="role.id">
+                          {{ role.name }} ({{ role.gender === 'male' ? '男声' : role.gender === 'female' ? '女声' : '中性' }})
+                        </option>
+                      </select>
+                      <div v-if="isLoadingVoiceRoles" class="absolute right-2 top-1/2 -translate-y-1/2">
+                        <div class="animate-spin h-5 w-5 border-2 border-blue-500 border-t-transparent rounded-full"></div>
+                      </div>
+                    </div>
                   </div>
                   
                   <div>
@@ -167,25 +172,17 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, watchEffect } from 'vue';
+import { ref, reactive, watchEffect, onMounted } from 'vue';
 import { XMarkIcon } from '@heroicons/vue/24/outline';
-import type { TTSSettings } from '@/types';
+import type { TTSSettings, VoiceRole as VoiceRoleType } from '@/types';
+import { ttsService, SUPPORTED_PROVIDERS, VoiceRole } from '@/services/tts';
 
-// Mock service providers for now (will be replaced with actual data from API)
-const serviceProviders = ref([
-  { id: 'aliyun', name: '阿里云' },
-  { id: 'tencent', name: '腾讯云' },
-  { id: 'baidu', name: '百度智能云' },
-  { id: 'azure', name: 'Azure Speech Service' }
-]);
+// Get service providers from the TTS service
+const serviceProviders = ref(SUPPORTED_PROVIDERS);
+const voiceRoles = ref<VoiceRole[]>([]);
+const isLoadingVoiceRoles = ref(false);
 
-// Mock voice roles and emotions (will be dynamically loaded based on selected provider)
-const voiceRoles = ref([
-  { id: 'role1', name: '声音角色 1' },
-  { id: 'role2', name: '声音角色 2' },
-  { id: 'role3', name: '声音角色 3' }
-]);
-
+// Emotion options
 const emotions = ref([
   { id: 'neutral', name: '平静' },
   { id: 'happy', name: '快乐' },
@@ -251,31 +248,52 @@ watchEffect(() => {
       emotion: props.initialData.settings?.emotion || ''
     };
 
-    // Show voice settings panel if there are settings
-    if (
-      props.initialData.settings?.serviceProvider ||
-      props.initialData.settings?.voiceRole ||
-      props.initialData.settings?.emotion
-    ) {
-      showVoiceSettings.value = true;
+    // If the form has a service provider selected, load the voice roles
+    if (form.settings.serviceProvider) {
+      loadVoiceRoles(form.settings.serviceProvider);
     }
   }
 });
 
-function close() {
-  emit('close');
+// Watch for changes in the service provider and update voice roles
+watchEffect(() => {
+  if (form.settings.serviceProvider && form.settings.serviceProvider !== props.initialData?.settings?.serviceProvider) {
+    loadVoiceRoles(form.settings.serviceProvider);
+    // Reset voice role when changing provider
+    form.settings.voiceRole = '';
+  }
+});
+
+async function loadVoiceRoles(providerId: string) {
+  isLoadingVoiceRoles.value = true;
+  try {
+    const result = await ttsService.getVoiceRoles(providerId);
+    if (result.success && result.data) {
+      voiceRoles.value = result.data;
+    } else {
+      voiceRoles.value = [];
+    }
+  } catch (error) {
+    console.error('Failed to load voice roles:', error);
+    voiceRoles.value = [];
+  } finally {
+    isLoadingVoiceRoles.value = false;
+  }
 }
 
 function validateForm() {
-  let isValid = true;
   errors.name = '';
 
   if (!form.name.trim()) {
-    errors.name = '章节名称不能为空';
-    isValid = false;
+    errors.name = '请输入章节名称';
+    return false;
   }
 
-  return isValid;
+  return true;
+}
+
+function close() {
+  emit('close');
 }
 
 function submitForm() {
@@ -283,20 +301,13 @@ function submitForm() {
 
   isSubmitting.value = true;
 
-  try {
-    // Prepare data for submission
-    const chapterData = {
-      name: form.name.trim(),
-      text: form.text.trim(),
-      settings: { ...form.settings }
-    };
-
-    // Emit submit event with form data
-    emit('submit', chapterData);
-  } catch (error) {
-    console.error('Form submission error:', error);
-  } finally {
+  setTimeout(() => {
+    emit('submit', {
+      name: form.name,
+      text: form.text,
+      settings: form.settings
+    });
     isSubmitting.value = false;
-  }
+  }, 500);
 }
 </script> 

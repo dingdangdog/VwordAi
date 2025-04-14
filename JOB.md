@@ -1,63 +1,59 @@
-# 文本转语音软件实现进度
+# 文本转语音应用 - 工作进度
 
-本文档记录了按照需求文档实现的功能及其对应的代码文件。
+## 已完成功能
 
-## 已完成的功能
+### 服务和工具
+- [x] 创建 TTS 服务单例 (`TTSService`) 
+- [x] 实现服务商配置管理 (增删改查)
+- [x] 实现语音角色获取功能
+- [x] 实现文本合成为语音功能
+- [x] 创建文本处理工具函数 (分段、时长估算)
+- [x] 实现批量合成功能
 
-### 1. 项目与章节管理
+### 组件开发和优化
+- [x] 创建服务商配置表单组件 (`ServiceProviderForm.vue`)
+- [x] 创建服务商列表组件 (`ServiceProviderList.vue`)
+- [x] 优化章节表单组件 (`ChapterFormModal.vue`) - 添加实时语音角色加载
+- [x] 创建章节语音合成组件 (`ChapterSynthesis.vue`)
+- [x] 优化项目详情页 (`ProjectDetailView.vue`) - 添加章节展开/折叠功能
+- [x] 优化设置页面 (`SettingsView.vue`) - 整合服务商配置
 
-根据需求文档的 2.1 部分，我们已经实现了项目与章节管理功能。
+### UI/UX 改进
+- [x] 添加语音合成状态反馈 (加载、成功、错误)
+- [x] 改进服务商配置管理界面
+- [x] 为章节添加语音合成交互
+- [x] 添加批量合成进度显示
 
-#### 实现的功能点：
+## 待完成功能
 
-1. 项目管理
-   - 创建项目
-   - 编辑项目信息（名称、描述）
-   - 设置项目默认语音参数（服务商、声音角色、语速、音调、音量、情感等）
-   - 查看项目列表
-   - 删除项目（含二次确认）
+### 重要功能
+- [ ] 连接实际 TTS API (Azure、阿里云、腾讯云等)
+- [ ] 实现音频下载和批量导出功能
+- [ ] 添加音频播放控制 (暂停、恢复、进度条)
 
-2. 章节管理
-   - 创建章节
-   - 编辑章节信息（名称、文本内容）
-   - 设置章节语音参数（可继承项目设置或独立设置）
-   - 查看章节列表
-   - 删除章节（含二次确认）
+### UI/UX 改进
+- [ ] 添加拖放排序章节顺序功能
+- [ ] 实现章节预览功能
+- [ ] 实现详细的合成参数调整界面
+- [ ] 优化暗色主题下的UI细节
 
-#### 相关文件：
+### 其他
+- [ ] 添加自动保存功能
+- [ ] 实现项目导入/导出
+- [ ] 添加多语言支持
+- [ ] 添加用户指南和帮助文档
 
-- 数据模型：
-  - [ui/src/types/index.ts](ui/src/types/index.ts) - 定义了 Project、Chapter、TTSSettings 等核心数据类型
+## 已修复问题
+- [x] 修复服务商配置表单类型错误
+- [x] 修复章节列表展开/折叠功能的交互问题
+- [x] 优化语音角色选择下拉框加载状态
 
-- 状态管理：
-  - [ui/src/stores/projects.ts](ui/src/stores/projects.ts) - 使用 Pinia 实现项目和章节的状态管理
-  - [ui/src/stores/settings.ts](ui/src/stores/settings.ts) - 实现主题切换等应用设置
+## 技术改进和优化
+- [x] 使用单例模式实现 TTS 服务
+- [x] 优化语音合成状态管理
+- [x] 添加批量处理功能
+- [x] 改进错误处理和用户反馈
 
-- 视图组件：
-  - [ui/src/views/HomeView.vue](ui/src/views/HomeView.vue) - 首页，显示功能简介和最近项目
-  - [ui/src/views/projects/ProjectsView.vue](ui/src/views/projects/ProjectsView.vue) - 项目列表视图
-  - [ui/src/views/projects/ProjectDetailView.vue](ui/src/views/projects/ProjectDetailView.vue) - 项目详情和章节管理页面
+---
 
-- 表单组件：
-  - [ui/src/components/projects/ProjectFormModal.vue](ui/src/components/projects/ProjectFormModal.vue) - 项目创建和编辑表单
-  - [ui/src/components/chapters/ChapterFormModal.vue](ui/src/components/chapters/ChapterFormModal.vue) - 章节创建和编辑表单
-  - [ui/src/components/common/ConfirmationModal.vue](ui/src/components/common/ConfirmationModal.vue) - 通用确认对话框
-
-- 导航和布局：
-  - [ui/src/components/layout/Navbar.vue](ui/src/components/layout/Navbar.vue) - 顶部导航栏
-  - [ui/src/App.vue](ui/src/App.vue) - 应用根组件
-
-#### 技术实现：
-
-- 使用 Vue 3 + TypeScript 构建前端界面
-- 使用 Tailwind CSS 实现响应式布局和主题切换
-- 使用 Pinia 进行状态管理
-- 使用 Vue Router 实现页面路由
-- 使用 localStorage 在本地存储项目和章节数据
-
-目前，项目与章节管理功能实现了完整的 CRUD 操作，支持创建、读取、更新和删除项目与章节，并支持数据的本地持久化存储。
-
-## 进行中的功能
-
-- 语音合成功能
-- 服务商配置功能
+最后更新: 2025-04-14

@@ -88,42 +88,61 @@
             <ul class="divide-y divide-gray-200 dark:divide-gray-700">
               <li v-for="chapter in chapters" :key="chapter.id">
                 <div class="block hover:bg-gray-50 dark:hover:bg-gray-700">
-                  <div class="flex items-center px-4 py-4 sm:px-6">
-                    <div class="min-w-0 flex-1">
-                      <div class="flex items-center justify-between">
-                        <p class="text-md font-medium text-blue-600 truncate">{{ chapter.name }}</p>
-                        <div class="ml-2 flex-shrink-0 flex">
-                          <p class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full" :class="{
-                            'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200': chapter.text.length > 0,
-                            'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200': chapter.text.length === 0
-                          }">
-                            {{ chapter.text.length > 0 ? '已添加内容' : '无内容' }}
-                          </p>
+                  <div class="px-4 py-4 sm:px-6">
+                    <div class="flex items-center justify-between" @click="toggleExpandChapter(chapter.id)">
+                      <div class="min-w-0 flex-1 cursor-pointer">
+                        <div class="flex items-center justify-between">
+                          <p class="text-md font-medium text-blue-600 truncate">{{ chapter.name }}</p>
+                          <div class="ml-2 flex-shrink-0 flex">
+                            <p class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full" :class="{
+                              'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200': chapter.text.length > 0,
+                              'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200': chapter.text.length === 0
+                            }">
+                              {{ chapter.text.length > 0 ? '已添加内容' : '无内容' }}
+                            </p>
+                          </div>
+                        </div>
+                        <div class="mt-2 flex justify-between">
+                          <div class="text-sm text-gray-500 dark:text-gray-400">
+                            <p>最后更新：{{ formatDate(chapter.updatedAt) }}</p>
+                            <p class="mt-1 line-clamp-1">{{ chapter.text || '暂无内容' }}</p>
+                          </div>
+                          <div class="ml-4 flex-shrink-0 flex">
+                            <button
+                              @click.stop="openEditChapterModal(chapter)"
+                              class="mr-2 text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
+                            >
+                              编辑
+                            </button>
+                            <button
+                              @click.stop="confirmDeleteChapter(chapter)"
+                              class="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300"
+                            >
+                              删除
+                            </button>
+                          </div>
                         </div>
                       </div>
-                      <div class="mt-2 flex justify-between">
-                        <div class="text-sm text-gray-500 dark:text-gray-400">
-                          <p>最后更新：{{ formatDate(chapter.updatedAt) }}</p>
-                          <p class="mt-1 line-clamp-1">{{ chapter.text || '暂无内容' }}</p>
-                        </div>
-                        <div class="ml-4 flex-shrink-0 flex">
-                          <button
-                            @click="openEditChapterModal(chapter)"
-                            class="mr-2 text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
-                          >
-                            编辑
-                          </button>
-                          <button
-                            @click="confirmDeleteChapter(chapter)"
-                            class="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300"
-                          >
-                            删除
-                          </button>
-                        </div>
+                      <div class="ml-5 flex-shrink-0 cursor-pointer">
+                        <ChevronDownIcon v-if="expandedChapters[chapter.id]" class="h-5 w-5 text-gray-400" />
+                        <ChevronRightIcon v-else class="h-5 w-5 text-gray-400" />
                       </div>
                     </div>
-                    <div class="ml-5 flex-shrink-0">
-                      <ChevronRightIcon class="h-5 w-5 text-gray-400" />
+                    
+                    <!-- Expanded Chapter Content -->
+                    <div v-if="expandedChapters[chapter.id]" class="mt-4 border-t border-gray-200 dark:border-gray-700 pt-4">
+                      <div class="mb-4">
+                        <h4 class="text-md font-medium text-gray-900 dark:text-white mb-2">章节内容</h4>
+                        <div class="bg-gray-50 dark:bg-gray-700 p-4 rounded-md max-h-60 overflow-y-auto">
+                          <p class="text-gray-700 dark:text-gray-300 whitespace-pre-wrap">{{ chapter.text || '暂无内容' }}</p>
+                        </div>
+                      </div>
+                      
+                      <!-- Chapter Synthesis Component -->
+                      <ChapterSynthesis 
+                        :chapter="chapter" 
+                        @edit-settings="openEditChapterModal(chapter)" 
+                      />
                     </div>
                   </div>
                 </div>
@@ -192,7 +211,7 @@
       <ConfirmationModal
         v-if="showDeleteChapterModal"
         title="删除章节"
-        :message="`确定要删除章节 "${deletingChapter?.name}" 吗？此操作无法恢复。`"
+        :message="getDeleteMessage()"
         confirmText="删除"
         confirmButtonClass="btn-danger"
         @close="showDeleteChapterModal = false"
@@ -203,21 +222,24 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue';
+import { ref, computed, onMounted, watchEffect } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import { useToast } from 'vue-toastification';
 import { useProjectsStore } from '@/stores/projects';
+import { useToast } from 'vue-toastification';
 import type { Project, Chapter } from '@/types';
-import {
-  PlusIcon,
-  PencilSquareIcon,
-  ChevronRightIcon,
-  SpeakerWaveIcon,
-  ArrowDownTrayIcon
-} from '@heroicons/vue/24/outline';
 import ProjectFormModal from '@/components/projects/ProjectFormModal.vue';
 import ChapterFormModal from '@/components/chapters/ChapterFormModal.vue';
 import ConfirmationModal from '@/components/common/ConfirmationModal.vue';
+import ChapterSynthesis from '@/components/chapters/ChapterSynthesis.vue';
+import { 
+  PlusIcon, 
+  PencilSquareIcon, 
+  ChevronRightIcon, 
+  ChevronDownIcon, 
+  SpeakerWaveIcon, 
+  ArrowDownTrayIcon 
+} from '@heroicons/vue/24/outline';
+import { batchSynthesizeChapters } from '@/utils/tts-utils';
 
 const route = useRoute();
 const router = useRouter();
@@ -252,6 +274,9 @@ const showDeleteChapterModal = ref(false);
 // Form data
 const editingChapter = ref<Chapter | null>(null);
 const deletingChapter = ref<Chapter | null>(null);
+
+// For expanded chapters
+const expandedChapters = ref<Record<string, boolean>>({});
 
 // Load data on mount and when project ID changes
 onMounted(() => {
@@ -372,9 +397,58 @@ function deleteChapter() {
 }
 
 // Batch operations
-function startBatchSynthesis() {
-  toast.info('批量合成功能正在开发中...');
-  // This will be implemented later when we connect to the backend
+async function startBatchSynthesis() {
+  if (chapters.value.length === 0) {
+    toast.error('项目中没有章节，无法进行批量合成');
+    return;
+  }
+
+  const chaptersWithText = chapters.value.filter(c => c.text.trim().length > 0);
+  if (chaptersWithText.length === 0) {
+    toast.error('所有章节都是空的，无法进行合成');
+    return;
+  }
+
+  // 检查章节是否都有语音设置
+  const chaptersWithoutSettings = chaptersWithText.filter(
+    c => !c.settings.serviceProvider || !c.settings.voiceRole
+  );
+
+  if (chaptersWithoutSettings.length > 0) {
+    toast.error(`有 ${chaptersWithoutSettings.length} 个章节缺少语音设置，请先配置`);
+    return;
+  }
+
+  toast.info('开始批量合成，这可能需要一些时间...');
+
+  try {
+    // 显示进度通知
+    const progressToastId = toast.info('合成进度: 0%', {
+      timeout: false,
+      closeOnClick: false,
+    });
+
+    // 执行批量合成
+    const results = await batchSynthesizeChapters(chaptersWithText, (progress, chapterIndex) => {
+      // 更新进度通知
+      toast.update(progressToastId, {
+        content: `合成进度: ${progress}% (${chapterIndex + 1}/${chaptersWithText.length})`,
+      });
+    });
+
+    // 关闭进度通知
+    toast.dismiss(progressToastId);
+
+    // 显示成功消息
+    toast.success(`成功合成 ${Object.keys(results).length} 个章节的语音`);
+
+    // 扩展已合成的章节，以便用户查看
+    Object.keys(results).forEach(chapterId => {
+      expandedChapters.value[chapterId] = true;
+    });
+  } catch (error) {
+    toast.error(`批量合成失败: ${error instanceof Error ? error.message : '未知错误'}`);
+  }
 }
 
 function exportProject() {
@@ -407,8 +481,17 @@ function getEmotionName(id: string): string {
   return emotions.find(e => e.id === id)?.name || id;
 }
 
+function getDeleteMessage(): string {
+  if (!deletingChapter.value) return '';
+  return `确定要删除章节 "${deletingChapter.value.name}" 吗？此操作无法恢复。`;
+}
+
 // Utilities
 function formatDate(date: Date) {
   return new Date(date).toLocaleString();
+}
+
+function toggleExpandChapter(chapterId: string) {
+  expandedChapters.value[chapterId] = !expandedChapters.value[chapterId];
 }
 </script> 
