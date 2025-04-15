@@ -70,7 +70,7 @@
           </p>
           <div class="flex justify-between items-center mt-4">
             <span class="text-sm text-gray-500 dark:text-gray-400">
-              {{ formatDate(project.updateTime) }}
+              {{ formatDate(project.updateBy) }}
             </span>
             <router-link
               :to="`/projects/${project.id}`"

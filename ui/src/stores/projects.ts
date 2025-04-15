@@ -18,7 +18,7 @@ export const useProjectsStore = defineStore('projects', () => {
 
   const projectsSorted = computed(() => {
     return [...projects.value].sort((a, b) => {
-      return new Date(b.updateTime).getTime() - new Date(a.updateTime).getTime()
+      return new Date(b.updateBy).getTime() - new Date(a.updateBy).getTime()
     })
   })
 

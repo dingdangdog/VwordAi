@@ -8,8 +8,8 @@ export interface Project {
   title: string;
   description: string;
   author: string;
-  createTime: string;
-  updateTime: string;
+  createBy: string;
+  updateBy: string;
   coverImage: string | null;
   tags: string[];
   wordCount: number;
@@ -25,8 +25,8 @@ export interface Chapter {
   order: number;
   text: string;
   wordCount: number;
-  createTime: string;
-  updateTime: string;
+  createBy: string;
+  updateBy: string;
   settings: ChapterSettings;
   audioPath?: string;
   status?: ChapterStatus;
@@ -35,7 +35,7 @@ export interface Chapter {
 // 语音合成参数设置
 export interface TTSSettings {
   serviceProvider?: string;
-  voiceRole?: string;
+  voice?: string;
   speed?: number; // 语速
   pitch?: number; // 音调
   volume?: number; // 音量
@@ -49,8 +49,8 @@ export interface ServiceProviderConfig {
   name: string; // 服务商名称 (例如：阿里云)
   apiKey: string; // API 密钥
   secretKey?: string; // Secret 密钥 (可选)
-  createdAt: Date;
-  updatedAt: Date;
+  createAt: Date;
+  updateAt: Date;
   // 其他服务商需要的密钥字段
   [key: string]: string | Date | undefined;
 }
@@ -141,8 +141,8 @@ export interface ServiceProvider {
   region?: string;
   endpoint?: string;
   enabled: boolean;
-  createTime: string;
-  updateTime: string;
+  createBy: string;
+  updateBy: string;
   config: Record<string, any>;
 }
 

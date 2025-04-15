@@ -13,7 +13,7 @@
                     ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300'
                     : 'hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-800 dark:text-gray-200'
                 "
-                @click="selectProvider(provider.type)"
+                @click="selectProvider(provider.type as ServiceProviderType)"
               >
                 <CloudIcon
                   class="h-5 w-5 mr-2"
@@ -146,8 +146,8 @@ function createDefaultAzureConfig(): AzureServiceProviderConfig {
     name: "微软 Azure TTS",
     apiKey: "",
     region: "",
-    createdAt: new Date(),
-    updatedAt: new Date(),
+    createAt: new Date(),
+    updateAt: new Date(),
   };
 }
 
@@ -161,8 +161,8 @@ function createDefaultAliyunConfig(): AliyunServiceProviderConfig {
     accessKeyId: "",
     accessKeySecret: "",
     regionId: "",
-    createdAt: new Date(),
-    updatedAt: new Date(),
+    createAt: new Date(),
+    updateAt: new Date(),
   };
 }
 
@@ -211,7 +211,7 @@ function testConnection(result: { success: boolean; message: string }) {
 // 初始化 - 默认选中第一个服务商
 onMounted(() => {
   if (SUPPORTED_PROVIDERS.length > 0) {
-    selectedProviderType.value = SUPPORTED_PROVIDERS[0].type;
+    selectedProviderType.value = SUPPORTED_PROVIDERS[0].type as ServiceProviderType;
   }
 
   // 在这里可以加载已保存的服务商配置

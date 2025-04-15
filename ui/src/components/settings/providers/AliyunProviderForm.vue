@@ -134,8 +134,8 @@ const form = ref<AliyunServiceProviderConfig>({
   accessKeySecret: props.provider.accessKeySecret,
   regionId: props.provider.regionId,
   appKey: props.provider.appKey,
-  createdAt: props.provider.createdAt,
-  updatedAt: props.provider.updatedAt
+  createAt: props.provider.createAt,
+  updateAt: props.provider.updateAt
 });
 
 // 监听prop变化，更新表单
@@ -161,7 +161,7 @@ async function saveForm() {
       ...form.value,
       apiKey: form.value.accessKeyId, // 映射到统一的apiKey字段
       secretKey: form.value.accessKeySecret, // 映射到统一的secretKey字段
-      updatedAt: new Date()
+      updateAt: new Date()
     };
     
     emit('save', updatedProvider);

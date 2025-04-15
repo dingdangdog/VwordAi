@@ -163,7 +163,7 @@
                         <div class="mt-2 flex justify-between">
                           <div class="text-sm text-gray-500 dark:text-gray-400">
                             <p>
-                              最后更新：{{ formatDate(chapter.updateTime) }}
+                              最后更新：{{ formatDate(chapter.updateBy) }}
                             </p>
                             <p class="mt-1 line-clamp-1">
                               {{ chapter.text || "暂无内容" }}
@@ -285,7 +285,7 @@
         v-if="showEditChapterModal"
         title="编辑章节"
         submitText="保存"
-        :initialData="editingChapter"
+        :initialData="editingChapter || {}"
         @close="showEditChapterModal = false"
         @submit="updateChapter"
       />
@@ -341,7 +341,7 @@ const chapters = computed(() => {
     .filter((c) => c.projectId === projectId.value)
     .sort((a, b) => {
       return (
-        new Date(a.createTime).getTime() - new Date(b.createTime).getTime()
+        new Date(a.createBy).getTime() - new Date(b.createBy).getTime()
       );
     });
 });

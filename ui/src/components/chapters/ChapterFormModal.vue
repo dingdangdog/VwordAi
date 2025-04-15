@@ -117,14 +117,14 @@
 
                   <div>
                     <label
-                      for="voiceRole"
+                      for="voice"
                       class="block text-sm font-medium text-gray-700 dark:text-gray-300"
                       >声音角色</label
                     >
                     <div class="relative">
                       <select
-                        id="voiceRole"
-                        v-model="form.settings.voiceRole"
+                        id="voice"
+                        v-model="form.settings.voice"
                         class="mt-1 input dark:bg-gray-700 dark:border-gray-600 dark:text-white w-full"
                         :disabled="
                           !form.settings.serviceProvider || isLoadingVoiceRoles
@@ -226,7 +226,7 @@
             </div>
 
             <div
-              class="bg-gray-50 dark:bg-gray-700 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse"
+              class="px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse"
             >
               <button
                 type="submit"
@@ -307,7 +307,7 @@ const form = reactive({
   text: "",
   settings: {
     serviceProvider: "",
-    voiceRole: "",
+    voice: "",
     speed: 1,
     pitch: 0,
     volume: 100,
@@ -322,7 +322,7 @@ watchEffect(() => {
     form.text = props.initialData.text || "";
     form.settings = {
       serviceProvider: props.initialData.settings?.serviceProvider || "",
-      voiceRole: props.initialData.settings?.voiceRole || "",
+      voice: props.initialData.settings?.voice || "",
       speed:
         props.initialData.settings?.speed !== undefined
           ? props.initialData.settings.speed
@@ -354,7 +354,7 @@ watchEffect(() => {
   ) {
     loadVoiceRoles(form.settings.serviceProvider);
     // Reset voice role when changing provider
-    form.settings.voiceRole = "";
+    form.settings.voice = "";
   }
 });
 

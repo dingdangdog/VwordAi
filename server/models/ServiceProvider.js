@@ -50,8 +50,8 @@ class ServiceProvider {
       region: providerData.region || '',
       endpoint: providerData.endpoint || '',
       enabled: providerData.enabled !== undefined ? providerData.enabled : true,
-      createTime: new Date().toISOString(),
-      updateTime: new Date().toISOString(),
+      createBy: new Date().toISOString(),
+      updateBy: new Date().toISOString(),
       config: providerData.config || {}
     };
     
@@ -78,7 +78,7 @@ class ServiceProvider {
     const updatedProvider = {
       ...providers[index],
       ...providerData,
-      updateTime: new Date().toISOString()
+      updateBy: new Date().toISOString()
     };
     
     // 确保ID不被覆盖

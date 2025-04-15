@@ -54,7 +54,7 @@
           </p>
           <div class="flex justify-between items-center mt-4">
             <span class="text-sm text-gray-500 dark:text-gray-400">
-              {{ formatDate(project.updateTime) }}
+              {{ formatDate(project.updateBy) }}
             </span>
             <router-link
               :to="`/projects/${project.id}`"
@@ -134,7 +134,7 @@ const showDeleteModal = ref(false);
 const newProject = ref({
   title: "",
   description: "",
-  defaultSettings: {},
+  defaultVoiceSettings: {},
 });
 
 const editingProject = ref<Project>();
@@ -145,7 +145,7 @@ function openCreateProjectModal() {
   newProject.value = {
     title: "",
     description: "",
-    defaultSettings: {},
+    defaultVoiceSettings: {},
   };
   showCreateModal.value = true;
 }
@@ -164,12 +164,12 @@ function confirmDeleteProject(project: Project) {
 async function createProject(projectData: {
   title: string;
   description: string;
-  defaultSettings: any;
+  defaultVoiceSettings: any;
 }) {
   const project = await projectsStore.createProject(
     projectData.title,
     projectData.description,
-    projectData.defaultSettings
+    projectData.defaultVoiceSettings
   );
 
   if (project) {
@@ -183,14 +183,14 @@ async function createProject(projectData: {
 async function updateProject(projectData: {
   title: string;
   description: string;
-  defaultSettings: any;
+  defaultVoiceSettings: any;
 }) {
   if (!editingProject.value) return;
 
   const result = await projectsStore.updateProject(editingProject.value.id, {
     title: projectData.title,
     description: projectData.description,
-    defaultVoiceSettings: projectData.defaultSettings,
+    defaultVoiceSettings: projectData.defaultVoiceSettings,
   });
 
   if (result) {

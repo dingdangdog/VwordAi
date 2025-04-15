@@ -1,0 +1,17 @@
+[
+  {
+    "id": "30242dac-bbcb-4fd4-a28b-1ab6a03f0b85",
+    "projectId": "2df59cf4-c3a1-4416-893b-1b05e91c8e99",
+    "name": "章节1",
+    "text": "12312412",
+    "settings": {
+      "serviceProvider": null,
+      "voice": null,
+      "speed": 1,
+      "pitch": 1,
+      "volume": 1
+    },
+    "createAt": "2025-04-15T10:37:41.429Z",
+    "updateAt": "2025-04-15T10:37:41.429Z"
+  }
+]

@@ -63,8 +63,8 @@ function createChapter(chapterData) {
     name: chapterData.name,
     text: chapterData.text || '',
     settings: chapterData.settings || { ...project.defaultSettings },
-    createdAt: now,
-    updatedAt: now
+    createAt: now,
+    updateAt: now
   };
   
   chapters.push(newChapter);
@@ -101,7 +101,7 @@ function updateChapter(id, chapterData) {
     name: chapterData.name !== undefined ? chapterData.name : chapters[index].name,
     text: chapterData.text !== undefined ? chapterData.text : chapters[index].text,
     settings: chapterData.settings !== undefined ? chapterData.settings : chapters[index].settings,
-    updatedAt: new Date()
+    updateAt: new Date()
   };
   
   chapters[index] = updatedChapter;

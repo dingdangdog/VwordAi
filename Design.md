@@ -215,8 +215,8 @@ interface Project {
     emotion?: string; // 情感 (可选)
     [key: string]: any; // 其他服务商特定的参数
   };
-  createdAt: Date;
-  updatedAt: Date;
+  createAt: Date;
+  updateAt: Date;
 }
 
 interface Chapter {
@@ -233,8 +233,8 @@ interface Chapter {
     emotion?: string; // 情感 (可选)
     [key: string]: any; // 其他服务商特定的参数
   };
-  createdAt: Date;
-  updatedAt: Date;
+  createAt: Date;
+  updateAt: Date;
 }
 
 // 服务商配置信息，基于各自服务商配置不同字段
@@ -245,8 +245,8 @@ interface ServiceProviderConfig {
   secretKey?: string; // Secret 密钥 (可选)
   // 其他服务商需要的密钥字段
   [key: string]: string | undefined;
-  createdAt: Date;
-  updatedAt: Date;
+  createAt: Date;
+  updateAt: Date;
 }
 
 interface AppSettings {

@@ -37,23 +37,23 @@
           <form @submit.prevent="submitForm">
             <div class="mb-4">
               <label
-                for="name"
+                for="title"
                 class="block text-sm font-semibold text-gray-700 dark:text-gray-300"
                 >项目名称</label
               >
               <input
                 type="text"
-                id="name"
-                v-model="form.name"
+                id="title"
+                v-model="form.title"
                 class="mt-1 input dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                 placeholder="请输入项目名称"
                 required
               />
               <p
-                v-if="errors.name"
+                v-if="errors.title"
                 class="mt-1 text-sm text-red-600 dark:text-red-500"
               >
-                {{ errors.name }}
+                {{ errors.title }}
               </p>
             </div>
 
@@ -91,7 +91,7 @@
                   >
                   <select
                     id="serviceProvider"
-                    v-model="form.defaultSettings.serviceProvider"
+                    v-model="form.defaultVoiceSettings.serviceProvider"
                     class="mt-1 input dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                   >
                     <option value="">未选择</option>
@@ -107,15 +107,15 @@
 
                 <div>
                   <label
-                    for="voiceRole"
+                    for="voice"
                     class="block text-sm font-medium text-gray-700 dark:text-gray-300"
                     >声音角色</label
                   >
                   <select
-                    id="voiceRole"
-                    v-model="form.defaultSettings.voiceRole"
+                    id="voice"
+                    v-model="form.defaultVoiceSettings.voice"
                     class="mt-1 input dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                    :disabled="!form.defaultSettings.serviceProvider"
+                    :disabled="!form.defaultVoiceSettings.serviceProvider"
                   >
                     <option value="">未选择</option>
                     <option
@@ -132,12 +132,12 @@
                   <label
                     for="speed"
                     class="block text-sm font-medium text-gray-700 dark:text-gray-300"
-                    >语速 ({{ form.defaultSettings.speed || 1 }})</label
+                    >语速 ({{ form.defaultVoiceSettings.speed || 1 }})</label
                   >
                   <input
                     type="range"
                     id="speed"
-                    v-model.number="form.defaultSettings.speed"
+                    v-model.number="form.defaultVoiceSettings.speed"
                     min="0.5"
                     max="2"
                     step="0.1"
@@ -146,11 +146,11 @@
                 </div>
 
                 <!-- <div>
-                  <label for="pitch" class="block text-sm font-medium text-gray-700 dark:text-gray-300">音调 ({{ form.defaultSettings.pitch || 0 }})</label>
+                  <label for="pitch" class="block text-sm font-medium text-gray-700 dark:text-gray-300">音调 ({{ form.defaultVoiceSettings.pitch || 0 }})</label>
                   <input
                     type="range"
                     id="pitch"
-                    v-model.number="form.defaultSettings.pitch"
+                    v-model.number="form.defaultVoiceSettings.pitch"
                     min="-10"
                     max="10"
                     step="1"
@@ -159,11 +159,11 @@
                 </div> -->
 
                 <!-- <div>
-                  <label for="volume" class="block text-sm font-medium text-gray-700 dark:text-gray-300">音量 ({{ form.defaultSettings.volume || 100 }})</label>
+                  <label for="volume" class="block text-sm font-medium text-gray-700 dark:text-gray-300">音量 ({{ form.defaultVoiceSettings.volume || 100 }})</label>
                   <input
                     type="range"
                     id="volume"
-                    v-model.number="form.defaultSettings.volume"
+                    v-model.number="form.defaultVoiceSettings.volume"
                     min="0"
                     max="100"
                     step="1"
@@ -179,9 +179,9 @@
                   >
                   <select
                     id="emotion"
-                    v-model="form.defaultSettings.emotion"
+                    v-model="form.defaultVoiceSettings.emotion"
                     class="mt-1 input dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                    :disabled="!form.defaultSettings.serviceProvider"
+                    :disabled="!form.defaultVoiceSettings.serviceProvider"
                   >
                     <option value="">未选择</option>
                     <option
@@ -259,9 +259,9 @@ const props = defineProps({
   initialData: {
     type: Object,
     default: () => ({
-      name: "",
+      title: "",
       description: "",
-      defaultSettings: {
+      defaultVoiceSettings: {
         speed: 1,
         pitch: 0,
         volume: 100,
@@ -274,16 +274,16 @@ const emit = defineEmits(["close", "submit"]);
 
 const isSubmitting = ref(false);
 const errors = reactive({
-  name: "",
+  title: "",
 });
 
 // Initialize form with props or default values
 const form = reactive({
-  name: "",
+  title: "",
   description: "",
-  defaultSettings: {
+  defaultVoiceSettings: {
     serviceProvider: "",
-    voiceRole: "",
+    voice: "",
     speed: 1,
     pitch: 0,
     volume: 100,
@@ -294,24 +294,24 @@ const form = reactive({
 // Watch for changes in initialData and update form
 watchEffect(() => {
   if (props.initialData) {
-    form.name = props.initialData.name || "";
+    form.title = props.initialData.title || "";
     form.description = props.initialData.description || "";
-    form.defaultSettings = {
-      serviceProvider: props.initialData.defaultSettings?.serviceProvider || "",
-      voiceRole: props.initialData.defaultSettings?.voiceRole || "",
+    form.defaultVoiceSettings = {
+      serviceProvider: props.initialData.defaultVoiceSettings?.serviceProvider || "",
+      voice: props.initialData.defaultVoiceSettings?.voice || "",
       speed:
-        props.initialData.defaultSettings?.speed !== undefined
-          ? props.initialData.defaultSettings.speed
+        props.initialData.defaultVoiceSettings?.speed !== undefined
+          ? props.initialData.defaultVoiceSettings.speed
           : 1,
       pitch:
-        props.initialData.defaultSettings?.pitch !== undefined
-          ? props.initialData.defaultSettings.pitch
+        props.initialData.defaultVoiceSettings?.pitch !== undefined
+          ? props.initialData.defaultVoiceSettings.pitch
           : 0,
       volume:
-        props.initialData.defaultSettings?.volume !== undefined
-          ? props.initialData.defaultSettings.volume
+        props.initialData.defaultVoiceSettings?.volume !== undefined
+          ? props.initialData.defaultVoiceSettings.volume
           : 100,
-      emotion: props.initialData.defaultSettings?.emotion || "",
+      emotion: props.initialData.defaultVoiceSettings?.emotion || "",
     };
   }
 });
@@ -322,10 +322,10 @@ function close() {
 
 function validateForm() {
   let isValid = true;
-  errors.name = "";
+  errors.title = "";
 
-  if (!form.name.trim()) {
-    errors.name = "项目名称不能为空";
+  if (!form.title.trim()) {
+    errors.title = "项目名称不能为空";
     isValid = false;
   }
 
@@ -340,9 +340,9 @@ function submitForm() {
   try {
     // Prepare data for submission
     const projectData = {
-      name: form.name.trim(),
+      title: form.title.trim(),
       description: form.description.trim(),
-      defaultSettings: { ...form.defaultSettings },
+      defaultVoiceSettings: { ...form.defaultVoiceSettings },
     };
 
     // Emit submit event with form data
