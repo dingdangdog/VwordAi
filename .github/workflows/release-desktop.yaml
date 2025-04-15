@@ -92,8 +92,8 @@ jobs:
           name: 🎉Release ${{ github.event.inputs.target }}
           tag_name: ${{ github.event.inputs.target }}
           append_body: true
-          # VoiceOfWords-2.0.0-arm64.dmg
-          files: build/VoiceOfWords-${{ github.event.inputs.target }}-arm64.dmg
+          # VwordAI-2.0.0-arm64.dmg
+          files: build/VwordAI-${{ github.event.inputs.target }}-arm64.dmg
 
       - name: Linux Release
         uses: softprops/action-gh-release@v2
@@ -103,10 +103,10 @@ jobs:
           name: 🎉Release ${{ github.event.inputs.target }}
           tag_name: ${{ github.event.inputs.target }}
           append_body: true
-          # DoTTS_2.0.0_amd64.deb/VoiceOfWords-2.0.0.AppImage
+          # DoTTS_2.0.0_amd64.deb/VwordAI-2.0.0.AppImage
           files: |
             build/DoTTS_${{ github.event.inputs.target }}_amd64.deb
-            build/VoiceOfWords-${{ github.event.inputs.target }}.AppImage
+            build/VwordAI-${{ github.event.inputs.target }}.AppImage
 
       - name: Wiindows Release
         uses: softprops/action-gh-release@v2
@@ -117,5 +117,5 @@ jobs:
           name: 🎉Release ${{ github.event.inputs.target }}
           tag_name: ${{ github.event.inputs.target }}
           append_body: true
-          # VoiceOfWords Setup 2.0.0.exe
-          files: build/VoiceOfWords Setup ${{ github.event.inputs.target }}.exe
+          # VwordAI Setup 2.0.0.exe
+          files: build/VwordAI Setup ${{ github.event.inputs.target }}.exe

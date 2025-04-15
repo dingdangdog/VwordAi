@@ -8,7 +8,7 @@
           <router-link to="/" class="flex-shrink-0 flex items-center">
             <img class="h-8 w-auto" src="@/assets/logo.svg" alt="Logo" />
             <span class="ml-2 text-xl font-bold text-gray-900 dark:text-white"
-              >VoiceOfWords</span
+              >VwordAI</span
             >
           </router-link>
           <div class="ml-10 flex items-baseline space-x-4 no-drag">
