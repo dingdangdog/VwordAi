@@ -1,95 +1,91 @@
 <template>
-  <div>
+  <div class="settings-view">
     <h1 class="text-2xl font-bold text-gray-900 dark:text-white mb-6">设置</h1>
 
-    <div class="space-y-6">
-      <!-- 服务商设置 -->
-      <ServiceProviderList />
-
-      <!-- 导出设置 -->
-      <div class="card">
-        <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-          存储设置
-        </h2>
-        <div class="mb-4">
-          <label
-            for="exportPath"
-            class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
-            >默认存储路径</label
+    <!-- 设置选项卡 -->
+    <div class="mb-6">
+      <div class="border-b border-gray-200 dark:border-gray-700">
+        <nav class="flex -mb-px">
+          <button
+            v-for="tab in tabs"
+            :key="tab.id"
+            @click="setActiveTab(tab.id)"
+            class="py-3 px-4 text-center border-b-2 font-medium text-sm whitespace-nowrap"
+            :class="
+              activeTab === tab.id
+                ? 'border-primary-500 text-primary-600 dark:text-primary-400'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
+            "
           >
-          <div class="flex">
-            <input
-              type="text"
-              id="exportPath"
-              v-model="defaultExportPath"
-              class="input max-w-md"
-              readonly
-              placeholder="请选择默认的音频文件导出路径"
-            />
-            <button @click="selectExportPath" class="btn btn-primary ml-2">
-              选择路径
-            </button>
-          </div>
-          <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
-            选择一个路径，用于保存生成的音频文件
-          </p>
-        </div>
+            <component :is="tab.icon" class="h-5 w-5 inline-block mr-2" />
+            {{ tab.name }}
+          </button>
+        </nav>
       </div>
+    </div>
 
+    <!-- 设置内容 -->
+    <div class="tab-content">
+      <!-- 服务商设置 -->
+      <ProviderSetting v-if="activeTab === 'provider'" />
+      
+      <!-- 存储设置 -->
+      <StorageSetting v-else-if="activeTab === 'storage'" />
+      
       <!-- 关于信息 -->
-      <div class="card">
-        <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-          关于
-        </h2>
-        <div class="text-gray-700 dark:text-gray-300">
-          <p>文本转语音软件 v1.0.0</p>
-          <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
-            © 2025 VwordAI
-          </p>
-        </div>
-      </div>
+      <AboutSetting v-else-if="activeTab === 'about'" />
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from "vue";
+import { ref, computed, onMounted } from "vue";
 import { useToast } from "vue-toastification";
 import { useSettingsStore } from "@/stores/settings";
-import { SunIcon, MoonIcon } from "@heroicons/vue/24/outline";
-import ServiceProviderList from "@/components/settings/ServiceProviderList.vue";
+import type { SettingsTab } from "@/stores/settings";
+import {
+  ServerIcon,
+  FolderIcon,
+  InformationCircleIcon
+} from "@heroicons/vue/24/outline";
+
+// 导入设置组件
+import ProviderSetting from "@/components/settings/ProviderSetting.vue";
+import StorageSetting from "@/components/settings/StorageSetting.vue";
+import AboutSetting from "@/components/settings/AboutSetting.vue";
 
 const toast = useToast();
 const settingsStore = useSettingsStore();
 
-// 主题设置
-const isDarkMode = computed(() => settingsStore.theme === "dark");
-const defaultExportPath = ref(settingsStore.defaultExportPath);
+// 定义选项卡
+const tabs = [
+  { id: 'provider' as SettingsTab, name: '服务商配置', icon: ServerIcon },
+  { id: 'storage' as SettingsTab, name: '存储配置', icon: FolderIcon },
+  { id: 'about' as SettingsTab, name: '关于', icon: InformationCircleIcon }
+];
 
-function toggleTheme() {
-  settingsStore.toggleTheme();
-}
+// 选项卡状态
+const activeTab = computed(() => settingsStore.activeTab);
 
-function selectExportPath() {
-  // 使用electron API选择文件夹
-  window.electron
-    .selectFolder()
-    .then((path) => {
-      if (path) {
-        // 设置导出路径
-        window.electron
-          .setDefaultExportPath(path)
-          .then(() => {
-            defaultExportPath.value = path;
-            toast.success("导出路径已更新");
-          })
-          .catch((err) => {
-            toast.error(`设置导出路径失败: ${err}`);
-          });
-      }
-    })
-    .catch((err) => {
-      toast.error(`选择文件夹失败: ${err}`);
-    });
+// 初始化
+onMounted(() => {
+  // 初始化主题
+  settingsStore.initTheme();
+  
+  // 加载设置
+  settingsStore.loadDefaultExportPath();
+  settingsStore.loadServiceProviders();
+});
+
+// 切换选项卡
+function setActiveTab(tab: SettingsTab) {
+  settingsStore.setActiveTab(tab);
 }
 </script>
+
+<style scoped>
+.settings-view {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+</style>

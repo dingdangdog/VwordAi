@@ -11,8 +11,6 @@
 - [x] 实现批量合成功能
 
 ### 组件开发和优化
-- [x] 创建服务商配置表单组件 (`ServiceProviderForm.vue`)
-- [x] 创建服务商列表组件 (`ServiceProviderList.vue`)
 - [x] 优化章节表单组件 (`ChapterFormModal.vue`) - 添加实时语音角色加载
 - [x] 创建章节语音合成组件 (`ChapterSynthesis.vue`)
 - [x] 优化项目详情页 (`ProjectDetailView.vue`) - 添加章节展开/折叠功能

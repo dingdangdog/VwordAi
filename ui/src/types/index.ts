@@ -34,7 +34,7 @@ export interface TTSSettings {
   [key: string]: any; // 其他服务商特定的参数
 }
 
-// 服务商配置
+// 服务商配置基类
 export interface ServiceProviderConfig {
   id: string; // 服务商配置ID (可以使用 UUID)
   name: string; // 服务商名称 (例如：阿里云)
@@ -44,6 +44,39 @@ export interface ServiceProviderConfig {
   updatedAt: Date;
   // 其他服务商需要的密钥字段
   [key: string]: string | Date | undefined;
+}
+
+// 服务商类型
+export type ServiceProviderType = 'azure' | 'aliyun' | 'tencent' | 'baidu';
+
+// 微软 Azure TTS 服务商配置
+export interface AzureServiceProviderConfig extends ServiceProviderConfig {
+  region: string; // Azure 区域
+  endpoint?: string; // 自定义终端节点 (可选)
+}
+
+// 阿里云 TTS 服务商配置
+export interface AliyunServiceProviderConfig extends ServiceProviderConfig {
+  regionId: string; // 地域ID
+  accessKeyId: string; // Access Key ID (apiKey 映射至此字段)
+  accessKeySecret: string; // Access Key Secret (secretKey 映射至此字段)
+  appKey?: string; // 应用 ID (可选，某些服务需要)
+}
+
+// 腾讯云 TTS 服务商配置
+export interface TencentServiceProviderConfig extends ServiceProviderConfig {
+  region: string; // 地域
+  secretId: string; // Secret ID (apiKey 映射至此字段)
+  secretKey: string; // Secret Key
+  appId: string; // 应用 ID
+}
+
+// 百度智能云 TTS 服务商配置
+export interface BaiduServiceProviderConfig extends ServiceProviderConfig {
+  appId: string; // 应用 ID
+  apiKey: string; // API Key
+  secretKey: string; // Secret Key
+  token?: string; // 访问令牌 (可选，有些接口需要)
 }
 
 // API响应结果

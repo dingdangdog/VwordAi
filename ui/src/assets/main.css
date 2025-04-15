@@ -2,8 +2,6 @@
 @tailwind components;
 @tailwind utilities;
 
-@import "./css/simple-line-icons.css";
-
 /* Custom styles can be added below */
 
 .btn {
