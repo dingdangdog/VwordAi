@@ -65,13 +65,18 @@ function convertAudioFormat(inputPath, outputPath, outputFormat) {
   }
   
   try {
-    execSync(`ffmpeg -i "${inputPath}" "${outputPath}.${outputFormat}"`, { 
-      stdio: 'ignore' 
+    // Check if outputPath already has the format extension
+    const finalOutputPath = outputPath.toLowerCase().endsWith(`.${outputFormat.toLowerCase()}`) 
+      ? outputPath 
+      : `${outputPath}.${outputFormat}`;
+      
+    execSync(`ffmpeg -i "${inputPath}" "${finalOutputPath}"`, { 
+      stdio: 'pipe' 
     });
     return true;
   } catch (error) {
     console.error('Error converting audio format:', error);
-    return false;
+    throw error; // Propagate error up
   }
 }
 

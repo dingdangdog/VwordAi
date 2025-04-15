@@ -61,14 +61,14 @@
 
       <div
         v-if="synthesisStatus === 'idle'"
-        class="flex flex-col sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-2"
+        class="flex justify-end"
       >
         <button
           @click="synthesize"
-          class="btn btn-primary"
+          class="btn btn-primary flex justify-center items-center space-x-2"
           :disabled="!canSynthesize"
         >
-          <SpeakerWaveIcon class="h-5 w-5 mr-2" />
+          <SpeakerWaveIcon class="h-5 w-5 mr-1" />
           合成语音
         </button>
       </div>
@@ -124,13 +124,13 @@
             <div class="flex justify-end space-x-2">
               <button
                 @click="downloadAudio"
-                class="btn btn-secondary"
+                class="btn btn-secondary flex justify-center items-center space-x-2"
                 :disabled="!audioUrl"
               >
                 <ArrowDownTrayIcon class="h-5 w-5 mr-1" />
                 下载
               </button>
-              <button @click="synthesize" class="btn btn-primary">
+              <button @click="synthesize" class="btn btn-primary flex justify-center items-center space-x-2">
                 <ArrowPathIcon class="h-5 w-5 mr-1" />
                 重新合成
               </button>
