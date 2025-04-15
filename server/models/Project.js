@@ -42,8 +42,8 @@ class Project {
       title: projectData.title || '未命名项目',
       description: projectData.description || '',
       author: projectData.author || '',
-      createBy: new Date().toISOString(),
-      updateBy: new Date().toISOString(),
+      createAt: new Date().toISOString(),
+      updateAt: new Date().toISOString(),
       coverImage: projectData.coverImage || null,
       tags: projectData.tags || [],
       wordCount: 0,
@@ -73,7 +73,7 @@ class Project {
     const updatedProject = {
       ...projects[index],
       ...projectData,
-      updateBy: new Date().toISOString()
+      updateAt: new Date().toISOString()
     };
     
     projects[index] = updatedProject;

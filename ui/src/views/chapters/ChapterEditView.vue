@@ -366,20 +366,23 @@ async function submitForm() {
   try {
     let result;
 
+    // Create a serializable copy of the settings object
+    const serializedSettings = JSON.parse(JSON.stringify(form.settings));
+
     if (isNewChapter.value) {
       // Create new chapter
       result = await projectsStore.createChapter(
         projectId.value,
         form.name,
         form.text,
-        form.settings
+        serializedSettings
       );
     } else {
       // Update existing chapter
       result = await projectsStore.updateChapter(chapterId.value, {
         name: form.name,
         text: form.text,
-        settings: form.settings,
+        settings: serializedSettings,
       });
     }
 

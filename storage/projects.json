@@ -4,8 +4,8 @@
     "title": "测试",
     "description": "778",
     "author": "",
-    "createBy": "2025-04-15T09:42:43.893Z",
-    "updateBy": "2025-04-15T12:54:05.775Z",
+    "createAt": "2025-04-15T09:42:43.893Z",
+    "updateAt": "2025-04-15T12:54:05.775Z",
     "coverImage": null,
     "tags": [],
     "wordCount": 0,
@@ -32,11 +32,11 @@
     "title": "测试2",
     "description": "",
     "author": "",
-    "createBy": "2025-04-15T09:44:09.133Z",
-    "updateBy": "2025-04-15T10:37:41.440Z",
+    "createAt": "2025-04-15T09:44:09.133Z",
+    "updateAt": "2025-04-15T13:05:45.086Z",
     "coverImage": null,
     "tags": [],
-    "wordCount": 0,
+    "wordCount": 8,
     "chapterCount": 1
   }
 ]

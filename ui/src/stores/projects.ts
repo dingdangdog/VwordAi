@@ -1,6 +1,5 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import { v4 as uuidv4 } from 'uuid'
 import type { Project, Chapter, ChapterSettings } from '@/types'
 import { projectApi, chapterApi } from '@/utils/api'
 
@@ -18,7 +17,7 @@ export const useProjectsStore = defineStore('projects', () => {
 
   const projectsSorted = computed(() => {
     return [...projects.value].sort((a, b) => {
-      return new Date(b.updateBy).getTime() - new Date(a.updateBy).getTime()
+      return new Date(b.updateAt).getTime() - new Date(a.updateAt).getTime()
     })
   })
 

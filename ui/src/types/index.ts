@@ -8,8 +8,8 @@ export interface Project {
   title: string;
   description: string;
   author: string;
-  createBy: string;
-  updateBy: string;
+  createAt: string;
+  updateAt: string;
   coverImage: string | null;
   tags: string[];
   wordCount: number;
@@ -25,8 +25,8 @@ export interface Chapter {
   order: number;
   text: string;
   wordCount: number;
-  createBy: string;
-  updateBy: string;
+  createAt: string;
+  updateAt: string;
   settings: ChapterSettings;
   audioPath?: string;
   status?: ChapterStatus;
@@ -141,8 +141,8 @@ export interface ServiceProvider {
   region?: string;
   endpoint?: string;
   enabled: boolean;
-  createBy: string;
-  updateBy: string;
+  createAt: string;
+  updateAt: string;
   config: Record<string, any>;
 }
 

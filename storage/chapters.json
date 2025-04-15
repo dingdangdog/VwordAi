@@ -2,16 +2,17 @@
   {
     "id": "30242dac-bbcb-4fd4-a28b-1ab6a03f0b85",
     "projectId": "2df59cf4-c3a1-4416-893b-1b05e91c8e99",
-    "name": "章节1",
+    "name": "章节1123",
     "text": "12312412",
     "settings": {
-      "serviceProvider": null,
-      "voice": null,
+      "serviceProvider": "",
+      "voice": "",
       "speed": 1,
       "pitch": 1,
-      "volume": 1
+      "volume": 1,
+      "emotion": ""
     },
     "createAt": "2025-04-15T10:37:41.429Z",
-    "updateAt": "2025-04-15T10:37:41.429Z"
+    "updateAt": "2025-04-15T13:05:45.080Z"
   }
 ]
