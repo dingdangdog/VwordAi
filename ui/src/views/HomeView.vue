@@ -1,9 +1,12 @@
 <template>
   <div class="py-8">
     <div class="text-center mb-12">
-      <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-4">
-        文声AI（VwordAI）
-      </h1>
+      <div class="flex justify-center items-center mb-4 space-x-4">
+        <img class="h-12 w-auto" src="@/assets/logo.svg" alt="Logo" />
+        <h1 class="text-3xl font-bold text-gray-900 dark:text-white">
+          文声AI（VwordAI）
+        </h1>
+      </div>
       <p class="text-lg text-gray-600 dark:text-gray-300 max-w-3xl mx-auto">
         欢迎使用文声AI（VwordAI）。本软件可以让您轻松地将文本转换为高质量的语音。
       </p>
@@ -30,7 +33,7 @@
         <p class="text-gray-600 dark:text-gray-300 mb-4">
           将文本高效转换为语音，支持多种TTS服务选项，满足您的需求。
         </p>
-        <router-link to="/synthesis" class="btn btn-primary mt-auto"
+        <router-link to="/projects" class="btn btn-primary mt-auto"
           >开始合成</router-link
         >
       </div>
