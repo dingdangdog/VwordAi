@@ -158,6 +158,28 @@ export interface VoiceRole {
 }
 
 /**
+ * 语音模型接口，用于从models.json中获取模型数据
+ */
+export interface VoiceModel {
+  provider: ServiceProviderType; // 服务提供商
+  lang: string;                  // 语言
+  gender: string;                // 性别：0-女性，1-男性
+  name: string;                  // 名称
+  code: string;                  // 唯一代码
+  level?: string;                // 级别，可选
+  emotions?: Array<{
+    name: string;                // 情感名称
+    code: string;                // 情感代码
+    desc: string;                // 描述
+  }>;
+  roles?: Array<{
+    name: string;                // 角色名称
+    code: string;                // 角色代码
+    desc: string;                // 描述
+  }>;
+}
+
+/**
  * 全局设置接口
  */
 export interface Settings {
