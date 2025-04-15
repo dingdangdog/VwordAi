@@ -3,7 +3,7 @@
     <div class="card hover:shadow-lg transition-shadow">
       <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">语音合成</h3>
       
-      <div v-if="!chapter.settings.serviceProvider || !chapter.settings.voiceRole" class="text-center py-6">
+      <div v-if="!chapter.settings.serviceProvider || !chapter.settings.voice" class="text-center py-6">
         <p class="text-gray-600 dark:text-gray-400">缺少语音配置</p>
         <p class="text-sm text-gray-500 dark:text-gray-500 mt-2 mb-4">
           请先配置服务商和声音角色
@@ -22,7 +22,7 @@
             </div>
             <div>
               <span class="text-sm text-gray-500 dark:text-gray-400">声音角色:</span>
-              <span class="ml-2 text-gray-900 dark:text-white">{{ getVoiceRoleName(chapter.settings.voiceRole) || chapter.settings.voiceRole }}</span>
+              <span class="ml-2 text-gray-900 dark:text-white">{{ getVoiceRoleName(chapter.settings.voice) || chapter.settings.voice }}</span>
             </div>
             <div>
               <span class="text-sm text-gray-500 dark:text-gray-400">语速:</span>
@@ -127,7 +127,8 @@ import {
   ArrowDownTrayIcon,
   ArrowPathIcon 
 } from '@heroicons/vue/24/outline';
-import { ttsService, SUPPORTED_PROVIDERS } from '@/services/tts';
+import { SUPPORTED_PROVIDERS } from '@/stores/settings';
+import { ttsApi, serviceProviderApi } from '@/utils/api';
 import type { Chapter } from '@/types';
 import { useToast } from 'vue-toastification';
 
@@ -143,28 +144,47 @@ const errorMessage = ref('');
 const audioUrl = ref('');
 const audioFilePath = ref('');
 const isPlaying = ref(false);
+const voiceRoles = ref<any[]>([]);
 
 const canSynthesize = computed(() => {
   return (
     props.chapter.text && 
     props.chapter.settings.serviceProvider && 
-    props.chapter.settings.voiceRole
+    props.chapter.settings.voice
   );
 });
 
-function getProviderName(providerId: string | undefined): string {
+// 获取服务商名称
+function getProviderName(providerId: string | null): string {
   if (!providerId) return '';
   
   const provider = SUPPORTED_PROVIDERS.find(p => p.id === providerId);
   return provider ? provider.name : providerId;
 }
 
-function getVoiceRoleName(roleId: string | undefined): string {
-  // This would ideally come from a cache or state that stores voice roles
-  // For now, just return the ID
-  return roleId || '';
+// 获取语音角色名称
+async function loadVoiceRoles(providerId: string | null) {
+  if (!providerId) return;
+  
+  try {
+    const response = await serviceProviderApi.getVoiceRoles(providerId);
+    if (response.success && response.data) {
+      voiceRoles.value = response.data;
+    }
+  } catch (error) {
+    console.error('Failed to load voice roles:', error);
+  }
 }
 
+// 获取语音角色名称
+function getVoiceRoleName(roleId: string | null): string {
+  if (!roleId) return '';
+  
+  const role = voiceRoles.value.find(r => r.id === roleId);
+  return role ? role.name : roleId;
+}
+
+// 合成语音
 async function synthesize() {
   if (!canSynthesize.value) {
     toast.error('无法合成: 请确保章节文本和语音设置已完成');
@@ -175,18 +195,16 @@ async function synthesize() {
   errorMessage.value = '';
   
   try {
-    const result = await ttsService.synthesize({
-      text: props.chapter.text,
-      settings: props.chapter.settings
-    });
+    // 使用章节ID直接调用合成API
+    const response = await ttsApi.synthesize(props.chapter.id);
     
-    if (result.success && result.data) {
-      audioUrl.value = result.data.audioUrl || '';
-      audioFilePath.value = result.data.audioFilePath || '';
+    if (response.success && response.data) {
+      audioUrl.value = response.data.audioUrl || '';
+      audioFilePath.value = response.data.outputPath || '';
       synthesisStatus.value = 'success';
     } else {
       synthesisStatus.value = 'error';
-      errorMessage.value = result.error || '合成失败，请稍后重试';
+      errorMessage.value = response.error || '合成失败，请稍后重试';
     }
   } catch (error) {
     synthesisStatus.value = 'error';
@@ -194,10 +212,11 @@ async function synthesize() {
   }
 }
 
+// 下载音频
 function downloadAudio() {
   if (!audioUrl.value) return;
   
-  // Create a temporary anchor element to trigger download
+  // 创建一个临时的 a 元素来触发下载
   const a = document.createElement('a');
   a.href = audioUrl.value;
   a.download = `${props.chapter.name || 'chapter'}.mp3`;
@@ -208,11 +227,18 @@ function downloadAudio() {
   toast.success('音频下载已开始');
 }
 
+// 音频播放开始
 function onPlay() {
   isPlaying.value = true;
 }
 
+// 音频播放暂停
 function onPause() {
   isPlaying.value = false;
+}
+
+// 加载初始数据
+if (props.chapter.settings.serviceProvider) {
+  loadVoiceRoles(props.chapter.settings.serviceProvider);
 }
 </script> 

@@ -1,10 +1,11 @@
 import axios from 'axios';
-import type { TTSSettings, ServiceProviderConfig, Result } from '@/types';
+import type { ChapterSettings, Result, ServiceProvider, VoiceRole } from '@/types';
+import { ttsApi, serviceProviderApi, chapterApi } from '@/utils/api';
 
 // TTS 合成请求接口
 interface TTSSynthesisRequest {
   text: string;
-  settings: TTSSettings;
+  settings: ChapterSettings;
   outputPath?: string;
 }
 
@@ -13,14 +14,6 @@ interface TTSSynthesisResponse {
   audioUrl?: string;
   audioFilePath?: string;
   duration?: number;
-}
-
-// 服务商支持的语音角色
-export interface VoiceRole {
-  id: string;
-  name: string;
-  language: string;
-  gender: 'male' | 'female' | 'neutral';
 }
 
 // 支持的服务商列表
@@ -34,7 +27,8 @@ export const SUPPORTED_PROVIDERS = [
 // TTS 服务类
 export class TTSService {
   private static instance: TTSService;
-  private serviceProviders: ServiceProviderConfig[] = [];
+  private serviceProviders: ServiceProvider[] = [];
+  private isLoading: boolean = false;
 
   private constructor() {
     this.loadServiceProviders();
@@ -47,119 +41,90 @@ export class TTSService {
     return TTSService.instance;
   }
 
-  // 从本地存储加载服务商配置
-  private loadServiceProviders(): void {
-    const providers = localStorage.getItem('serviceProviders');
-    if (providers) {
-      try {
-        this.serviceProviders = JSON.parse(providers).map((provider: any) => ({
-          ...provider,
-          createdAt: new Date(provider.createdAt),
-          updatedAt: new Date(provider.updatedAt)
-        }));
-      } catch (e) {
-        console.error('Failed to parse service providers from localStorage', e);
+  // 从后端加载服务商配置
+  private async loadServiceProviders(): Promise<void> {
+    this.isLoading = true;
+    try {
+      const response = await serviceProviderApi.getAll();
+      if (response.success && response.data) {
+        this.serviceProviders = response.data;
+      } else {
+        console.error('Failed to load service providers:', response.error);
       }
+    } catch (e) {
+      console.error('Failed to load service providers', e);
+    } finally {
+      this.isLoading = false;
     }
   }
 
-  // 保存服务商配置到本地存储
-  private saveServiceProviders(): void {
-    localStorage.setItem('serviceProviders', JSON.stringify(this.serviceProviders));
-  }
-
   // 获取所有配置的服务商
-  public getServiceProviders(): ServiceProviderConfig[] {
+  public getServiceProviders(): ServiceProvider[] {
     return this.serviceProviders;
-  }
-
-  // 添加新的服务商配置
-  public addServiceProvider(config: { name: string; apiKey: string; secretKey?: string; [key: string]: any }): ServiceProviderConfig {
-    const newProvider: ServiceProviderConfig = {
-      id: crypto.randomUUID(),
-      ...config,
-      createdAt: new Date(),
-      updatedAt: new Date()
-    };
-    
-    this.serviceProviders.push(newProvider);
-    this.saveServiceProviders();
-    return newProvider;
-  }
-
-  // 更新服务商配置
-  public updateServiceProvider(id: string, config: Partial<ServiceProviderConfig>): ServiceProviderConfig | null {
-    const index = this.serviceProviders.findIndex(p => p.id === id);
-    if (index === -1) return null;
-    
-    const updatedProvider = {
-      ...this.serviceProviders[index],
-      ...config,
-      updatedAt: new Date()
-    };
-    
-    this.serviceProviders[index] = updatedProvider;
-    this.saveServiceProviders();
-    return updatedProvider;
-  }
-
-  // 删除服务商配置
-  public deleteServiceProvider(id: string): boolean {
-    const index = this.serviceProviders.findIndex(p => p.id === id);
-    if (index === -1) return false;
-    
-    this.serviceProviders.splice(index, 1);
-    this.saveServiceProviders();
-    return true;
   }
 
   // 获取特定服务商支持的语音角色
   public async getVoiceRoles(serviceProviderId: string): Promise<Result<VoiceRole[]>> {
-    // 这里通常会调用服务商API获取可用的语音角色
-    // 但由于是演示，我们返回一些模拟数据
-    
-    const provider = this.serviceProviders.find(p => p.id === serviceProviderId);
-    if (!provider) {
-      return { success: false, error: '服务商配置不存在' };
+    try {
+      const provider = this.serviceProviders.find(p => p.id === serviceProviderId);
+      if (!provider) {
+        return { success: false, error: '服务商配置不存在', data: [] };
+      }
+      
+      const response = await ttsApi.getVoiceRoles(serviceProviderId);
+      return response;
+    } catch (error) {
+      return { 
+        success: false, 
+        error: error instanceof Error ? error.message : '获取语音角色失败',
+        data: []
+      };
     }
-    
-    // 根据不同服务商返回不同的模拟语音角色
-    let voiceRoles: VoiceRole[] = [];
-    
-    switch (provider.name) {
-      case '微软 Azure TTS':
-        voiceRoles = [
-          { id: 'zh-CN-XiaoxiaoNeural', name: '晓晓', language: 'zh-CN', gender: 'female' },
-          { id: 'zh-CN-YunxiNeural', name: '云希', language: 'zh-CN', gender: 'male' },
-          { id: 'zh-CN-YunyangNeural', name: '云扬', language: 'zh-CN', gender: 'male' }
-        ];
-        break;
-      case '阿里云语音服务':
-        voiceRoles = [
-          { id: 'siqi', name: '思琪', language: 'zh-CN', gender: 'female' },
-          { id: 'sijia', name: '思佳', language: 'zh-CN', gender: 'female' },
-          { id: 'sicheng', name: '思诚', language: 'zh-CN', gender: 'male' }
-        ];
-        break;
-      case '腾讯云语音服务':
-        voiceRoles = [
-          { id: '0', name: '云小宁', language: 'zh-CN', gender: 'female' },
-          { id: '1', name: '云小奇', language: 'zh-CN', gender: 'male' },
-          { id: '2', name: '云小晚', language: 'zh-CN', gender: 'female' }
-        ];
-        break;
-      case '百度智能云':
-        voiceRoles = [
-          { id: '0', name: '度小宇', language: 'zh-CN', gender: 'male' },
-          { id: '1', name: '度小美', language: 'zh-CN', gender: 'female' },
-          { id: '2', name: '度逍遥', language: 'zh-CN', gender: 'male' }
-        ];
-        break;
-      default:
-        return { success: false, error: '不支持的服务商' };
+  }
+
+  // 获取情感类型列表
+  public async getEmotions(serviceProviderId: string): Promise<Result<string[]>> {
+    try {
+      const provider = this.serviceProviders.find(p => p.id === serviceProviderId);
+      if (!provider) {
+        return { success: false, error: '服务商配置不存在', data: [] };
+      }
+      
+      const response = await ttsApi.getEmotions(serviceProviderId);
+      return response;
+    } catch (error) {
+      return { 
+        success: false, 
+        error: error instanceof Error ? error.message : '获取情感列表失败',
+        data: []
+      };
     }
-    
-    return { success: true, data: voiceRoles };
+  }
+
+  // 创建临时章节用于语音合成
+  private async createTemporaryChapter(text: string, settings: ChapterSettings): Promise<string | null> {
+    try {
+      // 创建一个临时章节
+      const tempChapterData = {
+        projectId: 'temp', // 使用临时项目ID
+        name: 'TTS Preview',
+        text: text,
+        settings: settings,
+        order: 0,
+        wordCount: text.length
+      };
+      
+      const response = await chapterApi.create(tempChapterData);
+      if (response.success && response.data) {
+        return response.data.id;
+      } else {
+        console.error('Failed to create temporary chapter:', response.error);
+        return null;
+      }
+    } catch (error) {
+      console.error('Failed to create temporary chapter:', error);
+      return null;
+    }
   }
 
   // 文本转语音合成方法
@@ -167,60 +132,70 @@ export class TTSService {
     const { text, settings } = request;
     
     if (!text) {
-      return { success: false, error: '文本内容不能为空' };
+      return { success: false, error: '文本内容不能为空', data: {} };
     }
     
     if (!settings.serviceProvider) {
-      return { success: false, error: '未指定服务商' };
+      return { success: false, error: '未指定服务商', data: {} };
     }
     
-    const provider = this.serviceProviders.find(p => p.id === settings.serviceProvider);
-    if (!provider) {
-      return { success: false, error: '服务商配置不存在' };
+    if (!settings.voice) {
+      return { success: false, error: '未指定语音角色', data: {} };
     }
     
     try {
-      // 在实际应用中，这里应该根据不同的服务商调用不同的API
-      // 由于这是一个前端演示项目，我们模拟API调用的过程
+      // 创建临时章节用于合成
+      const tempChapterId = await this.createTemporaryChapter(text, settings);
+      if (!tempChapterId) {
+        return { 
+          success: false, 
+          error: '创建临时章节失败', 
+          data: {} 
+        };
+      }
       
-      // 模拟服务器响应延迟
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      // 返回模拟的合成结果
-      return {
-        success: true,
-        data: {
-          audioUrl: 'data:audio/mp3;base64,MOCK_AUDIO_DATA', // 实际项目中应返回真实的音频数据
-          audioFilePath: request.outputPath || `tts_output_${Date.now()}.mp3`,
-          duration: Math.floor(text.length / 5) // 简单估算音频时长（秒）
-        }
-      };
+      // 调用后端API进行合成
+      const response = await ttsApi.synthesize(tempChapterId);
+      return response;
     } catch (error) {
       console.error('TTS synthesis failed:', error);
       return {
         success: false,
-        error: error instanceof Error ? error.message : '语音合成失败'
+        error: error instanceof Error ? error.message : '语音合成失败',
+        data: {}
+      };
+    }
+  }
+
+  // 批量合成
+  public async synthesizeMultiple(chapterIds: string[]): Promise<Result<any>> {
+    if (!chapterIds || chapterIds.length === 0) {
+      return { success: false, error: '未选择需要合成的章节', data: null };
+    }
+    
+    try {
+      const response = await ttsApi.synthesizeMultiple(chapterIds);
+      return response;
+    } catch (error) {
+      console.error('Batch TTS synthesis failed:', error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : '批量语音合成失败',
+        data: null
       };
     }
   }
 
   // 测试服务商配置是否有效
-  public async testServiceProvider(id: string): Promise<Result<boolean>> {
-    const provider = this.serviceProviders.find(p => p.id === id);
-    if (!provider) {
-      return { success: false, error: '服务商配置不存在' };
-    }
-    
+  public async testServiceProvider(id: string): Promise<Result<any>> {
     try {
-      // 在实际应用中，这里应该调用相应服务商的API进行验证
-      // 由于这是演示，我们假设API验证通过
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      return { success: true, data: true };
+      const response = await serviceProviderApi.testConnection(id);
+      return response;
     } catch (error) {
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'API连接测试失败'
+        error: error instanceof Error ? error.message : 'API连接测试失败',
+        data: null
       };
     }
   }
