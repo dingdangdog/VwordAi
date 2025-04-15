@@ -102,7 +102,7 @@
                     />
                   </div>
                   
-                  <div>
+                  <!-- <div>
                     <label for="pitch" class="block text-sm font-medium text-gray-700 dark:text-gray-300">音调 ({{ form.settings.pitch || 0 }})</label>
                     <input
                       type="range"
@@ -113,9 +113,9 @@
                       step="1"
                       class="w-full mt-1"
                     />
-                  </div>
+                  </div> -->
                   
-                  <div>
+                  <!-- <div>
                     <label for="volume" class="block text-sm font-medium text-gray-700 dark:text-gray-300">音量 ({{ form.settings.volume || 100 }})</label>
                     <input
                       type="range"
@@ -126,7 +126,7 @@
                       step="1"
                       class="w-full mt-1"
                     />
-                  </div>
+                  </div> -->
                   
                   <div>
                     <label for="emotion" class="block text-sm font-medium text-gray-700 dark:text-gray-300">情感</label>

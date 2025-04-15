@@ -28,14 +28,14 @@
               <span class="text-sm text-gray-500 dark:text-gray-400">语速:</span>
               <span class="ml-2 text-gray-900 dark:text-white">{{ chapter.settings.speed || 1 }}</span>
             </div>
-            <div>
+            <!-- <div>
               <span class="text-sm text-gray-500 dark:text-gray-400">音调:</span>
               <span class="ml-2 text-gray-900 dark:text-white">{{ chapter.settings.pitch || 0 }}</span>
             </div>
             <div>
               <span class="text-sm text-gray-500 dark:text-gray-400">音量:</span>
               <span class="ml-2 text-gray-900 dark:text-white">{{ chapter.settings.volume || 100 }}</span>
-            </div>
+            </div> -->
             <div v-if="chapter.settings.emotion">
               <span class="text-sm text-gray-500 dark:text-gray-400">情感:</span>
               <span class="ml-2 text-gray-900 dark:text-white">{{ chapter.settings.emotion }}</span>

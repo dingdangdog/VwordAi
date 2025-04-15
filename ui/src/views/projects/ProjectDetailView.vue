@@ -51,14 +51,14 @@
             <span class="text-gray-500 dark:text-gray-400">语速：</span>
             <span class="text-gray-900 dark:text-white">{{ project.defaultSettings.speed }}</span>
           </div>
-          <div v-if="project.defaultSettings.pitch" class="text-sm">
+          <!-- <div v-if="project.defaultSettings.pitch" class="text-sm">
             <span class="text-gray-500 dark:text-gray-400">音调：</span>
             <span class="text-gray-900 dark:text-white">{{ project.defaultSettings.pitch }}</span>
           </div>
           <div v-if="project.defaultSettings.volume" class="text-sm">
             <span class="text-gray-500 dark:text-gray-400">音量：</span>
             <span class="text-gray-900 dark:text-white">{{ project.defaultSettings.volume }}</span>
-          </div>
+          </div> -->
           <div v-if="project.defaultSettings.emotion" class="text-sm">
             <span class="text-gray-500 dark:text-gray-400">情感：</span>
             <span class="text-gray-900 dark:text-white">{{ getEmotionName(project.defaultSettings.emotion) }}</span>
