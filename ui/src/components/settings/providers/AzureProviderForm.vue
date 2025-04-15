@@ -9,17 +9,6 @@
     </p>
 
     <form @submit.prevent="saveProvider" class="space-y-4">
-      <div>
-        <label for="name" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">配置名称</label>
-        <input
-          type="text"
-          id="name"
-          v-model="formData.name"
-          class="input"
-          placeholder="例如: 微软语音服务"
-          required
-        />
-      </div>
 
       <div>
         <label for="apiKey" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">API 密钥</label>

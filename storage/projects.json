@@ -1,0 +1,35 @@
+[
+  {
+    "id": "53c8be0f-9628-444a-a9f4-7cd6c5be44b2",
+    "title": "测试",
+    "description": "",
+    "author": "",
+    "createTime": "2025-04-15T09:42:43.893Z",
+    "updateTime": "2025-04-15T09:42:52.909Z",
+    "coverImage": null,
+    "tags": [],
+    "wordCount": 0,
+    "chapterCount": 0,
+    "name": "测试",
+    "defaultSettings": {
+      "serviceProvider": "",
+      "voiceRole": "",
+      "speed": 1,
+      "pitch": 0,
+      "volume": 100,
+      "emotion": ""
+    }
+  },
+  {
+    "id": "2df59cf4-c3a1-4416-893b-1b05e91c8e99",
+    "title": "测试2",
+    "description": "",
+    "author": "",
+    "createTime": "2025-04-15T09:44:09.133Z",
+    "updateTime": "2025-04-15T09:44:09.133Z",
+    "coverImage": null,
+    "tags": [],
+    "wordCount": 0,
+    "chapterCount": 0
+  }
+]

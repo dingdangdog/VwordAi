@@ -63,14 +63,14 @@
           class="card hover:shadow-lg transition-shadow duration-200"
         >
           <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-            {{ project.name }}
+            {{ project.title }}
           </h3>
           <p class="text-gray-600 dark:text-gray-300 mb-4 line-clamp-2">
             {{ project.description || "无描述" }}
           </p>
           <div class="flex justify-between items-center mt-4">
             <span class="text-sm text-gray-500 dark:text-gray-400">
-              {{ formatDate(project.updatedAt) }}
+              {{ formatDate(project.updateTime) }}
             </span>
             <router-link
               :to="`/projects/${project.id}`"
@@ -93,6 +93,7 @@ import {
   SpeakerWaveIcon,
   AdjustmentsHorizontalIcon,
 } from "@heroicons/vue/24/outline";
+import { formatDate } from "@/utils/common";
 
 const projectsStore = useProjectsStore();
 
@@ -103,8 +104,4 @@ onMounted(() => {
 const recentProjects = computed(() => {
   return projectsStore.projectsSorted.slice(0, 3);
 });
-
-function formatDate(date: Date) {
-  return new Date(date).toLocaleDateString();
-}
 </script>

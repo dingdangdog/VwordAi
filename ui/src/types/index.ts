@@ -14,6 +14,7 @@ export interface Project {
   tags: string[];
   wordCount: number;
   chapterCount: number;
+  defaultVoiceSettings?: ChapterSettings;
 }
 
 // 章节数据结构

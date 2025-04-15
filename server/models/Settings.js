@@ -120,4 +120,3 @@ class Settings {
 }
 
 module.exports = Settings; 
-module.exports = settingsInstance; 

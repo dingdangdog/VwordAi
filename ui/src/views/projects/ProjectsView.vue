@@ -18,14 +18,13 @@
 
     <div v-else>
       <button
-        v-if="projects.length === 0"
         @click="openCreateProjectModal"
         class="btn btn-primary mb-4 flex items-center mx-auto"
       >
         <PlusIcon class="h-5 w-5 mr-2" />
         新建项目
       </button>
-      <div v-else class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
         <div
           v-for="project in projects"
           :key="project.id"
@@ -33,7 +32,7 @@
         >
           <div class="flex justify-between items-start mb-4">
             <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
-              {{ project.name }}
+              {{ project.title }}
             </h3>
             <div class="flex">
               <button
@@ -55,7 +54,7 @@
           </p>
           <div class="flex justify-between items-center mt-4">
             <span class="text-sm text-gray-500 dark:text-gray-400">
-              {{ formatDate(project.updatedAt) }}
+              {{ formatDate(project.updateTime) }}
             </span>
             <router-link
               :to="`/projects/${project.id}`"
@@ -92,7 +91,7 @@
     <ConfirmationModal
       v-if="showDeleteModal"
       :title="'删除项目'"
-      :message="`确定要删除项目 (${deletingProject?.name}) 吗？此操作将同时删除该项目下的所有章节，且无法恢复。`"
+      :message="`确定要删除项目 (${deletingProject?.title}) 吗？此操作将同时删除该项目下的所有章节，且无法恢复。`"
       :confirmText="'删除'"
       :confirmButtonClass="'btn-danger'"
       @close="showDeleteModal = false"
@@ -113,6 +112,7 @@ import {
 } from "@heroicons/vue/24/outline";
 import ProjectFormModal from "@/components/projects/ProjectFormModal.vue";
 import ConfirmationModal from "@/components/common/ConfirmationModal.vue";
+import { formatDate } from "@/utils/common";
 
 const toast = useToast();
 const projectsStore = useProjectsStore();
@@ -132,7 +132,7 @@ const showDeleteModal = ref(false);
 
 // Form data
 const newProject = ref({
-  name: "",
+  title: "",
   description: "",
   defaultSettings: {},
 });
@@ -143,7 +143,7 @@ const deletingProject = ref<Project>();
 // Modal functions
 function openCreateProjectModal() {
   newProject.value = {
-    name: "",
+    title: "",
     description: "",
     defaultSettings: {},
   };
@@ -161,61 +161,56 @@ function confirmDeleteProject(project: Project) {
 }
 
 // CRUD operations
-function createProject(projectData: {
-  name: string;
+async function createProject(projectData: {
+  title: string;
   description: string;
   defaultSettings: any;
 }) {
-  const project = projectsStore.createProject(
-    projectData.name,
+  const project = await projectsStore.createProject(
+    projectData.title,
     projectData.description,
     projectData.defaultSettings
   );
 
   if (project) {
-    toast.success(`项目 "${project.name}" 创建成功！`);
+    toast.success(`项目 "${project.title}" 创建成功！`);
     showCreateModal.value = false;
   } else {
     toast.error("创建项目失败！");
   }
 }
 
-function updateProject(projectData: {
-  name: string;
+async function updateProject(projectData: {
+  title: string;
   description: string;
   defaultSettings: any;
 }) {
   if (!editingProject.value) return;
 
-  const result = projectsStore.updateProject(editingProject.value.id, {
-    name: projectData.name,
+  const result = await projectsStore.updateProject(editingProject.value.id, {
+    title: projectData.title,
     description: projectData.description,
-    defaultSettings: projectData.defaultSettings,
+    defaultVoiceSettings: projectData.defaultSettings,
   });
 
   if (result) {
-    toast.success(`项目 "${projectData.name}" 更新成功！`);
+    toast.success(`项目 "${projectData.title}" 更新成功！`);
     showEditModal.value = false;
   } else {
     toast.error("更新项目失败！");
   }
 }
 
-function deleteProject() {
+async function deleteProject() {
   if (!deletingProject.value) return;
 
-  const result = projectsStore.deleteProject(deletingProject.value.id);
+  const result = await projectsStore.deleteProject(deletingProject.value.id);
 
   if (result) {
-    toast.success(`项目 "${deletingProject.value.name}" 已删除！`);
+    toast.success(`项目 "${deletingProject.value.title}" 已删除！`);
     showDeleteModal.value = false;
   } else {
     toast.error("删除项目失败！");
   }
-}
-
-// Utilities
-function formatDate(date: Date) {
-  return new Date(date).toLocaleDateString();
 }
 </script>
