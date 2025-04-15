@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <div class="container mx-auto p-4">
     <div v-if="projects.length === 0" class="card text-center py-12">
       <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-4">
         暂无项目

@@ -6,7 +6,7 @@
     aria-modal="true"
   >
     <div
-      class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0"
+      class="w-full h-full flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0"
     >
       <!-- Background overlay -->
       <div
@@ -16,9 +16,9 @@
 
       <!-- Modal panel -->
       <div
-        class="inline-block align-bottom bg-white dark:bg-gray-800 rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full"
+        class="w-full h-full align-bottom flex justify-center items-center"
       >
-        <div class="bg-white dark:bg-gray-800 px-4 pt-5 pb-4 sm:p-6">
+        <div class="text-left bg-white dark:bg-gray-800 rounded-lg px-4 pt-5 pb-4 sm:p-6 shadow-xl transform transition-all">
           <div class="flex justify-between items-center mb-4">
             <h3
               class="text-lg leading-6 font-medium text-gray-900 dark:text-white"
@@ -297,7 +297,8 @@ watchEffect(() => {
     form.title = props.initialData.title || "";
     form.description = props.initialData.description || "";
     form.defaultVoiceSettings = {
-      serviceProvider: props.initialData.defaultVoiceSettings?.serviceProvider || "",
+      serviceProvider:
+        props.initialData.defaultVoiceSettings?.serviceProvider || "",
       voice: props.initialData.defaultVoiceSettings?.voice || "",
       speed:
         props.initialData.defaultVoiceSettings?.speed !== undefined

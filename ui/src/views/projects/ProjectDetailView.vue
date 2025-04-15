@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <div class="container mx-auto p-4">
     <div v-if="loading" class="flex justify-center items-center py-4">
       <div
         class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"
@@ -24,7 +24,7 @@
         class="flex flex-col md:flex-row justify-between items-start md:items-center mb-2"
       >
         <div>
-          <h1 class="text-2xl font-bold text-gray-900 dark:text-white">
+          <h1 class="text-xl font-bold text-gray-900 dark:text-white">
             {{ project.title }}
           </h1>
           <p
@@ -34,7 +34,7 @@
             {{ project.description }}
           </p>
         </div>
-        <div class="flex mt-4 md:mt-0">
+        <div class="flex mt-4 md:mt-0 space-x-4">
           <button
             @click="openEditProjectModal"
             class="btn btn-secondary flex items-center"
@@ -42,6 +42,9 @@
             <PencilSquareIcon class="h-5 w-5 mr-2" />
             编辑项目
           </button>
+          <router-link to="/projects" class="btn btn-primary">
+            返回
+          </router-link>
         </div>
       </div>
 
@@ -98,7 +101,10 @@
       </div>
 
       <!-- Add Chapter Button -->
-      <div class="flex justify-end mb-2">
+      <div class="flex justify-between mb-2">
+        <h2 class="text-base font-semibold text-gray-900 dark:text-white">
+          章节列表
+        </h2>
         <button
           @click="router.push(`/projects/${projectId}/chapters/new`)"
           class="btn btn-primary flex items-center"
@@ -110,10 +116,6 @@
 
       <!-- Chapters List -->
       <div class="mb-6">
-        <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-4">
-          章节列表
-        </h2>
-
         <div v-if="chapters.length === 0" class="card text-center py-8">
           <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-3">
             暂无章节
@@ -135,15 +137,19 @@
           >
             <ul class="divide-y divide-gray-200 dark:divide-gray-700">
               <li v-for="chapter in chapters" :key="chapter.id">
-                <div class="block hover:bg-gray-50 dark:hover:bg-gray-700">
-                  <div class="px-4 py-4 sm:px-6">
+                <div
+                  class="block hover:bg-gray-50 dark:hover:bg-gray-700 duration-200 transition-all"
+                >
+                  <div class="p-4">
                     <div
                       class="flex items-center justify-between"
                       @click="toggleExpandChapter(chapter.id)"
                     >
                       <div class="min-w-0 flex-1 cursor-pointer">
                         <div class="flex items-center justify-between">
-                          <p class="text-md font-medium text-blue-600 truncate">
+                          <p
+                            class="text-md font-medium text-blue-600 dark:text-blue-400 truncate"
+                          >
                             {{ chapter.name }}
                           </p>
                         </div>
@@ -192,7 +198,7 @@
                     <!-- Expanded Chapter Content -->
                     <div
                       v-if="expandedChapters[chapter.id]"
-                      class="mt-2 border-t border-gray-200 dark:border-gray-700 pt-2"
+                      class="mt-2 border-t border-gray-200 dark:border-gray-700"
                     >
                       <!-- Chapter Synthesis Component -->
                       <ChapterSynthesis

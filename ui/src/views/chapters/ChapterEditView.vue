@@ -80,10 +80,7 @@
                 </button>
               </div>
 
-              <div
-                v-if="showVoiceSettings"
-                class="bg-gray-50 dark:bg-gray-700 p-4 rounded-md"
-              >
+              <div v-if="showVoiceSettings" class="p-2 rounded-md">
                 <div class="grid md:grid-cols-2 gap-4">
                   <div class="flex justify-between items-center space-x-4">
                     <label

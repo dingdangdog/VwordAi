@@ -1,12 +1,12 @@
 <template>
   <div class="p-2 flex flex-col space-y-4">
-    <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
+    <h3 class="text-base font-semibold text-gray-900 dark:text-white">
       语音合成
     </h3>
 
     <div
       v-if="!chapter.settings.serviceProvider || !chapter.settings.voice"
-      class="text-center py-2"
+      class="text-center"
     >
       <!-- <p class="text-gray-600 dark:text-gray-400">缺少语音配置</p> -->
       <p class="text-sm text-gray-500 dark:text-gray-500 mt-2 mb-4">
