@@ -7,7 +7,7 @@
           v-for="tab in tabs"
           :key="tab.id"
           @click="setActiveTab(tab.id)"
-          class="py-3 px-4 text-center border-b-2 font-medium text-sm whitespace-nowrap"
+          class="py-3 px-4 text-center border-b-2 font-medium text-sm whitespace-nowrap duration-200 transition-all"
           :class="
             activeTab === tab.id
               ? 'border-blue-500 text-blue-600  dark:text-blue-400'

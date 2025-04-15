@@ -1,6 +1,6 @@
 <template>
   <div>
-    <div v-if="loading" class="flex justify-center items-center py-12">
+    <div v-if="loading" class="flex justify-center items-center py-4">
       <div
         class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"
       ></div>
@@ -21,7 +21,7 @@
     <div v-else>
       <!-- Project Header -->
       <div
-        class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6"
+        class="flex flex-col md:flex-row justify-between items-start md:items-center mb-2"
       >
         <div>
           <h1 class="text-2xl font-bold text-gray-900 dark:text-white">
@@ -35,13 +35,6 @@
           </p>
         </div>
         <div class="flex mt-4 md:mt-0">
-          <button
-            @click="openCreateChapterModal"
-            class="btn btn-primary flex items-center mr-2"
-          >
-            <PlusIcon class="h-5 w-5 mr-2" />
-            新建章节
-          </button>
           <button
             @click="openEditProjectModal"
             class="btn btn-secondary flex items-center"
@@ -105,13 +98,13 @@
       </div>
 
       <!-- Add Chapter Button -->
-      <div class="flex justify-end mb-6">
+      <div class="flex justify-end mb-2">
         <button
           @click="router.push(`/projects/${projectId}/chapters/new`)"
           class="btn btn-primary flex items-center"
         >
           <PlusIcon class="h-5 w-5 mr-2" />
-          创建新章节
+          新建章节
         </button>
       </div>
 
@@ -164,60 +157,51 @@
                               {{ chapter.text || "暂无内容" }}
                             </p>
                           </div>
-                          <div class="ml-4 flex-shrink-0 flex">
-                            <button
-                              @click.stop="router.push(`/projects/${projectId}/chapters/${chapter.id}`)"
-                              class="mr-2 text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
-                            >
-                              编辑
-                            </button>
-                            <button
-                              @click.stop="confirmDeleteChapter(chapter)"
-                              class="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300"
-                            >
-                              删除
-                            </button>
-                          </div>
                         </div>
                       </div>
-                      <div class="ml-5 flex-shrink-0 cursor-pointer">
-                        <ChevronDownIcon
-                          v-if="expandedChapters[chapter.id]"
-                          class="h-5 w-5 text-gray-400"
-                        />
-                        <ChevronRightIcon
-                          v-else
-                          class="h-5 w-5 text-gray-400"
-                        />
+                      <div class="ml-4 flex-shrink-0 flex">
+                        <button
+                          @click.stop="
+                            router.push(
+                              `/projects/${projectId}/chapters/${chapter.id}`
+                            )
+                          "
+                          class="mr-2 text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
+                        >
+                          编辑
+                        </button>
+                        <button
+                          @click.stop="confirmDeleteChapter(chapter)"
+                          class="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300"
+                        >
+                          删除
+                        </button>
+                        <div class="ml-5 flex-shrink-0 cursor-pointer">
+                          <ChevronDownIcon
+                            v-if="expandedChapters[chapter.id]"
+                            class="h-5 w-5 text-gray-400"
+                          />
+                          <ChevronRightIcon
+                            v-else
+                            class="h-5 w-5 text-gray-400"
+                          />
+                        </div>
                       </div>
                     </div>
 
                     <!-- Expanded Chapter Content -->
                     <div
                       v-if="expandedChapters[chapter.id]"
-                      class="mt-4 border-t border-gray-200 dark:border-gray-700 pt-4"
+                      class="mt-2 border-t border-gray-200 dark:border-gray-700 pt-2"
                     >
-                      <div class="mb-4">
-                        <h4
-                          class="text-md font-medium text-gray-900 dark:text-white mb-2"
-                        >
-                          章节内容
-                        </h4>
-                        <div
-                          class="bg-gray-50 dark:bg-gray-700 p-4 rounded-md max-h-60 overflow-y-auto"
-                        >
-                          <p
-                            class="text-gray-700 dark:text-gray-300 whitespace-pre-wrap"
-                          >
-                            {{ chapter.text || "暂无内容" }}
-                          </p>
-                        </div>
-                      </div>
-
                       <!-- Chapter Synthesis Component -->
                       <ChapterSynthesis
                         :chapter="chapter"
-                        @edit-settings="router.push(`/projects/${projectId}/chapters/${chapter.id}`)"
+                        @edit-settings="
+                          router.push(
+                            `/projects/${projectId}/chapters/${chapter.id}`
+                          )
+                        "
                       />
                     </div>
                   </div>
@@ -245,7 +229,7 @@
             class="btn btn-secondary flex items-center"
             @click="exportProject"
           >
-            <ArrowDownTrayIcon class="h-5 w-5 mr-2" />
+            <ArrowUpTrayIcon class="h-5 w-5 mr-2" />
             导出项目设置
           </button>
         </div>
@@ -259,30 +243,6 @@
         :initialData="project"
         @close="showEditProjectModal = false"
         @submit="updateProject"
-      />
-
-      <!-- Create Chapter Modal -->
-      <ChapterFormModal
-        v-if="showCreateChapterModal"
-        title="创建新章节"
-        submitText="创建"
-        :initialData="{
-          name: '',
-          text: '',
-          settings: { ...project?.defaultVoiceSettings },
-        }"
-        @close="showCreateChapterModal = false"
-        @submit="createChapter"
-      />
-
-      <!-- Edit Chapter Modal -->
-      <ChapterFormModal
-        v-if="showEditChapterModal"
-        title="编辑章节"
-        submitText="保存"
-        :initialData="editingChapter || {}"
-        @close="showEditChapterModal = false"
-        @submit="updateChapter"
       />
 
       <!-- Delete Confirmation Modal -->
@@ -300,13 +260,12 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watchEffect, watch } from "vue";
+import { ref, computed, onMounted, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useProjectsStore } from "@/stores/projects";
 import { useToast } from "vue-toastification";
 import type { Project, Chapter } from "@/types";
 import ProjectFormModal from "@/components/projects/ProjectFormModal.vue";
-import ChapterFormModal from "@/components/chapters/ChapterFormModal.vue";
 import ConfirmationModal from "@/components/common/ConfirmationModal.vue";
 import ChapterSynthesis from "@/components/chapters/ChapterSynthesis.vue";
 import {
@@ -315,7 +274,7 @@ import {
   ChevronRightIcon,
   ChevronDownIcon,
   SpeakerWaveIcon,
-  ArrowDownTrayIcon,
+  ArrowUpTrayIcon,
 } from "@heroicons/vue/24/outline";
 import { batchSynthesizeChapters } from "@/utils/tts-utils";
 import { formatDate } from "@/utils/common";
@@ -335,9 +294,7 @@ const chapters = computed(() => {
   return projectsStore.chapters
     .filter((c) => c.projectId === projectId.value)
     .sort((a, b) => {
-      return (
-        new Date(a.createBy).getTime() - new Date(b.createBy).getTime()
-      );
+      return new Date(a.createBy).getTime() - new Date(b.createBy).getTime();
     });
 });
 
@@ -356,8 +313,6 @@ const hasDefaultSettings = computed(() => {
 
 // Modal states
 const showEditProjectModal = ref(false);
-const showCreateChapterModal = ref(false);
-const showEditChapterModal = ref(false);
 const showDeleteChapterModal = ref(false);
 
 // Form data
@@ -402,15 +357,6 @@ function openEditProjectModal() {
   showEditProjectModal.value = true;
 }
 
-function openCreateChapterModal() {
-  showCreateChapterModal.value = true;
-}
-
-function openEditChapterModal(chapter: Chapter) {
-  editingChapter.value = { ...chapter };
-  showEditChapterModal.value = true;
-}
-
 function confirmDeleteChapter(chapter: Chapter) {
   deletingChapter.value = chapter;
   showDeleteChapterModal.value = true;
@@ -435,58 +381,6 @@ async function updateProject(projectData: {
     showEditProjectModal.value = false;
   } else {
     toast.error("更新项目失败！");
-  }
-}
-
-async function createChapter(chapterData: {
-  name: string;
-  text: string;
-  settings: any;
-}) {
-  if (!project.value) return;
-
-  const newChapter = await projectsStore.createChapter(
-    project.value.id,
-    chapterData.name,
-    chapterData.text
-  );
-
-  if (newChapter) {
-    // Update settings if they differ from project defaults
-    if (
-      JSON.stringify(chapterData.settings) !==
-      JSON.stringify(project.value.defaultVoiceSettings)
-    ) {
-      await projectsStore.updateChapter(newChapter.id, {
-        settings: chapterData.settings,
-      });
-    }
-
-    toast.success(`章节 "${chapterData.name}" 创建成功！`);
-    showCreateChapterModal.value = false;
-  } else {
-    toast.error("创建章节失败！");
-  }
-}
-
-async function updateChapter(chapterData: {
-  name: string;
-  text: string;
-  settings: any;
-}) {
-  if (!editingChapter.value) return;
-
-  const result = await projectsStore.updateChapter(editingChapter.value.id, {
-    name: chapterData.name,
-    text: chapterData.text,
-    settings: chapterData.settings,
-  });
-
-  if (result) {
-    toast.success(`章节 "${chapterData.name}" 更新成功！`);
-    showEditChapterModal.value = false;
-  } else {
-    toast.error("更新章节失败！");
   }
 }
 
@@ -578,32 +472,34 @@ async function exportProject() {
     const projectData = {
       ...project.value,
       chapters: chapters.value
-        .filter(c => c.projectId === projectId.value)
-        .sort((a, b) => a.order - b.order)
+        .filter((c) => c.projectId === projectId.value)
+        .sort((a, b) => a.order - b.order),
     };
 
     // 转换为JSON字符串
     const jsonData = JSON.stringify(projectData, null, 2);
-    
+
     // 创建Blob
-    const blob = new Blob([jsonData], { type: 'application/json' });
-    
+    const blob = new Blob([jsonData], { type: "application/json" });
+
     // 创建下载链接
     const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
+    const a = document.createElement("a");
     a.href = url;
-    a.download = `${project.value.title.replace(/[^\w\s]/gi, '_')}_export.json`;
+    a.download = `${project.value.title.replace(/[^\w\s]/gi, "_")}_export.json`;
     document.body.appendChild(a);
     a.click();
-    
+
     // 清理
     URL.revokeObjectURL(url);
     document.body.removeChild(a);
-    
+
     toast.success("项目配置导出成功");
   } catch (error) {
     console.error("导出项目失败:", error);
-    toast.error(`导出失败: ${error instanceof Error ? error.message : "未知错误"}`);
+    toast.error(
+      `导出失败: ${error instanceof Error ? error.message : "未知错误"}`
+    );
   }
 }
 

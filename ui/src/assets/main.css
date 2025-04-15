@@ -6,6 +6,7 @@
 
 .btn {
   @apply px-2 py-1 rounded-md font-medium focus:outline-none focus:ring-2 focus:ring-offset-2;
+  user-select: none; /* Prevent text selection */
 }
 .btn-primary {
   @apply bg-blue-600 text-white hover:bg-blue-700 focus:ring-blue-500;

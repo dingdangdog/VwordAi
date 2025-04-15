@@ -2,10 +2,10 @@
   {
     "id": "53c8be0f-9628-444a-a9f4-7cd6c5be44b2",
     "title": "测试",
-    "description": "",
+    "description": "778",
     "author": "",
     "createBy": "2025-04-15T09:42:43.893Z",
-    "updateBy": "2025-04-15T09:42:52.909Z",
+    "updateBy": "2025-04-15T12:54:05.775Z",
     "coverImage": null,
     "tags": [],
     "wordCount": 0,
@@ -13,6 +13,14 @@
     "defaultSettings": {
       "serviceProvider": "",
       "voiceRole": "",
+      "speed": 1,
+      "pitch": 0,
+      "volume": 100,
+      "emotion": ""
+    },
+    "defaultVoiceSettings": {
+      "serviceProvider": "",
+      "voice": "",
       "speed": 1,
       "pitch": 0,
       "volume": 100,

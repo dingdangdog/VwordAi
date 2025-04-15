@@ -37,7 +37,7 @@ function getChapterById(id) {
 }
 
 /**
- * 创建新章节
+ * 新建章节
  * @param {Object} chapterData 章节数据
  * @returns {Object} 创建的章节
  */

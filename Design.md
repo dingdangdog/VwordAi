@@ -268,7 +268,7 @@ interface AppSettings {
 - `ipcRenderer.send('project:get', projectId)`: 获取指定项目信息。
 - `ipcRenderer.send('project:update', projectId, projectData)`: 更新项目信息。
 - `ipcRenderer.send('project:delete', projectId)`: 删除项目。
-- `ipcRenderer.send('chapter:create', chapterData)`: 创建新章节。
+- `ipcRenderer.send('chapter:create', chapterData)`: 新建章节。
 - `ipcRenderer.send('chapter:get-all', projectId)`: 获取指定项目下的所有章节列表。
 - `ipcRenderer.send('chapter:get', chapterId)`: 获取指定章节信息。
 - `ipcRenderer.send('chapter:update', chapterId, chapterData)`: 更新章节信息。

@@ -1,39 +1,36 @@
 <template>
-  <div class="container mx-auto py-8 px-4">
-    <div v-if="loading" class="flex justify-center items-center py-12">
-      <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 dark:border-white"></div>
+  <div class="container mx-auto p-4">
+    <div v-if="loading" class="flex justify-center items-center py-4">
+      <div
+        class="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 dark:border-white"
+      ></div>
     </div>
 
     <div v-else>
-      <div class="flex justify-between items-center mb-6">
+      <div class="flex justify-between items-center mb-4">
         <h1 class="text-2xl font-bold text-gray-900 dark:text-white">
-          {{ isNewChapter ? '创建新章节' : '编辑章节' }}
+          {{ isNewChapter ? "新建章节" : "编辑章节" }}
         </h1>
         <div class="flex space-x-4">
-          <button
-            @click="goBack"
-            class="btn btn-secondary"
-          >
-            返回
-          </button>
+          <button @click="goBack" class="btn btn-secondary">返回</button>
           <button
             @click="submitForm"
             class="btn btn-primary"
             :disabled="isSubmitting"
           >
             <span v-if="isSubmitting" class="mr-2">处理中...</span>
-            {{ isNewChapter ? '创建' : '保存' }}
+            {{ isNewChapter ? "创建" : "保存" }}
           </button>
         </div>
       </div>
 
       <div class="bg-white dark:bg-gray-800 rounded-lg shadow">
-        <div class="p-6">
+        <div class="p-2">
           <form @submit.prevent="submitForm">
             <div class="mb-4">
               <label
                 for="name"
-                class="block text-sm font-medium text-gray-700 dark:text-gray-300"
+                class="block text-sm font-semibold text-gray-700 dark:text-gray-300"
                 >章节名称</label
               >
               <input
@@ -55,7 +52,7 @@
             <div class="mb-4">
               <label
                 for="text"
-                class="block text-sm font-medium text-gray-700 dark:text-gray-300"
+                class="block text-sm font-semibold text-gray-700 dark:text-gray-300"
                 >章节文本内容</label
               >
               <textarea
@@ -70,7 +67,7 @@
             <div class="mb-4">
               <div class="flex justify-between items-center mb-2">
                 <h4
-                  class="text-sm font-medium text-gray-700 dark:text-gray-300"
+                  class="text-sm font-semibold text-gray-700 dark:text-gray-300"
                 >
                   章节语音设置
                 </h4>
@@ -88,10 +85,10 @@
                 class="bg-gray-50 dark:bg-gray-700 p-4 rounded-md"
               >
                 <div class="grid md:grid-cols-2 gap-4">
-                  <div>
+                  <div class="flex justify-between items-center space-x-4">
                     <label
                       for="serviceProvider"
-                      class="block text-sm font-medium text-gray-700 dark:text-gray-300"
+                      class="w-24 text-right block text-sm font-medium text-gray-700 dark:text-gray-300"
                       >服务商</label
                     >
                     <select
@@ -110,13 +107,13 @@
                     </select>
                   </div>
 
-                  <div>
+                  <div class="flex justify-between items-center space-x-4">
                     <label
                       for="voice"
-                      class="block text-sm font-medium text-gray-700 dark:text-gray-300"
+                      class="w-24 text-right block text-sm font-medium text-gray-700 dark:text-gray-300"
                       >声音角色</label
                     >
-                    <div class="relative">
+                    <div class="w-full">
                       <select
                         id="voice"
                         v-model="form.settings.voice"
@@ -151,10 +148,10 @@
                     </div>
                   </div>
 
-                  <div>
+                  <div class="flex justify-between items-center space-x-4">
                     <label
                       for="speed"
-                      class="block text-sm font-medium text-gray-700 dark:text-gray-300"
+                      class="w-24 text-right block text-sm font-medium text-gray-700 dark:text-gray-300"
                       >语速 ({{ form.settings.speed || 1 }})</label
                     >
                     <input
@@ -168,10 +165,10 @@
                     />
                   </div>
 
-                  <div>
+                  <div class="flex justify-between items-center space-x-4">
                     <label
                       for="emotion"
-                      class="block text-sm font-medium text-gray-700 dark:text-gray-300"
+                      class="w-24 text-right block text-sm font-medium text-gray-700 dark:text-gray-300"
                       >情感</label
                     >
                     <select
@@ -255,19 +252,24 @@ const chapterId = computed(() => route.params.chapterId as string);
 // Load chapter data if editing
 onMounted(async () => {
   try {
-    if (chapterId.value && chapterId.value !== 'new') {
+    if (chapterId.value && chapterId.value !== "new") {
       isNewChapter.value = false;
       const chapter = await projectsStore.getChapter(chapterId.value);
-      
+
       if (chapter) {
         form.name = chapter.name || "";
         form.text = chapter.text || "";
         form.settings = {
           serviceProvider: chapter.settings?.serviceProvider || "",
           voice: chapter.settings?.voice || "",
-          speed: chapter.settings?.speed !== undefined ? chapter.settings.speed : 1,
-          pitch: chapter.settings?.pitch !== undefined ? chapter.settings.pitch : 0,
-          volume: chapter.settings?.volume !== undefined ? chapter.settings.volume : 100,
+          speed:
+            chapter.settings?.speed !== undefined ? chapter.settings.speed : 1,
+          pitch:
+            chapter.settings?.pitch !== undefined ? chapter.settings.pitch : 0,
+          volume:
+            chapter.settings?.volume !== undefined
+              ? chapter.settings.volume
+              : 100,
           emotion: chapter.settings?.emotion || "",
         };
 
@@ -281,7 +283,9 @@ onMounted(async () => {
       }
     } else {
       // New chapter - load default settings from project
-      const project = projectsStore.projects.find(p => p.id === projectId.value);
+      const project = projectsStore.projects.find(
+        (p) => p.id === projectId.value
+      );
       if (project && project.defaultVoiceSettings) {
         form.settings = {
           serviceProvider: project.defaultVoiceSettings.serviceProvider || "",
@@ -312,7 +316,9 @@ watchEffect(() => {
     loadVoiceRoles(form.settings.serviceProvider);
     // Reset voice role when changing provider if current voice isn't from this provider
     if (!isLoadingVoiceRoles.value && voiceRoles.value.length > 0) {
-      const voiceExists = voiceRoles.value.some(role => role.id === form.settings.voice);
+      const voiceExists = voiceRoles.value.some(
+        (role) => role.id === form.settings.voice
+      );
       if (!voiceExists) {
         form.settings.voice = "";
       }
@@ -359,7 +365,7 @@ async function submitForm() {
 
   try {
     let result;
-    
+
     if (isNewChapter.value) {
       // Create new chapter
       result = await projectsStore.createChapter(
@@ -370,14 +376,11 @@ async function submitForm() {
       );
     } else {
       // Update existing chapter
-      result = await projectsStore.updateChapter(
-        chapterId.value,
-        {
-          name: form.name,
-          text: form.text,
-          settings: form.settings
-        }
-      );
+      result = await projectsStore.updateChapter(chapterId.value, {
+        name: form.name,
+        text: form.text,
+        settings: form.settings,
+      });
     }
 
     if (result) {
@@ -393,4 +396,4 @@ async function submitForm() {
     isSubmitting.value = false;
   }
 }
-</script> 
+</script>
