@@ -154,7 +154,7 @@ async function saveForm() {
     const response = await serviceProviderApi.update("baidu", data);
 
     if (response.success) {
-      await settingsStore.loadServiceProviders();
+      
       toast.success("百度语音配置已保存");
       emit("save", response.data);
     } else {

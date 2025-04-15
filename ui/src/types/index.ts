@@ -14,7 +14,7 @@ export interface Project {
   tags: string[];
   wordCount: number;
   chapterCount: number;
-  defaultVoiceSettings?: ChapterSettings;
+  defaultVoiceSettings?: VoiceSettings;
 }
 
 // 章节数据结构
@@ -27,36 +27,29 @@ export interface Chapter {
   wordCount: number;
   createAt: string;
   updateAt: string;
-  settings: ChapterSettings;
+  settings: VoiceSettings;
   audioPath?: string;
   status?: ChapterStatus;
 }
 
 // 语音合成参数设置
-export interface TTSSettings {
-  serviceProvider?: string;
-  voice?: string;
-  speed?: number; // 语速
-  pitch?: number; // 音调
-  volume?: number; // 音量
-  emotion?: string; // 情感 (可选)
-  [key: string]: any; // 其他服务商特定的参数
-}
-
-// 服务商配置基类
-export interface ServiceProviderConfig {
-  id: string; // 服务商配置ID (可以使用 UUID)
-  name: string; // 服务商名称 (例如：阿里云)
-  apiKey: string; // API 密钥
-  secretKey?: string; // Secret 密钥 (可选)
-  createAt: Date;
-  updateAt: Date;
-  // 其他服务商需要的密钥字段
-  [key: string]: string | Date | undefined;
-}
+// export interface VoiceSettings {
+//   serviceProvider?: string;
+//   voice?: string;
+//   speed?: number; // 语速
+//   pitch?: number; // 音调
+//   volume?: number; // 音量
+//   emotion?: string; // 情感 (可选)
+//   [key: string]: any; // 其他服务商特定的参数
+// }
 
 // 服务商类型
-export type ServiceProviderType = "azure" | "aliyun" | "tencent" | "baidu";
+export type ServiceProviderType =
+  | "azure"
+  | "aliyun"
+  | "tencent"
+  | "baidu"
+  | "openai";
 
 // 配置文件中的服务商配置
 export interface AzureConfig {
@@ -68,7 +61,6 @@ export interface AzureConfig {
 export interface AliyunConfig {
   appkey: string;
   token: string;
-  region: string;
   endpoint: string;
 }
 
@@ -81,6 +73,11 @@ export interface TencentConfig {
 export interface BaiduConfig {
   apiKey: string;
   secretKey: string;
+  endpoint: string;
+}
+
+export interface OpenaiConfig {
+  apiKey: string;
   endpoint: string;
 }
 
@@ -115,25 +112,14 @@ export enum ChapterStatus {
 /**
  * 章节语音合成设置
  */
-export interface ChapterSettings {
+export interface VoiceSettings {
   serviceProvider: string | null;
   voice: string | null;
   speed: number;
+  emotion?: string;
   pitch: number;
   volume: number;
-  emotion?: string;
   style?: string;
-}
-
-/**
- * 语音角色接口
- */
-export interface VoiceRole {
-  id: string;
-  name: string;
-  gender: "male" | "female";
-  language: string;
-  description?: string;
 }
 
 /**
@@ -168,7 +154,8 @@ export interface Settings {
   aliyun: AliyunConfig;
   tencent: TencentConfig;
   baidu: BaiduConfig;
-  defaultVoiceSettings: ChapterSettings;
+  openai: OpenaiConfig;
+  defaultVoiceSettings: VoiceSettings;
   autoSave: boolean;
   autoSaveInterval: number;
   maxConcurrentTasks: number;
@@ -182,7 +169,7 @@ export interface Settings {
 export interface SynthesisResult {
   chapterId: string;
   outputPath: string;
-  settings: ChapterSettings;
+  settings: VoiceSettings;
 }
 
 /**

@@ -162,7 +162,7 @@ async function saveForm() {
     const response = await serviceProviderApi.update("elevenlabs", data);
 
     if (response.success) {
-      await settingsStore.loadServiceProviders();
+      
       toast.success("Elevenlabs configuration saved");
       emit("save", response.data);
     } else {

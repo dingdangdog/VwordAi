@@ -203,7 +203,7 @@ function getEmotionName(emotionId: string | null): string {
   // 查找匹配的情感
   for (const model of projectsStore.voiceModels) {
     if (model.emotions) {
-      const emotion = model.emotions.find(e => e.code === emotionId);
+      const emotion = model.emotions.find((e) => e.code === emotionId);
       if (emotion) {
         return emotion.name;
       }

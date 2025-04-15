@@ -105,7 +105,6 @@
 import { ref, onMounted } from "vue";
 import { useToast } from "vue-toastification";
 import { useSettingsStore } from "@/stores/settings";
-import { settingsApi } from "@/utils/api";
 
 const toast = useToast();
 const settingsStore = useSettingsStore();
@@ -113,7 +112,7 @@ const isSaving = ref(false);
 
 // 存储设置
 const defaultExportPath = ref("");
-const audioFormat = ref("mp3");
+const audioFormat = ref<"mp3" | "wav">("mp3");
 const fileNamingRule = ref("chapter_title");
 const customNamingFormat = ref("{project}-{chapter}");
 
@@ -125,29 +124,23 @@ onMounted(async () => {
 // 加载设置
 async function loadSettings() {
   try {
-    // 加载默认导出路径
-    const exportPathResponse = await settingsApi.getDefaultExportPath();
-    if (exportPathResponse.success && exportPathResponse.data?.path) {
-      defaultExportPath.value = exportPathResponse.data.path;
-    }
+    // 确保设置已加载
+    const settings =
+      settingsStore.settings || (await settingsStore.loadSettings());
 
-    // 加载所有其他设置
-    const settingsResponse = await settingsApi.getAll();
-    if (settingsResponse.success && settingsResponse.data) {
-      const allSettings = settingsResponse.data;
+    if (settings) {
+      // 设置导出路径
+      defaultExportPath.value = settings.defaultExportPath || "";
 
       // 设置音频格式
-      audioFormat.value = allSettings.outputFormat || "mp3";
+      audioFormat.value = settings.outputFormat || "mp3";
 
       // 设置文件命名规则
-      if (allSettings.fileNamingRule) {
-        fileNamingRule.value = allSettings.fileNamingRule;
-      }
+      fileNamingRule.value = settings.fileNamingRule || "chapter_title";
 
       // 设置自定义命名格式
-      if (allSettings.customNamingFormat) {
-        customNamingFormat.value = allSettings.customNamingFormat;
-      }
+      customNamingFormat.value =
+        settings.customNamingFormat || "{project}-{chapter}";
     }
   } catch (error) {
     toast.error(
@@ -174,30 +167,22 @@ async function saveSettings() {
   isSaving.value = true;
 
   try {
-    // 保存导出路径
-    const exportPathResponse = await settingsApi.setDefaultExportPath(
-      defaultExportPath.value
-    );
-    if (!exportPathResponse.success) {
-      throw new Error(exportPathResponse.error || "设置导出路径失败");
-    }
-
-    // 保存其他设置
+    // 准备更新的设置数据
     const settingsData = {
+      defaultExportPath: defaultExportPath.value,
       outputFormat: audioFormat.value,
       fileNamingRule: fileNamingRule.value,
       customNamingFormat: customNamingFormat.value,
     };
 
-    const updateResponse = await settingsApi.update(settingsData);
-    if (!updateResponse.success) {
-      throw new Error(updateResponse.error || "更新设置失败");
+    // 使用设置存储更新设置
+    const updatedSettings = await settingsStore.updateSettings(settingsData);
+
+    if (updatedSettings) {
+      toast.success("存储设置已保存");
+    } else {
+      throw new Error("更新设置失败");
     }
-
-    // 同步到设置存储
-    settingsStore.setDefaultExportPath(defaultExportPath.value);
-
-    toast.success("存储设置已保存");
   } catch (err) {
     toast.error(
       `保存设置失败: ${err instanceof Error ? err.message : String(err)}`

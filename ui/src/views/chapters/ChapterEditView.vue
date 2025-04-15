@@ -199,7 +199,7 @@ import { ref, reactive, watchEffect, onMounted, computed } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useProjectsStore } from "@/stores/projects";
 import { useToast } from "vue-toastification";
-import type { TTSSettings } from "@/types";
+import type { VoiceSettings } from "@/types";
 import { SUPPORTED_PROVIDERS } from "@/services/tts";
 
 const route = useRoute();
@@ -220,41 +220,49 @@ const isNewChapter = ref(true);
 // Get voice roles from projects store
 const voiceRoles = computed(() => {
   if (!form.settings.serviceProvider) return [];
-  
-  const models = projectsStore.getVoiceModelsByProvider(form.settings.serviceProvider);
-  return models.map(model => ({
+
+  const models = projectsStore.getVoiceModelsByProvider(
+    form.settings.serviceProvider
+  );
+  return models.map((model) => ({
     id: model.code,
     name: model.name,
-    gender: model.gender === '0' ? 'female' : 'male',
-    language: model.lang.includes('中文') ? 'zh-CN' : 'en-US'
+    gender: model.gender === "0" ? "female" : "male",
+    language: model.lang.includes("中文") ? "zh-CN" : "en-US",
   }));
 });
 
 // Get emotions from projects store
 const emotions = computed(() => {
   if (!form.settings.serviceProvider || !form.settings.voice) return [];
-  
+
   // First try to get emotions from the selected voice model
   const selectedModel = projectsStore.getVoiceModelByCode(form.settings.voice);
-  
-  if (selectedModel && selectedModel.emotions && selectedModel.emotions.length > 0) {
-    return selectedModel.emotions.map(emotion => ({
+
+  if (
+    selectedModel &&
+    selectedModel.emotions &&
+    selectedModel.emotions.length > 0
+  ) {
+    return selectedModel.emotions.map((emotion) => ({
       id: emotion.code,
-      name: emotion.name
+      name: emotion.name,
     }));
   }
-  
+
   // If not found, try to find emotions from any model with same provider
-  const providerModels = projectsStore.getVoiceModelsByProvider(form.settings.serviceProvider);
+  const providerModels = projectsStore.getVoiceModelsByProvider(
+    form.settings.serviceProvider
+  );
   for (const model of providerModels) {
     if (model.emotions && model.emotions.length > 0) {
-      return model.emotions.map(emotion => ({
+      return model.emotions.map((emotion) => ({
         id: emotion.code,
-        name: emotion.name
+        name: emotion.name,
       }));
     }
   }
-  
+
   // Fallback to empty array
   return [];
 });
@@ -274,7 +282,7 @@ const form = reactive({
     pitch: 0,
     volume: 100,
     emotion: "",
-  } as TTSSettings,
+  } as VoiceSettings,
 });
 
 const projectId = computed(() => route.params.projectId as string);
@@ -287,7 +295,7 @@ onMounted(async () => {
     if (projectsStore.voiceModels.length === 0) {
       await projectsStore.loadVoiceModels();
     }
-    
+
     if (chapterId.value && chapterId.value !== "new") {
       isNewChapter.value = false;
       const chapter = await projectsStore.getChapter(chapterId.value);
@@ -342,12 +350,12 @@ watchEffect(() => {
     // Reset voice and emotion when service provider changes
     const currentProvider = form.settings.serviceProvider;
     const currentVoice = form.settings.voice;
-    
+
     // Check if current voice belongs to this provider
     if (currentVoice) {
       const models = projectsStore.getVoiceModelsByProvider(currentProvider);
-      const voiceExists = models.some(model => model.code === currentVoice);
-      
+      const voiceExists = models.some((model) => model.code === currentVoice);
+
       if (!voiceExists) {
         form.settings.voice = "";
         form.settings.emotion = "";
@@ -362,13 +370,15 @@ watchEffect(() => {
     // Reset emotion if it's not valid for the selected voice
     const currentVoice = form.settings.voice;
     const currentEmotion = form.settings.emotion;
-    
+
     if (currentEmotion) {
       const model = projectsStore.getVoiceModelByCode(currentVoice);
-      
+
       if (model && model.emotions) {
-        const emotionExists = model.emotions.some(e => e.code === currentEmotion);
-        
+        const emotionExists = model.emotions.some(
+          (e) => e.code === currentEmotion
+        );
+
         if (!emotionExists) {
           form.settings.emotion = "";
         }

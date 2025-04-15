@@ -38,37 +38,37 @@
             v-if="selectedProviderType === 'azure'"
             :provider="providerData"
             @update="updateProviderField"
+            @save="saveCurrentProvider"
+            @test="testCurrentProvider"
           />
           <AliyunProviderForm
             v-else-if="selectedProviderType === 'aliyun'"
             :provider="providerData"
             @update="updateProviderField"
+            @save="saveCurrentProvider"
+            @test="testCurrentProvider"
           />
           <BaiduProviderForm
             v-else-if="selectedProviderType === 'baidu'"
             :provider="providerData"
             @update="updateProviderField"
+            @save="saveCurrentProvider"
+            @test="testCurrentProvider"
           />
           <TencentProviderForm
             v-else-if="selectedProviderType === 'tencent'"
             :provider="providerData"
             @update="updateProviderField"
+            @save="saveCurrentProvider"
+            @test="testCurrentProvider"
           />
-          <AWSProviderForm
-            v-else-if="selectedProviderType === 'aws'"
+          <OpenaiProviderForm
+            v-else-if="selectedProviderType === 'openai'"
             :provider="providerData"
             @update="updateProviderField"
+            @save="saveCurrentProvider"
+            @test="testCurrentProvider"
           />
-          <GoogleProviderForm
-            v-else-if="selectedProviderType === 'google'"
-            :provider="providerData"
-            @update="updateProviderField"
-          />
-          <!-- <OpenaiProviderForm
-            v-else-if="selectedProviderType === 'tencent'"
-            :provider="providerData"
-            @update="updateProviderField"
-          /> -->
 
           <!-- 初始状态 -->
           <div
@@ -108,45 +108,34 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from "vue";
+import { ref, onMounted, computed } from "vue";
 import { useToast } from "vue-toastification";
-import { SUPPORTED_PROVIDERS } from "@/stores/settings";
+import { SUPPORTED_PROVIDERS, useSettingsStore } from "@/stores/settings";
 import { ServerIcon, CloudIcon } from "@heroicons/vue/24/outline";
-import { serviceProviderApi } from "@/utils/api";
+import type { ServiceProviderType } from "@/types";
 import AzureProviderForm from "./providers/AzureProviderForm.vue";
 import AliyunProviderForm from "./providers/AliyunProviderForm.vue";
 import BaiduProviderForm from "./providers/BaiduProviderForm.vue";
 import TencentProviderForm from "./providers/TencentProviderForm.vue";
-import GoogleProviderForm from "./providers/GoogleProviderForm.vue";
-import AWSProviderForm from "./providers/AWSProviderForm.vue";
+import OpenaiProviderForm from "./providers/OpenaiProviderForm.vue";
 
 // 当前选中的服务商类型
-const selectedProviderType = ref("");
+const selectedProviderType = ref<ServiceProviderType | null>(null);
 const providerData = ref<any>({});
 const testResult = ref<{ success: boolean; message: string } | null>(null);
 const toast = useToast();
-const savedProviders = ref<any[]>([]);
+const settingsStore = useSettingsStore();
 const isLoading = ref(false);
 
-// 加载已有的配置
-async function loadProviders() {
-  isLoading.value = true;
-  try {
-    const response = await serviceProviderApi.getAll();
-    if (response.success && response.data) {
-      savedProviders.value = response.data;
-    }
-  } catch (err) {
-    console.error("加载服务商配置失败", err);
-  } finally {
-    isLoading.value = false;
-  }
-}
+// 获取所有设置
+const allSettings = computed(() => settingsStore.settings);
 
 // 初始化
 onMounted(async () => {
-  // 加载已保存的服务商配置
-  await loadProviders();
+  // 加载设置
+  if (!settingsStore.settings) {
+    await settingsStore.loadSettings();
+  }
 
   // 默认选择第一个服务商
   if (SUPPORTED_PROVIDERS.length > 0) {
@@ -155,37 +144,22 @@ onMounted(async () => {
 });
 
 // 选择服务商
-function selectProvider(type: string) {
+function selectProvider(type: ServiceProviderType) {
   selectedProviderType.value = type;
   testResult.value = null;
 
-  // 查找已保存的对应类型的服务商配置
-  const savedProvider = savedProviders.value.find((p) => p.type === type);
+  // 从设置中获取服务商配置
+  const config = settingsStore.getServiceProviderConfig(type);
 
-  if (savedProvider) {
+  if (config) {
     // 使用已保存的配置
-    providerData.value = { ...savedProvider };
+    providerData.value = { ...config };
   } else {
     // 创建新的配置对象
     providerData.value = {
-      id: crypto.randomUUID(),
-      name: SUPPORTED_PROVIDERS.find((p) => p.type === type)?.name || "",
-      type: type,
-      apiKey: "",
-      apiSecret: "",
-      region: "",
-      enabled: true,
-      createAt: new Date().toISOString(),
-      updateAt: new Date().toISOString(),
-      config: {},
+      // 不同服务商可能有不同的默认字段
+      // 这里提供通用空配置
     };
-
-    // 根据不同的服务商类型添加特定字段
-    if (type === "aliyun" || type === "tencent") {
-      providerData.value.accessKeyId = "";
-      providerData.value.accessKeySecret = "";
-      providerData.value.regionId = "";
-    }
   }
 }
 
@@ -203,48 +177,16 @@ async function saveCurrentProvider() {
 
   isLoading.value = true;
   try {
-    let response;
+    const type = selectedProviderType.value;
     const data = { ...providerData.value };
 
-    // 确保必填字段有值
-    if (!data.name) {
-      data.name =
-        SUPPORTED_PROVIDERS.find((p) => p.type === selectedProviderType.value)
-          ?.name || "";
-    }
+    // 通过设置存储保存服务商配置
+    const success = await settingsStore.updateServiceProvider(type, data);
 
-    // 检查是否已存在此类型的服务商配置
-    const existingProvider = savedProviders.value.find(
-      (p) => p.type === selectedProviderType.value
-    );
-
-    if (existingProvider) {
-      // 更新已存在的配置
-      response = await serviceProviderApi.update(existingProvider.id, {
-        ...data,
-        type: selectedProviderType.value,
-        updateAt: new Date().toISOString(),
-      });
-    } else {
-      // 创建新配置
-      response = await serviceProviderApi.create({
-        ...data,
-        type: selectedProviderType.value,
-        createAt: new Date().toISOString(),
-        updateAt: new Date().toISOString(),
-      });
-    }
-
-    if (response.success) {
+    if (success) {
       toast.success("服务商配置保存成功");
-      // 刷新服务商列表
-      await loadProviders();
-      // 更新当前编辑的服务商数据
-      if (response.data) {
-        providerData.value = response.data;
-      }
     } else {
-      toast.error(`保存失败: ${response.error || "未知错误"}`);
+      toast.error("保存失败: 未知错误");
     }
   } catch (error) {
     toast.error(
@@ -265,24 +207,14 @@ async function testCurrentProvider() {
   // 先保存配置
   await saveCurrentProvider();
 
-  // 如果配置保存失败，则不继续测试
-  if (!providerData.value.id) {
-    return;
-  }
-
   isLoading.value = true;
   try {
     // 测试连接
-    const response = await serviceProviderApi.testConnection(
-      providerData.value.id
+    const result = await settingsStore.testServiceProviderConnection(
+      selectedProviderType.value
     );
 
-    testResult.value = {
-      success: response.success,
-      message: response.success
-        ? response.data?.message || "连接测试成功"
-        : response.error || "连接测试失败",
-    };
+    testResult.value = result;
   } catch (error) {
     testResult.value = {
       success: false,

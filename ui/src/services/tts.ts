@@ -1,15 +1,20 @@
 import type {
-  ChapterSettings,
+  VoiceSettings,
   Result,
-  ServiceProvider,
-  VoiceRole,
+  ServiceProviderType,
+  Settings,
 } from "@/types";
-import { ttsApi, serviceProviderApi, chapterApi } from "@/utils/api";
+import {
+  ttsApi,
+  serviceProviderApi,
+  chapterApi,
+  settingsApi,
+} from "@/utils/api";
 
 // TTS 合成请求接口
 interface TTSSynthesisRequest {
   text: string;
-  settings: ChapterSettings;
+  settings: VoiceSettings;
   outputPath?: string;
 }
 
@@ -22,20 +27,21 @@ interface TTSSynthesisResponse {
 
 // 支持的服务商列表
 export const SUPPORTED_PROVIDERS = [
-  { id: "azure", name: "微软 Azure TTS" },
-  { id: "aliyun", name: "阿里云语音服务" },
-  { id: "tencent", name: "腾讯云语音服务" },
-  { id: "baidu", name: "百度智能云" },
+  { id: "azure", name: "微软 Azure TTS", type: "azure" },
+  { id: "aliyun", name: "阿里云语音服务", type: "aliyun" },
+  { id: "tencent", name: "腾讯云语音服务", type: "tencent" },
+  { id: "baidu", name: "百度智能云", type: "baidu" },
+  { id: "openai", name: "OpenAI TTS", type: "openai" },
 ];
 
 // TTS 服务类
 export class TTSService {
   private static instance: TTSService;
-  private serviceProviders: ServiceProvider[] = [];
+  private systemSettings: Settings | null = null;
   private isLoading: boolean = false;
 
   private constructor() {
-    this.loadServiceProviders();
+    this.loadSettings();
   }
 
   public static getInstance(): TTSService {
@@ -45,41 +51,48 @@ export class TTSService {
     return TTSService.instance;
   }
 
-  // 从后端加载服务商配置
-  private async loadServiceProviders(): Promise<void> {
+  // 从后端加载系统设置
+  private async loadSettings(): Promise<void> {
     this.isLoading = true;
     try {
-      const response = await serviceProviderApi.getAll();
+      const response = await settingsApi.getAll();
       if (response.success && response.data) {
-        this.serviceProviders = response.data;
+        this.systemSettings = response.data;
       } else {
-        console.error("Failed to load service providers:", response.error);
+        console.error("Failed to load settings:", response.error);
       }
     } catch (e) {
-      console.error("Failed to load service providers", e);
+      console.error("Failed to load settings", e);
     } finally {
       this.isLoading = false;
     }
   }
 
-  // 获取所有配置的服务商
-  public getServiceProviders(): ServiceProvider[] {
-    return this.serviceProviders;
+  // 获取支持的服务商列表
+  public getSupportedProviders(): { id: string; name: string; type: string }[] {
+    return SUPPORTED_PROVIDERS;
+  }
+
+  // 获取服务商配置
+  public getProviderConfig(type: ServiceProviderType): any {
+    if (!this.systemSettings) {
+      return null;
+    }
+    return this.systemSettings[type];
   }
 
   // 获取特定服务商支持的语音角色
   public async getVoiceRoles(
-    serviceProviderId: string
-  ): Promise<Result<VoiceRole[]>> {
+    serviceProviderType: ServiceProviderType
+  ): Promise<Result<any[]>> {
     try {
-      const provider = this.serviceProviders.find(
-        (p) => p.id === serviceProviderId
-      );
-      if (!provider) {
+      // 检查服务商配置是否存在
+      const config = this.getProviderConfig(serviceProviderType);
+      if (!config) {
         return { success: false, error: "服务商配置不存在", data: [] };
       }
 
-      const response = await ttsApi.getVoiceRoles(serviceProviderId);
+      const response = await ttsApi.getVoiceRoles(serviceProviderType);
       return response;
     } catch (error) {
       return {
@@ -92,17 +105,16 @@ export class TTSService {
 
   // 获取情感类型列表
   public async getEmotions(
-    serviceProviderId: string
+    serviceProviderType: ServiceProviderType
   ): Promise<Result<string[]>> {
     try {
-      const provider = this.serviceProviders.find(
-        (p) => p.id === serviceProviderId
-      );
-      if (!provider) {
+      // 检查服务商配置是否存在
+      const config = this.getProviderConfig(serviceProviderType);
+      if (!config) {
         return { success: false, error: "服务商配置不存在", data: [] };
       }
 
-      const response = await ttsApi.getEmotions(serviceProviderId);
+      const response = await ttsApi.getEmotions(serviceProviderType);
       return response;
     } catch (error) {
       return {
@@ -116,7 +128,7 @@ export class TTSService {
   // 创建临时章节用于语音合成
   private async createTemporaryChapter(
     text: string,
-    settings: ChapterSettings
+    settings: VoiceSettings
   ): Promise<string | null> {
     try {
       // 创建一个临时章节
@@ -204,15 +216,55 @@ export class TTSService {
   }
 
   // 测试服务商配置是否有效
-  public async testServiceProvider(id: string): Promise<Result<any>> {
+  public async testServiceProvider(
+    type: ServiceProviderType
+  ): Promise<Result<any>> {
     try {
-      const response = await serviceProviderApi.testConnection(id);
+      // 确保配置已加载
+      if (!this.systemSettings) {
+        await this.loadSettings();
+      }
+
+      const config = this.getProviderConfig(type);
+      if (!config) {
+        return {
+          success: false,
+          error: `服务商 ${type} 配置不存在或不完整`,
+          data: null,
+        };
+      }
+
+      const response = await ttsApi.testProviderConnection(type);
       return response;
     } catch (error) {
       return {
         success: false,
         error: error instanceof Error ? error.message : "API连接测试失败",
         data: null,
+      };
+    }
+  }
+
+  // 保存或更新系统设置
+  public async saveSettings(
+    settings: Partial<Settings>
+  ): Promise<Result<Settings>> {
+    try {
+      const response = await settingsApi.update(settings);
+      if (response.success && response.data) {
+        // 更新本地设置
+        if (this.systemSettings) {
+          this.systemSettings = { ...this.systemSettings, ...settings };
+        } else {
+          this.systemSettings = response.data;
+        }
+      }
+      return response;
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : "保存设置失败",
+        data: {} as Settings,
       };
     }
   }

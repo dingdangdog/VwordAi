@@ -8,15 +8,15 @@
       <div class="space-y-4">
         <div>
           <label
-            for="appKey"
+            for="appkey"
             class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
           >
             App Key<span class="text-red-500">*</span>
           </label>
           <input
             type="text"
-            id="appKey"
-            v-model="form.appKey"
+            id="appkey"
+            v-model="form.appkey"
             class="input w-full"
             placeholder="输入 Access Key ID"
             required
@@ -38,35 +38,6 @@
             placeholder="输入 Access Key Secret"
             required
           />
-        </div>
-
-        <div>
-          <label
-            for="region"
-            class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-          >
-            区域 <span class="text-red-500">*</span>
-          </label>
-          <select
-            id="region"
-            v-model="form.region"
-            class="input w-full"
-            required
-          >
-            <option value="">请选择区域</option>
-            <option value="cn-hangzhou">华东1（杭州）</option>
-            <option value="cn-shanghai">华东2（上海）</option>
-            <option value="cn-qingdao">华北1（青岛）</option>
-            <option value="cn-beijing">华北2（北京）</option>
-            <option value="cn-zhangjiakou">华北3（张家口）</option>
-            <option value="cn-huhehaote">华北5（呼和浩特）</option>
-            <option value="cn-wulanchabu">华北6（乌兰察布）</option>
-            <option value="cn-shenzhen">华南1（深圳）</option>
-            <option value="cn-heyuan">华南2（河源）</option>
-            <option value="cn-guangzhou">华南3（广州）</option>
-            <option value="cn-chengdu">西南1（成都）</option>
-            <option value="cn-hongkong">中国（香港）</option>
-          </select>
         </div>
 
         <div>
@@ -134,53 +105,40 @@
 <script setup lang="ts">
 import { ref, reactive, watchEffect } from "vue";
 import { useToast } from "vue-toastification";
-import { serviceProviderApi } from "@/utils/api";
-import { useSettingsStore } from "@/stores/settings";
 
 const props = defineProps({
   provider: {
     type: Object,
-    default: () => ({
-      endpoint: "",
-      appKey: "",
-      token: "",
-      region: "",
-    }),
+    default: () => ({}),
   },
 });
 
-const emit = defineEmits(["save", "cancel", "test"]);
+const emit = defineEmits(["update", "save", "test", "cancel"]);
 
 const toast = useToast();
-const settingsStore = useSettingsStore();
 const isSaving = ref(false);
 const isTesting = ref(false);
 const testResult = ref<{ success: boolean; message: string } | null>(null);
 
 // 表单数据
 const form = reactive({
-  appKey: "",
+  appkey: "",
   token: "",
-  region: "",
   endpoint: "",
 });
 
 // 监听prop变化，更新表单
 watchEffect(() => {
   if (props.provider) {
-    // 从provider和config中获取数据
-    const config = props.provider.config || {};
-
-    form.appKey = props.provider.apiKey || config.appkey || "";
-    form.token = props.provider.secretKey || config.token || "";
-    form.appKey = config.appKey || "";
-    form.endpoint = props.provider.endpoint || config.endpoint || "";
+    form.appkey = props.provider.appkey || "";
+    form.token = props.provider.token || "";
+    form.endpoint = props.provider.endpoint || "";
   }
 });
 
 // 保存表单
 async function saveForm() {
-  if (!form.appKey || !form.token || !form.region) {
+  if (!form.appkey || !form.token || !form.endpoint) {
     toast.error("请填写必填字段");
     return;
   }
@@ -188,23 +146,15 @@ async function saveForm() {
   isSaving.value = true;
 
   try {
-    // 准备提交的数据 - 使用固定的ID "aliyun"
+    // 准备提交的数据
     const data = {
-      appkey: form.appKey,
+      appkey: form.appkey,
       token: form.token,
       endpoint: form.endpoint,
     };
 
-    // 调用API更新服务商配置
-    const response = await serviceProviderApi.update("aliyun", data);
-
-    if (response.success) {
-      await settingsStore.loadServiceProviders();
-      toast.success("阿里云配置已保存");
-      emit("save", response.data);
-    } else {
-      toast.error("保存失败: " + response.error);
-    }
+    // 通知父组件更新
+    emit("save", data);
   } catch (error) {
     console.error("保存服务商配置失败:", error);
     toast.error(
@@ -217,7 +167,7 @@ async function saveForm() {
 
 // 测试连接
 async function testConnection() {
-  if (!form.appKey || !form.token || !form.region) {
+  if (!form.appkey || !form.token || !form.endpoint) {
     toast.error("请先填写必填字段");
     return;
   }
@@ -226,28 +176,13 @@ async function testConnection() {
   testResult.value = null;
 
   try {
-    // 使用固定的ID "aliyun"来测试连接
-    const response = await serviceProviderApi.testConnection("aliyun");
-
-    if (response.success) {
-      testResult.value = {
-        success: true,
-        message: "连接测试成功",
-      };
-    } else {
-      testResult.value = {
-        success: false,
-        message: response.error || "连接测试失败，请检查配置信息",
-      };
-    }
-
-    emit("test", testResult.value);
+    // 通知父组件执行测试
+    emit("test");
   } catch (error) {
     testResult.value = {
       success: false,
       message: error instanceof Error ? error.message : "连接测试出错",
     };
-    emit("test", testResult.value);
   } finally {
     isTesting.value = false;
   }

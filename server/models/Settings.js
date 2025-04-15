@@ -36,6 +36,10 @@ const DEFAULT_SETTINGS = {
     secretKey: '',
     endpoint: ''
   },
+  openai: {
+    apiKey: '',
+    endpoint: 'https://api.openai.com/v1'
+  },
   defaultVoiceSettings: {
     serviceProvider: null,
     voice: null,
@@ -142,7 +146,7 @@ class Settings {
 
   /**
    * 获取特定服务商配置
-   * @param {string} provider 服务商名称 (azure, aliyun, tencent, baidu)
+   * @param {string} provider 服务商名称 (azure, aliyun, tencent, baidu, openai)
    * @returns {Object} 包含服务商配置的结果对象
    */
   static getProviderSettings(provider) {
@@ -162,7 +166,7 @@ class Settings {
 
   /**
    * 更新特定服务商配置
-   * @param {string} provider 服务商名称 (azure, aliyun, tencent, baidu)
+   * @param {string} provider 服务商名称 (azure, aliyun, tencent, baidu, openai)
    * @param {Object} providerData 服务商配置数据
    * @returns {Object} 包含更新后的服务商配置的结果对象
    */
@@ -185,6 +189,67 @@ class Settings {
       });
     } catch (err) {
       console.error(`更新${provider}配置失败:`, err);
+      return error(err.message);
+    }
+  }
+
+  /**
+   * 测试服务商连接
+   * @param {string} provider 服务商名称 (azure, aliyun, tencent, baidu, openai)
+   * @returns {Object} 测试结果
+   */
+  static testProviderConnection(provider) {
+    try {
+      const settings = this.getAllSettings();
+      const providerSettings = settings[provider];
+      
+      if (!providerSettings) {
+        return error(`服务商 ${provider} 配置不存在`);
+      }
+      
+      // 此处只检查配置是否存在基本字段，实际API连接测试可以在TTSService中实现
+      let isValid = false;
+      let missingFields = [];
+      
+      switch(provider) {
+        case 'azure':
+          isValid = providerSettings.key && providerSettings.region;
+          if (!providerSettings.key) missingFields.push('key');
+          if (!providerSettings.region) missingFields.push('region');
+          break;
+        case 'aliyun':
+          isValid = providerSettings.appkey && providerSettings.token;
+          if (!providerSettings.appkey) missingFields.push('appkey');
+          if (!providerSettings.token) missingFields.push('token');
+          break;
+        case 'tencent':
+          isValid = providerSettings.secretId && providerSettings.secretKey;
+          if (!providerSettings.secretId) missingFields.push('secretId');
+          if (!providerSettings.secretKey) missingFields.push('secretKey');
+          break;
+        case 'baidu':
+          isValid = providerSettings.apiKey && providerSettings.secretKey;
+          if (!providerSettings.apiKey) missingFields.push('apiKey');
+          if (!providerSettings.secretKey) missingFields.push('secretKey');
+          break;
+        case 'openai':
+          isValid = providerSettings.apiKey;
+          if (!providerSettings.apiKey) missingFields.push('apiKey');
+          break;
+        default:
+          return error(`不支持的服务商: ${provider}`);
+      }
+      
+      if (!isValid) {
+        return error(`服务商配置不完整，缺少: ${missingFields.join(', ')}`);
+      }
+      
+      // 如果配置有效，返回成功
+      return success({
+        message: `${provider} 配置有效`
+      });
+    } catch (err) {
+      console.error(`测试${provider}连接失败:`, err);
       return error(err.message);
     }
   }

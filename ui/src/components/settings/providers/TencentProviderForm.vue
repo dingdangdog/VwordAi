@@ -159,7 +159,7 @@ async function saveForm() {
     const response = await serviceProviderApi.update("tencent", data);
 
     if (response.success) {
-      await settingsStore.loadServiceProviders();
+      
       toast.success("腾讯云配置已保存");
       emit("save", response.data);
     } else {

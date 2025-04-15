@@ -530,13 +530,13 @@ function getEmotionName(id: string): string {
   // Check all models to find the matching emotion
   for (const model of projectsStore.voiceModels) {
     if (model.emotions) {
-      const emotion = model.emotions.find(e => e.code === id);
+      const emotion = model.emotions.find((e) => e.code === id);
       if (emotion) {
         return emotion.name;
       }
     }
   }
-  
+
   // Fallback
   const emotions = [
     { id: "neutral", name: "平静" },

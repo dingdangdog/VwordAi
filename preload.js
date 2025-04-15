@@ -6,14 +6,14 @@ contextBridge.exposeInMainWorld("electron", {
   selectFolder: () => ipcRenderer.invoke("select-folder"),
   openFolder: (dir) => ipcRenderer.invoke("open-folder", dir),
   openFile: () => ipcRenderer.invoke("open-file"),
-  
+
   // 窗口控制
   isMaximized: () => ipcRenderer.invoke("is-maximized"),
   minimize: () => ipcRenderer.send("window-control", "minimize"),
   maximize: () => ipcRenderer.send("window-control", "maximize"),
   close: () => ipcRenderer.send("window-control", "close"),
   restoreWindow: () => ipcRenderer.send("window-control", "restore-window"),
-  
+
   // 主进程通用通信API
   invoke: (channel, ...args) => ipcRenderer.invoke(channel, ...args),
 });
@@ -24,53 +24,67 @@ contextBridge.exposeInMainWorld("api", {
   invokeHandler: async (functionName, args) => {
     return await ipcRenderer.invoke("data-handler", functionName, args);
   },
-  
+
   // 项目相关API
   project: {
     getAll: () => ipcRenderer.invoke("get-projects"),
     getById: (id) => ipcRenderer.invoke("get-project", id),
     create: (data) => ipcRenderer.invoke("create-project", data),
     update: (id, data) => ipcRenderer.invoke("update-project", id, data),
-    delete: (id) => ipcRenderer.invoke("delete-project", id)
+    delete: (id) => ipcRenderer.invoke("delete-project", id),
   },
-  
+
   // 章节相关API
   chapter: {
-    getByProjectId: (projectId) => ipcRenderer.invoke("get-chapters-by-project-id", projectId),
+    getByProjectId: (projectId) =>
+      ipcRenderer.invoke("get-chapters-by-project-id", projectId),
     getById: (id) => ipcRenderer.invoke("get-chapter", id),
     create: (data) => ipcRenderer.invoke("create-chapter", data),
     update: (id, data) => ipcRenderer.invoke("update-chapter", id, data),
-    delete: (id) => ipcRenderer.invoke("delete-chapter", id)
+    delete: (id) => ipcRenderer.invoke("delete-chapter", id),
   },
-  
+
   // 服务商相关API
   serviceProvider: {
     getAll: () => ipcRenderer.invoke("service-provider:get-all"),
     getById: (id) => ipcRenderer.invoke("service-provider:get", id),
     create: (data) => ipcRenderer.invoke("service-provider:create", data),
-    update: (id, data) => ipcRenderer.invoke("service-provider:update", id, data),
+    update: (id, data) =>
+      ipcRenderer.invoke("service-provider:update", id, data),
     delete: (id) => ipcRenderer.invoke("service-provider:delete", id),
-    testConnection: (id) => ipcRenderer.invoke("service-provider:test-connection", id),
-    getVoiceRoles: (id) => ipcRenderer.invoke("service-provider:get-voice-roles", id)
+    testConnection: (id) =>
+      ipcRenderer.invoke("service-provider:test-connection", id),
+    getVoiceRoles: (id) =>
+      ipcRenderer.invoke("service-provider:get-voice-roles", id),
   },
-  
+
   // TTS相关API
   tts: {
     synthesize: (chapterId) => ipcRenderer.invoke("tts:synthesize", chapterId),
-    synthesizeMultiple: (chapterIds) => ipcRenderer.invoke("tts:synthesize-multiple", chapterIds),
-    getVoiceRoles: (providerId) => ipcRenderer.invoke("tts:get-voice-roles", providerId),
-    getEmotions: (providerId) => ipcRenderer.invoke("tts:get-emotions", providerId)
+    synthesizeMultiple: (chapterIds) =>
+      ipcRenderer.invoke("tts:synthesize-multiple", chapterIds),
+    getVoiceRoles: (providerId) =>
+      ipcRenderer.invoke("tts:get-voice-roles", providerId),
+    getEmotions: (providerId) =>
+      ipcRenderer.invoke("tts:get-emotions", providerId),
+    testProviderConnection: (type) =>
+      ipcRenderer.invoke("tts:test-provider-connection", type),
   },
-  
+
   // 设置相关API
   settings: {
     getAll: () => ipcRenderer.invoke("get-settings"),
     get: (key) => ipcRenderer.invoke("get-setting", key),
     update: (data) => ipcRenderer.invoke("update-settings", data),
     getDefaultExportPath: () => ipcRenderer.invoke("get-default-export-path"),
-    setDefaultExportPath: (path) => ipcRenderer.invoke("set-default-export-path", path),
+    setDefaultExportPath: (path) =>
+      ipcRenderer.invoke("set-default-export-path", path),
     reset: () => ipcRenderer.invoke("reset-settings"),
-    getProviderSettings: (provider) => ipcRenderer.invoke("get-provider-settings", provider),
-    updateProviderSettings: (provider, data) => ipcRenderer.invoke("update-provider-settings", provider, data)
-  }
+    getProviderSettings: (provider) =>
+      ipcRenderer.invoke("get-provider-settings", provider),
+    updateProviderSettings: (provider, data) =>
+      ipcRenderer.invoke("update-provider-settings", provider, data),
+    testProviderConnection: (type) =>
+      ipcRenderer.invoke("test-provider-connection", type),
+  },
 });

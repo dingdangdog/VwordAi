@@ -2,21 +2,20 @@
  * Handler模块
  * 处理主进程和渲染进程之间的通信
  */
-const path = require('path');
-const fs = require('fs-extra');
-const storage = require('./server/utils/storage');
-const { success, error } = require('./server/utils/result');
+const path = require("path");
+const fs = require("fs-extra");
+const storage = require("./server/utils/storage");
+const { success, error } = require("./server/utils/result");
 
 // 导入控制器和服务
-const ProjectController = require('./server/controllers/ProjectController');
-const ChapterController = require('./server/controllers/ChapterController');
-const SettingsController = require('./server/controllers/SettingsController');
-const ServiceProviderController = require('./server/controllers/ServiceProviderController');
-const TTSController = require('./server/controllers/TTSController');
-const TTSService = require('./server/services/TTSService');
+const ProjectController = require("./server/controllers/ProjectController");
+const ChapterController = require("./server/controllers/ChapterController");
+const SettingsController = require("./server/controllers/SettingsController");
+const TTSController = require("./server/controllers/TTSController");
+const TTSService = require("./server/services/TTSService");
 
 // 设置基础目录
-let baseDir = '';
+let baseDir = "";
 
 /**
  * 设置基础目录
@@ -26,12 +25,12 @@ function setBaseDir(dir) {
   baseDir = dir;
   storage.setBaseDir(dir);
   console.log(`基础目录设置为: ${dir}`);
-  
+
   // 确保必要的目录存在
-  const configDir = path.join(dir, 'config');
-  const storageDir = path.join(dir, 'storage');
-  const outputDir = path.join(dir, 'output');
-  
+  const configDir = path.join(dir, "config");
+  const storageDir = path.join(dir, "storage");
+  const outputDir = path.join(dir, "output");
+
   fs.ensureDirSync(configDir);
   fs.ensureDirSync(storageDir);
   fs.ensureDirSync(outputDir);
@@ -43,20 +42,17 @@ function setBaseDir(dir) {
 function init() {
   // 初始化项目控制器
   ProjectController.initProjectListeners();
-  
+
   // 初始化章节控制器
   ChapterController.initChapterListeners();
-  
+
   // 初始化设置控制器
   SettingsController.init();
-  
-  // 初始化服务商控制器
-  ServiceProviderController.init();
-  
+
   // 初始化语音合成控制器
   TTSController.init();
-  
-  console.log('所有控制器初始化完成');
+
+  console.log("所有控制器初始化完成");
 }
 
 // 项目相关处理函数
@@ -73,7 +69,7 @@ const getProject = async (id) => {
   try {
     const project = await ProjectController.getProjectById(id);
     if (!project) {
-      return error('项目不存在');
+      return error("项目不存在");
     }
     return success(project);
   } catch (err) {
@@ -92,7 +88,10 @@ const createProject = async (projectData) => {
 
 const updateProject = async (id, projectData) => {
   try {
-    const updatedProject = await ProjectController.updateProject(id, projectData);
+    const updatedProject = await ProjectController.updateProject(
+      id,
+      projectData
+    );
     return success(updatedProject);
   } catch (err) {
     return error(err.message);
@@ -102,7 +101,7 @@ const updateProject = async (id, projectData) => {
 const deleteProject = async (id) => {
   try {
     await ProjectController.deleteProject(id);
-    return success(null, '项目已删除');
+    return success(null, "项目已删除");
   } catch (err) {
     return error(err.message);
   }
@@ -122,7 +121,7 @@ const getChapter = async (id) => {
   try {
     const chapter = await ChapterController.getChapterById(id);
     if (!chapter) {
-      return error('章节不存在');
+      return error("章节不存在");
     }
     return success(chapter);
   } catch (err) {
@@ -141,7 +140,10 @@ const createChapter = async (chapterData) => {
 
 const updateChapter = async (id, chapterData) => {
   try {
-    const updatedChapter = await ChapterController.updateChapter(id, chapterData);
+    const updatedChapter = await ChapterController.updateChapter(
+      id,
+      chapterData
+    );
     return success(updatedChapter);
   } catch (err) {
     return error(err.message);
@@ -151,7 +153,7 @@ const updateChapter = async (id, chapterData) => {
 const deleteChapter = async (id) => {
   try {
     await ChapterController.deleteChapter(id);
-    return success(null, '章节已删除');
+    return success(null, "章节已删除");
   } catch (err) {
     return error(err.message);
   }
@@ -164,64 +166,6 @@ const synthesizeChapter = async (chapterId) => {
 
 const synthesizeMultipleChapters = async (chapterIds) => {
   return await TTSService.synthesizeMultipleChapters(chapterIds);
-};
-
-// 服务商相关处理函数
-const getServiceProviders = async () => {
-  try {
-    const providers = await ServiceProviderController.getAllServiceProviders();
-    return success(providers);
-  } catch (err) {
-    return error(err.message);
-  }
-};
-
-const getServiceProvider = async (id) => {
-  try {
-    const provider = await ServiceProviderController.getServiceProviderById(id);
-    if (!provider) {
-      return error('服务商配置不存在');
-    }
-    return success(provider);
-  } catch (err) {
-    return error(err.message);
-  }
-};
-
-const createServiceProvider = async (providerData) => {
-  try {
-    const newProvider = await ServiceProviderController.createServiceProvider(providerData);
-    return success(newProvider);
-  } catch (err) {
-    return error(err.message);
-  }
-};
-
-const updateServiceProvider = async (id, providerData) => {
-  try {
-    const updatedProvider = await ServiceProviderController.updateServiceProvider(id, providerData);
-    return success(updatedProvider);
-  } catch (err) {
-    return error(err.message);
-  }
-};
-
-const deleteServiceProvider = async (id) => {
-  try {
-    await ServiceProviderController.deleteServiceProvider(id);
-    return success(null, '服务商配置已删除');
-  } catch (err) {
-    return error(err.message);
-  }
-};
-
-const testServiceProviderConnection = async (id) => {
-  try {
-    const result = await ServiceProviderController.testConnection(id);
-    return success(result);
-  } catch (err) {
-    return error(err.message);
-  }
 };
 
 // 设置相关处理函数
@@ -272,15 +216,8 @@ module.exports = {
   // 语音合成API
   synthesizeChapter,
   synthesizeMultipleChapters,
-  // 服务商API
-  getServiceProviders,
-  getServiceProvider,
-  createServiceProvider,
-  updateServiceProvider,
-  deleteServiceProvider,
-  testServiceProviderConnection,
   // 设置API
   getSettings,
   updateSettings,
-  resetSettings
+  resetSettings,
 };

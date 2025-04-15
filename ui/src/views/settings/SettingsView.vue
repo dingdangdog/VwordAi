@@ -70,13 +70,12 @@ const tabs = [
 const activeTab = computed(() => settingsStore.activeTab);
 
 // 初始化
-onMounted(() => {
+onMounted(async () => {
   // 初始化主题
   settingsStore.initTheme();
 
-  // 加载设置
-  settingsStore.loadDefaultExportPath();
-  settingsStore.loadServiceProviders();
+  // 加载所有设置（包含服务商配置、存储路径等）
+  await settingsStore.loadSettings();
 });
 
 // 切换选项卡

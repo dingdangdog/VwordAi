@@ -1,146 +1,163 @@
-import { defineStore } from 'pinia'
-import { ref, computed } from 'vue'
-import type { Project, Chapter, ChapterSettings, VoiceModel, Result } from '@/types'
-import { projectApi, chapterApi, ttsApi } from '@/utils/api'
+import { defineStore } from "pinia";
+import { ref, computed } from "vue";
+import type {
+  Project,
+  Chapter,
+  VoiceSettings,
+  VoiceModel,
+  Result,
+} from "@/types";
+import { projectApi, chapterApi, ttsApi } from "@/utils/api";
 
-export const useProjectsStore = defineStore('projects', () => {
-  const projects = ref<Project[]>([])
-  const chapters = ref<Chapter[]>([])
-  const currentProjectId = ref<string | null>(null)
-  const isLoading = ref(false)
-  const voiceModels = ref<VoiceModel[]>([])
+export const useProjectsStore = defineStore("projects", () => {
+  const projects = ref<Project[]>([]);
+  const chapters = ref<Chapter[]>([]);
+  const currentProjectId = ref<string | null>(null);
+  const isLoading = ref(false);
+  const voiceModels = ref<VoiceModel[]>([]);
 
   // Project getters
   const currentProject = computed(() => {
-    if (!currentProjectId.value) return null
-    return projects.value.find(p => p.id === currentProjectId.value) || null
-  })
+    if (!currentProjectId.value) return null;
+    return projects.value.find((p) => p.id === currentProjectId.value) || null;
+  });
 
   const projectsSorted = computed(() => {
     return [...projects.value].sort((a, b) => {
-      return new Date(b.updateAt).getTime() - new Date(a.updateAt).getTime()
-    })
-  })
+      return new Date(b.updateAt).getTime() - new Date(a.updateAt).getTime();
+    });
+  });
 
   // Chapter getters
   const chaptersForCurrentProject = computed(() => {
-    if (!currentProjectId.value) return []
+    if (!currentProjectId.value) return [];
     return chapters.value
-      .filter(c => c.projectId === currentProjectId.value)
+      .filter((c) => c.projectId === currentProjectId.value)
       .sort((a, b) => {
-        return a.order - b.order
-      })
-  })
+        return a.order - b.order;
+      });
+  });
 
   // Voice model getters
   const availableVoiceModels = computed(() => {
-    return voiceModels.value
-  })
+    return voiceModels.value;
+  });
 
   const getVoiceModelsByProvider = (providerType: string) => {
-    return voiceModels.value.filter(model => model.provider === providerType)
-  }
+    return voiceModels.value.filter((model) => model.provider === providerType);
+  };
 
   const getVoiceModelByCode = (code: string) => {
-    return voiceModels.value.find(model => model.code === code)
-  }
+    return voiceModels.value.find((model) => model.code === code);
+  };
 
   // Project methods
   async function loadProjects() {
-    isLoading.value = true
+    isLoading.value = true;
     try {
-      const response = await projectApi.getAll()
+      const response = await projectApi.getAll();
       if (response.success && response.data) {
-        projects.value = response.data
+        projects.value = response.data;
       } else {
-        console.error('Failed to load projects:', response.error)
+        console.error("Failed to load projects:", response.error);
       }
     } catch (error) {
-      console.error('Failed to load projects:', error)
+      console.error("Failed to load projects:", error);
     } finally {
-      isLoading.value = false
+      isLoading.value = false;
     }
   }
 
-  async function createProject(title: string, description: string = '', defaultSettings: Partial<ChapterSettings> = {}) {
+  async function createProject(
+    title: string,
+    description: string = "",
+    defaultSettings: Partial<VoiceSettings> = {}
+  ) {
     try {
       const response = await projectApi.create({
         title,
         description,
-        author: '',
+        author: "",
         tags: [],
         coverImage: null,
-        defaultVoiceSettings: defaultSettings
-      })
-      
+        defaultVoiceSettings: defaultSettings,
+      });
+
       if (response.success && response.data) {
-        projects.value.push(response.data)
-        return response.data
+        projects.value.push(response.data);
+        return response.data;
       } else {
-        console.error('Failed to create project:', response.error)
-        return null
+        console.error("Failed to create project:", response.error);
+        return null;
       }
     } catch (error) {
-      console.error('Failed to create project:', error)
-      return null
+      console.error("Failed to create project:", error);
+      return null;
     }
   }
 
   async function updateProject(
     id: string,
-    data: { title?: string; description?: string; author?: string; tags?: string[]; coverImage?: string | null; defaultVoiceSettings?: Partial<ChapterSettings> }
+    data: {
+      title?: string;
+      description?: string;
+      author?: string;
+      tags?: string[];
+      coverImage?: string | null;
+      defaultVoiceSettings?: Partial<VoiceSettings>;
+    }
   ) {
     try {
-      const response = await projectApi.update(id, data)
-      
+      const response = await projectApi.update(id, data);
+
       if (response.success && response.data) {
-        const index = projects.value.findIndex(p => p.id === id)
+        const index = projects.value.findIndex((p) => p.id === id);
         if (index !== -1) {
-          projects.value[index] = response.data
+          projects.value[index] = response.data;
         }
-        return response.data
+        return response.data;
       } else {
-        console.error('Failed to update project:', response.error)
-        return null
+        console.error("Failed to update project:", response.error);
+        return null;
       }
     } catch (error) {
-      console.error('Failed to update project:', error)
-      return null
+      console.error("Failed to update project:", error);
+      return null;
     }
   }
 
   async function deleteProject(id: string) {
     try {
-      const response = await projectApi.delete(id)
-      
+      const response = await projectApi.delete(id);
+
       if (response.success) {
-        const index = projects.value.findIndex(p => p.id === id)
+        const index = projects.value.findIndex((p) => p.id === id);
         if (index !== -1) {
-          projects.value.splice(index, 1)
+          projects.value.splice(index, 1);
         }
-        
+
         // Filter out deleted project's chapters
-        chapters.value = chapters.value.filter(c => c.projectId !== id)
-        
+        chapters.value = chapters.value.filter((c) => c.projectId !== id);
+
         if (currentProjectId.value === id) {
-          currentProjectId.value = null
+          currentProjectId.value = null;
         }
-        
-        return true
+
+        return true;
       } else {
-        console.error('Failed to delete project:', response.error)
-        return false
+        console.error("Failed to delete project:", response.error);
+        return false;
       }
     } catch (error) {
-      console.error('Failed to delete project:', error)
-      return false
+      console.error("Failed to delete project:", error);
+      return false;
     }
   }
 
   function setCurrentProject(id: string | null) {
-    currentProjectId.value = id
+    currentProjectId.value = id;
     if (id) {
-      loadChaptersByProjectId(id)
+      loadChaptersByProjectId(id);
     }
   }
 
@@ -152,131 +169,142 @@ export const useProjectsStore = defineStore('projects', () => {
       if (response.success && response.data) {
         voiceModels.value = response.data;
       } else {
-        console.error('Failed to load voice models:', response.error);
+        console.error("Failed to load voice models:", response.error);
       }
     } catch (error) {
-      console.error('Failed to load voice models:', error);
+      console.error("Failed to load voice models:", error);
     }
   }
 
   // Chapter methods
   async function loadChaptersByProjectId(projectId: string) {
-    isLoading.value = true
+    isLoading.value = true;
     try {
-      const response = await chapterApi.getByProjectId(projectId)
+      const response = await chapterApi.getByProjectId(projectId);
       if (response.success && response.data) {
-        chapters.value = response.data
+        chapters.value = response.data;
       } else {
-        console.error('Failed to load chapters:', response.error)
+        console.error("Failed to load chapters:", response.error);
       }
     } catch (error) {
-      console.error('Failed to load chapters:', error)
+      console.error("Failed to load chapters:", error);
     } finally {
-      isLoading.value = false
+      isLoading.value = false;
     }
   }
 
-  async function createChapter(projectId: string, name: string, text: string = '', settings: Partial<ChapterSettings> = {}) {
+  async function createChapter(
+    projectId: string,
+    name: string,
+    text: string = "",
+    settings: Partial<VoiceSettings> = {}
+  ) {
     try {
-      const project = projects.value.find(p => p.id === projectId)
-      if (!project) return null
+      const project = projects.value.find((p) => p.id === projectId);
+      if (!project) return null;
 
       // Initialize with default settings
-      const chapterSettings: Partial<ChapterSettings> = {
+      const chapterSettings: Partial<VoiceSettings> = {
         serviceProvider: null,
         voice: null,
         speed: 1.0,
         pitch: 1.0,
         volume: 1.0,
-        ...settings
-      }
+        ...settings,
+      };
 
       const response = await chapterApi.create({
         projectId,
         name,
         text,
         settings: chapterSettings,
-        order: chapters.value.filter(c => c.projectId === projectId).length + 1,
-        wordCount: text.length
-      })
-      
+        order:
+          chapters.value.filter((c) => c.projectId === projectId).length + 1,
+        wordCount: text.length,
+      });
+
       if (response.success && response.data) {
-        chapters.value.push(response.data)
-        return response.data
+        chapters.value.push(response.data);
+        return response.data;
       } else {
-        console.error('Failed to create chapter:', response.error)
-        return null
+        console.error("Failed to create chapter:", response.error);
+        return null;
       }
     } catch (error) {
-      console.error('Failed to create chapter:', error)
-      return null
+      console.error("Failed to create chapter:", error);
+      return null;
     }
   }
 
   async function updateChapter(
     id: string,
-    data: { name?: string; text?: string; settings?: Partial<ChapterSettings>; order?: number }
+    data: {
+      name?: string;
+      text?: string;
+      settings?: Partial<VoiceSettings>;
+      order?: number;
+    }
   ) {
     try {
-      const response = await chapterApi.update(id, data)
-      
+      const response = await chapterApi.update(id, data);
+
       if (response.success && response.data) {
-        const index = chapters.value.findIndex(c => c.id === id)
+        const index = chapters.value.findIndex((c) => c.id === id);
         if (index !== -1) {
-          chapters.value[index] = response.data
+          chapters.value[index] = response.data;
         }
-        return response.data
+        return response.data;
       } else {
-        console.error('Failed to update chapter:', response.error)
-        return null
+        console.error("Failed to update chapter:", response.error);
+        return null;
       }
     } catch (error) {
-      console.error('Failed to update chapter:', error)
-      return null
+      console.error("Failed to update chapter:", error);
+      return null;
     }
   }
 
   async function deleteChapter(id: string) {
     try {
-      const response = await chapterApi.delete(id)
-      
+      const response = await chapterApi.delete(id);
+
       if (response.success) {
-        const index = chapters.value.findIndex(c => c.id === id)
+        const index = chapters.value.findIndex((c) => c.id === id);
         if (index !== -1) {
-          chapters.value.splice(index, 1)
+          chapters.value.splice(index, 1);
         }
-        return true
+        return true;
       } else {
-        console.error('Failed to delete chapter:', response.error)
-        return false
+        console.error("Failed to delete chapter:", response.error);
+        return false;
       }
     } catch (error) {
-      console.error('Failed to delete chapter:', error)
-      return false
+      console.error("Failed to delete chapter:", error);
+      return false;
     }
   }
 
   async function getChapter(id: string) {
     // Check if we already have it in memory
-    const cachedChapter = chapters.value.find(c => c.id === id)
-    if (cachedChapter) return cachedChapter
-    
+    const cachedChapter = chapters.value.find((c) => c.id === id);
+    if (cachedChapter) return cachedChapter;
+
     try {
-      const response = await chapterApi.getById(id)
+      const response = await chapterApi.getById(id);
       if (response.success && response.data) {
-        return response.data
+        return response.data;
       } else {
-        console.error('Failed to get chapter:', response.error)
-        return null
+        console.error("Failed to get chapter:", response.error);
+        return null;
       }
     } catch (error) {
-      console.error('Failed to get chapter:', error)
-      return null
+      console.error("Failed to get chapter:", error);
+      return null;
     }
   }
 
   // 初始化时加载语音模型
-  loadVoiceModels()
+  loadVoiceModels();
 
   return {
     // State
@@ -305,6 +333,6 @@ export const useProjectsStore = defineStore('projects', () => {
     createChapter,
     updateChapter,
     deleteChapter,
-    getChapter
-  }
-}) 
+    getChapter,
+  };
+});

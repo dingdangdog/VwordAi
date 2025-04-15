@@ -120,7 +120,6 @@ async function exportSystemData() {
     // 收集所有系统数据
     const systemData = {
       settings: await settingsStore.getAllSettings(),
-      serviceProviders: settingsStore.getServiceProviders(),
       projects: await getAllProjects(),
       chapters: await getAllChapters(),
       exportDate: new Date().toISOString(),
@@ -212,8 +211,6 @@ async function handleFileImport(event: Event) {
 
     toast.success("系统数据导入成功");
 
-    // 刷新所有数据
-    await settingsStore.loadServiceProviders();
     await projectsStore.loadProjects();
 
     // 重置文件输入
@@ -249,20 +246,8 @@ async function importSystemData(systemData: any) {
   // 导入设置
   if (systemData.settings) {
     await settingsApi.update(systemData.settings);
-  }
-
-  // 导入服务商
-  if (Array.isArray(systemData.serviceProviders)) {
-    // 先删除现有服务商
-    const currentProviders = settingsStore.getServiceProviders();
-    for (const provider of currentProviders) {
-      await serviceProviderApi.delete(provider.id);
-    }
-
-    // 导入新服务商
-    for (const provider of systemData.serviceProviders) {
-      await serviceProviderApi.create(provider);
-    }
+    // 重新加载设置到 store
+    await settingsStore.loadSettings();
   }
 
   // 导入项目和章节
@@ -304,8 +289,6 @@ async function resetSystemData() {
     await settingsApi.reset();
     toast.success("系统数据已重置");
 
-    // 刷新所有数据
-    await settingsStore.loadServiceProviders();
     await projectsStore.loadProjects();
   } catch (error) {
     console.error("重置系统数据失败:", error);

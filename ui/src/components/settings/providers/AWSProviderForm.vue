@@ -4,12 +4,16 @@
       AWS Polly TTS Configuration
     </h3>
     <p class="text-gray-600 dark:text-gray-300 mb-6">
-      Configure AWS Polly for text-to-speech services. Ensure you have an AWS account with Polly enabled.
+      Configure AWS Polly for text-to-speech services. Ensure you have an AWS
+      account with Polly enabled.
     </p>
 
     <form @submit.prevent="saveForm" class="space-y-4">
       <div>
-        <label for="accessKey" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+        <label
+          for="accessKey"
+          class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+        >
           Access Key ID<span class="text-red-500">*</span>
         </label>
         <input
@@ -23,7 +27,10 @@
       </div>
 
       <div>
-        <label for="secretKey" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+        <label
+          for="secretKey"
+          class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+        >
           Secret Access Key<span class="text-red-500">*</span>
         </label>
         <input
@@ -37,24 +44,29 @@
       </div>
 
       <div>
-        <label for="region" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+        <label
+          for="region"
+          class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+        >
           Region<span class="text-red-500">*</span>
         </label>
-        <select
-          id="region"
-          v-model="form.region"
-          class="input w-full"
-          required
-        >
+        <select id="region" v-model="form.region" class="input w-full" required>
           <option value="" disabled>Select a region</option>
-          <option v-for="region in awsRegions" :key="region.value" :value="region.value">
+          <option
+            v-for="region in awsRegions"
+            :key="region.value"
+            :value="region.value"
+          >
             {{ region.name }}
           </option>
         </select>
       </div>
 
       <div>
-        <label for="endpoint" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+        <label
+          for="endpoint"
+          class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+        >
           Custom Endpoint (Optional)
         </label>
         <input
@@ -195,7 +207,6 @@ async function saveForm() {
     const response = await serviceProviderApi.update("aws", data);
 
     if (response.success) {
-      await settingsStore.loadServiceProviders();
       toast.success("AWS Polly configuration saved");
       emit("save", response.data);
     } else {
@@ -232,7 +243,9 @@ async function testConnection() {
     } else {
       testResult.value = {
         success: false,
-        message: response.error || "Connection test failed, please check your configuration",
+        message:
+          response.error ||
+          "Connection test failed, please check your configuration",
       };
     }
 
@@ -247,4 +260,4 @@ async function testConnection() {
     isTesting.value = false;
   }
 }
-</script> 
+</script>

@@ -15,10 +15,10 @@
       ></div>
 
       <!-- Modal panel -->
-      <div
-        class="w-full h-full align-bottom flex justify-center items-center"
-      >
-        <div class="text-left bg-white dark:bg-gray-800 rounded-lg px-4 pt-5 pb-4 sm:p-6 shadow-xl transform transition-all">
+      <div class="w-full h-full align-bottom flex justify-center items-center">
+        <div
+          class="text-left bg-white dark:bg-gray-800 rounded-lg px-4 pt-5 pb-4 sm:p-6 shadow-xl transform transition-all"
+        >
           <div class="flex justify-between items-center mb-4">
             <h3
               class="text-lg leading-6 font-medium text-gray-900 dark:text-white"
@@ -125,7 +125,9 @@
                       :key="role.code"
                       :value="role.code"
                     >
-                      {{ role.name }} ({{ role.gender === '0' ? '女声' : '男声' }})
+                      {{ role.name }} ({{
+                        role.gender === "0" ? "女声" : "男声"
+                      }})
                     </option>
                   </select>
                 </div>
@@ -183,7 +185,11 @@
                     id="emotion"
                     v-model="form.defaultVoiceSettings.emotion"
                     class="mt-1 input dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                    :disabled="!form.defaultVoiceSettings.serviceProvider || !form.defaultVoiceSettings.voice || filteredEmotions.length === 0"
+                    :disabled="
+                      !form.defaultVoiceSettings.serviceProvider ||
+                      !form.defaultVoiceSettings.voice ||
+                      filteredEmotions.length === 0
+                    "
                   >
                     <option value="">未选择</option>
                     <option
@@ -226,7 +232,7 @@
 <script setup lang="ts">
 import { ref, reactive, onMounted, watchEffect, computed } from "vue";
 import { XMarkIcon } from "@heroicons/vue/24/outline";
-import type { TTSSettings } from "@/types";
+import type { VoiceSettings } from "@/types";
 import { useProjectsStore } from "@/stores/projects";
 
 const projectsStore = useProjectsStore();
@@ -247,29 +253,35 @@ const serviceProviders = ref([
 // Computed properties for filtered voice roles and emotions based on model data
 const filteredVoiceRoles = computed(() => {
   if (!form.defaultVoiceSettings.serviceProvider) return [];
-  return projectsStore.getVoiceModelsByProvider(form.defaultVoiceSettings.serviceProvider);
+  return projectsStore.getVoiceModelsByProvider(
+    form.defaultVoiceSettings.serviceProvider
+  );
 });
 
 const filteredEmotions = computed(() => {
   if (!form.defaultVoiceSettings.voice) return [];
-  
+
   // Find selected voice model
-  const selectedModel = projectsStore.getVoiceModelByCode(form.defaultVoiceSettings.voice);
-  
+  const selectedModel = projectsStore.getVoiceModelByCode(
+    form.defaultVoiceSettings.voice
+  );
+
   if (selectedModel && selectedModel.emotions) {
     return selectedModel.emotions;
   }
-  
+
   // If the selected model doesn't have emotions, try to find emotions from another model of the same provider
   if (form.defaultVoiceSettings.serviceProvider) {
-    const providerModels = projectsStore.getVoiceModelsByProvider(form.defaultVoiceSettings.serviceProvider);
+    const providerModels = projectsStore.getVoiceModelsByProvider(
+      form.defaultVoiceSettings.serviceProvider
+    );
     for (const model of providerModels) {
       if (model.emotions && model.emotions.length > 0) {
         return model.emotions;
       }
     }
   }
-  
+
   return [];
 });
 
@@ -314,7 +326,7 @@ const form = reactive({
     pitch: 0,
     volume: 100,
     emotion: "",
-  } as TTSSettings,
+  } as VoiceSettings,
 });
 
 // Watch for changes in initialData and update form

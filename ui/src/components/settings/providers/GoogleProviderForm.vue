@@ -153,7 +153,7 @@ async function saveForm() {
     const response = await serviceProviderApi.update("google", data);
 
     if (response.success) {
-      await settingsStore.loadServiceProviders();
+      
       toast.success("Google Cloud TTS configuration saved");
       emit("save", response.data);
     } else {

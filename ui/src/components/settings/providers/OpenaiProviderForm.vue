@@ -1,50 +1,30 @@
 <template>
   <div class="provider-form">
     <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-      Azure TTS 配置
+      OpenAI TTS 配置
     </h3>
     <p class="text-gray-600 dark:text-gray-300 mb-6">
-      配置 Azure 语音服务。您需要一个 Azure 订阅密钥和区域。
+      配置 OpenAI 语音服务。您需要一个 OpenAI API 密钥。
     </p>
 
     <form @submit.prevent="saveForm" class="space-y-4">
       <div>
         <label
-          for="key"
+          for="apiKey"
           class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
         >
-          订阅密钥<span class="text-red-500">*</span>
+          API 密钥<span class="text-red-500">*</span>
         </label>
         <input
           type="password"
-          id="key"
-          v-model="form.key"
+          id="apiKey"
+          v-model="form.apiKey"
           class="input w-full"
-          placeholder="输入您的 Azure 订阅密钥"
+          placeholder="输入您的 OpenAI API 密钥"
           required
         />
         <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
-          您的 Azure 认知服务订阅密钥。
-        </p>
-      </div>
-
-      <div>
-        <label
-          for="region"
-          class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-        >
-          区域<span class="text-red-500">*</span>
-        </label>
-        <input
-          type="text"
-          id="region"
-          v-model="form.region"
-          class="input w-full"
-          placeholder="例如：eastus"
-          required
-        />
-        <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
-          您的服务部署的 Azure 区域（例如：eastus，westeurope）。
+          您的 OpenAI API 密钥，以 sk- 开头。
         </p>
       </div>
 
@@ -60,8 +40,11 @@
           id="endpoint"
           v-model="form.endpoint"
           class="input w-full"
-          placeholder="例如：https://your-resource.cognitiveservices.azure.com/"
+          placeholder="例如：https://api.openai.com/v1"
         />
+        <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
+          如果您使用自定义端点或代理，可以在此指定。
+        </p>
       </div>
 
       <div class="flex justify-end space-x-2 mt-6">
@@ -128,29 +111,22 @@ const testResult = ref<{ success: boolean; message: string } | null>(null);
 
 // 表单数据
 const form = reactive({
-  key: "",
-  region: "",
-  endpoint: "",
+  apiKey: "",
+  endpoint: "https://api.openai.com/v1",
 });
 
 // 监听属性变化，更新表单数据
 watchEffect(() => {
   if (props.provider) {
-    form.key = props.provider.key || "";
-    form.region = props.provider.region || "";
-    form.endpoint = props.provider.endpoint || "";
+    form.apiKey = props.provider.apiKey || "";
+    form.endpoint = props.provider.endpoint || "https://api.openai.com/v1";
   }
 });
 
 // 保存表单
 async function saveForm() {
-  if (!form.key) {
-    toast.error("请提供您的 Azure 订阅密钥");
-    return;
-  }
-
-  if (!form.region) {
-    toast.error("请提供您的 Azure 区域");
+  if (!form.apiKey) {
+    toast.error("请提供您的 OpenAI API 密钥");
     return;
   }
 
@@ -158,15 +134,14 @@ async function saveForm() {
 
   try {
     const data = {
-      key: form.key,
-      region: form.region,
+      apiKey: form.apiKey,
       endpoint: form.endpoint,
     };
 
     // 通知父组件更新
     emit("save", data);
   } catch (error) {
-    console.error("保存 Azure 配置失败:", error);
+    console.error("保存 OpenAI 配置失败:", error);
     toast.error(
       "保存失败: " + (error instanceof Error ? error.message : String(error))
     );
@@ -177,13 +152,8 @@ async function saveForm() {
 
 // 测试连接
 async function testConnection() {
-  if (!form.key) {
-    toast.error("请提供您的 Azure 订阅密钥");
-    return;
-  }
-
-  if (!form.region) {
-    toast.error("请提供您的 Azure 区域");
+  if (!form.apiKey) {
+    toast.error("请提供您的 OpenAI API 密钥");
     return;
   }
 

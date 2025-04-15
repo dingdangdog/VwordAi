@@ -1,305 +1,275 @@
-import { defineStore } from 'pinia'
-import { ref, computed } from 'vue'
-import { settingsApi, serviceProviderApi } from '@/utils/api'
-import type { 
-  ServiceProvider,
+import { defineStore } from "pinia";
+import { ref, computed } from "vue";
+import { settingsApi } from "@/utils/api";
+import type {
   Settings,
-  ChapterSettings,
-  VoiceRole,
-  ConnectionTestResult
-} from '@/types'
+  ConnectionTestResult,
+  ServiceProviderType,
+} from "@/types";
 
 // 设置选项卡类型
-export type SettingsTab = 'provider' | 'storage' | 'system' | 'about';
+export type SettingsTab = "provider" | "storage" | "system" | "about";
 
 // 支持的服务商
 export const SUPPORTED_PROVIDERS = [
-  { id: 'azure', name: '微软 Azure TTS', type: 'azure' },
-  { id: 'aliyun', name: '阿里云语音服务', type: 'aliyun' },
-  { id: 'tencent', name: '腾讯云语音服务', type: 'tencent' },
-  { id: 'baidu', name: '百度智能云', type: 'baidu' }
+  { id: "azure", name: "微软 Azure TTS", type: "azure" as ServiceProviderType },
+  {
+    id: "aliyun",
+    name: "阿里云语音服务",
+    type: "aliyun" as ServiceProviderType,
+  },
+  {
+    id: "tencent",
+    name: "腾讯云语音服务",
+    type: "tencent" as ServiceProviderType,
+  },
+  { id: "baidu", name: "百度智能云", type: "baidu" as ServiceProviderType },
+  { id: "openai", name: "OpenAI TTS", type: "openai" as ServiceProviderType },
 ];
 
-export const useSettingsStore = defineStore('settings', () => {
-  const theme = ref<'light' | 'dark'>('light')
-  const defaultExportPath = ref<string>('')
-  const activeTab = ref<SettingsTab>('provider')
-  const activeProviderId = ref<string | null>(null)
-  const serviceProviders = ref<ServiceProvider[]>([])
-  const isLoading = ref(false)
+export const useSettingsStore = defineStore("settings", () => {
+  const theme = ref<"light" | "dark">("light");
+  const defaultExportPath = ref<string>("");
+  const activeTab = ref<SettingsTab>("provider");
+  const activeProviderType = ref<ServiceProviderType | null>(null);
+  const settings = ref<Settings | null>(null);
+  const isLoading = ref(false);
 
   // Initialize theme based on localStorage or system preference
   function initTheme() {
-    const savedTheme = localStorage.getItem('theme')
-    if (savedTheme === 'dark' || savedTheme === 'light') {
-      theme.value = savedTheme
-    } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
-      theme.value = 'dark'
+    const savedTheme = localStorage.getItem("theme");
+    if (savedTheme === "dark" || savedTheme === "light") {
+      theme.value = savedTheme;
+    } else if (window.matchMedia("(prefers-color-scheme: dark)").matches) {
+      theme.value = "dark";
     }
-    applyTheme()
+    applyTheme();
   }
 
   // Toggle theme between light and dark
   function toggleTheme() {
-    theme.value = theme.value === 'light' ? 'dark' : 'light'
-    localStorage.setItem('theme', theme.value)
-    applyTheme()
+    theme.value = theme.value === "light" ? "dark" : "light";
+    localStorage.setItem("theme", theme.value);
+    applyTheme();
   }
 
   // Apply theme to document
   function applyTheme() {
-    if (theme.value === 'dark') {
-      document.documentElement.classList.add('dark')
+    if (theme.value === "dark") {
+      document.documentElement.classList.add("dark");
     } else {
-      document.documentElement.classList.remove('dark')
+      document.documentElement.classList.remove("dark");
     }
   }
 
   // Set default export path
   async function setDefaultExportPath(path: string) {
     try {
-      const response = await settingsApi.setDefaultExportPath(path)
-      if (response.success) {
-        defaultExportPath.value = path
-        return true
-      } else {
-        console.error('Failed to set export path:', response.error)
-        return false
+      // Update locally first for immediate UI response
+      defaultExportPath.value = path;
+
+      // Update the settings object
+      if (settings.value) {
+        settings.value.defaultExportPath = path;
       }
+
+      // Save to backend
+      await updateSettings({ defaultExportPath: path });
+      return true;
     } catch (error) {
-      console.error('Failed to set export path:', error)
-      return false
+      console.error("Failed to set export path:", error);
+      return false;
     }
   }
 
-  // Load default export path from backend
+  // Load default export path from settings
   async function loadDefaultExportPath() {
     try {
-      const response = await settingsApi.getDefaultExportPath()
-      if (response.success && response.data?.path) {
-        defaultExportPath.value = response.data.path
+      await loadSettings();
+      if (settings.value) {
+        defaultExportPath.value = settings.value.defaultExportPath;
       }
     } catch (error) {
-      console.error('Failed to load export path:', error)
+      console.error("Failed to load export path:", error);
     }
   }
 
   // Settings tabs management
   function setActiveTab(tab: SettingsTab) {
-    activeTab.value = tab
+    activeTab.value = tab;
   }
 
   // Set active provider
-  function setActiveProvider(providerId: string | null) {
-    activeProviderId.value = providerId
+  function setActiveProvider(providerType: ServiceProviderType | null) {
+    activeProviderType.value = providerType;
   }
 
-  // Load service providers from backend
-  async function loadServiceProviders() {
-    isLoading.value = true
+  // Load all settings
+  async function loadSettings() {
+    if (isLoading.value) return;
+    isLoading.value = true;
+
     try {
-      const response = await serviceProviderApi.getAll()
+      const response = await settingsApi.getAll();
       if (response.success && response.data) {
-        serviceProviders.value = response.data
-        
-        // Set the first provider as active if there's at least one provider and none is currently active
-        if (serviceProviders.value.length > 0 && !activeProviderId.value) {
-          activeProviderId.value = serviceProviders.value[0].id
+        settings.value = response.data;
+
+        // Update local values
+        if (settings.value?.theme) {
+          theme.value = settings.value.theme;
+          applyTheme();
         }
+
+        if (settings.value?.defaultExportPath) {
+          defaultExportPath.value = settings.value.defaultExportPath;
+        }
+
+        return settings.value;
       } else {
-        console.error('Failed to load service providers:', response.error)
+        console.error("Failed to load settings:", response.error);
+        return null;
       }
     } catch (error) {
-      console.error('Failed to load service providers:', error)
+      console.error("Failed to load settings:", error);
+      return null;
     } finally {
-      isLoading.value = false
+      isLoading.value = false;
     }
   }
 
-  // Get all service providers
+  // Get service provider config
+  function getServiceProviderConfig(type: ServiceProviderType) {
+    if (!settings.value) return null;
+    return settings.value[type];
+  }
+
+  // Get all service providers config
   function getServiceProviders() {
-    return serviceProviders.value
-  }
+    if (!settings.value) return [];
 
-  // Get active provider
-  const activeProvider = computed(() => {
-    if (!activeProviderId.value) return null
-    return serviceProviders.value.find(p => p.id === activeProviderId.value) || null
-  })
-
-  // Get provider by ID
-  function getProviderById(id: string) {
-    return serviceProviders.value.find(p => p.id === id) || null
-  }
-
-  // Add new service provider
-  async function addServiceProvider(providerData: Partial<ServiceProvider>): Promise<ServiceProvider | null> {
-    try {
-      const response = await serviceProviderApi.create(providerData)
-      
-      if (response.success && response.data) {
-        const newProvider = response.data
-        serviceProviders.value.push(newProvider)
-        
-        // Set as active if it's the first one
-        if (serviceProviders.value.length === 1) {
-          activeProviderId.value = newProvider.id
-        }
-        
-        return newProvider
-      } else {
-        console.error('Failed to create service provider:', response.error)
-        return null
-      }
-    } catch (error) {
-      console.error('Failed to create service provider:', error)
-      return null
-    }
-  }
-
-  // Update service provider
-  async function updateServiceProvider(id: string, updates: Partial<ServiceProvider>): Promise<ServiceProvider | null> {
-    try {
-      const response = await serviceProviderApi.update(id, updates)
-      
-      if (response.success && response.data) {
-        const updatedProvider = response.data
-        const index = serviceProviders.value.findIndex(p => p.id === id)
-        
-        if (index !== -1) {
-          serviceProviders.value[index] = updatedProvider
-        }
-        
-        return updatedProvider
-      } else {
-        console.error('Failed to update service provider:', response.error)
-        return null
-      }
-    } catch (error) {
-      console.error('Failed to update service provider:', error)
-      return null
-    }
-  }
-
-  // Delete service provider
-  async function deleteServiceProvider(id: string): Promise<boolean> {
-    try {
-      const response = await serviceProviderApi.delete(id)
-      
-      if (response.success) {
-        const index = serviceProviders.value.findIndex(p => p.id === id)
-        if (index !== -1) {
-          serviceProviders.value.splice(index, 1)
-        }
-        
-        // Update active provider if the deleted one was active
-        if (activeProviderId.value === id) {
-          activeProviderId.value = serviceProviders.value.length > 0 ? serviceProviders.value[0].id : null
-        }
-        
-        return true
-      } else {
-        console.error('Failed to delete service provider:', response.error)
-        return false
-      }
-    } catch (error) {
-      console.error('Failed to delete service provider:', error)
-      return false
-    }
+    return SUPPORTED_PROVIDERS.map((provider) => ({
+      ...provider,
+      config: settings.value ? settings.value[provider.type] : null,
+    }));
   }
 
   // Test service provider connection
-  async function testServiceProviderConnection(id: string): Promise<ConnectionTestResult> {
+  async function testServiceProviderConnection(
+    type: ServiceProviderType
+  ): Promise<ConnectionTestResult> {
     try {
-      const response = await serviceProviderApi.testConnection(id)
-      
+      // Make sure settings are loaded
+      if (!settings.value) {
+        await loadSettings();
+      }
+
+      const config = getServiceProviderConfig(type);
+      if (!config) {
+        return {
+          success: false,
+          message: `No configuration found for ${type}`,
+        };
+      }
+
+      const response = await settingsApi.testProviderConnection(type);
+
       if (response.success && response.data) {
         return {
           success: true,
-          message: response.data.message || 'Connection successful'
-        }
+          message: response.data.message || "Connection successful",
+        };
       } else {
         return {
           success: false,
-          message: response.error || 'Connection failed'
-        }
+          message: response.error || "Connection failed",
+        };
       }
     } catch (error) {
       return {
         success: false,
-        message: error instanceof Error ? error.message : 'Connection test failed'
-      }
+        message:
+          error instanceof Error ? error.message : "Connection test failed",
+      };
     }
   }
 
-  // Get voice roles for a provider
-  async function getVoiceRoles(providerId: string): Promise<VoiceRole[]> {
+  // Update service provider config
+  async function updateServiceProvider(
+    type: ServiceProviderType,
+    config: any
+  ): Promise<boolean> {
     try {
-      const response = await serviceProviderApi.getVoiceRoles(providerId)
-      
-      if (response.success && response.data) {
-        return response.data
-      } else {
-        console.error('Failed to get voice roles:', response.error)
-        return []
+      // Update local settings first
+      if (settings.value) {
+        settings.value[type] = { ...settings.value[type], ...config };
       }
+
+      // Update on backend
+      const partialSettings: Partial<Settings> = {};
+      partialSettings[type] = config;
+
+      const response = await settingsApi.update(partialSettings);
+      return response.success;
     } catch (error) {
-      console.error('Failed to get voice roles:', error)
-      return []
+      console.error(`Failed to update ${type} config:`, error);
+      return false;
     }
   }
 
   // Get all settings
-  async function getAllSettings(): Promise<Settings | null> {
-    try {
-      const response = await settingsApi.getAll()
-      
-      if (response.success && response.data) {
-        return response.data
-      } else {
-        console.error('Failed to get settings:', response.error)
-        return null
-      }
-    } catch (error) {
-      console.error('Failed to get settings:', error)
-      return null
-    }
+  function getAllSettings(): Settings | null {
+    return settings.value;
   }
 
   // Update settings
-  async function updateSettings(settingsData: Partial<Settings>): Promise<Settings | null> {
+  async function updateSettings(
+    settingsData: Partial<Settings>
+  ): Promise<Settings | null> {
     try {
-      const response = await settingsApi.update(settingsData)
-      
+      // Update local copy first for responsive UI
+      if (settings.value) {
+        settings.value = { ...settings.value, ...settingsData };
+      }
+
+      // Update backend
+      const response = await settingsApi.update(settingsData);
+
       if (response.success && response.data) {
-        // Update local values if present in the response
+        // Update entire settings object with response
+        settings.value = response.data;
+
+        // Update local values for reactive UI elements
         if (settingsData.theme) {
-          theme.value = settingsData.theme
-          applyTheme()
+          theme.value = settingsData.theme;
+          applyTheme();
         }
-        
+
         if (settingsData.defaultExportPath) {
-          defaultExportPath.value = settingsData.defaultExportPath
+          defaultExportPath.value = settingsData.defaultExportPath;
         }
-        
-        return response.data
+
+        return response.data;
       } else {
-        console.error('Failed to update settings:', response.error)
-        return null
+        console.error("Failed to update settings:", response.error);
+        return null;
       }
     } catch (error) {
-      console.error('Failed to update settings:', error)
-      return null
+      console.error("Failed to update settings:", error);
+      return null;
     }
+  }
+
+  // Load service providers (now integrated in loadSettings)
+  async function loadServiceProviders() {
+    return await loadSettings();
   }
 
   return {
     theme,
     defaultExportPath,
     activeTab,
-    activeProviderId,
-    activeProvider,
-    serviceProviders,
+    activeProviderType,
+    settings,
     isLoading,
     initTheme,
     toggleTheme,
@@ -307,15 +277,13 @@ export const useSettingsStore = defineStore('settings', () => {
     loadDefaultExportPath,
     setActiveTab,
     setActiveProvider,
-    loadServiceProviders,
-    getServiceProviders,
-    getProviderById,
-    addServiceProvider,
-    updateServiceProvider,
-    deleteServiceProvider,
     testServiceProviderConnection,
-    getVoiceRoles,
     getAllSettings,
-    updateSettings
-  }
-}) 
+    updateSettings,
+    loadSettings,
+    getServiceProviders,
+    getServiceProviderConfig,
+    updateServiceProvider,
+    loadServiceProviders,
+  };
+});
