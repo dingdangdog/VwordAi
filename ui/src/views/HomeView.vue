@@ -2,34 +2,46 @@
   <div class="py-8">
     <div class="text-center mb-12">
       <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-4">
-        文本转语音软件
+        文声AI（VwordAI）
       </h1>
       <p class="text-lg text-gray-600 dark:text-gray-300 max-w-3xl mx-auto">
-        欢迎使用文本转语音软件。本软件可以让您轻松地将文本转换为高质量的语音。
+        欢迎使用文声AI（VwordAI）。本软件可以让您轻松地将文本转换为高质量的语音。
       </p>
     </div>
 
-    <div class="grid grid-cols-2 gap-6 max-w-6xl mx-auto">
+    <div class="grid grid-cols-3 gap-4 max-w-6xl mx-auto">
       <div class="card flex flex-col items-center p-6 text-center">
         <DocumentTextIcon class="h-12 w-12 text-blue-600 mb-4" />
         <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-2">
           作品管理
         </h2>
         <p class="text-gray-600 dark:text-gray-300 mb-4">
-          方便地管理您的文本内容，以项目和章节为单位进行组织。
+          轻松管理您的文本内容，按项目和章节进行高效组织。
         </p>
         <router-link to="/projects" class="btn btn-primary mt-auto"
-          >开始使用</router-link
+          >立即开始</router-link
         >
       </div>
-
       <div class="card flex flex-col items-center p-6 text-center">
         <SpeakerWaveIcon class="h-12 w-12 text-blue-600 mb-4" />
         <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-2">
           语音合成
         </h2>
         <p class="text-gray-600 dark:text-gray-300 mb-4">
-          支持多种语音服务商，提供高质量的语音合成服务。
+          将文本高效转换为语音，支持多种TTS服务选项，满足您的需求。
+        </p>
+        <router-link to="/synthesis" class="btn btn-primary mt-auto"
+          >开始合成</router-link
+        >
+      </div>
+
+      <div class="card flex flex-col items-center p-6 text-center">
+        <AdjustmentsHorizontalIcon class="h-12 w-12 text-blue-600 mb-4" />
+        <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+          自有密钥
+        </h2>
+        <p class="text-gray-600 dark:text-gray-300 mb-4">
+          轻松配置您的第三方服务密钥，享受所有功能的免费使用。
         </p>
         <router-link to="/settings" class="btn btn-primary mt-auto"
           >配置服务</router-link

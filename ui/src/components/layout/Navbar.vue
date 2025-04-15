@@ -5,12 +5,12 @@
     <div class="px-4">
       <div class="flex justify-between h-12">
         <div class="flex items-center">
-          <router-link to="/" class="flex-shrink-0 flex items-center">
+          <div class="flex-shrink-0 flex items-center">
             <img class="h-8 w-auto" src="@/assets/logo.svg" alt="Logo" />
             <span class="ml-2 text-xl font-bold text-gray-900 dark:text-white"
               >VwordAI</span
             >
-          </router-link>
+          </div>
           <div class="ml-10 flex items-baseline space-x-4 no-drag">
             <a
               href="#/"
@@ -54,7 +54,7 @@
           <!-- Theme Toggle Button -->
           <button
             @click="toggleTheme"
-            class="p-2 rounded-full text-gray-500 hover:text-gray-700 focus:outline-none dark:text-gray-400 dark:hover:text-gray-200 mr-4"
+            class="p-2 rounded-full text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 mr-4"
             title="切换主题"
           >
             <SunIcon v-if="isDarkMode" class="h-6 w-6" />
@@ -62,36 +62,36 @@
           </button>
 
           <!-- Window Control Buttons -->
-          <div
+          <button
             class="h-6 w-6 rounded-sm text-black dark:text-white hover:bg-gray-200 dark:hover:bg-gray-700 flex items-center justify-center cursor-pointer mr-2"
             @click="minimizeWindow"
             title="最小化"
           >
             <MinusIcon />
-          </div>
-          <div
+          </button>
+          <button
             class="h-6 w-6 rounded-sm text-black dark:text-white hover:bg-gray-200 dark:hover:bg-gray-700 flex items-center justify-center cursor-pointer mr-2"
             @click="maximizeWindow"
             title="最大化"
             v-show="!isMax"
           >
             <WindowIcon />
-          </div>
-          <div
+          </button>
+          <button
             class="h-6 w-6 rounded-sm text-black dark:text-white hover:bg-gray-200 dark:hover:bg-gray-700 flex items-center justify-center cursor-pointer mr-2"
             @click="maximizeWindow"
             title="还原"
             v-show="isMax"
           >
             <ComputerDesktopIcon />
-          </div>
-          <div
+          </button>
+          <button
             class="h-6 w-6 rounded-sm text-black dark:text-white hover:bg-gray-200 dark:hover:bg-gray-700 flex items-center justify-center cursor-pointer"
             @click="closeWindow"
             title="关闭"
           >
             <XMarkIcon />
-          </div>
+          </button>
         </div>
       </div>
     </div>
