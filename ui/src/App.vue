@@ -1,7 +1,7 @@
 <template>
   <div class="min-h-screen bg-gray-50 dark:bg-gray-900">
     <Navbar />
-    <main class="px-4 py-6">
+    <main class="p-4">
       <router-view />
     </main>
   </div>

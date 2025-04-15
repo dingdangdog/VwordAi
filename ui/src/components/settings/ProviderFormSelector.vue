@@ -12,7 +12,7 @@
           class="flex items-center p-4 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors text-left"
           @click="selectProviderType(provider.type)"
         >
-          <CloudIcon class="h-6 w-6 text-primary-500 mr-3" />
+          <CloudIcon class="h-6 w-6 text-blue-500 mr-3" />
           <div>
             <h4 class="font-medium text-gray-900 dark:text-white">{{ provider.name }}</h4>
             <p class="text-sm text-gray-500 dark:text-gray-400">配置{{ provider.name }}语音服务</p>

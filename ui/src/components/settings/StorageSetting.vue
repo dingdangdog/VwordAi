@@ -1,5 +1,5 @@
 <template>
-  <div class="storage-setting card p-6">
+  <div class="storage-setting card p-2 m-2">
     <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
       存储设置
     </h2>
@@ -7,8 +7,8 @@
     <div class="mb-6">
       <label
         for="exportPath"
-        class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
-        >默认存储路径</label
+        class="block text-md font-semibold text-gray-700 dark:text-gray-300 mb-2"
+        >存储路径</label
       >
       <div class="flex">
         <input
@@ -29,7 +29,7 @@
     </div>
     
     <div class="mb-6">
-      <h3 class="text-md font-medium text-gray-700 dark:text-gray-300 mb-2">音频文件格式</h3>
+      <h3 class="text-md font-semibold text-gray-700 dark:text-gray-300 mb-2">音频文件格式</h3>
       <div class="flex space-x-4">
         <label class="inline-flex items-center">
           <input type="radio" class="form-radio" name="fileFormat" value="mp3" v-model="audioFormat">
@@ -46,7 +46,7 @@
     </div>
     
     <div class="mb-6">
-      <h3 class="text-md font-medium text-gray-700 dark:text-gray-300 mb-2">命名规则</h3>
+      <h3 class="text-md font-semibold text-gray-700 dark:text-gray-300 mb-2">命名规则</h3>
       <select v-model="fileNamingRule" class="input max-w-md">
         <option value="chapter_title">章节标题</option>
         <option value="chapter_id">章节ID</option>

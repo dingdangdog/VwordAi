@@ -28,7 +28,7 @@
         <button
           class="w-full flex items-center justify-between px-3 py-2 rounded-md transition-colors text-left"
           :class="activeProviderId === provider.id ? 
-            'bg-primary-50 text-primary-700 dark:bg-primary-900/30 dark:text-primary-300' : 
+            'bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300' : 
             'hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-800 dark:text-gray-200'"
           @click="$emit('select-provider', provider.id)"
         >
@@ -36,7 +36,7 @@
             <component 
               :is="getProviderIcon(provider.name)" 
               class="h-5 w-5 mr-2" 
-              :class="activeProviderId === provider.id ? 'text-primary-600 dark:text-primary-400' : 'text-gray-500 dark:text-gray-400'"
+              :class="activeProviderId === provider.id ? 'text-blue-600 dark:text-blue-400' : 'text-gray-500 dark:text-gray-400'"
             />
             <span class="truncate">{{ provider.name }}</span>
           </div>

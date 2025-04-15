@@ -1,12 +1,12 @@
 <template>
-  <div class="about-setting card p-6">
+  <div class="about-setting card p-2 m-2">
     <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
       关于
     </h2>
     
-    <div class="flex flex-col items-center justify-center py-8">
-      <div class="w-24 h-24 bg-primary-100 dark:bg-primary-900 rounded-full flex items-center justify-center mb-4">
-        <SpeakerWaveIcon class="h-12 w-12 text-primary-600 dark:text-primary-400" />
+    <div class="flex flex-col items-center justify-center py-4">
+      <div class="w-24 h-24 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center mb-4">
+        <SpeakerWaveIcon class="h-12 w-12 text-blue-600 dark:text-blue-400" />
       </div>
       
       <h1 class="text-2xl font-bold text-gray-900 dark:text-white">VwordAI</h1>

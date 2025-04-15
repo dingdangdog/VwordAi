@@ -3,7 +3,7 @@
     class="bg-white dark:bg-gray-800 shadow sticky top-0 left-0 w-full z-50 drag-area"
   >
     <div class="px-4">
-      <div class="flex justify-between h-16">
+      <div class="flex justify-between h-12">
         <div class="flex items-center">
           <router-link to="/" class="flex-shrink-0 flex items-center">
             <img class="h-8 w-auto" src="@/assets/logo.svg" alt="Logo" />
@@ -14,7 +14,7 @@
           <div class="ml-10 flex items-baseline space-x-4 no-drag">
             <a
               href="#/"
-              class="px-3 py-2 rounded-md text-sm font-medium"
+              class="px-3 py-2 rounded-md text-sm font-semibold"
               :class="[
                 $route.path === '/'
                   ? 'bg-blue-600 text-white'
@@ -26,7 +26,7 @@
             </a>
             <a
               href="#/projects"
-              class="px-3 py-2 rounded-md text-sm font-medium"
+              class="px-3 py-2 rounded-md text-sm font-semibold"
               :class="[
                 $route.path.startsWith('/projects')
                   ? 'bg-blue-600 text-white'
@@ -38,7 +38,7 @@
             </a>
             <a
               href="#/settings"
-              class="px-3 py-2 rounded-md text-sm font-medium"
+              class="px-3 py-2 rounded-md text-sm font-semibold"
               :class="[
                 $route.path === '/settings'
                   ? 'bg-blue-600 text-white'

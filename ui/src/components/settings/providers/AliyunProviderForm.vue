@@ -4,18 +4,19 @@
       阿里云语音服务配置
     </h3>
     
-    <form @submit.prevent="saveProvider">
+    <form @submit.prevent="saveForm">
       <div class="space-y-4">
+        
         <div>
           <label for="accessKeyId" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
             Access Key ID <span class="text-red-500">*</span>
           </label>
           <input
+            type="text"
             id="accessKeyId"
             v-model="form.accessKeyId"
-            type="password"
             class="input w-full"
-            placeholder="请输入 Access Key ID"
+            placeholder="输入 Access Key ID"
             required
           />
         </div>
@@ -25,29 +26,33 @@
             Access Key Secret <span class="text-red-500">*</span>
           </label>
           <input
+            type="password"
             id="accessKeySecret"
             v-model="form.accessKeySecret"
-            type="password"
             class="input w-full"
-            placeholder="请输入 Access Key Secret"
+            placeholder="输入 Access Key Secret"
             required
           />
         </div>
         
         <div>
           <label for="regionId" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-            地域 ID <span class="text-red-500">*</span>
+            区域 <span class="text-red-500">*</span>
           </label>
-          <select
-            id="regionId"
-            v-model="form.regionId"
-            class="input w-full"
-            required
-          >
-            <option value="" disabled>请选择地域</option>
-            <option v-for="region in aliyunRegions" :key="region.value" :value="region.value">
-              {{ region.label }}
-            </option>
+          <select id="regionId" v-model="form.regionId" class="input w-full" required>
+            <option value="">请选择区域</option>
+            <option value="cn-hangzhou">华东1（杭州）</option>
+            <option value="cn-shanghai">华东2（上海）</option>
+            <option value="cn-qingdao">华北1（青岛）</option>
+            <option value="cn-beijing">华北2（北京）</option>
+            <option value="cn-zhangjiakou">华北3（张家口）</option>
+            <option value="cn-huhehaote">华北5（呼和浩特）</option>
+            <option value="cn-wulanchabu">华北6（乌兰察布）</option>
+            <option value="cn-shenzhen">华南1（深圳）</option>
+            <option value="cn-heyuan">华南2（河源）</option>
+            <option value="cn-guangzhou">华南3（广州）</option>
+            <option value="cn-chengdu">西南1（成都）</option>
+            <option value="cn-hongkong">中国（香港）</option>
           </select>
         </div>
         
@@ -86,7 +91,7 @@
           class="btn btn-primary"
           :disabled="isSaving"
         >
-          {{ isSaving ? '保存中...' : '保存' }}
+          {{ isSaving ? '保存中...' : '保存配置' }}
         </button>
       </div>
     </form>
@@ -100,12 +105,12 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue';
+import { ref, reactive, onMounted, watch } from 'vue';
 import type { AliyunServiceProviderConfig } from '@/types';
 import { useToast } from 'vue-toastification';
 
 const props = defineProps<{
-  provider?: AliyunServiceProviderConfig
+  provider: AliyunServiceProviderConfig
 }>();
 
 const emit = defineEmits<{
@@ -119,46 +124,31 @@ const isSaving = ref(false);
 const isTesting = ref(false);
 const testResult = ref<{ success: boolean; message: string } | null>(null);
 
-const aliyunRegions = [
-  { value: 'cn-hangzhou', label: '华东 1 (杭州)' },
-  { value: 'cn-shanghai', label: '华东 2 (上海)' },
-  { value: 'cn-qingdao', label: '华北 1 (青岛)' },
-  { value: 'cn-beijing', label: '华北 2 (北京)' },
-  { value: 'cn-zhangjiakou', label: '华北 3 (张家口)' },
-  { value: 'cn-huhehaote', label: '华北 5 (呼和浩特)' },
-  { value: 'cn-wulanchabu', label: '华北 6 (乌兰察布)' },
-  { value: 'cn-shenzhen', label: '华南 1 (深圳)' },
-  { value: 'cn-heyuan', label: '华南 2 (河源)' },
-  { value: 'cn-guangzhou', label: '华南 3 (广州)' },
-  { value: 'cn-chengdu', label: '西南 1 (成都)' },
-  { value: 'cn-hongkong', label: '中国香港' },
-];
-
-const form = reactive<{
-  accessKeyId: string;
-  accessKeySecret: string;
-  regionId: string;
-  appKey?: string;
-}>({
-  accessKeyId: '',
-  accessKeySecret: '',
-  regionId: '',
-  appKey: '',
+// 创建表单数据的副本，避免直接修改props
+const form = ref<AliyunServiceProviderConfig>({
+  id: props.provider.id,
+  name: props.provider.name,
+  apiKey: props.provider.apiKey,
+  secretKey: props.provider.secretKey,
+  accessKeyId: props.provider.accessKeyId,
+  accessKeySecret: props.provider.accessKeySecret,
+  regionId: props.provider.regionId,
+  appKey: props.provider.appKey,
+  createdAt: props.provider.createdAt,
+  updatedAt: props.provider.updatedAt
 });
 
-// 初始化表单
-onMounted(() => {
-  if (props.provider) {
-    form.accessKeyId = props.provider.accessKeyId || '';
-    form.accessKeySecret = props.provider.accessKeySecret || '';
-    form.regionId = props.provider.regionId || '';
-    form.appKey = props.provider.appKey || '';
+// 监听prop变化，更新表单
+watch(
+  () => props.provider,
+  (newProvider) => {
+    form.value = { ...newProvider };
   }
-});
+);
 
-// 保存配置
-async function saveProvider() {
-  if (!form.accessKeyId || !form.accessKeySecret || !form.regionId) {
+// 保存表单
+async function saveForm() {
+  if (!form.value.accessKeyId || !form.value.accessKeySecret || !form.value.regionId) {
     toast.error('请填写必填字段');
     return;
   }
@@ -166,26 +156,19 @@ async function saveProvider() {
   isSaving.value = true;
   
   try {
-    const providerData: AliyunServiceProviderConfig = {
-      id: props.provider?.id || crypto.randomUUID(),
-      name: '阿里云语音服务',
-      apiKey: form.accessKeyId, // 映射到统一的 apiKey 字段
-      secretKey: form.accessKeySecret, // 映射到统一的 secretKey 字段
-      accessKeyId: form.accessKeyId,
-      accessKeySecret: form.accessKeySecret,
-      regionId: form.regionId,
-      createdAt: props.provider?.createdAt || new Date(),
-      updatedAt: new Date(),
+    // 确保apiKey和secretKey与阿里云特定字段保持同步
+    const updatedProvider: AliyunServiceProviderConfig = {
+      ...form.value,
+      apiKey: form.value.accessKeyId, // 映射到统一的apiKey字段
+      secretKey: form.value.accessKeySecret, // 映射到统一的secretKey字段
+      updatedAt: new Date()
     };
     
-    if (form.appKey) {
-      providerData.appKey = form.appKey;
-    }
-    
-    emit('save', providerData);
+    emit('save', updatedProvider);
+    toast.success('服务商配置已保存');
   } catch (error) {
     console.error('保存服务商配置失败:', error);
-    toast.error('保存服务商配置失败');
+    toast.error('保存失败: ' + (error instanceof Error ? error.message : String(error)));
   } finally {
     isSaving.value = false;
   }
@@ -193,7 +176,7 @@ async function saveProvider() {
 
 // 测试连接
 async function testConnection() {
-  if (!form.accessKeyId || !form.accessKeySecret || !form.regionId) {
+  if (!form.value.accessKeyId || !form.value.accessKeySecret || !form.value.regionId) {
     toast.error('请先填写必填字段');
     return;
   }
@@ -202,21 +185,21 @@ async function testConnection() {
   testResult.value = null;
   
   try {
-    // 这里应该调用实际的测试接口
-    // 由于是演示，我们模拟一个测试结果
+    // 这里应该实际调用阿里云API测试连接
+    // 模拟一个测试结果
     await new Promise(resolve => setTimeout(resolve, 1500));
     
-    const success = true; // 模拟测试成功
+    const success = Math.random() > 0.3; // 随机测试结果，实际应该是真实的API调用
     testResult.value = {
       success,
-      message: success ? '连接测试成功！' : '连接测试失败，请检查配置'
+      message: success ? '连接测试成功' : '连接测试失败，请检查配置信息'
     };
     
     emit('test', testResult.value);
   } catch (error) {
     testResult.value = {
       success: false,
-      message: error instanceof Error ? error.message : '连接测试失败'
+      message: error instanceof Error ? error.message : '连接测试出错'
     };
     emit('test', testResult.value);
   } finally {
