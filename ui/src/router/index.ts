@@ -20,6 +20,18 @@ const router = createRouter({
       props: true
     },
     {
+      path: '/projects/:projectId/chapters/new',
+      name: 'chapter-create',
+      component: () => import('@/views/chapters/ChapterEditView.vue'),
+      props: true
+    },
+    {
+      path: '/projects/:projectId/chapters/:chapterId',
+      name: 'chapter-edit',
+      component: () => import('@/views/chapters/ChapterEditView.vue'),
+      props: true
+    },
+    {
       path: '/settings',
       name: 'settings',
       component: () => import('@/views/settings/SettingsView.vue')

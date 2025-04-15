@@ -104,6 +104,17 @@
         </div>
       </div>
 
+      <!-- Add Chapter Button -->
+      <div class="flex justify-end mb-6">
+        <button
+          @click="router.push(`/projects/${projectId}/chapters/new`)"
+          class="btn btn-primary flex items-center"
+        >
+          <PlusIcon class="h-5 w-5 mr-2" />
+          创建新章节
+        </button>
+      </div>
+
       <!-- Chapters List -->
       <div class="mb-6">
         <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-4">
@@ -114,11 +125,11 @@
           <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-3">
             暂无章节
           </h3>
-          <p class="text-gray-600 dark:text-gray-300 mb-5">
-            该项目还没有任何章节，请点击"新建章节"按钮开始创建。
+          <p class="text-lg text-gray-600 dark:text-gray-300 mb-4">
+            还没有章节，点击下方按钮创建第一个章节吧！
           </p>
           <button
-            @click="openCreateChapterModal"
+            @click="router.push(`/projects/${projectId}/chapters/new`)"
             class="btn btn-primary mx-auto"
           >
             创建第一个章节
@@ -142,28 +153,12 @@
                           <p class="text-md font-medium text-blue-600 truncate">
                             {{ chapter.name }}
                           </p>
-                          <div class="ml-2 flex-shrink-0 flex">
-                            <p
-                              class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full"
-                              :class="{
-                                'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200':
-                                  chapter.text.length > 0,
-                                'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200':
-                                  chapter.text.length === 0,
-                              }"
-                            >
-                              {{
-                                chapter.text.length > 0
-                                  ? "已添加内容"
-                                  : "无内容"
-                              }}
-                            </p>
-                          </div>
                         </div>
                         <div class="mt-2 flex justify-between">
                           <div class="text-sm text-gray-500 dark:text-gray-400">
                             <p>
                               最后更新：{{ formatDate(chapter.updateBy) }}
+                              <!-- Debug: {{ Object.keys(chapter).join(', ') }} -->
                             </p>
                             <p class="mt-1 line-clamp-1">
                               {{ chapter.text || "暂无内容" }}
@@ -171,7 +166,7 @@
                           </div>
                           <div class="ml-4 flex-shrink-0 flex">
                             <button
-                              @click.stop="openEditChapterModal(chapter)"
+                              @click.stop="router.push(`/projects/${projectId}/chapters/${chapter.id}`)"
                               class="mr-2 text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
                             >
                               编辑
@@ -222,7 +217,7 @@
                       <!-- Chapter Synthesis Component -->
                       <ChapterSynthesis
                         :chapter="chapter"
-                        @edit-settings="openEditChapterModal(chapter)"
+                        @edit-settings="router.push(`/projects/${projectId}/chapters/${chapter.id}`)"
                       />
                     </div>
                   </div>
@@ -572,9 +567,44 @@ async function startBatchSynthesis() {
   }
 }
 
-function exportProject() {
-  toast.info("导出功能正在开发中...");
-  // This will be implemented later
+async function exportProject() {
+  if (!project.value) {
+    toast.error("项目不存在");
+    return;
+  }
+
+  try {
+    // 准备导出数据
+    const projectData = {
+      ...project.value,
+      chapters: chapters.value
+        .filter(c => c.projectId === projectId.value)
+        .sort((a, b) => a.order - b.order)
+    };
+
+    // 转换为JSON字符串
+    const jsonData = JSON.stringify(projectData, null, 2);
+    
+    // 创建Blob
+    const blob = new Blob([jsonData], { type: 'application/json' });
+    
+    // 创建下载链接
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${project.value.title.replace(/[^\w\s]/gi, '_')}_export.json`;
+    document.body.appendChild(a);
+    a.click();
+    
+    // 清理
+    URL.revokeObjectURL(url);
+    document.body.removeChild(a);
+    
+    toast.success("项目配置导出成功");
+  } catch (error) {
+    console.error("导出项目失败:", error);
+    toast.error(`导出失败: ${error instanceof Error ? error.message : "未知错误"}`);
+  }
 }
 
 // Helper functions to get display names
