@@ -56,7 +56,7 @@ const settingsStore = useSettingsStore();
 // 定义选项卡
 const tabs = [
   { id: "provider" as SettingsTab, name: "服务商配置", icon: ServerIcon },
-  { id: "storage" as SettingsTab, name: "存储配置", icon: FolderIcon },
+  { id: "storage" as SettingsTab, name: "存储设置", icon: FolderIcon },
   { id: "about" as SettingsTab, name: "关于", icon: InformationCircleIcon },
 ];
 

@@ -1,8 +1,5 @@
 <template>
   <div class="storage-setting card p-2 m-2">
-    <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-      存储设置
-    </h2>
     
     <div class="mb-6">
       <label
