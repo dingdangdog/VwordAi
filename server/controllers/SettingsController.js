@@ -70,8 +70,28 @@ function init() {
       return error(err.message);
     }
   });
+  
+  // 获取服务商配置
+  ipcMain.handle('get-provider-settings', async (event, provider) => {
+    try {
+      return Settings.getProviderSettings(provider);
+    } catch (err) {
+      console.error('获取服务商配置失败:', err);
+      return error(err.message);
+    }
+  });
+
+  // 更新服务商配置
+  ipcMain.handle('update-provider-settings', async (event, provider, providerData) => {
+    try {
+      return Settings.updateProviderSettings(provider, providerData);
+    } catch (err) {
+      console.error('更新服务商配置失败:', err);
+      return error(err.message);
+    }
+  });
 }
 
 module.exports = {
-  init
+  init,
 }; 

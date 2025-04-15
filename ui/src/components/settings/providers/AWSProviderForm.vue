@@ -1,57 +1,68 @@
 <template>
   <div class="provider-form">
     <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-      Azure TTS 配置
+      AWS Polly TTS Configuration
     </h3>
     <p class="text-gray-600 dark:text-gray-300 mb-6">
-      配置 Azure 语音服务。您需要一个 Azure 订阅密钥和区域。
+      Configure AWS Polly for text-to-speech services. Ensure you have an AWS account with Polly enabled.
     </p>
 
     <form @submit.prevent="saveForm" class="space-y-4">
       <div>
-        <label for="key" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-          订阅密钥<span class="text-red-500">*</span>
+        <label for="accessKey" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+          Access Key ID<span class="text-red-500">*</span>
+        </label>
+        <input
+          type="text"
+          id="accessKey"
+          v-model="form.accessKey"
+          class="input w-full"
+          placeholder="Enter your AWS Access Key ID"
+          required
+        />
+      </div>
+
+      <div>
+        <label for="secretKey" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+          Secret Access Key<span class="text-red-500">*</span>
         </label>
         <input
           type="password"
-          id="key"
-          v-model="form.key"
+          id="secretKey"
+          v-model="form.secretKey"
           class="input w-full"
-          placeholder="输入您的 Azure 订阅密钥"
+          placeholder="Enter your AWS Secret Access Key"
           required
         />
-        <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
-          您的 Azure 认知服务订阅密钥。
-        </p>
       </div>
 
       <div>
         <label for="region" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-          区域<span class="text-red-500">*</span>
+          Region<span class="text-red-500">*</span>
         </label>
-        <input
-          type="text"
+        <select
           id="region"
           v-model="form.region"
           class="input w-full"
-          placeholder="例如：eastus"
           required
-        />
-        <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
-          您的服务部署的 Azure 区域（例如：eastus，westeurope）。
-        </p>
+        >
+          <option value="" disabled>Select a region</option>
+          <option v-for="region in awsRegions" :key="region.value" :value="region.value">
+            {{ region.name }}
+          </option>
+        </select>
       </div>
 
       <div>
         <label for="endpoint" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-          自定义端点（可选）
+          Custom Endpoint (Optional)
         </label>
         <input
           type="text"
           id="endpoint"
           v-model="form.endpoint"
           class="input w-full"
-          placeholder="例如：https://your-resource.cognitiveservices.azure.com/"
+          placeholder="e.g., https://polly.us-west-2.amazonaws.com"
         />
       </div>
 
@@ -61,7 +72,7 @@
           class="btn btn-secondary"
           @click="$emit('cancel')"
         >
-          取消
+          Cancel
         </button>
         <button
           type="button"
@@ -69,10 +80,10 @@
           @click="testConnection"
           :disabled="isTesting"
         >
-          {{ isTesting ? "测试中..." : "测试连接" }}
+          {{ isTesting ? "Testing..." : "Test Connection" }}
         </button>
         <button type="submit" class="btn btn-primary" :disabled="isSaving">
-          {{ isSaving ? "保存中..." : "保存配置" }}
+          {{ isSaving ? "Saving..." : "Save Configuration" }}
         </button>
       </div>
     </form>
@@ -109,9 +120,10 @@ const props = defineProps({
   provider: {
     type: Object,
     default: () => ({
-      key: "",
-      region: "",
       endpoint: "",
+      accessKey: "",
+      secretKey: "",
+      region: "",
     }),
   },
 });
@@ -124,32 +136,49 @@ const isSaving = ref(false);
 const isTesting = ref(false);
 const testResult = ref<{ success: boolean; message: string } | null>(null);
 
-// 表单数据
+// AWS Regions
+const awsRegions = [
+  { value: "us-east-1", name: "US East (N. Virginia)" },
+  { value: "us-east-2", name: "US East (Ohio)" },
+  { value: "us-west-1", name: "US West (N. California)" },
+  { value: "us-west-2", name: "US West (Oregon)" },
+  { value: "ca-central-1", name: "Canada (Central)" },
+  { value: "eu-west-1", name: "EU (Ireland)" },
+  { value: "eu-west-2", name: "EU (London)" },
+  { value: "eu-west-3", name: "EU (Paris)" },
+  { value: "eu-central-1", name: "EU (Frankfurt)" },
+  { value: "eu-north-1", name: "EU (Stockholm)" },
+  { value: "ap-northeast-1", name: "Asia Pacific (Tokyo)" },
+  { value: "ap-northeast-2", name: "Asia Pacific (Seoul)" },
+  { value: "ap-southeast-1", name: "Asia Pacific (Singapore)" },
+  { value: "ap-southeast-2", name: "Asia Pacific (Sydney)" },
+  { value: "ap-south-1", name: "Asia Pacific (Mumbai)" },
+  { value: "sa-east-1", name: "South America (São Paulo)" },
+];
+
+// Form data
 const form = reactive({
-  key: "",
+  accessKey: "",
+  secretKey: "",
   region: "",
   endpoint: "",
 });
 
-// 监听属性变化，更新表单数据
+// Watch for prop changes and update form data
 watchEffect(() => {
   if (props.provider) {
     const config = props.provider.config || {};
-    form.key = config.key || "";
+    form.accessKey = config.accessKey || "";
+    form.secretKey = config.secretKey || "";
     form.region = config.region || "";
     form.endpoint = config.endpoint || "";
   }
 });
 
-// 保存表单
+// Save form
 async function saveForm() {
-  if (!form.key) {
-    toast.error("请提供您的 Azure 订阅密钥");
-    return;
-  }
-
-  if (!form.region) {
-    toast.error("请提供您的 Azure 区域");
+  if (!form.accessKey || !form.secretKey || !form.region) {
+    toast.error("Please fill in all required fields");
     return;
   }
 
@@ -157,39 +186,35 @@ async function saveForm() {
 
   try {
     const data = {
-      key: form.key,
+      accessKey: form.accessKey,
+      secretKey: form.secretKey,
       region: form.region,
       endpoint: form.endpoint,
     };
 
-    const response = await serviceProviderApi.update("azure", data);
+    const response = await serviceProviderApi.update("aws", data);
 
     if (response.success) {
       await settingsStore.loadServiceProviders();
-      toast.success("Azure 配置已保存");
+      toast.success("AWS Polly configuration saved");
       emit("save", response.data);
     } else {
-      toast.error("保存失败: " + response.error);
+      toast.error("Save failed: " + response.error);
     }
   } catch (error) {
-    console.error("保存 Azure 配置失败:", error);
+    console.error("Failed to save AWS Polly configuration:", error);
     toast.error(
-      "保存失败: " + (error instanceof Error ? error.message : String(error))
+      "Save failed: " + (error instanceof Error ? error.message : String(error))
     );
   } finally {
     isSaving.value = false;
   }
 }
 
-// 测试连接
+// Test connection
 async function testConnection() {
-  if (!form.key) {
-    toast.error("请提供您的 Azure 订阅密钥");
-    return;
-  }
-
-  if (!form.region) {
-    toast.error("请提供您的 Azure 区域");
+  if (!form.accessKey || !form.secretKey || !form.region) {
+    toast.error("Please fill in all required fields first");
     return;
   }
 
@@ -197,17 +222,17 @@ async function testConnection() {
   testResult.value = null;
 
   try {
-    const response = await serviceProviderApi.testConnection("azure");
+    const response = await serviceProviderApi.testConnection("aws");
 
     if (response.success) {
       testResult.value = {
         success: true,
-        message: "连接测试成功",
+        message: "Connection test successful",
       };
     } else {
       testResult.value = {
         success: false,
-        message: response.error || "连接测试失败，请检查配置信息",
+        message: response.error || "Connection test failed, please check your configuration",
       };
     }
 
@@ -215,11 +240,11 @@ async function testConnection() {
   } catch (error) {
     testResult.value = {
       success: false,
-      message: error instanceof Error ? error.message : "连接测试出错",
+      message: error instanceof Error ? error.message : "Connection test error",
     };
     emit("test", testResult.value);
   } finally {
     isTesting.value = false;
   }
 }
-</script>
+</script> 

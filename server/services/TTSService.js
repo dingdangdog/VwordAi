@@ -2,487 +2,394 @@
  * 语音合成服务
  * 负责文本到语音的转换处理
  */
-const path = require('path');
-const fs = require('fs-extra');
-const os = require('os');
-const { v4: uuidv4 } = require('uuid');
-const axios = require('axios');
-const { spawn } = require('child_process');
-const { promisify } = require('util');
-const crypto = require('crypto');
+const path = require("path");
+const fs = require("fs-extra");
+const os = require("os");
+const { v4: uuidv4 } = require("uuid");
+const axios = require("axios");
+const { spawn } = require("child_process");
+const { promisify } = require("util");
+const crypto = require("crypto");
 
-const Chapter = require('../models/Chapter');
-const ServiceProvider = require('../models/ServiceProvider');
-const Settings = require('../models/Settings');
-const audioUtils = require('../utils/audioUtils');
-const { success, error } = require('../utils/result');
+const Chapter = require("../models/Chapter");
+const Settings = require("../models/Settings");
+const audioUtils = require("../utils/audioUtils");
+const { success, error } = require("../utils/result");
 
 // 加载语音模型数据
-const MODELS_JSON_PATH = path.join(__dirname, '../../storage/models.json');
+const MODELS_JSON_PATH = path.join(__dirname, "../../config/models.json");
 let voiceModels = [];
 
 try {
-  voiceModels = JSON.parse(fs.readFileSync(MODELS_JSON_PATH, 'utf8'));
-  console.log(`成功加载 ${voiceModels.length} 个语音模型`);
+  const configDir = path.dirname(MODELS_JSON_PATH);
+  fs.ensureDirSync(configDir);
+  if (!fs.existsSync(MODELS_JSON_PATH)) {
+    fs.writeJsonSync(MODELS_JSON_PATH, [], { spaces: 2 });
+    console.log(`创建空的语音模型文件: ${MODELS_JSON_PATH}`);
+  } else {
+    voiceModels = fs.readJsonSync(MODELS_JSON_PATH);
+    console.log(`成功加载 ${voiceModels.length} 个语音模型`);
+  }
 } catch (err) {
-  console.error('加载语音模型文件失败:', err);
+  console.error("加载或创建语音模型文件失败:", err);
   voiceModels = [];
 }
 
-// 文本长度限制（不同的服务商可能有不同的限制）
+// 文本长度限制
 const TEXT_LENGTH_LIMITS = {
   azure: 10000,
   aliyun: 5000,
   tencent: 5000,
-  baidu: 5000
+  baidu: 5000,
 };
 
 /**
  * 获取默认的临时输出目录
- * @returns {string} 输出目录路径
  */
 function getDefaultOutputDir() {
-  return path.join(os.tmpdir(), 'dotts_output');
+  const dir = path.join(os.tmpdir(), "dotts_output");
+  fs.ensureDirSync(dir);
+  return dir;
 }
 
 /**
  * 将文本分割成适合TTS合成的片段
- * @param {string} text 文本内容
- * @param {number} maxLength 最大长度
- * @returns {string[]} 文本片段数组
  */
 function splitTextIntoChunks(text, maxLength = 5000) {
   if (!text) return [];
-  if (text.length <= maxLength) return [text];
+  if (text.length <= maxLength) return [text.trim()].filter(s => s.length > 0);
 
-  // 尝试在句号、问号、感叹号等处分割
   const segments = [];
-  let remainingText = text;
-
-  while (remainingText.length > 0) {
-    if (remainingText.length <= maxLength) {
-      segments.push(remainingText);
-      break;
+  let remainingText = text.trim();
+  // Split by common sentence/clause endings first, then paragraphs, then force split
+  const splitRegex = new RegExp(`([\s\S]{1,${maxLength}})([.。！？?!，；,;\n\r]|$)`, 'g');
+  
+  let match;
+  while ((match = splitRegex.exec(remainingText)) !== null) {
+    const chunk = match[1].trim();
+    if (chunk) {
+        segments.push(chunk);
     }
-
-    // 在maxLength位置前找最近的句子结束标记
-    let endPos = remainingText.substring(0, maxLength).lastIndexOf('。');
-    if (endPos === -1) endPos = remainingText.substring(0, maxLength).lastIndexOf('！');
-    if (endPos === -1) endPos = remainingText.substring(0, maxLength).lastIndexOf('？');
-    if (endPos === -1) endPos = remainingText.substring(0, maxLength).lastIndexOf('.');
-    if (endPos === -1) endPos = remainingText.substring(0, maxLength).lastIndexOf('!');
-    if (endPos === -1) endPos = remainingText.substring(0, maxLength).lastIndexOf('?');
-    
-    // 如果没找到句子结束标记，则寻找逗号、分号等
-    if (endPos === -1) endPos = remainingText.substring(0, maxLength).lastIndexOf('，');
-    if (endPos === -1) endPos = remainingText.substring(0, maxLength).lastIndexOf('；');
-    if (endPos === -1) endPos = remainingText.substring(0, maxLength).lastIndexOf(',');
-    if (endPos === -1) endPos = remainingText.substring(0, maxLength).lastIndexOf(';');
-    
-    // 如果还是没找到，就按空格或换行符分割
-    if (endPos === -1) endPos = remainingText.substring(0, maxLength).lastIndexOf(' ');
-    if (endPos === -1) endPos = remainingText.substring(0, maxLength).lastIndexOf('\n');
-    
-    // 如果所有分隔符都没找到，就在最大长度处截断
-    if (endPos === -1) endPos = maxLength - 1;
-    
-    // 添加当前段落，并更新剩余文本
-    segments.push(remainingText.substring(0, endPos + 1));
-    remainingText = remainingText.substring(endPos + 1);
+    // Adjust remainingText based on the actual length matched by the regex
+    remainingText = remainingText.substring(match[0].length).trim();
+    // Reset regex index if we modified remainingText
+    splitRegex.lastIndex = 0; 
   }
 
-  return segments;
+  // Add any leftover text
+  if (remainingText) {
+      segments.push(remainingText);
+  }
+
+  // Handle cases where a single segment might still exceed the limit (e.g., long unbroken string)
+  const finalSegments = [];
+  segments.forEach(seg => {
+      if (seg.length > maxLength) {
+          for (let i = 0; i < seg.length; i += maxLength) {
+              finalSegments.push(seg.substring(i, i + maxLength));
+          }
+      } else {
+          finalSegments.push(seg);
+      }
+  });
+
+  return finalSegments.filter(s => s.length > 0);
 }
 
 /**
  * 合成单个章节的语音
  * @param {string} chapterId 章节ID
- * @returns {Promise<Object>} 结果对象
+ * @returns {Promise<Object>} 结果对象 { success: boolean, data?: {outputPath, settings}, error?: string }
  */
 async function synthesizeChapter(chapterId) {
+  let tempAudioFiles = []; // Store paths of temporary audio files for cleanup
+  let mergedFilePath = null;
+  const chapterResult = Chapter.getChapterById(chapterId);
+  if (!chapterResult.success || !chapterResult.data) {
+    return error(chapterResult.error || "获取章节数据失败");
+  }
+  const chapter = chapterResult.data;
+
   try {
-    // 1. 获取章节数据
-    const chapter = Chapter.getChapterById(chapterId);
-    if (!chapter) {
-      return error('章节不存在');
-    }
-
     if (!chapter.text || chapter.text.trim().length === 0) {
-      return error('章节文本为空，无法合成语音');
+      throw new Error("章节文本为空");
     }
 
-    // 2. 检查章节的语音设置
-    const settings = chapter.settings;
-    if (!settings || !settings.serviceProvider) {
-      return error('未设置语音服务商，请先配置服务商');
+    // 1. Determine Provider and Settings
+    const globalSettings = Settings.getAllSettings();
+    const chapterSettings = chapter.settings || {};
+    const providerType = chapterSettings.serviceProvider || globalSettings.defaultVoiceSettings?.serviceProvider;
+
+    if (!providerType || !['azure', 'aliyun', 'tencent', 'baidu'].includes(providerType)) {
+      throw new Error("未指定有效语音服务商");
     }
 
-    // 3. 获取服务商配置
-    const provider = ServiceProvider.getServiceProviderById(settings.serviceProvider);
-    if (!provider) {
-      return error('无法找到配置的语音服务商');
+    // 2. Get Provider Configuration from Settings
+    const providerConfig = globalSettings[providerType];
+    if (!isProviderConfigValid(providerType, providerConfig)) {
+      throw new Error(`服务商 '${providerType}' 配置不完整或无效`);
     }
 
-    // 4. 获取输出目录
-    const appSettings = Settings.getAllSettings();
-    const outputDir = appSettings.defaultExportPath || getDefaultOutputDir();
-    fs.ensureDirSync(outputDir);
-
-    // 5. 确定服务商类型
-    const providerType = getProviderType(provider);
+    // 3. Prepare Output Path and Synthesis Settings
+    const outputDir = globalSettings.defaultExportPath || getDefaultOutputDir();
+    const finalOutputFileName = `${chapter.name.replace(/[^a-zA-Z0-9\u4e00-\u9fa5._-]/g, "_")}_${chapterId.slice(-6)}.mp3`;
+    const finalOutputPath = path.join(outputDir, finalOutputFileName);
     
-    // 6. 分割文本（如果需要）
+    const synthesisSettings = { // Merge settings, chapter overrides global
+      ...globalSettings.defaultVoiceSettings,
+      ...chapterSettings,
+      serviceProvider: providerType // Ensure correct provider is set
+    };
+
+    // 4. Split Text
     const maxLength = TEXT_LENGTH_LIMITS[providerType] || 5000;
     const textChunks = splitTextIntoChunks(chapter.text, maxLength);
-    
-    // 7. 合成每个文本片段
-    const audioFilePaths = [];
-    let index = 0;
-    
-    for (const chunk of textChunks) {
-      const chunkFilename = textChunks.length > 1 
-        ? `${chapter.name.replace(/[^a-zA-Z0-9]/g, '_')}_part${index+1}_${uuidv4().slice(0, 8)}`
-        : `${chapter.name.replace(/[^a-zA-Z0-9]/g, '_')}_${uuidv4().slice(0, 8)}`;
-      
-      const outputPath = path.join(outputDir, chunkFilename + '.mp3');
-      
-      try {
-        // 根据服务商类型调用对应的API
-        let chunkResult;
-        
-        switch (providerType) {
-          case 'azure':
-            chunkResult = await synthesizeWithAzure(chunk, settings, outputPath, provider);
-            break;
-          case 'baidu':
-            chunkResult = await synthesizeWithBaidu(chunk, settings, outputPath, provider);
-            break;
-          case 'aliyun':
-            chunkResult = await synthesizeWithAliyun(chunk, settings, outputPath, provider);
-            break;
-          case 'tencent':
-            chunkResult = await synthesizeWithTencent(chunk, settings, outputPath, provider);
-            break;
-          default:
-            // 使用模拟数据作为备用
-            chunkResult = await synthesizeMock(chunk, settings, outputPath);
-        }
-        
-        if (chunkResult.success) {
-          audioFilePaths.push(chunkResult.outputPath);
-        } else {
-          return error(`语音合成失败: ${chunkResult.message}`);
-        }
-        
-      } catch (err) {
-        return error(`语音合成失败: ${err.message}`);
-      }
-      
-      index++;
+    if (textChunks.length === 0) {
+      throw new Error("文本分割后为空");
     }
-    
-    // 8. 如果有多个文件，合并它们
-    let finalOutputPath;
-    
-    if (audioFilePaths.length > 1) {
-      finalOutputPath = path.join(outputDir, `${chapter.name.replace(/[^a-zA-Z0-9]/g, '_')}_${uuidv4().slice(0, 8)}.mp3`);
-      await mergeAudioFiles(audioFilePaths, finalOutputPath);
-      
-      // 可选：删除临时文件
-      for (const tempFile of audioFilePaths) {
-        fs.removeSync(tempFile);
+
+    // 5. Synthesize Chunks Concurrently (if needed, though API calls are sequential here)
+    console.log(`[TTS] 开始合成章节 ${chapterId} (${chapter.name}) 使用 ${providerType}, 分为 ${textChunks.length} 块`);
+    Chapter.updateChapter(chapterId, { status: 'processing' }); // Update status
+
+    for (let i = 0; i < textChunks.length; i++) {
+      const chunk = textChunks[i];
+      const chunkFilename = `${finalOutputFileName}_part${i + 1}_${uuidv4().slice(0, 4)}.tmp.wav`;
+      const tempOutputPath = path.join(getDefaultOutputDir(), chunkFilename); // Use tmp dir for intermediate files
+      tempAudioFiles.push(tempOutputPath); // Add to list for cleanup
+
+      console.log(`[TTS] 合成块 ${i + 1}/${textChunks.length} 到 ${tempOutputPath}`);
+      let chunkResult;
+      switch (providerType) {
+        case "azure": chunkResult = await synthesizeWithAzure(chunk, synthesisSettings, tempOutputPath, providerConfig); break;
+        case "baidu": chunkResult = await synthesizeWithBaidu(chunk, synthesisSettings, tempOutputPath, providerConfig); break;
+        case "aliyun": chunkResult = await synthesizeWithAliyun(chunk, synthesisSettings, tempOutputPath, providerConfig); break;
+        case "tencent": chunkResult = await synthesizeWithTencent(chunk, synthesisSettings, tempOutputPath, providerConfig); break;
+        default: throw new Error(`不支持的服务商类型: ${providerType}`); // Should not happen due to earlier check
       }
-    } else {
-      finalOutputPath = audioFilePaths[0];
+
+      if (!chunkResult.success || !chunkResult.outputPath || !fs.existsSync(chunkResult.outputPath)) {
+        throw new Error(`语音合成失败 (块 ${i + 1}): ${chunkResult.message || '无法生成音频文件'}`);
+      }
     }
-    
-    return success({
-      chapterId: chapter.id,
-      outputPath: finalOutputPath,
-      settings
+
+    // 6. Merge and Convert
+    console.log(`[TTS] 合成 ${tempAudioFiles.length} 个音频块`);
+    if (tempAudioFiles.length > 1) {
+      mergedFilePath = path.join(getDefaultOutputDir(), `${finalOutputFileName}.merged.wav`);
+      tempAudioFiles.push(mergedFilePath); // Add merged file to cleanup list
+      await audioUtils.mergeAudioFiles(tempAudioFiles.slice(0, -1), mergedFilePath); // Merge original temps
+      console.log(`[TTS] 音频块合并到 ${mergedFilePath}`);
+    } else if (tempAudioFiles.length === 1) {
+      mergedFilePath = tempAudioFiles[0]; // Only one chunk, use it directly
+    }
+
+    if (!mergedFilePath || !fs.existsSync(mergedFilePath)) {
+        throw new Error("合并或选择音频块失败");
+    }
+
+    console.log(`[TTS] 转换音频到 MP3: ${finalOutputPath}`);
+    await audioUtils.convertAudioFormat(mergedFilePath, finalOutputPath, 'mp3');
+    console.log(`[TTS] 成功生成最终文件: ${finalOutputPath}`);
+
+    // 7. Update Chapter Status and Return Success
+    Chapter.updateChapter(chapterId, { audioPath: finalOutputPath, status: 'completed' });
+    return success({ chapterId: chapter.id, outputPath: finalOutputPath, settings: synthesisSettings });
+
+  } catch (err) {
+    console.error(`[TTS] 章节 ${chapterId} 合成失败:`, err);
+    try {
+      Chapter.updateChapter(chapterId, { status: 'error' });
+    } catch (updateError) {
+      console.error(`[TTS] 更新章节 ${chapterId} 错误状态失败:`, updateError);
+    }
+    return error(`合成失败: ${err.message}`);
+  } finally {
+    // 8. Cleanup Temporary Files
+    console.log(`[TTS] 清理临时文件: ${tempAudioFiles.join(', ')}`);
+    tempAudioFiles.forEach(fp => {
+        if (fp && fs.existsSync(fp)) {
+            try { fs.removeSync(fp); } catch (e) { console.error(`删除临时文件 ${fp} 失败:`, e); }
+        }
     });
-
-  } catch (err) {
-    console.error('语音合成失败:', err);
-    return error(`语音合成失败: ${err.message}`);
   }
 }
 
 /**
- * 使用Azure TTS服务合成语音
- * @param {string} text 文本内容
- * @param {Object} settings 语音设置
- * @param {string} outputPath 输出路径
- * @param {Object} provider 服务商配置
- * @returns {Promise<Object>} 结果对象
+ * 检查服务商配置是否包含必需的字段
  */
-async function synthesizeWithAzure(text, settings, outputPath, provider) {
+function isProviderConfigValid(providerType, config) {
+    if (!config) return false;
+    switch(providerType) {
+        case 'azure': return !!config.key && !!config.region;
+        case 'aliyun': return !!config.appkey && !!config.token;
+        case 'tencent': return !!config.secretId && !!config.secretKey;
+        case 'baidu': return !!config.apiKey && !!config.secretKey;
+        default: return false;
+    }
+}
+
+// --- Individual Provider Synthesis Functions (MOCK IMPLEMENTATIONS) ---
+// These should be replaced with actual SDK/API calls.
+// They now receive `config` directly from Settings.
+
+async function synthesizeWithAzure(text, settings, outputPath, config) {
+  console.log(`[Azure MOCK] 合成 ${text.length} 字符, Voice: ${settings.voice}, Speed: ${settings.speed}`);
+  if (!isProviderConfigValid('azure', config)) return { success: false, message: 'Azure配置无效' };
   try {
-    // 注意：这里是模拟实现
-    // 在实际应用中，应该使用Azure Speech SDK或REST API
-    
-    console.log('使用Azure TTS服务合成语音:', text.substring(0, 50) + '...');
-    
-    // 模拟API调用
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    // 创建一个示例音频文件
-    fs.writeFileSync(outputPath, Buffer.from('Azure TTS audio file simulation'));
-    
+    await new Promise(resolve => setTimeout(resolve, 300 + Math.random() * 300)); // Simulate API call
+    const mockWavHeader = Buffer.from('RIFF....WAVEfmt ....', 'ascii');
+    fs.ensureDirSync(path.dirname(outputPath));
+    fs.writeFileSync(outputPath, Buffer.concat([mockWavHeader, Buffer.from(`Azure:${text}`)]));
     return { success: true, outputPath };
-  } catch (err) {
-    console.error('Azure TTS合成失败:', err);
-    return { success: false, message: err.message };
-  }
+  } catch (err) { return { success: false, message: `Azure模拟失败: ${err.message}` }; }
 }
 
-/**
- * 使用百度TTS服务合成语音
- * @param {string} text 文本内容
- * @param {Object} settings 语音设置
- * @param {string} outputPath 输出路径
- * @param {Object} provider 服务商配置
- * @returns {Promise<Object>} 结果对象
- */
-async function synthesizeWithBaidu(text, settings, outputPath, provider) {
+async function synthesizeWithBaidu(text, settings, outputPath, config) {
+  console.log(`[Baidu MOCK] 合成 ${text.length} 字符, Voice: ${settings.voice}, Speed: ${settings.speed}`);
+  if (!isProviderConfigValid('baidu', config)) return { success: false, message: 'Baidu配置无效' };
   try {
-    // 注意：这里是模拟实现
-    // 在实际应用中，应该使用百度TTS API
-    
-    console.log('使用百度TTS服务合成语音:', text.substring(0, 50) + '...');
-    
-    // 模拟API调用
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    // 创建一个示例音频文件
-    fs.writeFileSync(outputPath, Buffer.from('Baidu TTS audio file simulation'));
-    
+    await new Promise(resolve => setTimeout(resolve, 300 + Math.random() * 300));
+    const mockWavHeader = Buffer.from('RIFF....WAVEfmt ....', 'ascii');
+    fs.ensureDirSync(path.dirname(outputPath));
+    fs.writeFileSync(outputPath, Buffer.concat([mockWavHeader, Buffer.from(`Baidu:${text}`)]));
     return { success: true, outputPath };
-  } catch (err) {
-    console.error('百度TTS合成失败:', err);
-    return { success: false, message: err.message };
-  }
+  } catch (err) { return { success: false, message: `Baidu模拟失败: ${err.message}` }; }
 }
 
-/**
- * 使用阿里云TTS服务合成语音
- * @param {string} text 文本内容
- * @param {Object} settings 语音设置
- * @param {string} outputPath 输出路径
- * @param {Object} provider 服务商配置
- * @returns {Promise<Object>} 结果对象
- */
-async function synthesizeWithAliyun(text, settings, outputPath, provider) {
+async function synthesizeWithAliyun(text, settings, outputPath, config) {
+  console.log(`[Aliyun MOCK] 合成 ${text.length} 字符, Voice: ${settings.voice}, Speed: ${settings.speed}`);
+  if (!isProviderConfigValid('aliyun', config)) return { success: false, message: 'Aliyun配置无效' };
   try {
-    // 注意：这里是模拟实现
-    // 在实际应用中，应该使用阿里云TTS API
-    
-    console.log('使用阿里云TTS服务合成语音:', text.substring(0, 50) + '...');
-    
-    // 模拟API调用
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    // 创建一个示例音频文件
-    fs.writeFileSync(outputPath, Buffer.from('Aliyun TTS audio file simulation'));
-    
+    await new Promise(resolve => setTimeout(resolve, 300 + Math.random() * 300));
+    const mockWavHeader = Buffer.from('RIFF....WAVEfmt ....', 'ascii');
+    fs.ensureDirSync(path.dirname(outputPath));
+    fs.writeFileSync(outputPath, Buffer.concat([mockWavHeader, Buffer.from(`Aliyun:${text}`)]));
     return { success: true, outputPath };
-  } catch (err) {
-    console.error('阿里云TTS合成失败:', err);
-    return { success: false, message: err.message };
-  }
+  } catch (err) { return { success: false, message: `Aliyun模拟失败: ${err.message}` }; }
 }
 
-/**
- * 使用腾讯云TTS服务合成语音
- * @param {string} text 文本内容
- * @param {Object} settings 语音设置
- * @param {string} outputPath 输出路径
- * @param {Object} provider 服务商配置
- * @returns {Promise<Object>} 结果对象
- */
-async function synthesizeWithTencent(text, settings, outputPath, provider) {
+async function synthesizeWithTencent(text, settings, outputPath, config) {
+  console.log(`[Tencent MOCK] 合成 ${text.length} 字符, Voice: ${settings.voice}, Speed: ${settings.speed}`);
+  if (!isProviderConfigValid('tencent', config)) return { success: false, message: 'Tencent配置无效' };
   try {
-    // 注意：这里是模拟实现
-    // 在实际应用中，应该使用腾讯云TTS API
-    
-    console.log('使用腾讯云TTS服务合成语音:', text.substring(0, 50) + '...');
-    
-    // 模拟API调用
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    // 创建一个示例音频文件
-    fs.writeFileSync(outputPath, Buffer.from('Tencent TTS audio file simulation'));
-    
+    await new Promise(resolve => setTimeout(resolve, 300 + Math.random() * 300));
+    const mockWavHeader = Buffer.from('RIFF....WAVEfmt ....', 'ascii');
+    fs.ensureDirSync(path.dirname(outputPath));
+    fs.writeFileSync(outputPath, Buffer.concat([mockWavHeader, Buffer.from(`Tencent:${text}`)]));
     return { success: true, outputPath };
-  } catch (err) {
-    console.error('腾讯云TTS合成失败:', err);
-    return { success: false, message: err.message };
-  }
+  } catch (err) { return { success: false, message: `Tencent模拟失败: ${err.message}` }; }
 }
 
-/**
- * 使用模拟数据合成语音（备用方案）
- * @param {string} text 文本内容
- * @param {Object} settings 语音设置
- * @param {string} outputPath 输出路径
- * @returns {Promise<Object>} 结果对象
- */
-async function synthesizeMock(text, settings, outputPath) {
-  try {
-    console.log('使用模拟数据合成语音:', text.substring(0, 50) + '...');
-    
-    // 模拟处理延迟
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    // 创建一个示例音频文件
-    fs.writeFileSync(outputPath, Buffer.from('Mock TTS audio file simulation'));
-    
-    return { success: true, outputPath };
-  } catch (err) {
-    console.error('模拟TTS合成失败:', err);
-    return { success: false, message: err.message };
-  }
-}
+// --- End of Mock Implementations ---
+
 
 /**
- * 合并多个音频文件
- * @param {string[]} inputFiles 输入文件路径数组
- * @param {string} outputFile 输出文件路径
- */
-async function mergeAudioFiles(inputFiles, outputFile) {
-  if (inputFiles.length === 0) {
-    throw new Error('没有要合并的音频文件');
-  }
-  
-  if (inputFiles.length === 1) {
-    // 如果只有一个文件，直接复制它
-    fs.copyFileSync(inputFiles[0], outputFile);
-    return;
-  }
-  
-  // TODO: 实现音频文件合并
-  // 这需要使用ffmpeg或其他音频处理库
-  // 临时使用简单的文件连接作为示例
-  const writeStream = fs.createWriteStream(outputFile);
-  
-  for (const inputFile of inputFiles) {
-    const content = fs.readFileSync(inputFile);
-    writeStream.write(content);
-  }
-  
-  writeStream.end();
-  
-  return new Promise((resolve, reject) => {
-    writeStream.on('finish', resolve);
-    writeStream.on('error', reject);
-  });
-}
-
-/**
- * 批量合成多个章节的语音
- * @param {string[]} chapterIds 章节ID数组
- * @returns {Promise<Object>} 结果对象
+ * 批量合成多个章节的语音 (并发控制)
  */
 async function synthesizeMultipleChapters(chapterIds) {
   if (!Array.isArray(chapterIds) || chapterIds.length === 0) {
-    return error('请指定要合成的章节');
+    return error("未指定要合成的章节ID");
   }
 
   const results = [];
   const errors = [];
+  const globalSettings = Settings.getAllSettings();
+  const maxConcurrentTasks = globalSettings.maxConcurrentTasks > 0 ? globalSettings.maxConcurrentTasks : 1; // Ensure at least 1
 
-  // 串行处理，避免并发请求API可能导致的限流问题
-  for (const chapterId of chapterIds) {
-    const result = await synthesizeChapter(chapterId);
-    if (result.c === 200) {
-      results.push(result.d);
-    } else {
-      errors.push({
-        chapterId,
-        error: result.m
-      });
+  console.log(`[TTS Batch] 开始批量合成 ${chapterIds.length} 个章节，最大并发数: ${maxConcurrentTasks}`);
+
+  // Initial status update
+  chapterIds.forEach(id => {
+    try { Chapter.updateChapter(id, { status: 'processing' }); }
+    catch(e) { console.error(`[TTS Batch] 更新章节 ${id} 初始状态失败:`, e); }
+  });
+
+  const taskQueue = [...chapterIds];
+  let runningTasks = 0;
+
+  return new Promise((resolve) => {
+    function runNextTask() {
+      while (runningTasks < maxConcurrentTasks && taskQueue.length > 0) {
+        runningTasks++;
+        const chapterId = taskQueue.shift();
+        console.log(`[TTS Batch] 启动任务: ${chapterId} (队列剩余: ${taskQueue.length}, 运行中: ${runningTasks})`);
+        
+        synthesizeChapter(chapterId)
+          .then(result => {
+            if (result.success) {
+              results.push(result.data);
+              console.log(`[TTS Batch] 任务成功: ${chapterId}`);
+            } else {
+              errors.push({ chapterId, error: result.error });
+              console.error(`[TTS Batch] 任务失败: ${chapterId} - ${result.error}`);
+              // Status already set to 'error' by synthesizeChapter on failure
+            }
+          })
+          .catch(err => {
+            errors.push({ chapterId, error: err.message });
+            console.error(`[TTS Batch] 任务异常: ${chapterId} - ${err.message}`);
+            // Ensure status is error if an exception occurred
+            try { Chapter.updateChapter(chapterId, { status: 'error' }); } catch (e) {}
+          })
+          .finally(() => {
+            runningTasks--;
+            console.log(`[TTS Batch] 任务完成: ${chapterId} (队列剩余: ${taskQueue.length}, 运行中: ${runningTasks})`);
+            if (taskQueue.length === 0 && runningTasks === 0) {
+              // All tasks finished
+              console.log(`[TTS Batch] 所有任务完成. 成功: ${results.length}, 失败: ${errors.length}`);
+              resolve(success({
+                successful: results,
+                failed: errors,
+                total: chapterIds.length,
+                successCount: results.length,
+                failureCount: errors.length,
+              }));
+            } else {
+              // Run next task if possible
+              runNextTask(); 
+            }
+          });
+      }
     }
-  }
-
-  return success({
-    successful: results,
-    failed: errors,
-    total: chapterIds.length,
-    successCount: results.length,
-    failureCount: errors.length
+    // Start initial tasks
+    runNextTask(); 
   });
 }
 
 /**
- * 获取服务商类型
- * @param {Object} provider 服务商配置对象
- * @returns {string} 服务商类型
- */
-function getProviderType(provider) {
-  const name = provider.name.toLowerCase();
-  
-  if (name.includes('azure') || name.includes('microsoft')) {
-    return 'azure';
-  }
-  
-  if (name.includes('baidu') || name.includes('百度')) {
-    return 'baidu';
-  }
-  
-  if (name.includes('aliyun') || name.includes('alibaba') || name.includes('阿里')) {
-    return 'aliyun';
-  }
-  
-  if (name.includes('tencent') || name.includes('腾讯')) {
-    return 'tencent';
-  }
-  
-  return 'unknown';
-}
-
-/**
  * 从models.json数据中获取声音角色列表
- * @param {string} providerType 服务商类型
- * @returns {Array} 声音角色列表
  */
 function getVoiceRolesFromModels(providerType) {
-  const filteredModels = voiceModels.filter(model => model.provider === providerType);
+  if (!voiceModels || voiceModels.length === 0) return [];
+  const lowerProviderType = providerType.toLowerCase();
   
-  return filteredModels.map(model => ({
-    id: model.code,
-    name: model.name,
-    language: model.lang.includes('中文') ? 'zh-CN' : 'en-US',
-    gender: model.gender === '0' ? 'female' : 'male',
-    description: model.lang
-  }));
+  return voiceModels
+    .filter(model => model.provider && model.provider.toLowerCase() === lowerProviderType)
+    .map(model => ({
+      id: model.code,
+      name: model.name,
+      language: model.lang.includes("中") ? "zh-CN" : (model.lang.includes("英") ? "en-US" : model.lang),
+      gender: model.gender === "0" ? "female" : "male",
+      description: model.lang,
+      options: model.options || [],
+      emotions: model.emotions || []
+    }));
 }
 
 /**
  * 获取特定服务商支持的声音角色列表
- * @param {string} providerId 服务商ID
- * @returns {Promise<Object>} 结果对象
  */
-async function getVoiceRoles(providerId) {
+async function getVoiceRoles(providerType) {
   try {
-    const provider = ServiceProvider.getServiceProviderById(providerId);
-    if (!provider) {
-      return error('服务商不存在');
+    if (!providerType || !['azure', 'aliyun', 'tencent', 'baidu'].includes(providerType.toLowerCase())) {
+        return error("无效的服务商类型");
     }
-
-    const providerType = getProviderType(provider);
-    
-    // 从models.json中获取角色列表
-    const voiceRoles = getVoiceRolesFromModels(providerType);
-    
-    // 如果没有找到角色，返回默认角色
-    if (voiceRoles.length === 0) {
-      return success([
-        { id: 'default_male', name: '默认男声', language: 'zh', gender: 'male' },
-        { id: 'default_female', name: '默认女声', language: 'zh', gender: 'female' }
-      ]);
+    const roles = getVoiceRolesFromModels(providerType);
+    if (roles.length === 0) {
+      console.warn(`未找到服务商 '${providerType}' 的语音模型`);
     }
-    
-    return success(voiceRoles);
+    return success(roles);
   } catch (err) {
     return error(`获取声音角色失败: ${err.message}`);
   }
@@ -490,57 +397,33 @@ async function getVoiceRoles(providerId) {
 
 /**
  * 从models.json数据中获取特定声音模型的情感列表
- * @param {string} providerType 服务商类型
- * @param {string} voiceId 声音ID
- * @returns {Array} 情感列表
  */
 function getEmotionsFromModels(providerType, voiceId) {
-  // 首先尝试根据voiceId精确匹配
-  const model = voiceModels.find(m => m.provider === providerType && m.code === voiceId);
-  
-  if (model && model.emotions && Array.isArray(model.emotions)) {
-    return model.emotions.map(emotion => ({
-      id: emotion.code,
-      name: emotion.name,
-      description: emotion.desc
-    }));
-  }
-  
-  // 如果没有找到，则返回该服务商下第一个有情感的模型的情感列表
-  const modelWithEmotions = voiceModels.find(
-    m => m.provider === providerType && m.emotions && Array.isArray(m.emotions)
+  if (!voiceModels || voiceModels.length === 0) return [];
+  const lowerProviderType = providerType.toLowerCase();
+
+  const model = voiceModels.find(
+    m => m.provider && m.provider.toLowerCase() === lowerProviderType && m.code === voiceId
   );
-  
-  if (modelWithEmotions && modelWithEmotions.emotions) {
-    return modelWithEmotions.emotions.map(emotion => ({
-      id: emotion.code,
-      name: emotion.name,
-      description: emotion.desc
-    }));
+
+  if (model && model.emotions && Array.isArray(model.emotions)) {
+    return model.emotions.map(e => ({ id: e.code, name: e.name, description: e.desc }));
   }
-  
-  // 如果还是没有找到，返回空数组
   return [];
 }
 
 /**
- * 获取特定服务商支持的情感列表
- * @param {string} providerId 服务商ID
- * @param {string} voiceId 声音ID (可选)
- * @returns {Promise<Object>} 结果对象
+ * 获取特定服务商和声音支持的情感列表
  */
-async function getEmotions(providerId, voiceId) {
+async function getEmotions(providerType, voiceId) {
   try {
-    const provider = ServiceProvider.getServiceProviderById(providerId);
-    if (!provider) {
-      return error('服务商不存在');
+    if (!providerType || !['azure', 'aliyun', 'tencent', 'baidu'].includes(providerType.toLowerCase())) {
+      return error("无效的服务商类型");
     }
-
-    const providerType = getProviderType(provider);
-    
-    // 从models.json中获取情感列表
+    if (!voiceId) {
+      return error("未指定声音ID");
+    }
     const emotions = getEmotionsFromModels(providerType, voiceId);
-    
     return success(emotions);
   } catch (err) {
     return error(`获取情感列表失败: ${err.message}`);
@@ -551,5 +434,5 @@ module.exports = {
   synthesizeChapter,
   synthesizeMultipleChapters,
   getVoiceRoles,
-  getEmotions
-}; 
+  getEmotions,
+};

@@ -16,6 +16,26 @@ const DEFAULT_SETTINGS = {
   defaultExportPath: path.join(os.homedir(), 'Documents', 'DOTTS'),
   language: 'zh_CN',
   outputFormat: 'mp3',
+  azure: {
+    key: '',
+    region: '',
+    endpoint: ''
+  },
+  aliyun: {
+    appkey: '',
+    token: '',
+    endpoint: ''
+  },
+  tencent: {
+    secretId: '',
+    secretKey: '',
+    endpoint: ''
+  },
+  baidu: {
+    apiKey: '',
+    secretKey: '',
+    endpoint: ''
+  },
   defaultVoiceSettings: {
     serviceProvider: null,
     voice: null,
@@ -25,7 +45,9 @@ const DEFAULT_SETTINGS = {
   },
   autoSave: true,
   autoSaveInterval: 5, // 分钟
-  maxConcurrentTasks: 2
+  maxConcurrentTasks: 2,
+  fileNamingRule: 'chapter_title',
+  customNamingFormat: '{project}-{chapter}'
 };
 
 /**
@@ -114,6 +136,55 @@ class Settings {
       return success({ path });
     } catch (err) {
       console.error('设置导出路径失败:', err);
+      return error(err.message);
+    }
+  }
+
+  /**
+   * 获取特定服务商配置
+   * @param {string} provider 服务商名称 (azure, aliyun, tencent, baidu)
+   * @returns {Object} 包含服务商配置的结果对象
+   */
+  static getProviderSettings(provider) {
+    try {
+      const settings = this.getAllSettings();
+      const providerSettings = settings[provider] || DEFAULT_SETTINGS[provider];
+      
+      return success({ 
+        provider,
+        settings: providerSettings 
+      });
+    } catch (err) {
+      console.error(`获取${provider}配置失败:`, err);
+      return error(err.message);
+    }
+  }
+
+  /**
+   * 更新特定服务商配置
+   * @param {string} provider 服务商名称 (azure, aliyun, tencent, baidu)
+   * @param {Object} providerData 服务商配置数据
+   * @returns {Object} 包含更新后的服务商配置的结果对象
+   */
+  static updateProviderSettings(provider, providerData) {
+    try {
+      const settings = this.getAllSettings();
+      
+      // 确保provider字段存在
+      if (!settings[provider]) {
+        settings[provider] = {};
+      }
+      
+      // 合并新的配置数据
+      settings[provider] = { ...settings[provider], ...providerData };
+      
+      storage.saveConfig(SETTINGS_KEY, settings);
+      return success({ 
+        provider, 
+        settings: settings[provider] 
+      });
+    } catch (err) {
+      console.error(`更新${provider}配置失败:`, err);
       return error(err.message);
     }
   }

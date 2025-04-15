@@ -1,57 +1,39 @@
 <template>
   <div class="provider-form">
     <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-      Azure TTS 配置
+      Google Cloud TTS Configuration
     </h3>
     <p class="text-gray-600 dark:text-gray-300 mb-6">
-      配置 Azure 语音服务。您需要一个 Azure 订阅密钥和区域。
+      Configure Google Cloud Text-to-Speech service. You'll need a Google Cloud account with the TTS API enabled.
     </p>
 
     <form @submit.prevent="saveForm" class="space-y-4">
       <div>
-        <label for="key" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-          订阅密钥<span class="text-red-500">*</span>
+        <label for="credentials" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+          Service Account Key (JSON)<span class="text-red-500">*</span>
         </label>
-        <input
-          type="password"
-          id="key"
-          v-model="form.key"
-          class="input w-full"
-          placeholder="输入您的 Azure 订阅密钥"
+        <textarea
+          id="credentials"
+          v-model="form.credentials"
+          class="input w-full h-48 font-mono text-sm"
+          placeholder='Paste your Google Cloud service account key JSON here'
           required
-        />
+        ></textarea>
         <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
-          您的 Azure 认知服务订阅密钥。
-        </p>
-      </div>
-
-      <div>
-        <label for="region" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-          区域<span class="text-red-500">*</span>
-        </label>
-        <input
-          type="text"
-          id="region"
-          v-model="form.region"
-          class="input w-full"
-          placeholder="例如：eastus"
-          required
-        />
-        <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
-          您的服务部署的 Azure 区域（例如：eastus，westeurope）。
+          Paste your service account key JSON. Make sure it has the Cloud TTS API permissions.
         </p>
       </div>
 
       <div>
         <label for="endpoint" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-          自定义端点（可选）
+          Custom Endpoint (Optional)
         </label>
         <input
           type="text"
           id="endpoint"
           v-model="form.endpoint"
           class="input w-full"
-          placeholder="例如：https://your-resource.cognitiveservices.azure.com/"
+          placeholder="e.g., https://texttospeech.googleapis.com"
         />
       </div>
 
@@ -61,7 +43,7 @@
           class="btn btn-secondary"
           @click="$emit('cancel')"
         >
-          取消
+          Cancel
         </button>
         <button
           type="button"
@@ -69,10 +51,10 @@
           @click="testConnection"
           :disabled="isTesting"
         >
-          {{ isTesting ? "测试中..." : "测试连接" }}
+          {{ isTesting ? "Testing..." : "Test Connection" }}
         </button>
         <button type="submit" class="btn btn-primary" :disabled="isSaving">
-          {{ isSaving ? "保存中..." : "保存配置" }}
+          {{ isSaving ? "Saving..." : "Save Configuration" }}
         </button>
       </div>
     </form>
@@ -109,8 +91,7 @@ const props = defineProps({
   provider: {
     type: Object,
     default: () => ({
-      key: "",
-      region: "",
+      credentials: "",
       endpoint: "",
     }),
   },
@@ -124,32 +105,40 @@ const isSaving = ref(false);
 const isTesting = ref(false);
 const testResult = ref<{ success: boolean; message: string } | null>(null);
 
-// 表单数据
+// Form data
 const form = reactive({
-  key: "",
-  region: "",
+  credentials: "",
   endpoint: "",
 });
 
-// 监听属性变化，更新表单数据
+// Watch for prop changes and update form data
 watchEffect(() => {
   if (props.provider) {
     const config = props.provider.config || {};
-    form.key = config.key || "";
-    form.region = config.region || "";
+    form.credentials = config.credentials || "";
     form.endpoint = config.endpoint || "";
   }
 });
 
-// 保存表单
+// Validate JSON format
+function isValidJSON(str: string): boolean {
+  try {
+    JSON.parse(str);
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+
+// Save form
 async function saveForm() {
-  if (!form.key) {
-    toast.error("请提供您的 Azure 订阅密钥");
+  if (!form.credentials) {
+    toast.error("Please provide your Google Cloud service account key");
     return;
   }
 
-  if (!form.region) {
-    toast.error("请提供您的 Azure 区域");
+  if (!isValidJSON(form.credentials)) {
+    toast.error("The service account key must be valid JSON");
     return;
   }
 
@@ -157,39 +146,38 @@ async function saveForm() {
 
   try {
     const data = {
-      key: form.key,
-      region: form.region,
+      credentials: form.credentials,
       endpoint: form.endpoint,
     };
 
-    const response = await serviceProviderApi.update("azure", data);
+    const response = await serviceProviderApi.update("google", data);
 
     if (response.success) {
       await settingsStore.loadServiceProviders();
-      toast.success("Azure 配置已保存");
+      toast.success("Google Cloud TTS configuration saved");
       emit("save", response.data);
     } else {
-      toast.error("保存失败: " + response.error);
+      toast.error("Save failed: " + response.error);
     }
   } catch (error) {
-    console.error("保存 Azure 配置失败:", error);
+    console.error("Failed to save Google Cloud TTS configuration:", error);
     toast.error(
-      "保存失败: " + (error instanceof Error ? error.message : String(error))
+      "Save failed: " + (error instanceof Error ? error.message : String(error))
     );
   } finally {
     isSaving.value = false;
   }
 }
 
-// 测试连接
+// Test connection
 async function testConnection() {
-  if (!form.key) {
-    toast.error("请提供您的 Azure 订阅密钥");
+  if (!form.credentials) {
+    toast.error("Please provide your Google Cloud service account key");
     return;
   }
 
-  if (!form.region) {
-    toast.error("请提供您的 Azure 区域");
+  if (!isValidJSON(form.credentials)) {
+    toast.error("The service account key must be valid JSON");
     return;
   }
 
@@ -197,17 +185,17 @@ async function testConnection() {
   testResult.value = null;
 
   try {
-    const response = await serviceProviderApi.testConnection("azure");
+    const response = await serviceProviderApi.testConnection("google");
 
     if (response.success) {
       testResult.value = {
         success: true,
-        message: "连接测试成功",
+        message: "Connection test successful",
       };
     } else {
       testResult.value = {
         success: false,
-        message: response.error || "连接测试失败，请检查配置信息",
+        message: response.error || "Connection test failed, please check your configuration",
       };
     }
 
@@ -215,11 +203,11 @@ async function testConnection() {
   } catch (error) {
     testResult.value = {
       success: false,
-      message: error instanceof Error ? error.message : "连接测试出错",
+      message: error instanceof Error ? error.message : "Connection test error",
     };
     emit("test", testResult.value);
   } finally {
     isTesting.value = false;
   }
 }
-</script>
+</script> 

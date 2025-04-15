@@ -58,34 +58,30 @@ export interface ServiceProviderConfig {
 // 服务商类型
 export type ServiceProviderType = "azure" | "aliyun" | "tencent" | "baidu";
 
-// 微软 Azure TTS 服务商配置
-export interface AzureServiceProviderConfig extends ServiceProviderConfig {
-  region: string; // Azure 区域
-  endpoint?: string; // 自定义终端节点 (可选)
+// 配置文件中的服务商配置
+export interface AzureConfig {
+  key: string;
+  region: string;
+  endpoint: string;
 }
 
-// 阿里云 TTS 服务商配置
-export interface AliyunServiceProviderConfig extends ServiceProviderConfig {
-  regionId: string; // 地域ID
-  accessKeyId: string; // Access Key ID (apiKey 映射至此字段)
-  accessKeySecret: string; // Access Key Secret (secretKey 映射至此字段)
-  appKey?: string; // 应用 ID (可选，某些服务需要)
+export interface AliyunConfig {
+  appkey: string;
+  token: string;
+  region: string;
+  endpoint: string;
 }
 
-// 腾讯云 TTS 服务商配置
-export interface TencentServiceProviderConfig extends ServiceProviderConfig {
-  region: string; // 地域
-  secretId: string; // Secret ID (apiKey 映射至此字段)
-  secretKey: string; // Secret Key
-  appId: string; // 应用 ID
+export interface TencentConfig {
+  secretId: string;
+  secretKey: string;
+  endpoint: string;
 }
 
-// 百度智能云 TTS 服务商配置
-export interface BaiduServiceProviderConfig extends ServiceProviderConfig {
-  appId: string; // 应用 ID
-  apiKey: string; // API Key
-  secretKey: string; // Secret Key
-  token?: string; // 访问令牌 (可选，有些接口需要)
+export interface BaiduConfig {
+  apiKey: string;
+  secretKey: string;
+  endpoint: string;
 }
 
 // API响应结果
@@ -130,23 +126,6 @@ export interface ChapterSettings {
 }
 
 /**
- * 服务商配置接口
- */
-export interface ServiceProvider {
-  id: string;
-  name: string;
-  type: string;
-  apiKey: string;
-  apiSecret: string;
-  region?: string;
-  endpoint?: string;
-  enabled: boolean;
-  createAt: string;
-  updateAt: string;
-  config: Record<string, any>;
-}
-
-/**
  * 语音角色接口
  */
 export interface VoiceRole {
@@ -185,10 +164,16 @@ export interface Settings {
   language: string;
   defaultExportPath: string;
   outputFormat: "mp3" | "wav";
+  azure: AzureConfig;
+  aliyun: AliyunConfig;
+  tencent: TencentConfig;
+  baidu: BaiduConfig;
   defaultVoiceSettings: ChapterSettings;
   autoSave: boolean;
   autoSaveInterval: number;
   maxConcurrentTasks: number;
+  fileNamingRule: string;
+  customNamingFormat: string;
 }
 
 /**

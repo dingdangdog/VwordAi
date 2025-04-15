@@ -199,7 +199,7 @@ import { ref, reactive, watchEffect, onMounted, computed } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useProjectsStore } from "@/stores/projects";
 import { useToast } from "vue-toastification";
-import type { TTSSettings, VoiceRole } from "@/types";
+import type { TTSSettings } from "@/types";
 import { SUPPORTED_PROVIDERS } from "@/services/tts";
 
 const route = useRoute();
@@ -220,14 +220,14 @@ const isNewChapter = ref(true);
 // Get voice roles from projects store
 const voiceRoles = computed(() => {
   if (!form.settings.serviceProvider) return [];
-  return projectsStore.voiceModels
-    .filter(model => model.provider === form.settings.serviceProvider)
-    .map(model => ({
-      id: model.code,
-      name: model.name,
-      gender: model.gender === '0' ? 'female' : 'male',
-      language: model.lang.includes('中文') ? 'zh-CN' : 'en-US'
-    }));
+  
+  const models = projectsStore.getVoiceModelsByProvider(form.settings.serviceProvider);
+  return models.map(model => ({
+    id: model.code,
+    name: model.name,
+    gender: model.gender === '0' ? 'female' : 'male',
+    language: model.lang.includes('中文') ? 'zh-CN' : 'en-US'
+  }));
 });
 
 // Get emotions from projects store
@@ -345,9 +345,8 @@ watchEffect(() => {
     
     // Check if current voice belongs to this provider
     if (currentVoice) {
-      const voiceExists = projectsStore.voiceModels.some(
-        model => model.provider === currentProvider && model.code === currentVoice
-      );
+      const models = projectsStore.getVoiceModelsByProvider(currentProvider);
+      const voiceExists = models.some(model => model.code === currentVoice);
       
       if (!voiceExists) {
         form.settings.voice = "";

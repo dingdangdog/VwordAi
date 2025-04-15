@@ -5,14 +5,14 @@
     "name": "章节1123",
     "text": "12312412",
     "settings": {
-      "serviceProvider": "",
-      "voice": "",
+      "serviceProvider": "azure",
+      "voice": "zh-CN-YunxiNeural",
       "speed": 1,
       "pitch": 1,
       "volume": 1,
-      "emotion": ""
+      "emotion": "advertisement_upbeat"
     },
     "createAt": "2025-04-15T10:37:41.429Z",
-    "updateAt": "2025-04-15T13:05:45.080Z"
+    "updateAt": "2025-04-15T14:19:50.942Z"
   }
 ]

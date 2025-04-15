@@ -69,6 +69,8 @@ contextBridge.exposeInMainWorld("api", {
     update: (data) => ipcRenderer.invoke("update-settings", data),
     getDefaultExportPath: () => ipcRenderer.invoke("get-default-export-path"),
     setDefaultExportPath: (path) => ipcRenderer.invoke("set-default-export-path", path),
-    reset: () => ipcRenderer.invoke("reset-settings")
+    reset: () => ipcRenderer.invoke("reset-settings"),
+    getProviderSettings: (provider) => ipcRenderer.invoke("get-provider-settings", provider),
+    updateProviderSettings: (provider, data) => ipcRenderer.invoke("update-provider-settings", provider, data)
   }
 });

@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import type { Project, Chapter, ChapterSettings, VoiceModel } from '@/types'
-import { projectApi, chapterApi } from '@/utils/api'
+import type { Project, Chapter, ChapterSettings, VoiceModel, Result } from '@/types'
+import { projectApi, chapterApi, ttsApi } from '@/utils/api'
 
 export const useProjectsStore = defineStore('projects', () => {
   const projects = ref<Project[]>([])
@@ -147,15 +147,15 @@ export const useProjectsStore = defineStore('projects', () => {
   // Voice model methods
   async function loadVoiceModels() {
     try {
-      const response = await fetch('/storage/models.json')
-      if (response.ok) {
-        const data = await response.json()
-        voiceModels.value = data
+      // Use TTS API to get models from backend
+      const response = await ttsApi.getVoiceModels();
+      if (response.success && response.data) {
+        voiceModels.value = response.data;
       } else {
-        console.error('Failed to load voice models:', response.statusText)
+        console.error('Failed to load voice models:', response.error);
       }
     } catch (error) {
-      console.error('Failed to load voice models:', error)
+      console.error('Failed to load voice models:', error);
     }
   }
 

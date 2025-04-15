@@ -200,6 +200,12 @@ export const ttsApi = {
   getEmotions: (providerId: string) => invoke<Result<any>>('tts:get-emotions', providerId),
   
   /**
+   * 获取所有语音模型
+   * 从models.json文件读取
+   */
+  getVoiceModels: () => invoke<Result<any>>('get-voice-models'),
+  
+  /**
    * 通过处理器合成单个章节语音
    * @param chapterId 章节ID
    */
@@ -327,6 +333,19 @@ export const settingsApi = {
    * 重置设置为默认值
    */
   reset: () => invoke<Result<any>>('reset-settings'),
+  
+  /**
+   * 获取服务商配置
+   * @param provider 服务商类型 (azure, aliyun, tencent, baidu)
+   */
+  getProviderSettings: (provider: string) => invoke<Result<any>>('get-provider-settings', provider),
+  
+  /**
+   * 更新服务商配置
+   * @param provider 服务商类型 (azure, aliyun, tencent, baidu)
+   * @param data 服务商配置数据
+   */
+  updateProviderSettings: (provider: string, data: any) => invoke<Result<any>>('update-provider-settings', provider, data),
   
   /**
    * 通过处理器获取所有设置

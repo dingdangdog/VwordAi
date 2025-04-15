@@ -247,9 +247,7 @@ const serviceProviders = ref([
 // Computed properties for filtered voice roles and emotions based on model data
 const filteredVoiceRoles = computed(() => {
   if (!form.defaultVoiceSettings.serviceProvider) return [];
-  return projectsStore.voiceModels.filter(
-    model => model.provider === form.defaultVoiceSettings.serviceProvider
-  );
+  return projectsStore.getVoiceModelsByProvider(form.defaultVoiceSettings.serviceProvider);
 });
 
 const filteredEmotions = computed(() => {

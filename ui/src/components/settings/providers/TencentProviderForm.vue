@@ -1,57 +1,51 @@
 <template>
   <div class="provider-form">
     <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-      Azure TTS 配置
+      腾讯云 TTS 配置
     </h3>
     <p class="text-gray-600 dark:text-gray-300 mb-6">
-      配置 Azure 语音服务。您需要一个 Azure 订阅密钥和区域。
+      配置腾讯云语音服务以使用腾讯云 TTS。请确保您已在腾讯云开通语音合成服务。
     </p>
 
     <form @submit.prevent="saveForm" class="space-y-4">
       <div>
-        <label for="key" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-          订阅密钥<span class="text-red-500">*</span>
-        </label>
-        <input
-          type="password"
-          id="key"
-          v-model="form.key"
-          class="input w-full"
-          placeholder="输入您的 Azure 订阅密钥"
-          required
-        />
-        <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
-          您的 Azure 认知服务订阅密钥。
-        </p>
-      </div>
-
-      <div>
-        <label for="region" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-          区域<span class="text-red-500">*</span>
+        <label for="secretId" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+          SecretId<span class="text-red-500">*</span>
         </label>
         <input
           type="text"
-          id="region"
-          v-model="form.region"
+          id="secretId"
+          v-model="form.secretId"
           class="input w-full"
-          placeholder="例如：eastus"
+          placeholder="输入您的腾讯云 SecretId"
           required
         />
-        <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
-          您的服务部署的 Azure 区域（例如：eastus，westeurope）。
-        </p>
+      </div>
+
+      <div>
+        <label for="secretKey" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+          SecretKey<span class="text-red-500">*</span>
+        </label>
+        <input
+          type="password"
+          id="secretKey"
+          v-model="form.secretKey"
+          class="input w-full"
+          placeholder="输入您的腾讯云 SecretKey"
+          required
+        />
       </div>
 
       <div>
         <label for="endpoint" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-          自定义端点（可选）
+          自定义终结点 (可选)
         </label>
         <input
           type="text"
           id="endpoint"
           v-model="form.endpoint"
           class="input w-full"
-          placeholder="例如：https://your-resource.cognitiveservices.azure.com/"
+          placeholder="例如: tts.tencentcloudapi.com"
         />
       </div>
 
@@ -109,8 +103,8 @@ const props = defineProps({
   provider: {
     type: Object,
     default: () => ({
-      key: "",
-      region: "",
+      secretId: "",
+      secretKey: "",
       endpoint: "",
     }),
   },
@@ -126,8 +120,8 @@ const testResult = ref<{ success: boolean; message: string } | null>(null);
 
 // 表单数据
 const form = reactive({
-  key: "",
-  region: "",
+  secretId: "",
+  secretKey: "",
   endpoint: "",
 });
 
@@ -135,21 +129,21 @@ const form = reactive({
 watchEffect(() => {
   if (props.provider) {
     const config = props.provider.config || {};
-    form.key = config.key || "";
-    form.region = config.region || "";
+    form.secretId = config.secretId || "";
+    form.secretKey = config.secretKey || "";
     form.endpoint = config.endpoint || "";
   }
 });
 
 // 保存表单
 async function saveForm() {
-  if (!form.key) {
-    toast.error("请提供您的 Azure 订阅密钥");
+  if (!form.secretId) {
+    toast.error("请提供您的腾讯云 SecretId");
     return;
   }
 
-  if (!form.region) {
-    toast.error("请提供您的 Azure 区域");
+  if (!form.secretKey) {
+    toast.error("请提供您的腾讯云 SecretKey");
     return;
   }
 
@@ -157,22 +151,22 @@ async function saveForm() {
 
   try {
     const data = {
-      key: form.key,
-      region: form.region,
+      secretId: form.secretId,
+      secretKey: form.secretKey,
       endpoint: form.endpoint,
     };
 
-    const response = await serviceProviderApi.update("azure", data);
+    const response = await serviceProviderApi.update("tencent", data);
 
     if (response.success) {
       await settingsStore.loadServiceProviders();
-      toast.success("Azure 配置已保存");
+      toast.success("腾讯云配置已保存");
       emit("save", response.data);
     } else {
       toast.error("保存失败: " + response.error);
     }
   } catch (error) {
-    console.error("保存 Azure 配置失败:", error);
+    console.error("保存腾讯云配置失败:", error);
     toast.error(
       "保存失败: " + (error instanceof Error ? error.message : String(error))
     );
@@ -183,13 +177,8 @@ async function saveForm() {
 
 // 测试连接
 async function testConnection() {
-  if (!form.key) {
-    toast.error("请提供您的 Azure 订阅密钥");
-    return;
-  }
-
-  if (!form.region) {
-    toast.error("请提供您的 Azure 区域");
+  if (!form.secretId || !form.secretKey) {
+    toast.error("请先填写必填字段");
     return;
   }
 
@@ -197,7 +186,7 @@ async function testConnection() {
   testResult.value = null;
 
   try {
-    const response = await serviceProviderApi.testConnection("azure");
+    const response = await serviceProviderApi.testConnection("tencent");
 
     if (response.success) {
       testResult.value = {
@@ -222,4 +211,4 @@ async function testConnection() {
     isTesting.value = false;
   }
 }
-</script>
+</script> 
