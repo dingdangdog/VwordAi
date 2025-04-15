@@ -521,11 +521,23 @@ function getServiceProviderName(id: string): string {
 }
 
 function getVoiceRoleName(id: string): string {
-  // This would normally fetch from a store or API
-  return id;
+  // Get the voice model name from models.json
+  const model = projectsStore.getVoiceModelByCode(id);
+  return model ? model.name : id;
 }
 
 function getEmotionName(id: string): string {
+  // Check all models to find the matching emotion
+  for (const model of projectsStore.voiceModels) {
+    if (model.emotions) {
+      const emotion = model.emotions.find(e => e.code === id);
+      if (emotion) {
+        return emotion.name;
+      }
+    }
+  }
+  
+  // Fallback
   const emotions = [
     { id: "neutral", name: "平静" },
     { id: "happy", name: "快乐" },

@@ -56,7 +56,7 @@ export interface ServiceProviderConfig {
 }
 
 // 服务商类型
-export type ServiceProviderType = 'azure' | 'aliyun' | 'tencent' | 'baidu';
+export type ServiceProviderType = "azure" | "aliyun" | "tencent" | "baidu";
 
 // 微软 Azure TTS 服务商配置
 export interface AzureServiceProviderConfig extends ServiceProviderConfig {
@@ -99,7 +99,7 @@ export interface Result<T> {
 
 // 应用设置
 export interface AppSettings {
-  theme: 'light' | 'dark'; // 主题
+  theme: "light" | "dark"; // 主题
   defaultExportPath?: string; // 默认导出路径
   // 其他应用设置
   [key: string]: any;
@@ -109,11 +109,11 @@ export interface AppSettings {
  * 章节状态
  */
 export enum ChapterStatus {
-  DRAFT = 'draft',
-  READY = 'ready',
-  PROCESSING = 'processing',
-  COMPLETED = 'completed',
-  ERROR = 'error'
+  DRAFT = "draft",
+  READY = "ready",
+  PROCESSING = "processing",
+  COMPLETED = "completed",
+  ERROR = "error",
 }
 
 /**
@@ -152,7 +152,7 @@ export interface ServiceProvider {
 export interface VoiceRole {
   id: string;
   name: string;
-  gender: 'male' | 'female';
+  gender: "male" | "female";
   language: string;
   description?: string;
 }
@@ -162,31 +162,29 @@ export interface VoiceRole {
  */
 export interface VoiceModel {
   provider: ServiceProviderType; // 服务提供商
-  lang: string;                  // 语言
-  gender: string;                // 性别：0-女性，1-男性
-  name: string;                  // 名称
-  code: string;                  // 唯一代码
-  level?: string;                // 级别，可选
-  emotions?: Array<{
-    name: string;                // 情感名称
-    code: string;                // 情感代码
-    desc: string;                // 描述
-  }>;
-  roles?: Array<{
-    name: string;                // 角色名称
-    code: string;                // 角色代码
-    desc: string;                // 描述
-  }>;
+  lang: string; // 语言
+  gender: string; // 性别：0-女性，1-男性
+  name: string; // 名称
+  code: string; // 唯一代码
+  level?: string; // 级别，可选
+  emotions?: Array<VoiceOption>;
+  options?: Array<VoiceOption>;
+}
+
+interface VoiceOption {
+  name: string;
+  code: string;
+  desc: string;
 }
 
 /**
  * 全局设置接口
  */
 export interface Settings {
-  theme: 'light' | 'dark';
+  theme: "light" | "dark";
   language: string;
   defaultExportPath: string;
-  outputFormat: 'mp3' | 'wav';
+  outputFormat: "mp3" | "wav";
   defaultVoiceSettings: ChapterSettings;
   autoSave: boolean;
   autoSaveInterval: number;
@@ -208,4 +206,4 @@ export interface SynthesisResult {
 export interface ConnectionTestResult {
   success: boolean;
   message: string;
-} 
+}

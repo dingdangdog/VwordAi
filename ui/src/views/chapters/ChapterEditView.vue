@@ -200,16 +200,15 @@ import { useRoute, useRouter } from "vue-router";
 import { useProjectsStore } from "@/stores/projects";
 import { useToast } from "vue-toastification";
 import type { TTSSettings, VoiceRole } from "@/types";
-import { ttsService, SUPPORTED_PROVIDERS } from "@/services/tts";
+import { SUPPORTED_PROVIDERS } from "@/services/tts";
 
 const route = useRoute();
 const router = useRouter();
 const toast = useToast();
 const projectsStore = useProjectsStore();
 
-// Get service providers from the TTS service
+// Get service providers from the settings
 const serviceProviders = ref(SUPPORTED_PROVIDERS);
-const voiceRoles = ref<VoiceRole[]>([]);
 const isLoadingVoiceRoles = ref(false);
 
 // Component state
@@ -218,12 +217,47 @@ const isSubmitting = ref(false);
 const showVoiceSettings = ref(true);
 const isNewChapter = ref(true);
 
-// Emotion options
-const emotions = ref([
-  { id: "neutral", name: "平静" },
-  { id: "happy", name: "快乐" },
-  { id: "sad", name: "伤感" },
-]);
+// Get voice roles from projects store
+const voiceRoles = computed(() => {
+  if (!form.settings.serviceProvider) return [];
+  return projectsStore.voiceModels
+    .filter(model => model.provider === form.settings.serviceProvider)
+    .map(model => ({
+      id: model.code,
+      name: model.name,
+      gender: model.gender === '0' ? 'female' : 'male',
+      language: model.lang.includes('中文') ? 'zh-CN' : 'en-US'
+    }));
+});
+
+// Get emotions from projects store
+const emotions = computed(() => {
+  if (!form.settings.serviceProvider || !form.settings.voice) return [];
+  
+  // First try to get emotions from the selected voice model
+  const selectedModel = projectsStore.getVoiceModelByCode(form.settings.voice);
+  
+  if (selectedModel && selectedModel.emotions && selectedModel.emotions.length > 0) {
+    return selectedModel.emotions.map(emotion => ({
+      id: emotion.code,
+      name: emotion.name
+    }));
+  }
+  
+  // If not found, try to find emotions from any model with same provider
+  const providerModels = projectsStore.getVoiceModelsByProvider(form.settings.serviceProvider);
+  for (const model of providerModels) {
+    if (model.emotions && model.emotions.length > 0) {
+      return model.emotions.map(emotion => ({
+        id: emotion.code,
+        name: emotion.name
+      }));
+    }
+  }
+  
+  // Fallback to empty array
+  return [];
+});
 
 const errors = reactive({
   name: "",
@@ -249,6 +283,11 @@ const chapterId = computed(() => route.params.chapterId as string);
 // Load chapter data if editing
 onMounted(async () => {
   try {
+    // Make sure voice models are loaded
+    if (projectsStore.voiceModels.length === 0) {
+      await projectsStore.loadVoiceModels();
+    }
+    
     if (chapterId.value && chapterId.value !== "new") {
       isNewChapter.value = false;
       const chapter = await projectsStore.getChapter(chapterId.value);
@@ -269,11 +308,6 @@ onMounted(async () => {
               : 100,
           emotion: chapter.settings?.emotion || "",
         };
-
-        // Load voice roles if needed
-        if (form.settings.serviceProvider) {
-          loadVoiceRoles(form.settings.serviceProvider);
-        }
       } else {
         toast.error("章节加载失败");
         goBack();
@@ -292,11 +326,6 @@ onMounted(async () => {
           volume: project.defaultVoiceSettings.volume || 100,
           emotion: project.defaultVoiceSettings.emotion || "",
         };
-
-        // Load voice roles if needed
-        if (form.settings.serviceProvider) {
-          loadVoiceRoles(form.settings.serviceProvider);
-        }
       }
     }
   } catch (error) {
@@ -307,38 +336,50 @@ onMounted(async () => {
   }
 });
 
-// Watch for changes in the service provider and update voice roles
+// Watch for changes in the service provider
 watchEffect(() => {
   if (form.settings.serviceProvider) {
-    loadVoiceRoles(form.settings.serviceProvider);
-    // Reset voice role when changing provider if current voice isn't from this provider
-    if (!isLoadingVoiceRoles.value && voiceRoles.value.length > 0) {
-      const voiceExists = voiceRoles.value.some(
-        (role) => role.id === form.settings.voice
+    // Reset voice and emotion when service provider changes
+    const currentProvider = form.settings.serviceProvider;
+    const currentVoice = form.settings.voice;
+    
+    // Check if current voice belongs to this provider
+    if (currentVoice) {
+      const voiceExists = projectsStore.voiceModels.some(
+        model => model.provider === currentProvider && model.code === currentVoice
       );
+      
       if (!voiceExists) {
         form.settings.voice = "";
+        form.settings.emotion = "";
       }
     }
   }
 });
 
-async function loadVoiceRoles(providerId: string) {
-  isLoadingVoiceRoles.value = true;
-  try {
-    const result = await ttsService.getVoiceRoles(providerId);
-    if (result.success && result.data) {
-      voiceRoles.value = result.data;
-    } else {
-      voiceRoles.value = [];
+// Watch for changes in the voice selection
+watchEffect(() => {
+  if (form.settings.voice) {
+    // Reset emotion if it's not valid for the selected voice
+    const currentVoice = form.settings.voice;
+    const currentEmotion = form.settings.emotion;
+    
+    if (currentEmotion) {
+      const model = projectsStore.getVoiceModelByCode(currentVoice);
+      
+      if (model && model.emotions) {
+        const emotionExists = model.emotions.some(e => e.code === currentEmotion);
+        
+        if (!emotionExists) {
+          form.settings.emotion = "";
+        }
+      } else {
+        // If model has no emotions, reset emotion
+        form.settings.emotion = "";
+      }
     }
-  } catch (error) {
-    console.error("Failed to load voice roles:", error);
-    voiceRoles.value = [];
-  } finally {
-    isLoadingVoiceRoles.value = false;
   }
-}
+});
 
 function validateForm() {
   errors.name = "";

@@ -53,7 +53,7 @@
           <div v-if="chapter.settings.emotion">
             <span class="text-sm text-gray-500 dark:text-gray-400">情感:</span>
             <span class="ml-2 text-gray-900 dark:text-white">{{
-              chapter.settings.emotion
+              getEmotionName(chapter.settings.emotion)
             }}</span>
           </div>
         </div>
@@ -152,9 +152,10 @@ import {
   ArrowPathIcon,
 } from "@heroicons/vue/24/outline";
 import { SUPPORTED_PROVIDERS } from "@/stores/settings";
-import { ttsApi, serviceProviderApi } from "@/utils/api";
+import { ttsApi } from "@/utils/api";
 import type { Chapter } from "@/types";
 import { useToast } from "vue-toastification";
+import { useProjectsStore } from "@/stores/projects";
 
 const props = defineProps<{
   chapter: Chapter;
@@ -162,13 +163,13 @@ const props = defineProps<{
 
 const emit = defineEmits(["edit-settings"]);
 const toast = useToast();
+const projectsStore = useProjectsStore();
 
 const synthesisStatus = ref<"idle" | "loading" | "success" | "error">("idle");
 const errorMessage = ref("");
 const audioUrl = ref("");
 const audioFilePath = ref("");
 const isPlaying = ref(false);
-const voiceRoles = ref<any[]>([]);
 
 const canSynthesize = computed(() => {
   return (
@@ -187,25 +188,28 @@ function getProviderName(providerId: string | null): string {
 }
 
 // 获取语音角色名称
-async function loadVoiceRoles(providerId: string | null) {
-  if (!providerId) return;
-
-  try {
-    const response = await serviceProviderApi.getVoiceRoles(providerId);
-    if (response.success && response.data) {
-      voiceRoles.value = response.data;
-    }
-  } catch (error) {
-    console.error("Failed to load voice roles:", error);
-  }
-}
-
-// 获取语音角色名称
 function getVoiceRoleName(roleId: string | null): string {
   if (!roleId) return "";
 
-  const role = voiceRoles.value.find((r) => r.id === roleId);
-  return role ? role.name : roleId;
+  // 使用projectsStore获取语音模型
+  const model = projectsStore.getVoiceModelByCode(roleId);
+  return model ? model.name : roleId;
+}
+
+// 获取情感名称
+function getEmotionName(emotionId: string | null): string {
+  if (!emotionId) return "";
+
+  // 查找匹配的情感
+  for (const model of projectsStore.voiceModels) {
+    if (model.emotions) {
+      const emotion = model.emotions.find(e => e.code === emotionId);
+      if (emotion) {
+        return emotion.name;
+      }
+    }
+  }
+  return emotionId;
 }
 
 // 合成语音
@@ -262,8 +266,8 @@ function onPause() {
   isPlaying.value = false;
 }
 
-// 加载初始数据
-if (props.chapter.settings.serviceProvider) {
-  loadVoiceRoles(props.chapter.settings.serviceProvider);
+// 确保模型数据已加载
+if (projectsStore.voiceModels.length === 0) {
+  projectsStore.loadVoiceModels();
 }
 </script>

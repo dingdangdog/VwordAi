@@ -93,6 +93,7 @@
                     id="serviceProvider"
                     v-model="form.defaultVoiceSettings.serviceProvider"
                     class="mt-1 input dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                    @change="onProviderChange"
                   >
                     <option value="">未选择</option>
                     <option
@@ -116,14 +117,15 @@
                     v-model="form.defaultVoiceSettings.voice"
                     class="mt-1 input dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                     :disabled="!form.defaultVoiceSettings.serviceProvider"
+                    @change="onVoiceChange"
                   >
                     <option value="">未选择</option>
                     <option
-                      v-for="role in voiceRoles"
-                      :key="role.id"
-                      :value="role.id"
+                      v-for="role in filteredVoiceRoles"
+                      :key="role.code"
+                      :value="role.code"
                     >
-                      {{ role.name }}
+                      {{ role.name }} ({{ role.gender === '0' ? '女声' : '男声' }})
                     </option>
                   </select>
                 </div>
@@ -181,13 +183,13 @@
                     id="emotion"
                     v-model="form.defaultVoiceSettings.emotion"
                     class="mt-1 input dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                    :disabled="!form.defaultVoiceSettings.serviceProvider"
+                    :disabled="!form.defaultVoiceSettings.serviceProvider || !form.defaultVoiceSettings.voice || filteredEmotions.length === 0"
                   >
                     <option value="">未选择</option>
                     <option
-                      v-for="emotion in emotions"
-                      :key="emotion.id"
-                      :value="emotion.id"
+                      v-for="emotion in filteredEmotions"
+                      :key="emotion.code"
+                      :value="emotion.code"
                     >
                       {{ emotion.name }}
                     </option>
@@ -222,11 +224,19 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted, watchEffect } from "vue";
+import { ref, reactive, onMounted, watchEffect, computed } from "vue";
 import { XMarkIcon } from "@heroicons/vue/24/outline";
 import type { TTSSettings } from "@/types";
+import { useProjectsStore } from "@/stores/projects";
 
-// Mock service providers for now (will be replaced with actual data from API)
+const projectsStore = useProjectsStore();
+
+// Make sure voice models are loaded
+if (projectsStore.voiceModels.length === 0) {
+  projectsStore.loadVoiceModels();
+}
+
+// Service providers definition
 const serviceProviders = ref([
   { id: "aliyun", name: "阿里云" },
   { id: "tencent", name: "腾讯云" },
@@ -234,18 +244,36 @@ const serviceProviders = ref([
   { id: "azure", name: "Azure Speech Service" },
 ]);
 
-// Mock voice roles and emotions (will be dynamically loaded based on selected provider)
-const voiceRoles = ref([
-  { id: "role1", name: "声音角色 1" },
-  { id: "role2", name: "声音角色 2" },
-  { id: "role3", name: "声音角色 3" },
-]);
+// Computed properties for filtered voice roles and emotions based on model data
+const filteredVoiceRoles = computed(() => {
+  if (!form.defaultVoiceSettings.serviceProvider) return [];
+  return projectsStore.voiceModels.filter(
+    model => model.provider === form.defaultVoiceSettings.serviceProvider
+  );
+});
 
-const emotions = ref([
-  { id: "neutral", name: "平静" },
-  { id: "happy", name: "快乐" },
-  { id: "sad", name: "伤感" },
-]);
+const filteredEmotions = computed(() => {
+  if (!form.defaultVoiceSettings.voice) return [];
+  
+  // Find selected voice model
+  const selectedModel = projectsStore.getVoiceModelByCode(form.defaultVoiceSettings.voice);
+  
+  if (selectedModel && selectedModel.emotions) {
+    return selectedModel.emotions;
+  }
+  
+  // If the selected model doesn't have emotions, try to find emotions from another model of the same provider
+  if (form.defaultVoiceSettings.serviceProvider) {
+    const providerModels = projectsStore.getVoiceModelsByProvider(form.defaultVoiceSettings.serviceProvider);
+    for (const model of providerModels) {
+      if (model.emotions && model.emotions.length > 0) {
+        return model.emotions;
+      }
+    }
+  }
+  
+  return [];
+});
 
 const props = defineProps({
   title: {
@@ -316,6 +344,17 @@ watchEffect(() => {
     };
   }
 });
+
+function onProviderChange() {
+  // Reset voice and emotion when provider changes
+  form.defaultVoiceSettings.voice = "";
+  form.defaultVoiceSettings.emotion = "";
+}
+
+function onVoiceChange() {
+  // Reset emotion when voice changes
+  form.defaultVoiceSettings.emotion = "";
+}
 
 function close() {
   emit("close");

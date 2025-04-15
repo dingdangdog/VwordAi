@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import type { Project, Chapter, ChapterSettings } from '@/types'
+import type { Project, Chapter, ChapterSettings, VoiceModel } from '@/types'
 import { projectApi, chapterApi } from '@/utils/api'
 
 export const useProjectsStore = defineStore('projects', () => {
@@ -8,6 +8,7 @@ export const useProjectsStore = defineStore('projects', () => {
   const chapters = ref<Chapter[]>([])
   const currentProjectId = ref<string | null>(null)
   const isLoading = ref(false)
+  const voiceModels = ref<VoiceModel[]>([])
 
   // Project getters
   const currentProject = computed(() => {
@@ -30,6 +31,19 @@ export const useProjectsStore = defineStore('projects', () => {
         return a.order - b.order
       })
   })
+
+  // Voice model getters
+  const availableVoiceModels = computed(() => {
+    return voiceModels.value
+  })
+
+  const getVoiceModelsByProvider = (providerType: string) => {
+    return voiceModels.value.filter(model => model.provider === providerType)
+  }
+
+  const getVoiceModelByCode = (code: string) => {
+    return voiceModels.value.find(model => model.code === code)
+  }
 
   // Project methods
   async function loadProjects() {
@@ -127,6 +141,21 @@ export const useProjectsStore = defineStore('projects', () => {
     currentProjectId.value = id
     if (id) {
       loadChaptersByProjectId(id)
+    }
+  }
+
+  // Voice model methods
+  async function loadVoiceModels() {
+    try {
+      const response = await fetch('/storage/models.json')
+      if (response.ok) {
+        const data = await response.json()
+        voiceModels.value = data
+      } else {
+        console.error('Failed to load voice models:', response.statusText)
+      }
+    } catch (error) {
+      console.error('Failed to load voice models:', error)
     }
   }
 
@@ -246,16 +275,25 @@ export const useProjectsStore = defineStore('projects', () => {
     }
   }
 
+  // 初始化时加载语音模型
+  loadVoiceModels()
+
   return {
     // State
     projects,
     chapters,
     currentProjectId,
     isLoading,
+    voiceModels,
     // Getters
     currentProject,
     projectsSorted,
     chaptersForCurrentProject,
+    availableVoiceModels,
+    // Voice model methods
+    getVoiceModelsByProvider,
+    getVoiceModelByCode,
+    loadVoiceModels,
     // Project methods
     loadProjects,
     createProject,

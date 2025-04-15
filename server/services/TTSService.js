@@ -17,6 +17,18 @@ const Settings = require('../models/Settings');
 const audioUtils = require('../utils/audioUtils');
 const { success, error } = require('../utils/result');
 
+// 加载语音模型数据
+const MODELS_JSON_PATH = path.join(__dirname, '../../storage/models.json');
+let voiceModels = [];
+
+try {
+  voiceModels = JSON.parse(fs.readFileSync(MODELS_JSON_PATH, 'utf8'));
+  console.log(`成功加载 ${voiceModels.length} 个语音模型`);
+} catch (err) {
+  console.error('加载语音模型文件失败:', err);
+  voiceModels = [];
+}
+
 // 文本长度限制（不同的服务商可能有不同的限制）
 const TEXT_LENGTH_LIMITS = {
   azure: 10000,
@@ -429,6 +441,23 @@ function getProviderType(provider) {
 }
 
 /**
+ * 从models.json数据中获取声音角色列表
+ * @param {string} providerType 服务商类型
+ * @returns {Array} 声音角色列表
+ */
+function getVoiceRolesFromModels(providerType) {
+  const filteredModels = voiceModels.filter(model => model.provider === providerType);
+  
+  return filteredModels.map(model => ({
+    id: model.code,
+    name: model.name,
+    language: model.lang.includes('中文') ? 'zh-CN' : 'en-US',
+    gender: model.gender === '0' ? 'female' : 'male',
+    description: model.lang
+  }));
+}
+
+/**
  * 获取特定服务商支持的声音角色列表
  * @param {string} providerId 服务商ID
  * @returns {Promise<Object>} 结果对象
@@ -441,75 +470,18 @@ async function getVoiceRoles(providerId) {
     }
 
     const providerType = getProviderType(provider);
-    let voiceRoles = [];
     
-    // 根据服务商类型返回对应的声音角色列表
-    switch (providerType) {
-      case 'azure':
-        voiceRoles = [
-          { id: 'zh-CN-XiaoxiaoNeural', name: '晓晓', language: 'zh-CN', gender: 'female' },
-          { id: 'zh-CN-YunxiNeural', name: '云希', language: 'zh-CN', gender: 'male' },
-          { id: 'zh-CN-YunyangNeural', name: '云扬', language: 'zh-CN', gender: 'male' },
-          { id: 'zh-CN-XiaochenNeural', name: '晓辰', language: 'zh-CN', gender: 'female' },
-          { id: 'zh-CN-XiaohanNeural', name: '晓涵', language: 'zh-CN', gender: 'female' },
-          { id: 'zh-CN-XiaomoNeural', name: '晓墨', language: 'zh-CN', gender: 'female' },
-          { id: 'zh-CN-XiaoruiNeural', name: '晓睿', language: 'zh-CN', gender: 'female' },
-          { id: 'zh-CN-XiaoxuanNeural', name: '晓轩', language: 'zh-CN', gender: 'female' },
-          { id: 'zh-CN-YunfengNeural', name: '云枫', language: 'zh-CN', gender: 'male' },
-          { id: 'zh-CN-YunhaoNeural', name: '云浩', language: 'zh-CN', gender: 'male' },
-          { id: 'zh-CN-YunjianNeural', name: '云健', language: 'zh-CN', gender: 'male' },
-          { id: 'zh-CN-YunxiaNeural', name: '云夏', language: 'zh-CN', gender: 'male' },
-          { id: 'zh-CN-YunzeNeural', name: '云泽', language: 'zh-CN', gender: 'male' }
-        ];
-        break;
-      case 'baidu':
-        voiceRoles = [
-          { id: '0', name: '度小宇', language: 'zh', gender: 'male' },
-          { id: '1', name: '度小美', language: 'zh', gender: 'female' },
-          { id: '2', name: '度逍遥', language: 'zh', gender: 'male' },
-          { id: '3', name: '度丫丫', language: 'zh', gender: 'female' },
-          { id: '4', name: '度小娇', language: 'zh', gender: 'female' },
-          { id: '5', name: '度米朵', language: 'zh', gender: 'female' },
-          { id: '106', name: '度博文', language: 'zh', gender: 'male' },
-          { id: '110', name: '度小童', language: 'zh', gender: 'neutral' },
-          { id: '111', name: '度小萌', language: 'zh', gender: 'female' }
-        ];
-        break;
-      case 'aliyun':
-        voiceRoles = [
-          { id: 'xiaoyun', name: '小云', language: 'zh', gender: 'female' },
-          { id: 'xiaogang', name: '小刚', language: 'zh', gender: 'male' },
-          { id: 'ruoxi', name: '若兮', language: 'zh', gender: 'female' },
-          { id: 'siqi', name: '思琪', language: 'zh', gender: 'female' },
-          { id: 'sijia', name: '思佳', language: 'zh', gender: 'female' },
-          { id: 'sicheng', name: '思诚', language: 'zh', gender: 'male' },
-          { id: 'aixia', name: '艾夏', language: 'zh', gender: 'female' },
-          { id: 'aijia', name: '艾佳', language: 'zh', gender: 'female' },
-          { id: 'aicheng', name: '艾诚', language: 'zh', gender: 'male' },
-          { id: 'aida', name: '艾达', language: 'zh', gender: 'male' }
-        ];
-        break;
-      case 'tencent':
-        voiceRoles = [
-          { id: '0', name: '云小宁', language: 'zh', gender: 'female' },
-          { id: '1', name: '云小奇', language: 'zh', gender: 'male' },
-          { id: '2', name: '云小晚', language: 'zh', gender: 'female' },
-          { id: '4', name: '云小叶', language: 'zh', gender: 'female' },
-          { id: '5', name: '云小欣', language: 'zh', gender: 'female' },
-          { id: '6', name: '云小龙', language: 'zh', gender: 'male' },
-          { id: '7', name: '云小曼', language: 'zh', gender: 'female' },
-          { id: '1001', name: '智瑜', language: 'zh', gender: 'female' },
-          { id: '1002', name: '智聆', language: 'zh', gender: 'female' },
-          { id: '1003', name: '智美', language: 'zh', gender: 'female' }
-        ];
-        break;
-      default:
-        voiceRoles = [
-          { id: 'default_male', name: '默认男声', language: 'zh', gender: 'male' },
-          { id: 'default_female', name: '默认女声', language: 'zh', gender: 'female' }
-        ];
+    // 从models.json中获取角色列表
+    const voiceRoles = getVoiceRolesFromModels(providerType);
+    
+    // 如果没有找到角色，返回默认角色
+    if (voiceRoles.length === 0) {
+      return success([
+        { id: 'default_male', name: '默认男声', language: 'zh', gender: 'male' },
+        { id: 'default_female', name: '默认女声', language: 'zh', gender: 'female' }
+      ]);
     }
-
+    
     return success(voiceRoles);
   } catch (err) {
     return error(`获取声音角色失败: ${err.message}`);
@@ -517,11 +489,47 @@ async function getVoiceRoles(providerId) {
 }
 
 /**
+ * 从models.json数据中获取特定声音模型的情感列表
+ * @param {string} providerType 服务商类型
+ * @param {string} voiceId 声音ID
+ * @returns {Array} 情感列表
+ */
+function getEmotionsFromModels(providerType, voiceId) {
+  // 首先尝试根据voiceId精确匹配
+  const model = voiceModels.find(m => m.provider === providerType && m.code === voiceId);
+  
+  if (model && model.emotions && Array.isArray(model.emotions)) {
+    return model.emotions.map(emotion => ({
+      id: emotion.code,
+      name: emotion.name,
+      description: emotion.desc
+    }));
+  }
+  
+  // 如果没有找到，则返回该服务商下第一个有情感的模型的情感列表
+  const modelWithEmotions = voiceModels.find(
+    m => m.provider === providerType && m.emotions && Array.isArray(m.emotions)
+  );
+  
+  if (modelWithEmotions && modelWithEmotions.emotions) {
+    return modelWithEmotions.emotions.map(emotion => ({
+      id: emotion.code,
+      name: emotion.name,
+      description: emotion.desc
+    }));
+  }
+  
+  // 如果还是没有找到，返回空数组
+  return [];
+}
+
+/**
  * 获取特定服务商支持的情感列表
  * @param {string} providerId 服务商ID
+ * @param {string} voiceId 声音ID (可选)
  * @returns {Promise<Object>} 结果对象
  */
-async function getEmotions(providerId) {
+async function getEmotions(providerId, voiceId) {
   try {
     const provider = ServiceProvider.getServiceProviderById(providerId);
     if (!provider) {
@@ -529,48 +537,10 @@ async function getEmotions(providerId) {
     }
 
     const providerType = getProviderType(provider);
-    let emotions = [];
     
-    // 根据服务商类型返回对应的情感列表
-    switch (providerType) {
-      case 'azure':
-        emotions = [
-          { id: 'neutral', name: '中性' },
-          { id: 'happy', name: '开心' },
-          { id: 'sad', name: '悲伤' },
-          { id: 'angry', name: '生气' },
-          { id: 'fearful', name: '恐惧' },
-          { id: 'disgruntled', name: '不满' },
-          { id: 'serious', name: '严肃' },
-          { id: 'affectionate', name: '深情' },
-          { id: 'gentle', name: '温柔' },
-          { id: 'embarrassed', name: '尴尬' }
-        ];
-        break;
-      case 'baidu':
-        // 百度语音不支持情感参数，返回空数组
-        emotions = [];
-        break;
-      case 'aliyun':
-        emotions = [
-          { id: 'neutral', name: '中性' },
-          { id: 'happy', name: '开心' },
-          { id: 'sad', name: '悲伤' },
-          { id: 'angry', name: '生气' }
-        ];
-        break;
-      case 'tencent':
-        // 腾讯云语音不支持情感参数，返回空数组
-        emotions = [];
-        break;
-      default:
-        emotions = [
-          { id: 'neutral', name: '中性' },
-          { id: 'happy', name: '开心' },
-          { id: 'sad', name: '悲伤' }
-        ];
-    }
-
+    // 从models.json中获取情感列表
+    const emotions = getEmotionsFromModels(providerType, voiceId);
+    
     return success(emotions);
   } catch (err) {
     return error(`获取情感列表失败: ${err.message}`);
