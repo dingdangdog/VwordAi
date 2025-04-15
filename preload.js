@@ -16,17 +16,59 @@ contextBridge.exposeInMainWorld("electron", {
   
   // 主进程通用通信API
   invoke: (channel, ...args) => ipcRenderer.invoke(channel, ...args),
-  
-  // 设置相关
-  getSettings: () => ipcRenderer.invoke("get-settings"),
-  updateSettings: (settings) => ipcRenderer.invoke("update-settings", settings),
-  getDefaultExportPath: () => ipcRenderer.invoke("get-default-export-path"),
-  setDefaultExportPath: (path) => ipcRenderer.invoke("set-default-export-path", path),
 });
 
 // 业务API
 contextBridge.exposeInMainWorld("api", {
+  // 通用处理器调用方法
   invokeHandler: async (functionName, args) => {
     return await ipcRenderer.invoke("data-handler", functionName, args);
   },
+  
+  // 项目相关API
+  project: {
+    getAll: () => ipcRenderer.invoke("get-projects"),
+    getById: (id) => ipcRenderer.invoke("get-project", id),
+    create: (data) => ipcRenderer.invoke("create-project", data),
+    update: (id, data) => ipcRenderer.invoke("update-project", id, data),
+    delete: (id) => ipcRenderer.invoke("delete-project", id)
+  },
+  
+  // 章节相关API
+  chapter: {
+    getByProjectId: (projectId) => ipcRenderer.invoke("get-chapters-by-project-id", projectId),
+    getById: (id) => ipcRenderer.invoke("get-chapter", id),
+    create: (data) => ipcRenderer.invoke("create-chapter", data),
+    update: (id, data) => ipcRenderer.invoke("update-chapter", id, data),
+    delete: (id) => ipcRenderer.invoke("delete-chapter", id)
+  },
+  
+  // 服务商相关API
+  serviceProvider: {
+    getAll: () => ipcRenderer.invoke("service-provider:get-all"),
+    getById: (id) => ipcRenderer.invoke("service-provider:get", id),
+    create: (data) => ipcRenderer.invoke("service-provider:create", data),
+    update: (id, data) => ipcRenderer.invoke("service-provider:update", id, data),
+    delete: (id) => ipcRenderer.invoke("service-provider:delete", id),
+    testConnection: (id) => ipcRenderer.invoke("service-provider:test-connection", id),
+    getVoiceRoles: (id) => ipcRenderer.invoke("service-provider:get-voice-roles", id)
+  },
+  
+  // TTS相关API
+  tts: {
+    synthesize: (chapterId) => ipcRenderer.invoke("tts:synthesize", chapterId),
+    synthesizeMultiple: (chapterIds) => ipcRenderer.invoke("tts:synthesize-multiple", chapterIds),
+    getVoiceRoles: (providerId) => ipcRenderer.invoke("tts:get-voice-roles", providerId),
+    getEmotions: (providerId) => ipcRenderer.invoke("tts:get-emotions", providerId)
+  },
+  
+  // 设置相关API
+  settings: {
+    getAll: () => ipcRenderer.invoke("get-settings"),
+    get: (key) => ipcRenderer.invoke("get-setting", key),
+    update: (data) => ipcRenderer.invoke("update-settings", data),
+    getDefaultExportPath: () => ipcRenderer.invoke("get-default-export-path"),
+    setDefaultExportPath: (path) => ipcRenderer.invoke("set-default-export-path", path),
+    reset: () => ipcRenderer.invoke("reset-settings")
+  }
 });

@@ -128,27 +128,36 @@ ipcMain.handle("is-maximized", () => {
   return win.isMaximized();
 });
 
-// 处理从渲染进程发来的请求
+// 实现data-handler调用
 ipcMain.handle("data-handler", async (event, functionName, args) => {
-  let argarr = [];
-  // console.log("1--", functionName, args);
-  if (args && args.length > 0) {
-    argarr = args.map((item) => {
-      try {
-        return JSON.parse(item);
-      } catch (error) {
-        return item;
+  console.log(`调用处理器: ${functionName}, 参数:`, args);
+  
+  // 检查处理器是否存在
+  if (typeof handler[functionName] !== 'function') {
+    console.error(`处理器函数不存在: ${functionName}`);
+    return { success: false, error: `处理器函数不存在: ${functionName}` };
+  }
+  
+  try {
+    // 解析参数
+    const parsedArgs = args.map(arg => {
+      if (typeof arg === 'string') {
+        try {
+          // 尝试解析JSON字符串
+          return JSON.parse(arg);
+        } catch (e) {
+          // 如果不是有效的JSON，则保留原始字符串
+          return arg;
+        }
       }
+      return arg;
     });
-  }
-  if (process.env.NODE_ENV === "development") {
-    console.log("server", functionName);
-  }
-  if (handler[functionName]) {
-    // console.log("handler");
-    return await handler[functionName](...argarr); // 调用 handler.js 中的函数
-  } else {
-    return { c: 500, m: `Function ${functionName} not found` };
+    
+    // 调用处理器函数
+    return await handler[functionName](...parsedArgs);
+  } catch (error) {
+    console.error(`处理器调用失败: ${functionName}`, error);
+    return { success: false, error: error.message };
   }
 });
 

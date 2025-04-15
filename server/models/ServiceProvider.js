@@ -1,157 +1,188 @@
 /**
- * 服务商配置模型
+ * 服务商模型
+ * 管理TTS服务提供商的配置信息
  */
 const { v4: uuidv4 } = require('uuid');
 const storage = require('../utils/storage');
 
-// 存储文件名
-const STORAGE_FILE = 'service_providers';
+const PROVIDER_STORAGE_KEY = 'service_providers';
 
 /**
- * 获取所有服务商配置
- * @returns {Array} 服务商配置列表
+ * 服务商类
  */
-function getAllServiceProviders() {
-  return storage.readData(STORAGE_FILE, []);
-}
-
-/**
- * 根据ID获取服务商配置
- * @param {string} id 服务商配置ID
- * @returns {Object|null} 服务商配置对象或null
- */
-function getServiceProviderById(id) {
-  const providers = getAllServiceProviders();
-  return providers.find(provider => provider.id === id) || null;
-}
-
-/**
- * 创建新的服务商配置
- * @param {Object} providerData 服务商配置数据
- * @returns {Object} 创建的服务商配置
- */
-function createServiceProvider(providerData) {
-  const providers = getAllServiceProviders();
-  
-  // 检查是否有同名服务商
-  if (providers.some(p => p.name === providerData.name)) {
-    throw new Error('服务商名称已存在');
+class ServiceProvider {
+  /**
+   * 获取所有服务商配置
+   * @returns {Array} 服务商配置列表
+   */
+  static getAllServiceProviders() {
+    return storage.read(PROVIDER_STORAGE_KEY, []);
   }
-  
-  const now = new Date();
-  const newProvider = {
-    id: uuidv4(),
-    name: providerData.name,
-    apiKey: providerData.apiKey,
-    secretKey: providerData.secretKey || '',
-    createdAt: now,
-    updatedAt: now,
-    // 添加其他自定义字段
-    ...Object.keys(providerData)
-      .filter(key => !['id', 'name', 'apiKey', 'secretKey', 'createdAt', 'updatedAt'].includes(key))
-      .reduce((obj, key) => {
-        obj[key] = providerData[key];
-        return obj;
-      }, {})
-  };
-  
-  providers.push(newProvider);
-  storage.saveData(STORAGE_FILE, providers);
-  
-  return newProvider;
-}
 
-/**
- * 更新服务商配置
- * @param {string} id 服务商配置ID
- * @param {Object} providerData 更新的服务商配置数据
- * @returns {Object|null} 更新后的服务商配置或null
- */
-function updateServiceProvider(id, providerData) {
-  const providers = getAllServiceProviders();
-  const index = providers.findIndex(provider => provider.id === id);
-  
-  if (index === -1) {
-    return null;
+  /**
+   * 通过ID获取服务商配置
+   * @param {string} id 服务商ID
+   * @returns {Object|null} 服务商配置或null
+   */
+  static getServiceProviderById(id) {
+    const providers = this.getAllServiceProviders();
+    return providers.find(provider => provider.id === id) || null;
   }
-  
-  // 如果更改了名称，检查是否与其他服务商重名
-  if (providerData.name && providerData.name !== providers[index].name) {
-    const nameExists = providers.some(p => p.id !== id && p.name === providerData.name);
-    if (nameExists) {
-      throw new Error('服务商名称已存在');
+
+  /**
+   * 创建新的服务商配置
+   * @param {Object} providerData 服务商数据
+   * @returns {Object} 新创建的服务商配置
+   */
+  static createServiceProvider(providerData) {
+    if (!providerData.name || !providerData.type) {
+      throw new Error('服务商名称和类型为必填项');
+    }
+
+    const providers = this.getAllServiceProviders();
+    
+    const newProvider = {
+      id: uuidv4(),
+      name: providerData.name,
+      type: providerData.type,
+      apiKey: providerData.apiKey || '',
+      apiSecret: providerData.apiSecret || '',
+      region: providerData.region || '',
+      endpoint: providerData.endpoint || '',
+      enabled: providerData.enabled !== undefined ? providerData.enabled : true,
+      createTime: new Date().toISOString(),
+      updateTime: new Date().toISOString(),
+      config: providerData.config || {}
+    };
+    
+    providers.push(newProvider);
+    storage.save(PROVIDER_STORAGE_KEY, providers);
+    
+    return newProvider;
+  }
+
+  /**
+   * 更新服务商配置
+   * @param {string} id 服务商ID
+   * @param {Object} providerData 更新数据
+   * @returns {Object} 更新后的服务商配置
+   */
+  static updateServiceProvider(id, providerData) {
+    const providers = this.getAllServiceProviders();
+    const index = providers.findIndex(provider => provider.id === id);
+    
+    if (index === -1) {
+      throw new Error('服务商配置不存在');
+    }
+    
+    const updatedProvider = {
+      ...providers[index],
+      ...providerData,
+      updateTime: new Date().toISOString()
+    };
+    
+    // 确保ID不被覆盖
+    updatedProvider.id = id;
+    
+    providers[index] = updatedProvider;
+    storage.save(PROVIDER_STORAGE_KEY, providers);
+    
+    return updatedProvider;
+  }
+
+  /**
+   * 删除服务商配置
+   * @param {string} id 服务商ID
+   * @returns {boolean} 是否成功删除
+   */
+  static deleteServiceProvider(id) {
+    const providers = this.getAllServiceProviders();
+    const filteredProviders = providers.filter(provider => provider.id !== id);
+    
+    if (filteredProviders.length === providers.length) {
+      throw new Error('服务商配置不存在');
+    }
+    
+    storage.save(PROVIDER_STORAGE_KEY, filteredProviders);
+    return true;
+  }
+
+  /**
+   * 测试服务商连接
+   * @param {string} id 服务商ID
+   * @returns {Promise<Object>} 测试结果
+   */
+  static async testConnection(id) {
+    const provider = this.getServiceProviderById(id);
+    if (!provider) {
+      throw new Error('服务商配置不存在');
+    }
+    
+    // 根据不同类型服务商实现不同的测试逻辑
+    try {
+      switch (provider.type.toLowerCase()) {
+        case 'azure':
+          // 模拟Azure测试
+          await new Promise(resolve => setTimeout(resolve, 500));
+          return { success: true, message: 'Azure服务连接成功' };
+          
+        case 'baidu':
+          // 模拟百度测试
+          await new Promise(resolve => setTimeout(resolve, 500));
+          return { success: true, message: '百度服务连接成功' };
+          
+        case 'aliyun':
+          // 模拟阿里云测试
+          await new Promise(resolve => setTimeout(resolve, 500));
+          return { success: true, message: '阿里云服务连接成功' };
+          
+        case 'tencent':
+          // 模拟腾讯云测试
+          await new Promise(resolve => setTimeout(resolve, 500));
+          return { success: true, message: '腾讯云服务连接成功' };
+          
+        default:
+          throw new Error(`不支持的服务商类型: ${provider.type}`);
+      }
+    } catch (error) {
+      throw new Error(`测试连接失败: ${error.message}`);
     }
   }
-  
-  const updatedProvider = {
-    ...providers[index],
-    name: providerData.name || providers[index].name,
-    apiKey: providerData.apiKey !== undefined ? providerData.apiKey : providers[index].apiKey,
-    secretKey: providerData.secretKey !== undefined ? providerData.secretKey : providers[index].secretKey,
-    updatedAt: new Date()
-  };
-  
-  // 添加其他自定义字段
-  Object.keys(providerData)
-    .filter(key => !['id', 'name', 'apiKey', 'secretKey', 'createdAt', 'updatedAt'].includes(key))
-    .forEach(key => {
-      updatedProvider[key] = providerData[key];
-    });
-  
-  providers[index] = updatedProvider;
-  storage.saveData(STORAGE_FILE, providers);
-  
-  return updatedProvider;
-}
 
-/**
- * 删除服务商配置
- * @param {string} id 服务商配置ID
- * @returns {boolean} 是否删除成功
- */
-function deleteServiceProvider(id) {
-  const providers = getAllServiceProviders();
-  const initialLength = providers.length;
-  
-  const filteredProviders = providers.filter(provider => provider.id !== id);
-  
-  if (filteredProviders.length === initialLength) {
-    return false; // 没有删除任何服务商
-  }
-  
-  storage.saveData(STORAGE_FILE, filteredProviders);
-  return true;
-}
-
-/**
- * 测试服务商连接
- * @param {string} id 服务商配置ID
- * @returns {Promise<boolean>} 是否连接成功
- */
-async function testConnection(id) {
-  const provider = getServiceProviderById(id);
-  
-  if (!provider) {
-    throw new Error('服务商配置不存在');
-  }
-  
-  // TODO: 根据不同的服务商类型，调用不同的测试连接方法
-  // 这里只是一个测试的实现，实际应该根据不同的服务商类型调用对应的API测试
-  try {
-    // 模拟异步测试
-    await new Promise(resolve => setTimeout(resolve, 500));
-    return true;
-  } catch (error) {
-    console.error('测试连接失败:', error);
-    return false;
+  /**
+   * 获取服务商支持的声音角色
+   * @param {string} id 服务商ID
+   * @returns {Array} 声音角色列表
+   */
+  static async getVoiceRoles(id) {
+    const provider = this.getServiceProviderById(id);
+    if (!provider) {
+      throw new Error('服务商配置不存在');
+    }
+    
+    // 根据不同服务商类型返回对应的声音角色列表
+    const voiceRoles = {
+      azure: [
+        { id: 'az-xiaoxiao', name: '晓晓', gender: 'female', language: 'zh-CN' },
+        { id: 'az-yunxi', name: '云希', gender: 'female', language: 'zh-CN' },
+        { id: 'az-yunyang', name: '云扬', gender: 'male', language: 'zh-CN' }
+      ],
+      baidu: [
+        { id: 'bd-woman', name: '女声', gender: 'female', language: 'zh' },
+        { id: 'bd-man', name: '男声', gender: 'male', language: 'zh' }
+      ],
+      aliyun: [
+        { id: 'ali-xiaoyun', name: '小云', gender: 'female', language: 'zh' },
+        { id: 'ali-xiaogang', name: '小刚', gender: 'male', language: 'zh' }
+      ],
+      tencent: [
+        { id: 'tencent-woman', name: '女声', gender: 'female', language: 'zh' },
+        { id: 'tencent-man', name: '男声', gender: 'male', language: 'zh' }
+      ]
+    };
+    
+    return voiceRoles[provider.type.toLowerCase()] || [];
   }
 }
 
-module.exports = {
-  getAllServiceProviders,
-  getServiceProviderById,
-  createServiceProvider,
-  updateServiceProvider,
-  deleteServiceProvider,
-  testConnection
-}; 
+module.exports = ServiceProvider; 

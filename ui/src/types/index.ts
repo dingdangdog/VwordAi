@@ -4,23 +4,31 @@
 
 // 项目数据结构
 export interface Project {
-  id: string; // 项目ID (可以使用 UUID)
-  name: string; // 项目名称
-  description?: string; // 项目描述 (可选)
-  defaultSettings: TTSSettings;
-  createdAt: Date;
-  updatedAt: Date;
+  id: string;
+  title: string;
+  description: string;
+  author: string;
+  createTime: string;
+  updateTime: string;
+  coverImage: string | null;
+  tags: string[];
+  wordCount: number;
+  chapterCount: number;
 }
 
 // 章节数据结构
 export interface Chapter {
-  id: string; // 章节ID (可以使用 UUID)
-  projectId: string; // 所属项目ID
-  name: string; // 章节名称
-  text: string; // 章节文本内容
-  settings: TTSSettings;
-  createdAt: Date;
-  updatedAt: Date;
+  id: string;
+  projectId: string;
+  name: string;
+  order: number;
+  text: string;
+  wordCount: number;
+  createTime: string;
+  updateTime: string;
+  settings: ChapterSettings;
+  audioPath?: string;
+  status?: ChapterStatus;
 }
 
 // 语音合成参数设置
@@ -82,8 +90,10 @@ export interface BaiduServiceProviderConfig extends ServiceProviderConfig {
 // API响应结果
 export interface Result<T> {
   success: boolean;
-  data?: T;
+  data: T;
+  message?: string;
   error?: string;
+  code?: number;
 }
 
 // 应用设置
@@ -92,4 +102,87 @@ export interface AppSettings {
   defaultExportPath?: string; // 默认导出路径
   // 其他应用设置
   [key: string]: any;
+}
+
+/**
+ * 章节状态
+ */
+export enum ChapterStatus {
+  DRAFT = 'draft',
+  READY = 'ready',
+  PROCESSING = 'processing',
+  COMPLETED = 'completed',
+  ERROR = 'error'
+}
+
+/**
+ * 章节语音合成设置
+ */
+export interface ChapterSettings {
+  serviceProvider: string | null;
+  voice: string | null;
+  speed: number;
+  pitch: number;
+  volume: number;
+  emotion?: string;
+  style?: string;
+}
+
+/**
+ * 服务商配置接口
+ */
+export interface ServiceProvider {
+  id: string;
+  name: string;
+  type: string;
+  apiKey: string;
+  apiSecret: string;
+  region?: string;
+  endpoint?: string;
+  enabled: boolean;
+  createTime: string;
+  updateTime: string;
+  config: Record<string, any>;
+}
+
+/**
+ * 语音角色接口
+ */
+export interface VoiceRole {
+  id: string;
+  name: string;
+  gender: 'male' | 'female';
+  language: string;
+  description?: string;
+}
+
+/**
+ * 全局设置接口
+ */
+export interface Settings {
+  theme: 'light' | 'dark';
+  language: string;
+  defaultExportPath: string;
+  outputFormat: 'mp3' | 'wav';
+  defaultVoiceSettings: ChapterSettings;
+  autoSave: boolean;
+  autoSaveInterval: number;
+  maxConcurrentTasks: number;
+}
+
+/**
+ * 语音合成结果接口
+ */
+export interface SynthesisResult {
+  chapterId: string;
+  outputPath: string;
+  settings: ChapterSettings;
+}
+
+/**
+ * 连接测试结果接口
+ */
+export interface ConnectionTestResult {
+  success: boolean;
+  message: string;
 } 

@@ -19,11 +19,11 @@ try {
   console.error('Failed to load ./utils/result:', err);
   // 如果无法导入，提供备用实现
   const success = (data, message = '操作成功') => {
-    return { c: 200, m: message, d: data };
+    return { success: true, data, message };
   };
   
   const error = (message = '操作失败', data = null) => {
-    return { c: 500, m: message, d: data };
+    return { success: false, error: message, data };
   };
   
   module.exports = {

@@ -166,6 +166,92 @@ const synthesizeMultipleChapters = async (chapterIds) => {
   return await TTSService.synthesizeMultipleChapters(chapterIds);
 };
 
+// 服务商相关处理函数
+const getServiceProviders = async () => {
+  try {
+    const providers = await ServiceProviderController.getAllServiceProviders();
+    return success(providers);
+  } catch (err) {
+    return error(err.message);
+  }
+};
+
+const getServiceProvider = async (id) => {
+  try {
+    const provider = await ServiceProviderController.getServiceProviderById(id);
+    if (!provider) {
+      return error('服务商配置不存在');
+    }
+    return success(provider);
+  } catch (err) {
+    return error(err.message);
+  }
+};
+
+const createServiceProvider = async (providerData) => {
+  try {
+    const newProvider = await ServiceProviderController.createServiceProvider(providerData);
+    return success(newProvider);
+  } catch (err) {
+    return error(err.message);
+  }
+};
+
+const updateServiceProvider = async (id, providerData) => {
+  try {
+    const updatedProvider = await ServiceProviderController.updateServiceProvider(id, providerData);
+    return success(updatedProvider);
+  } catch (err) {
+    return error(err.message);
+  }
+};
+
+const deleteServiceProvider = async (id) => {
+  try {
+    await ServiceProviderController.deleteServiceProvider(id);
+    return success(null, '服务商配置已删除');
+  } catch (err) {
+    return error(err.message);
+  }
+};
+
+const testServiceProviderConnection = async (id) => {
+  try {
+    const result = await ServiceProviderController.testConnection(id);
+    return success(result);
+  } catch (err) {
+    return error(err.message);
+  }
+};
+
+// 设置相关处理函数
+const getSettings = async () => {
+  try {
+    const settings = await SettingsController.getAllSettings();
+    return success(settings);
+  } catch (err) {
+    return error(err.message);
+  }
+};
+
+const updateSettings = async (settingsData) => {
+  try {
+    const result = await SettingsController.updateSettings(settingsData);
+    return success(result);
+  } catch (err) {
+    return error(err.message);
+  }
+};
+
+const resetSettings = async () => {
+  try {
+    const result = await SettingsController.resetToDefaults();
+    return success(result);
+  } catch (err) {
+    return error(err.message);
+  }
+};
+
 // 初始化
 init();
 
@@ -185,5 +271,16 @@ module.exports = {
   deleteChapter,
   // 语音合成API
   synthesizeChapter,
-  synthesizeMultipleChapters
+  synthesizeMultipleChapters,
+  // 服务商API
+  getServiceProviders,
+  getServiceProvider,
+  createServiceProvider,
+  updateServiceProvider,
+  deleteServiceProvider,
+  testServiceProviderConnection,
+  // 设置API
+  getSettings,
+  updateSettings,
+  resetSettings
 };

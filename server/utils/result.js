@@ -1,5 +1,6 @@
 /**
  * 统一结果格式工具
+ * 确保前后端通信结果格式一致
  */
 
 /**
@@ -9,7 +10,7 @@
  * @returns {object} 格式化的成功结果
  */
 function success(data, message = '操作成功') {
-  return { c: 200, m: message, d: data };
+  return { success: true, data, message };
 }
 
 /**
@@ -19,7 +20,7 @@ function success(data, message = '操作成功') {
  * @returns {object} 格式化的错误结果
  */
 function error(message = '操作失败', data = null) {
-  return { c: 500, m: message, d: data };
+  return { success: false, error: message, data };
 }
 
 /**
@@ -28,11 +29,7 @@ function error(message = '操作失败', data = null) {
  * @returns {Object} 标准未授权响应对象
  */
 const unauthorized = (message = '未授权，请先登录') => {
-  return {
-    c: 400,
-    m: message,
-    d: null
-  };
+  return { success: false, error: message, code: 401 };
 };
 
 module.exports = {
