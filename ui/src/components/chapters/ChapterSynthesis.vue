@@ -89,12 +89,12 @@
 
             <div class="flex justify-center items-center space-x-2 mt-3">
               <button
-                @click="downloadAudio"
+                @click="openAudioFolder"
                 class="btn btn-secondary btn-sm flex justify-center items-center"
                 :disabled="!audioUrl"
               >
-                <ArrowDownTrayIcon class="h-4 w-4 mr-1" />
-                下载
+                <FolderOpenIcon class="h-4 w-4 mr-1" />
+                打开文件夹
               </button>
               <button
                 @click="synthesize"
@@ -168,15 +168,16 @@ import {
   ArrowDownTrayIcon,
   ArrowPathIcon,
   StopIcon,
+  FolderOpenIcon,
 } from "@heroicons/vue/24/outline";
 import { ttsApi } from "@/utils/api";
 import type { Chapter } from "@/types";
 import { useToast } from "vue-toastification";
 import { useProjectsStore } from "@/stores/projects";
-import { 
+import {
   getProviderName as getProviderDisplayName,
   getVoiceRoleName as getVoiceDisplayName,
-  getEmotionName as getEmotionDisplayName 
+  getEmotionName as getEmotionDisplayName,
 } from "@/utils/voice-utils";
 
 const props = defineProps<{
@@ -282,21 +283,34 @@ async function synthesize() {
   }
 }
 
-// 下载音频
-function downloadAudio() {
-  if (!audioUrl.value) return;
+// 打开音频文件所在文件夹
+async function openAudioFolder() {
+  if (!audioFilePath.value) {
+    toast.error("找不到音频文件路径");
+    return;
+  }
 
   try {
-    const a = document.createElement("a");
-    a.href = audioUrl.value;
-    a.download = `${props.chapter.name || "chapter"}.mp3`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    toast.success("音频下载已开始");
+    // 使用Electron API打开文件夹
+    if (window.electron) {
+      // 获取文件所在目录路径
+      const folderPath = audioFilePath.value.substring(
+        0,
+        audioFilePath.value.lastIndexOf("/")
+      );
+      const result = await window.electron.openFolder(folderPath);
+
+      if (result && result.success) {
+        toast.success("已打开文件夹");
+      } else if (result && result.error) {
+        toast.error(`无法打开文件夹: ${result.error}`);
+      }
+    } else {
+      toast.error("此功能仅在桌面应用中可用");
+    }
   } catch (error) {
-    console.error("Download error:", error);
-    toast.error("下载失败，请重试");
+    console.error("打开文件夹错误:", error);
+    toast.error("打开文件夹失败，请重试");
   }
 }
 
