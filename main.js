@@ -169,6 +169,30 @@ ipcMain.handle("select-folder", async () => {
   return filePaths[0]; // 返回选中的文件夹路径
 });
 
+// 处理媒体文件URL请求
+ipcMain.handle("get-media-url", async (event, filePath) => {
+  try {
+    // 验证文件是否存在
+    if (!fs.existsSync(filePath)) {
+      console.error(`媒体文件不存在: ${filePath}`);
+      return null;
+    }
+    
+    // 确保路径中特殊字符被正确编码
+    const encodedPath = filePath
+      .replace(/\\/g, "/")
+      .replace(/#/g, "%23")
+      .replace(/\?/g, "%3F")
+      .replace(/\s/g, "%20");
+    
+    // 返回正确的file://协议URL
+    return `file://${encodedPath}`;
+  } catch (err) {
+    console.error("处理媒体URL时出错:", err);
+    return null;
+  }
+});
+
 // 监听渲染进程的事件，弹出选择文件夹对话框
 ipcMain.handle("open-folder", (event, dir) => {
   // 打开文件夹

@@ -246,6 +246,32 @@ function getEmotionName(emotionId: string | null): string {
   return emotionId;
 }
 
+// 设置音频URL，确保正确处理本地文件路径
+async function setupAudio(filePath: string) {
+  audioFilePath.value = filePath;
+
+  if (!filePath) {
+    audioUrl.value = "";
+    return;
+  }
+
+  try {
+    // 直接通过主进程获取正确的媒体URL
+    if (window.electron) {
+      const mediaUrl = await window.electron.invoke("get-media-url", filePath);
+      if (mediaUrl) {
+        audioUrl.value = mediaUrl;
+        return;
+      }
+    }
+    // 回退到默认处理
+    audioUrl.value = formatPathForElectron(filePath);
+  } catch (err) {
+    console.error("设置音频URL失败:", err);
+    audioUrl.value = formatPathForElectron(filePath);
+  }
+}
+
 // 合成语音
 async function synthesize() {
   if (!canSynthesize.value) {
@@ -262,8 +288,9 @@ async function synthesize() {
     const response = await ttsApi.synthesize(props.chapter.id);
 
     if (response.success && response.data) {
-      audioUrl.value = response.data.audioUrl || "";
-      audioFilePath.value = response.data.outputPath || "";
+      // 设置音频URL
+      await setupAudio(response.data.outputPath || "");
+
       synthesisStatus.value = "success";
 
       // Update chapter audio path in store if needed
@@ -333,7 +360,13 @@ function onAudioError(event: Event) {
   const target = event.target as HTMLAudioElement;
   console.error("Audio error:", target.error);
 
-  audioError.value = "音频加载失败，可能是文件路径无法访问或格式不支持";
+  // 提供更具体的错误信息
+  if (audioUrl.value.startsWith("file://")) {
+    audioError.value = "加载本地文件失败，可能是路径不正确或权限问题";
+    console.log("Attempted to load audio from:", audioUrl.value);
+  } else {
+    audioError.value = "音频加载失败，可能是文件路径无法访问或格式不支持";
+  }
   isPlaying.value = false;
 }
 
@@ -345,7 +378,32 @@ function retryAudioLoad() {
 
   // 尝试重新加载音频文件
   try {
-    audioPlayer.value.load();
+    // 尝试使用不同的协议重新加载
+    if (audioFilePath.value && audioUrl.value.startsWith("file://")) {
+      console.log("重试加载，使用原始文件路径");
+      // 尝试通过主进程访问文件
+      if (window.electron) {
+        window.electron
+          .invoke("get-media-url", audioFilePath.value)
+          .then((mediaUrl: string) => {
+            if (mediaUrl) {
+              audioUrl.value = mediaUrl;
+              audioPlayer.value?.load();
+            }
+          })
+          .catch((err: any) => {
+            console.error("获取媒体URL失败", err);
+            // 如果失败，回退到常规加载
+            audioPlayer.value?.load();
+          });
+      } else {
+        // 直接重新加载当前URL
+        audioPlayer.value.load();
+      }
+    } else {
+      // 简单重新加载
+      audioPlayer.value.load();
+    }
     toast.info("正在重新加载音频...");
   } catch (error) {
     console.error("Audio reload error:", error);
@@ -370,16 +428,8 @@ watch(audioUrl, () => {
 // 初始化 - 如果章节已有音频路径，则自动设置成功状态
 if (props.chapter.audioPath) {
   synthesisStatus.value = "success";
-  audioFilePath.value = props.chapter.audioPath;
-
-  // 确保路径中特殊字符被正确编码
-  const encodedPath = props.chapter.audioPath
-    .replace(/\\/g, "/")
-    .replace(/#/g, "%23")
-    .replace(/\?/g, "%3F")
-    .replace(/\s/g, "%20");
-
-  audioUrl.value = `file://${encodedPath}`;
+  // 设置音频URL
+  setupAudio(props.chapter.audioPath);
 }
 
 // 组件销毁时停止播放
@@ -392,6 +442,21 @@ onUnmounted(() => {
 // 确保模型数据已加载
 if (projectsStore.voiceModels.length === 0) {
   projectsStore.loadVoiceModels();
+}
+
+// 处理本地文件路径，确保在Electron中正确加载
+function formatPathForElectron(filePath: string): string {
+  if (!filePath) return "";
+
+  // 确保路径中特殊字符被正确编码
+  const encodedPath = filePath
+    .replace(/\\/g, "/")
+    .replace(/#/g, "%23")
+    .replace(/\?/g, "%3F")
+    .replace(/\s/g, "%20");
+
+  // 在Electron中，优先使用media:// 协议 (如果可用)，否则使用file://
+  return `file://${encodedPath}`;
 }
 </script>
 
