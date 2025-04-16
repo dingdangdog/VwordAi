@@ -292,6 +292,11 @@ import { useRoute, useRouter } from "vue-router";
 import { useProjectsStore } from "@/stores/projects";
 import { useToast } from "vue-toastification";
 import type { Project, Chapter } from "@/types";
+import { 
+  getProviderName as getProviderDisplayName, 
+  getVoiceRoleName as getVoiceDisplayName, 
+  getEmotionName as getEmotionDisplayName 
+} from "@/utils/voice-utils";
 import ProjectFormModal from "@/components/projects/ProjectFormModal.vue";
 import ConfirmationModal from "@/components/common/ConfirmationModal.vue";
 import ChapterSynthesis from "@/components/chapters/ChapterSynthesis.vue";
@@ -561,39 +566,15 @@ async function exportProject() {
 
 // Helper functions to get display names
 function getServiceProviderName(id: string): string {
-  const providers = [
-    { id: "aliyun", name: "阿里云" },
-    { id: "tencent", name: "腾讯云" },
-    { id: "baidu", name: "百度智能云" },
-    { id: "azure", name: "Azure Speech Service" },
-  ];
-  return providers.find((p) => p.id === id)?.name || id;
+  return getProviderDisplayName(id);
 }
 
 function getVoiceRoleName(id: string): string {
-  // Get the voice model name from models.json
-  const model = projectsStore.getVoiceModelByCode(id);
-  return model ? model.name : id;
+  return getVoiceDisplayName(id);
 }
 
 function getEmotionName(id: string): string {
-  // Check all models to find the matching emotion
-  for (const model of projectsStore.voiceModels) {
-    if (model.emotions) {
-      const emotion = model.emotions.find((e) => e.code === id);
-      if (emotion) {
-        return emotion.name;
-      }
-    }
-  }
-
-  // Fallback
-  const emotions = [
-    { code: "neutral", name: "平静" },
-    { code: "happy", name: "快乐" },
-    { code: "sad", name: "伤感" },
-  ];
-  return emotions.find((e) => e.code === id)?.name || id;
+  return getEmotionDisplayName(id);
 }
 
 function getDeleteMessage(): string {

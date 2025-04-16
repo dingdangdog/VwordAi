@@ -169,11 +169,15 @@ import {
   ArrowPathIcon,
   StopIcon,
 } from "@heroicons/vue/24/outline";
-import { SUPPORTED_PROVIDERS } from "@/stores/settings";
 import { ttsApi } from "@/utils/api";
 import type { Chapter } from "@/types";
 import { useToast } from "vue-toastification";
 import { useProjectsStore } from "@/stores/projects";
+import { 
+  getProviderName as getProviderDisplayName,
+  getVoiceRoleName as getVoiceDisplayName,
+  getEmotionName as getEmotionDisplayName 
+} from "@/utils/voice-utils";
 
 const props = defineProps<{
   chapter: Chapter;
@@ -212,32 +216,19 @@ onMounted(() => {
 // 获取服务商名称
 function getProviderName(providerId: string | null): string {
   if (!providerId) return "";
-
-  const provider = SUPPORTED_PROVIDERS.find((p) => p.id === providerId);
-  return provider ? provider.name : providerId;
+  return getProviderDisplayName(providerId);
 }
 
 // 获取语音角色名称
 function getVoiceRoleName(roleId: string | null): string {
   if (!roleId) return "";
-
-  const model = projectsStore.getVoiceModelByCode(roleId);
-  return model ? model.name : roleId;
+  return getVoiceDisplayName(roleId);
 }
 
 // 获取情感名称
 function getEmotionName(emotionId: string | null): string {
   if (!emotionId) return "";
-
-  for (const model of projectsStore.voiceModels) {
-    if (model.emotions) {
-      const emotion = model.emotions.find((e) => e.code === emotionId);
-      if (emotion) {
-        return emotion.name;
-      }
-    }
-  }
-  return emotionId;
+  return getEmotionDisplayName(emotionId);
 }
 
 // 设置音频URL，确保正确处理本地文件路径

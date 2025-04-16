@@ -13,18 +13,10 @@ export type SettingsTab = "provider" | "storage" | "system" | "about";
 // 支持的服务商
 export const SUPPORTED_PROVIDERS = [
   { id: "azure", name: "Azure", type: "azure" as ServiceProviderType },
-  {
-    id: "aliyun",
-    name: "阿里云",
-    type: "aliyun" as ServiceProviderType,
-  },
-  {
-    id: "tencent",
-    name: "腾讯云",
-    type: "tencent" as ServiceProviderType,
-  },
-  { id: "baidu", name: "百度云", type: "baidu" as ServiceProviderType },
-  { id: "openai", name: "OpenAI", type: "openai" as ServiceProviderType },
+  // { id: "aliyun", name: "阿里云", type: "aliyun" as ServiceProviderType },
+  // { id: "tencent", name: "腾讯云", type: "tencent" as ServiceProviderType },
+  // { id: "baidu", name: "百度云", type: "baidu" as ServiceProviderType },
+  // { id: "openai", name: "OpenAI", type: "openai" as ServiceProviderType },
 ];
 
 export const useSettingsStore = defineStore("settings", () => {

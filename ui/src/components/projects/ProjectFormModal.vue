@@ -234,6 +234,7 @@ import { ref, reactive, onMounted, watchEffect, computed } from "vue";
 import { XMarkIcon } from "@heroicons/vue/24/outline";
 import type { VoiceSettings } from "@/types";
 import { useProjectsStore } from "@/stores/projects";
+import { getTTSProviders } from "@/utils/voice-utils";
 
 const projectsStore = useProjectsStore();
 
@@ -242,13 +243,8 @@ if (projectsStore.voiceModels.length === 0) {
   projectsStore.loadVoiceModels();
 }
 
-// Service providers definition
-const serviceProviders = ref([
-  { id: "aliyun", name: "阿里云" },
-  { id: "tencent", name: "腾讯云" },
-  { id: "baidu", name: "百度智能云" },
-  { id: "azure", name: "Azure Speech Service" },
-]);
+// Use the centralized provider definition via utility function
+const serviceProviders = computed(() => getTTSProviders());
 
 // Computed properties for filtered voice roles and emotions based on model data
 const filteredVoiceRoles = computed(() => {
