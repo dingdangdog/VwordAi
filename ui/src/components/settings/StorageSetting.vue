@@ -21,40 +21,7 @@
           </button>
         </div>
         <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
-          选择一个路径，用于保存生成的音频文件
-        </p>
-      </div>
-    </div>
-
-    <div class="mb-6">
-      <h3 class="text-md font-semibold text-gray-700 dark:text-gray-300 mb-2">
-        音频文件格式
-      </h3>
-      <div class="px-4">
-        <div class="flex space-x-4">
-          <label class="inline-flex items-center">
-            <input
-              type="radio"
-              class="form-radio"
-              name="fileFormat"
-              value="mp3"
-              v-model="audioFormat"
-            />
-            <span class="ml-2 text-gray-700 dark:text-gray-300">MP3</span>
-          </label>
-          <label class="inline-flex items-center">
-            <input
-              type="radio"
-              class="form-radio"
-              name="fileFormat"
-              value="wav"
-              v-model="audioFormat"
-            />
-            <span class="ml-2 text-gray-700 dark:text-gray-300">WAV</span>
-          </label>
-        </div>
-        <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
-          选择生成的音频文件格式
+          选择一个路径，用于保存生成的音频文件 (WAV格式)
         </p>
       </div>
     </div>
@@ -112,7 +79,6 @@ const isSaving = ref(false);
 
 // 存储设置
 const defaultExportPath = ref("");
-const audioFormat = ref<"mp3" | "wav">("mp3");
 const fileNamingRule = ref("chapter_title");
 const customNamingFormat = ref("{project}-{chapter}");
 
@@ -131,9 +97,6 @@ async function loadSettings() {
     if (settings) {
       // 设置导出路径
       defaultExportPath.value = settings.defaultExportPath || "";
-
-      // 设置音频格式
-      audioFormat.value = settings.outputFormat || "mp3";
 
       // 设置文件命名规则
       fileNamingRule.value = settings.fileNamingRule || "chapter_title";
@@ -170,7 +133,6 @@ async function saveSettings() {
     // 准备更新的设置数据
     const settingsData = {
       defaultExportPath: defaultExportPath.value,
-      outputFormat: audioFormat.value,
       fileNamingRule: fileNamingRule.value,
       customNamingFormat: customNamingFormat.value,
     };

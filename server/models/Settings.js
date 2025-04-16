@@ -15,7 +15,6 @@ const DEFAULT_SETTINGS = {
   theme: 'light',
   defaultExportPath: path.join(os.homedir(), 'Documents', 'DOTTS'),
   language: 'zh_CN',
-  outputFormat: 'mp3',
   azure: {
     key: '',
     region: '',

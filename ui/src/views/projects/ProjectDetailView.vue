@@ -454,12 +454,16 @@ async function startBatchSynthesis() {
     toast.dismiss(progressToastId);
 
     // 显示成功消息
-    toast.success(`成功合成 ${Object.keys(results).length} 个章节的语音`);
+    const successCount = Object.keys(results).length;
+    toast.success(`成功合成 ${successCount} 个章节的语音`);
 
     // 扩展已合成的章节，以便用户查看
     Object.keys(results).forEach((chapterId) => {
       expandedChapters.value[chapterId] = true;
     });
+
+    // 刷新章节数据以显示新的音频路径
+    await projectsStore.loadChaptersByProjectId(projectId.value);
   } catch (error) {
     toast.error(
       `批量合成失败: ${error instanceof Error ? error.message : "未知错误"}`

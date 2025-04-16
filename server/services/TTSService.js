@@ -74,15 +74,6 @@ const TEXT_LENGTH_LIMITS = {
 };
 
 /**
- * Get the default temporary output directory
- */
-function getDefaultOutputDir() {
-  const dir = path.join(os.tmpdir(), "dotts_output");
-  fs.ensureDirSync(dir);
-  return dir;
-}
-
-/**
  * Split text into chunks suitable for TTS synthesis
  */
 function splitTextIntoChunks(text, maxLength = 5000) {
@@ -246,18 +237,50 @@ async function synthesizeChapter(chapterId) {
       );
     }
 
+    // Generate a safe filename with timestamp to avoid conflicts and special character issues
+    const timestamp = Date.now();
+    const safeChapterName = chapter.name
+      .replace(/[^a-zA-Z0-9\u4e00-\u9fa5._-]/g, "_")
+      .substring(0, 50); // Limit length
+
+    const finalOutputFileName = `${safeChapterName}_${chapterId.slice(
+      -6
+    )}_${timestamp}`;
+    console.log(`[TTS] Output filename: ${finalOutputFileName}`);
+
     // 3. Prepare Output Path and Synthesis Settings
-    const outputDir = globalSettings.defaultExportPath || getDefaultOutputDir();
-    // Ensure output directory exists
-    if (!fs.existsSync(outputDir)) {
-      fs.mkdirSync(outputDir, { recursive: true });
+    let outputDir = globalSettings.defaultExportPath;
+
+    // Check if the configured export path is valid and writable
+    try {
+      if (outputDir) {
+        // Test if we can write to this directory
+        const testFile = path.join(outputDir, `.test_${timestamp}.tmp`);
+        fs.writeFileSync(testFile, "test", { encoding: "utf8" });
+        fs.unlinkSync(testFile);
+        console.log(
+          `[TTS] Verified write access to output directory: ${outputDir}`
+        );
+      }
+    } catch (error) {
+      console.error(`[TTS] Error accessing output directory: ${error.message}`);
+      outputDir = null;
     }
 
-    const finalOutputFileName = `${chapter.name.replace(
-      /[^a-zA-Z0-9\u4e00-\u9fa5._-]/g,
-      "_"
-    )}_${chapterId.slice(-6)}`;
-    const finalOutputPath = path.join(outputDir, `${finalOutputFileName}.mp3`);
+    // If the configured directory is invalid, use a default
+    if (!outputDir) {
+      outputDir = path.join(process.cwd(), "audio_output");
+      console.log(`[TTS] Using fallback output directory: ${outputDir}`);
+    }
+
+    // Ensure output directory exists
+    fs.ensureDirSync(outputDir);
+
+    const finalOutputPath = path.join(
+      outputDir,
+      `${finalOutputFileName}.wav`
+    );
+    console.log(`[TTS] Final output path: ${finalOutputPath}`);
 
     const synthesisSettings = {
       // Merge settings, chapter overrides global
@@ -279,17 +302,18 @@ async function synthesizeChapter(chapterId) {
     );
     Chapter.updateChapter(chapterId, { status: "processing" }); // Update status
 
-    const tempDir = getDefaultOutputDir();
+    // Create a unique temp directory for this synthesis job
+    const tempDirName = `${chapterId}_${timestamp}`;
+    const tempDir = path.join(outputDir, tempDirName);
+
     // Ensure temp directory exists
-    if (!fs.existsSync(tempDir)) {
-      fs.mkdirSync(tempDir, { recursive: true });
-    }
+    fs.ensureDirSync(tempDir);
+    console.log(`[TTS] Created temp directory: ${tempDir}`);
 
     for (let i = 0; i < textChunks.length; i++) {
       const chunk = textChunks[i];
-      const chunkFilename = `${finalOutputFileName}_part${
-        i + 1
-      }_${uuidv4().slice(0, 8)}.wav`;
+      const chunkTimestamp = Date.now();
+      const chunkFilename = `part${i + 1}_${chunkTimestamp}.wav`;
       const tempOutputPath = path.join(tempDir, chunkFilename);
 
       console.log(
@@ -298,96 +322,98 @@ async function synthesizeChapter(chapterId) {
         } to ${tempOutputPath}`
       );
 
-      const chunkResult = await synthesizeWithProvider(
-        chunk,
-        synthesisSettings,
-        tempOutputPath,
-        providerConfig,
-        providerType
-      );
-
-      if (
-        !chunkResult.success ||
-        !chunkResult.data.filePath ||
-        !fs.existsSync(chunkResult.data.filePath)
-      ) {
-        throw new Error(
-          `Voice synthesis failed (chunk ${i + 1}): ${
-            chunkResult.message || "Unable to generate audio file"
-          }`
-        );
-      }
-
-      // Verify the file is valid before adding to the list
       try {
+        const chunkResult = await synthesizeWithProvider(
+          chunk,
+          synthesisSettings,
+          tempOutputPath,
+          providerConfig,
+          providerType
+        );
+
+        if (
+          !chunkResult.success ||
+          !chunkResult.data.filePath ||
+          !fs.existsSync(chunkResult.data.filePath)
+        ) {
+          throw new Error(
+            `Voice synthesis failed (chunk ${i + 1}): ${
+              chunkResult.message || "Unable to generate audio file"
+            }`
+          );
+        }
+
+        // Verify the file is valid before adding to the list
         const stats = fs.statSync(chunkResult.data.filePath);
         if (stats.size === 0) {
           throw new Error(
             `Generated audio file is empty: ${chunkResult.data.filePath}`
           );
         }
+
+        console.log(
+          `[TTS] Chunk ${i + 1} synthesized successfully: ${
+            chunkResult.data.filePath
+          } (${stats.size} bytes)`
+        );
         tempAudioFiles.push(chunkResult.data.filePath);
-      } catch (statError) {
-        throw new Error(`Error verifying audio file: ${statError.message}`);
+      } catch (chunkError) {
+        console.error(
+          `[TTS] Error synthesizing chunk ${i + 1}:`,
+          chunkError.message
+        );
+        throw new Error(
+          `Failed to synthesize chunk ${i + 1}: ${chunkError.message}`
+        );
       }
     }
 
-    // 6. Merge and Convert
+    // 6. Process final output
     console.log(`[TTS] Processing ${tempAudioFiles.length} audio chunks`);
-    if (tempAudioFiles.length > 1) {
-      mergedFilePath = path.join(tempDir, `${finalOutputFileName}.merged.wav`);
 
-      console.log(`[TTS] Merging audio chunks into ${mergedFilePath}`);
-      await audioUtils.mergeAudioFiles(tempAudioFiles, mergedFilePath);
-
-      // Verify merged file exists and is valid
-      if (!fs.existsSync(mergedFilePath)) {
-        throw new Error("Failed to create merged audio file");
-      }
-
-      const mergedStats = fs.statSync(mergedFilePath);
-      if (mergedStats.size === 0) {
-        throw new Error("Merged audio file is empty");
-      }
-
-      tempAudioFiles.push(mergedFilePath); // Add merged file to cleanup list
-    } else if (tempAudioFiles.length === 1) {
-      mergedFilePath = tempAudioFiles[0]; // Only one chunk, use it directly
-      console.log(`[TTS] Using single audio chunk: ${mergedFilePath}`);
-    } else {
-      throw new Error("No audio files were generated");
-    }
-
-    console.log(`[TTS] Converting audio to MP3: ${finalOutputPath}`);
     try {
-      // Verify source file exists and is valid before conversion
-      if (!fs.existsSync(mergedFilePath)) {
-        throw new Error(
-          `Source file for conversion does not exist: ${mergedFilePath}`
+      if (tempAudioFiles.length > 1) {
+        const mergedFileName = `${finalOutputFileName}.wav`;
+        mergedFilePath = path.join(tempDir, mergedFileName);
+
+        console.log(`[TTS] Merging audio chunks into ${mergedFilePath}`);
+        await audioUtils.mergeAudioFiles(tempAudioFiles, mergedFilePath);
+
+        // Verify merged file exists and is valid
+        if (!fs.existsSync(mergedFilePath)) {
+          throw new Error("Failed to create merged audio file");
+        }
+
+        const mergedStats = fs.statSync(mergedFilePath);
+        if (mergedStats.size === 0) {
+          throw new Error("Merged audio file is empty");
+        }
+
+        console.log(
+          `[TTS] Merged file created: ${mergedFilePath} (${mergedStats.size} bytes)`
         );
+        
+        // Copy the merged file to the final output location
+        fs.copyFileSync(mergedFilePath, finalOutputPath);
+        console.log(`[TTS] Copied merged file to final output path: ${finalOutputPath}`);
+        
+        tempAudioFiles.push(mergedFilePath); // Add merged file to cleanup list
+      } else if (tempAudioFiles.length === 1) {
+        // Only one chunk, copy it directly to final path
+        fs.copyFileSync(tempAudioFiles[0], finalOutputPath);
+        console.log(`[TTS] Copied single audio chunk to ${finalOutputPath}`);
+      } else {
+        throw new Error("No audio files were generated");
       }
 
-      const sourceStats = fs.statSync(mergedFilePath);
-      if (sourceStats.size === 0) {
-        throw new Error(
-          `Source file for conversion is empty: ${mergedFilePath}`
-        );
-      }
-      console.log("1111mergedFilePath", mergedFilePath);
-      await audioUtils.convertAudioFormat(
-        mergedFilePath,
-        finalOutputPath,
-        "mp3"
-      );
-
-      console.log("1111finalOutputPath", finalOutputPath);
       // Verify the output file exists
       if (!fs.existsSync(finalOutputPath)) {
-        throw new Error("Converted MP3 file does not exist");
+        throw new Error(`Final output file does not exist`);
       }
 
+      const outputStats = fs.statSync(finalOutputPath);
       console.log(
-        `[TTS] Successfully generated final file: ${finalOutputPath}`
+        `[TTS] Successfully generated final file: ${finalOutputPath} (${outputStats.size} bytes)`
       );
 
       // 7. Update Chapter Status and Return Success
@@ -395,15 +421,23 @@ async function synthesizeChapter(chapterId) {
         audioPath: finalOutputPath,
         status: "completed",
       });
+
+      // Create an audio URL for preview using proper URI encoding for special characters
+      const audioUrl = `file://${finalOutputPath
+        .replace(/\\/g, "/")
+        .replace(/#/g, "%23")
+        .replace(/\?/g, "%3F")}`;
+
       return success({
         chapterId: chapter.id,
         outputPath: finalOutputPath,
+        audioUrl: audioUrl,
         settings: synthesisSettings,
       });
-    } catch (conversionError) {
-      console.error(`[TTS] Audio conversion failed:`, conversionError);
+    } catch (processingError) {
+      console.error(`[TTS] Audio processing failed:`, processingError);
       throw new Error(
-        `Audio conversion failed: ${conversionError.message}. Please check the input file for validity.`
+        `Audio processing failed: ${processingError.message}. Please check the input files for validity.`
       );
     }
   } catch (err) {
@@ -418,14 +452,15 @@ async function synthesizeChapter(chapterId) {
     }
     return error(`Synthesis failed: ${err.message}`);
   } finally {
-    // 8. Cleanup Temporary Files
+    // 8. Cleanup Temporary Files - Uncomment to enable cleanup when needed
     console.log(`[TTS] Cleaning up temporary files`);
     // tempAudioFiles.forEach((fp) => {
     //   if (fp && fs.existsSync(fp)) {
     //     try {
     //       fs.removeSync(fp);
+    //       console.log(`[TTS] Removed temp file: ${fp}`);
     //     } catch (e) {
-    //       console.error(`Failed to delete temporary file ${fp}:`, e);
+    //       console.error(`[TTS] Failed to delete temporary file ${fp}:`, e);
     //     }
     //   }
     // });

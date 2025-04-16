@@ -59,10 +59,7 @@
         </div>
       </div>
 
-      <div
-        v-if="synthesisStatus === 'idle'"
-        class="flex justify-end"
-      >
+      <div v-if="synthesisStatus === 'idle'" class="flex justify-end">
         <button
           @click="synthesize"
           class="btn btn-primary flex justify-center items-center space-x-2"
@@ -110,30 +107,64 @@
 
         <div class="bg-gray-50 dark:bg-gray-700 p-4 rounded-md">
           <div class="flex flex-col space-y-2">
-            <audio
-              v-if="audioUrl"
-              controls
-              class="w-full"
-              @play="onPlay"
-              @pause="onPause"
-            >
-              <source :src="audioUrl" type="audio/mp3" />
-              您的浏览器不支持音频播放。
-            </audio>
-
-            <div class="flex justify-end space-x-2">
-              <button
-                @click="downloadAudio"
-                class="btn btn-secondary flex justify-center items-center space-x-2"
-                :disabled="!audioUrl"
+            <div v-if="audioUrl" class="audio-player-container">
+              <audio
+                ref="audioPlayer"
+                :src="audioUrl"
+                class="w-full"
+                @play="onPlay"
+                @pause="onPause"
+                @ended="onEnded"
+                @error="onAudioError"
+                controls
               >
-                <ArrowDownTrayIcon class="h-5 w-5 mr-1" />
-                下载
-              </button>
-              <button @click="synthesize" class="btn btn-primary flex justify-center items-center space-x-2">
-                <ArrowPathIcon class="h-5 w-5 mr-1" />
-                重新合成
-              </button>
+                您的浏览器不支持音频播放。
+              </audio>
+
+              <div
+                v-if="audioError"
+                class="text-red-500 dark:text-red-400 text-sm mt-2"
+              >
+                <p>{{ audioError }}</p>
+                <button
+                  @click="retryAudioLoad"
+                  class="text-blue-500 hover:underline mt-1"
+                >
+                  重试加载
+                </button>
+              </div>
+
+              <div class="flex justify-between items-center mt-3">
+                <div class="flex items-center">
+                  <button
+                    v-if="isPlaying"
+                    @click="stopAudio"
+                    class="btn btn-danger flex justify-center items-center"
+                    title="停止播放"
+                  >
+                    <StopIcon class="h-5 w-5 mr-1" />
+                    停止
+                  </button>
+                </div>
+
+                <div class="flex justify-end space-x-2">
+                  <button
+                    @click="downloadAudio"
+                    class="btn btn-secondary flex justify-center items-center space-x-2"
+                    :disabled="!audioUrl"
+                  >
+                    <ArrowDownTrayIcon class="h-5 w-5 mr-1" />
+                    下载
+                  </button>
+                  <button
+                    @click="synthesize"
+                    class="btn btn-primary flex justify-center items-center space-x-2"
+                  >
+                    <ArrowPathIcon class="h-5 w-5 mr-1" />
+                    重新合成
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -143,13 +174,14 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from "vue";
+import { ref, computed, onUnmounted, watch } from "vue";
 import {
   SpeakerWaveIcon,
   ExclamationCircleIcon,
   CheckCircleIcon,
   ArrowDownTrayIcon,
   ArrowPathIcon,
+  StopIcon,
 } from "@heroicons/vue/24/outline";
 import { SUPPORTED_PROVIDERS } from "@/stores/settings";
 import { ttsApi } from "@/utils/api";
@@ -170,6 +202,8 @@ const errorMessage = ref("");
 const audioUrl = ref("");
 const audioFilePath = ref("");
 const isPlaying = ref(false);
+const audioPlayer = ref<HTMLAudioElement | null>(null);
+const audioError = ref<string | null>(null);
 
 const canSynthesize = computed(() => {
   return (
@@ -221,6 +255,7 @@ async function synthesize() {
 
   synthesisStatus.value = "loading";
   errorMessage.value = "";
+  audioError.value = null;
 
   try {
     // 使用章节ID直接调用合成API
@@ -230,6 +265,22 @@ async function synthesize() {
       audioUrl.value = response.data.audioUrl || "";
       audioFilePath.value = response.data.outputPath || "";
       synthesisStatus.value = "success";
+
+      // Update chapter audio path in store if needed
+      if (props.chapter.audioPath !== response.data.outputPath) {
+        // This would typically be done by the server already
+        // But we can update local state for consistency
+        try {
+          console.log(
+            "Audio path updated on server:",
+            response.data.outputPath
+          );
+          // We don't manually update the store as it should be handled by the server
+          // The next time chapters are loaded, it will have the correct path
+        } catch (e) {
+          console.warn("Issue with audio path update:", e);
+        }
+      }
     } else {
       synthesisStatus.value = "error";
       errorMessage.value = response.error || "合成失败，请稍后重试";
@@ -245,20 +296,26 @@ async function synthesize() {
 function downloadAudio() {
   if (!audioUrl.value) return;
 
-  // 创建一个临时的 a 元素来触发下载
-  const a = document.createElement("a");
-  a.href = audioUrl.value;
-  a.download = `${props.chapter.name || "chapter"}.mp3`;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
+  try {
+    // 创建一个临时的 a 元素来触发下载
+    const a = document.createElement("a");
+    a.href = audioUrl.value;
+    a.download = `${props.chapter.name || "chapter"}.mp3`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
 
-  toast.success("音频下载已开始");
+    toast.success("音频下载已开始");
+  } catch (error) {
+    console.error("Download error:", error);
+    toast.error("下载失败，请重试");
+  }
 }
 
 // 音频播放开始
 function onPlay() {
   isPlaying.value = true;
+  audioError.value = null;
 }
 
 // 音频播放暂停
@@ -266,8 +323,80 @@ function onPause() {
   isPlaying.value = false;
 }
 
+// 音频播放结束
+function onEnded() {
+  isPlaying.value = false;
+}
+
+// 音频加载错误
+function onAudioError(event: Event) {
+  const target = event.target as HTMLAudioElement;
+  console.error("Audio error:", target.error);
+
+  audioError.value = "音频加载失败，可能是文件路径无法访问或格式不支持";
+  isPlaying.value = false;
+}
+
+// 重试加载音频
+function retryAudioLoad() {
+  if (!audioPlayer.value) return;
+
+  audioError.value = null;
+
+  // 尝试重新加载音频文件
+  try {
+    audioPlayer.value.load();
+    toast.info("正在重新加载音频...");
+  } catch (error) {
+    console.error("Audio reload error:", error);
+    audioError.value = "重新加载音频失败";
+  }
+}
+
+// 停止音频播放
+function stopAudio() {
+  if (audioPlayer.value) {
+    audioPlayer.value.pause();
+    audioPlayer.value.currentTime = 0;
+    isPlaying.value = false;
+  }
+}
+
+// 监听 audioUrl 变化，重置错误状态
+watch(audioUrl, () => {
+  audioError.value = null;
+});
+
+// 初始化 - 如果章节已有音频路径，则自动设置成功状态
+if (props.chapter.audioPath) {
+  synthesisStatus.value = "success";
+  audioFilePath.value = props.chapter.audioPath;
+
+  // 确保路径中特殊字符被正确编码
+  const encodedPath = props.chapter.audioPath
+    .replace(/\\/g, "/")
+    .replace(/#/g, "%23")
+    .replace(/\?/g, "%3F")
+    .replace(/\s/g, "%20");
+
+  audioUrl.value = `file://${encodedPath}`;
+}
+
+// 组件销毁时停止播放
+onUnmounted(() => {
+  if (isPlaying.value && audioPlayer.value) {
+    audioPlayer.value.pause();
+  }
+});
+
 // 确保模型数据已加载
 if (projectsStore.voiceModels.length === 0) {
   projectsStore.loadVoiceModels();
 }
 </script>
+
+<style scoped>
+.audio-player-container {
+  width: 100%;
+}
+</style>

@@ -25,29 +25,40 @@ const synthesize = (text, fileName, settings, config) => {
       return Promise.reject(error("Azure configuration is incomplete"));
     }
 
+    console.log(`[Azure] Synthesizing text (${text.length} chars) to ${fileName}`);
+    console.log(`[Azure] Using voice: ${settings.voice}`);
+
     const speechConfig = sdk.SpeechConfig.fromSubscription(
       config.key,
       config.region
     );
 
-    // Set speech model
-    speechConfig.speechSynthesisVoiceName = settings.model;
+    // Set speech model - Map settings.voice to speechSynthesisVoiceName
+    // This is critical - the voice ID must be used as the model name
+    speechConfig.speechSynthesisVoiceName = settings.voice;
+    console.log(`[Azure] Set voice model to: ${settings.voice}`);
 
-    // Set speech rate and emotion
+    // Set speech rate and emotion if available
     if (settings.speed) {
-      speechConfig.speechSynthesisSpeechRate = settings.speed; // Set speech rate
+      // Convert to string with percent format
+      const speedValue = settings.speed.toString();
+      speechConfig.setProperty("SpeechServiceConnection_SynthesisRate", speedValue);
+      console.log(`[Azure] Set speech rate to: ${speedValue}`);
     }
+    
     if (settings.emotion) {
-      speechConfig.speechSynthesisEmotion = settings.emotion; // Set emotion
+      speechConfig.setProperty("SpeechServiceConnection_SynthesisEmotionStyle", settings.emotion);
+      console.log(`[Azure] Set emotion to: ${settings.emotion}`);
     }
 
-    // Specify audio output format as .wav
+    // Specify audio output format as .wav (16khz, 16bit, mono PCM)
     speechConfig.speechSynthesisOutputFormat =
       sdk.SpeechSynthesisOutputFormat.Riff16Khz16BitMonoPcm;
 
     // Ensure output directory exists
-    if (!fs.existsSync(path.dirname(fileName))) {
-      fs.mkdirSync(path.dirname(fileName), { recursive: true });
+    const outputDir = path.dirname(fileName);
+    if (!fs.existsSync(outputDir)) {
+      fs.mkdirSync(outputDir, { recursive: true });
     }
 
     const audioConfig = sdk.AudioConfig.fromAudioFileOutput(fileName);
@@ -58,21 +69,43 @@ const synthesize = (text, fileName, settings, config) => {
 
     // Return a Promise to handle asynchronous operation
     return new Promise((resolve, reject) => {
+      console.log("[Azure] Starting speech synthesis...");
+      
       // Use speakTextAsync to synthesize speech
       speechSynthesizer.speakTextAsync(
         text,
         (result) => {
           if (result.reason === sdk.ResultReason.SynthesizingAudioCompleted) {
-            // On success, return the file path
-            resolve(success({ filePath: fileName }, "success"));
+            // Verify the file exists and has content
+            try {
+              if (!fs.existsSync(fileName)) {
+                speechSynthesizer.close();
+                return reject(error(`File not created: ${fileName}`));
+              }
+              
+              const stats = fs.statSync(fileName);
+              console.log(`[Azure] Generated audio file: ${fileName} (${stats.size} bytes)`);
+              
+              if (stats.size === 0) {
+                speechSynthesizer.close();
+                return reject(error(`Generated audio file is empty: ${fileName}`));
+              }
+              
+              // On success, return the file path
+              resolve(success({ filePath: fileName }, "success"));
+            } catch (err) {
+              speechSynthesizer.close();
+              reject(error(`File validation error: ${err.message}`));
+            }
           } else {
-            console.error("Synthesis failed. Reason:", result.errorDetails);
-            reject(error(result.errorDetails)); // On failure, return error
+            console.error("[Azure] Synthesis failed. Reason:", result.errorDetails);
+            speechSynthesizer.close();
+            reject(error(result.errorDetails || "Unknown synthesis error")); // On failure, return error
           }
           speechSynthesizer.close();
         },
         (err) => {
-          console.error("Error in speech synthesis:", err);
+          console.error("[Azure] Error in speech synthesis:", err);
           reject(
             error(err.message || "An error occurred during speech synthesis")
           );
@@ -81,7 +114,7 @@ const synthesize = (text, fileName, settings, config) => {
       );
     });
   } catch (err) {
-    console.error("Azure synthesis setup error:", err);
+    console.error("[Azure] synthesis setup error:", err);
     return Promise.reject(
       error(err.message || "Speech synthesis initialization failed")
     );
