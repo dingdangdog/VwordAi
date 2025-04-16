@@ -25,9 +25,6 @@
       <!-- 服务商设置 -->
       <ProviderSetting v-if="activeTab === 'provider'" />
 
-      <!-- 存储设置 -->
-      <StorageSetting v-else-if="activeTab === 'storage'" />
-
       <!-- 系统数据 -->
       <SystemDataSetting v-else-if="activeTab === 'system'" />
 
@@ -44,14 +41,12 @@ import { useSettingsStore } from "@/stores/settings";
 import type { SettingsTab } from "@/stores/settings";
 import {
   ServerIcon,
-  FolderIcon,
   InformationCircleIcon,
   ArrowPathIcon,
 } from "@heroicons/vue/24/outline";
 
 // 导入设置组件
 import ProviderSetting from "@/components/settings/ProviderSetting.vue";
-import StorageSetting from "@/components/settings/StorageSetting.vue";
 import AboutSetting from "@/components/settings/AboutSetting.vue";
 import SystemDataSetting from "@/components/settings/SystemDataSetting.vue";
 
@@ -61,7 +56,6 @@ const settingsStore = useSettingsStore();
 // 定义选项卡
 const tabs = [
   { id: "provider" as SettingsTab, name: "服务商配置", icon: ServerIcon },
-  { id: "storage" as SettingsTab, name: "存储设置", icon: FolderIcon },
   { id: "system" as SettingsTab, name: "系统数据", icon: ArrowPathIcon },
   { id: "about" as SettingsTab, name: "关于", icon: InformationCircleIcon },
 ];

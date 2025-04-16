@@ -1,7 +1,45 @@
 <template>
   <div class="card p-2 m-2">
     <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-      系统数据导出与导入
+      本地存储
+    </h2>
+
+    <div class="px-4">
+      <div class="flex">
+        <input
+          type="text"
+          id="exportPath"
+          v-model="defaultExportPath"
+          class="input max-w-md"
+          readonly
+          placeholder="请选择默认的音频文件导出路径"
+        />
+        <button
+          @click="selectExportPath"
+          class="btn text-black dark:text-white bg-green-100 hover:bg-green-200 dark:bg-green-700 dark:hover:bg-green-600 ml-2"
+        >
+          选择路径
+        </button>
+      </div>
+      <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
+        选择一个路径，用于保存生成的音频文件 (WAV格式)
+      </p>
+
+      <div class="flex justify-center mt-2">
+        <button
+          @click="saveStorageSettings"
+          class="btn btn-primary"
+          :disabled="isSavingPath"
+        >
+          {{ isSavingPath ? "保存中..." : "保存设置" }}
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="card p-2 m-2">
+    <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+      数据备份
     </h2>
 
     <div class="px-4">
@@ -73,7 +111,7 @@
     </div>
   </div>
 
-  <div class="card p-2 m-2">
+  <!-- <div class="card p-2 m-2">
     <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">
       重置系统数据
     </h2>
@@ -87,11 +125,11 @@
         重置所有数据
       </button>
     </div>
-  </div>
+  </div> -->
 </template>
 
 <script setup lang="ts">
-import { ref } from "vue";
+import { ref, onMounted } from "vue";
 import { useToast } from "vue-toastification";
 import { useProjectsStore } from "@/stores/projects";
 import { useSettingsStore } from "@/stores/settings";
@@ -114,6 +152,73 @@ const settingsStore = useSettingsStore();
 const fileInput = ref<HTMLInputElement | null>(null);
 const isExporting = ref(false);
 const isImporting = ref(false);
+const isSavingPath = ref(false);
+
+// 存储路径设置
+const defaultExportPath = ref("");
+
+// 初始化
+onMounted(async () => {
+  await loadSettings();
+});
+
+// 加载设置
+async function loadSettings() {
+  try {
+    // 确保设置已加载
+    const settings =
+      settingsStore.settings || (await settingsStore.loadSettings());
+
+    if (settings) {
+      // 设置导出路径
+      defaultExportPath.value = settings.defaultExportPath || "";
+    }
+  } catch (error) {
+    toast.error(
+      `加载设置失败: ${error instanceof Error ? error.message : String(error)}`
+    );
+  }
+}
+
+async function selectExportPath() {
+  try {
+    // 使用electron API选择文件夹
+    const path = await window.electron.selectFolder();
+    if (path) {
+      defaultExportPath.value = path;
+    }
+  } catch (err) {
+    toast.error(
+      `选择文件夹失败: ${err instanceof Error ? err.message : String(err)}`
+    );
+  }
+}
+
+async function saveStorageSettings() {
+  isSavingPath.value = true;
+
+  try {
+    // 准备更新的设置数据
+    const settingsData = {
+      defaultExportPath: defaultExportPath.value,
+    };
+
+    // 使用设置存储更新设置
+    const updatedSettings = await settingsStore.updateSettings(settingsData);
+
+    if (updatedSettings) {
+      toast.success("存储路径设置已保存");
+    } else {
+      throw new Error("更新设置失败");
+    }
+  } catch (err) {
+    toast.error(
+      `保存设置失败: ${err instanceof Error ? err.message : String(err)}`
+    );
+  } finally {
+    isSavingPath.value = false;
+  }
+}
 
 async function exportSystemData() {
   isExporting.value = true;

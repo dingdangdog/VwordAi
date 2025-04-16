@@ -4,16 +4,16 @@
       Azure TTS 配置
     </h3>
     <p class="text-gray-600 dark:text-gray-300 mb-6">
-      配置 Azure 语音服务。您需要一个 Azure 订阅密钥和区域。
+      配置你的 Azure 语音服务相关信息。
     </p>
 
     <form @submit.prevent="saveForm" class="space-y-4">
-      <div>
+      <div class="flex items-center space-x-2">
         <label
           for="key"
-          class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+          class="block text-sm font-medium text-gray-700 dark:text-gray-300 w-20"
         >
-          订阅密钥<span class="text-red-500">*</span>
+          key<span class="text-red-500">*</span>
         </label>
         <input
           type="password"
@@ -23,37 +23,17 @@
           placeholder="输入您的 Azure 订阅密钥"
           required
         />
-        <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
+        <!-- <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
           您的 Azure 认知服务订阅密钥。
-        </p>
+        </p> -->
       </div>
 
-      <div>
-        <label
-          for="region"
-          class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-        >
-          区域<span class="text-red-500">*</span>
-        </label>
-        <input
-          type="text"
-          id="region"
-          v-model="form.region"
-          class="input w-full"
-          placeholder="例如：eastus"
-          required
-        />
-        <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
-          您的服务部署的 Azure 区域（例如：eastus，westeurope）。
-        </p>
-      </div>
-
-      <div>
+      <div class="flex items-center space-x-2">
         <label
           for="endpoint"
-          class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+          class="block text-sm font-medium text-gray-700 dark:text-gray-300 w-20"
         >
-          自定义端点（可选）
+          endpoint <span class="text-red-500">*</span>
         </label>
         <input
           type="text"
@@ -64,14 +44,34 @@
         />
       </div>
 
-      <div class="flex justify-end space-x-2 mt-6">
-        <button
+      <div class="flex items-center space-x-2">
+        <label
+          for="region"
+          class="block text-sm font-medium text-gray-700 dark:text-gray-300 w-20"
+        >
+          region
+        </label>
+        <input
+          type="text"
+          id="region"
+          v-model="form.region"
+          class="input w-full"
+          placeholder="例如：eastus"
+          required
+        />
+        <!-- <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
+          您的服务部署的 Azure 区域（例如：eastus，westeurope）。
+        </p> -->
+      </div>
+
+      <div class="flex justify-center space-x-2 mt-6">
+        <!-- <button
           type="button"
           class="btn btn-secondary"
           @click="$emit('cancel')"
         >
           取消
-        </button>
+        </button> -->
         <button
           type="button"
           class="btn btn-secondary"
