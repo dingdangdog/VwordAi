@@ -176,6 +176,7 @@ async function synthesizeWithProvider(
       settings,
       providerConfig
     );
+    
     if (
       !result.success ||
       !result.data ||
@@ -215,13 +216,18 @@ async function synthesizeChapter(chapterId) {
       throw new Error("Chapter text is empty");
     }
 
+    // Get project to use in file path 
+    const project = Project.getProjectById(chapter.projectId);
+    if (!project) {
+      throw new Error("Project not found for this chapter");
+    }
+
     // 1. Determine Provider and Settings
     const globalSettings = Settings.getAllSettings();
     const chapterSettings = chapter.settings || {};
-
+    
     // If chapter has no service provider, check project settings
     if (!chapterSettings.serviceProvider) {
-      const project = Project.getProjectById(chapter.projectId);
       if (
         project &&
         project.defaultVoiceSettings &&
@@ -230,7 +236,7 @@ async function synthesizeChapter(chapterId) {
         Object.assign(chapterSettings, project.defaultVoiceSettings);
       }
     }
-
+    
     const providerType = chapterSettings.serviceProvider;
 
     if (
@@ -255,7 +261,8 @@ async function synthesizeChapter(chapterId) {
     const safeChapterName = chapter.name
       .replace(/[^a-zA-Z0-9\u4e00-\u9fa5._-]/g, "_")
       .substring(0, 50);
-    const finalOutputFileName = `${safeChapterName}_${chapterId.slice(
+    const safeProjectId = project.id.slice(-6); // 使用项目ID的后6位
+    const finalOutputFileName = `${safeProjectId}_${safeChapterName}_${chapterId.slice(
       -6
     )}_${timestamp}`;
 
@@ -274,7 +281,11 @@ async function synthesizeChapter(chapterId) {
     } else {
       outputDir = path.join(process.cwd(), "audio_output");
     }
-    const finalOutputPath = path.join(outputDir, `${finalOutputFileName}.wav`);
+    
+    // 添加项目ID到输出路径，便于分类查看
+    const projectDir = path.join(outputDir, project.id);
+    fs.ensureDirSync(projectDir);
+    const finalOutputPath = path.join(projectDir, `${finalOutputFileName}.wav`);
 
     // 4. Prepare synthesis settings - Use only chapter settings or defaults from project
     // Do not use globalSettings.defaultVoiceSettings
@@ -353,44 +364,15 @@ async function synthesizeChapter(chapterId) {
         throw new Error("Failed to create valid merged audio file");
       }
 
-      fs.copyFileSync(mergedFilePath, finalOutputPath);
+      // 使用新的copyAudioFile工具替代直接复制
+      await audioUtils.copyAudioFile(mergedFilePath, finalOutputPath);
       tempAudioFiles.push(mergedFilePath);
     } else if (tempAudioFiles.length === 1) {
       console.log(
         `[TTS] Single audio file, copying from ${tempAudioFiles[0]} to ${finalOutputPath}`
       );
-      // 直接复制文件可能会导致音频元数据丢失或格式不兼容
-      // 检查文件是否存在且有效
-      if (
-        !fs.existsSync(tempAudioFiles[0]) ||
-        fs.statSync(tempAudioFiles[0]).size === 0
-      ) {
-        throw new Error(
-          `Source audio file is invalid or empty: ${tempAudioFiles[0]}`
-        );
-      }
-
-      // 使用流复制确保数据完整性
-      const readStream = fs.createReadStream(tempAudioFiles[0]);
-      const writeStream = fs.createWriteStream(finalOutputPath);
-
-      await new Promise((resolve, reject) => {
-        readStream.pipe(writeStream);
-        writeStream.on("finish", resolve);
-        writeStream.on("error", reject);
-      });
-
-      // 验证目标文件
-      if (
-        !fs.existsSync(finalOutputPath) ||
-        fs.statSync(finalOutputPath).size === 0
-      ) {
-        throw new Error(
-          `Failed to create valid output audio file: ${finalOutputPath}`
-        );
-      }
-
-      console.log(`[TTS] File copied successfully to ${finalOutputPath}`);
+      // 使用新的copyAudioFile工具
+      await audioUtils.copyAudioFile(tempAudioFiles[0], finalOutputPath);
     } else {
       throw new Error("No audio files were generated");
     }

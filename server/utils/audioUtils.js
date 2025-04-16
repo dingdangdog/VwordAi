@@ -131,12 +131,7 @@ async function mergeAudioFiles(inputPaths, outputPath) {
       console.log(
         `[Audio] Only one valid file, directly copying to ${outputPath}`
       );
-      fs.copyFileSync(validInputPaths[0], outputPath);
-
-      const stats = fs.statSync(outputPath);
-      console.log(
-        `[Audio] File copied successfully: ${outputPath} (${stats.size} bytes)`
-      );
+      await copyAudioFile(validInputPaths[0], outputPath);
       return outputPath;
     }
 
@@ -178,7 +173,7 @@ async function mergeAudioFiles(inputPaths, outputPath) {
       throw cmdError;
     }
 
-    // 验证输出文件是否成功创建
+    // 验证输出文件是否成功创建和有效
     if (!fs.existsSync(outputPath)) {
       throw new Error(`Failed to create merged output file: ${outputPath}`);
     }
@@ -212,9 +207,65 @@ async function mergeAudioFiles(inputPaths, outputPath) {
   }
 }
 
+/**
+ * 使用流安全地复制音频文件
+ * @param {string} sourcePath 源文件路径
+ * @param {string} destPath 目标文件路径
+ * @returns {Promise<string>} 目标文件路径
+ */
+async function copyAudioFile(sourcePath, destPath) {
+  // 规范化路径
+  sourcePath = path.normalize(sourcePath);
+  destPath = path.normalize(destPath);
+
+  console.log(`[Audio] Copying audio file from ${sourcePath} to ${destPath}`);
+
+  // 检查源文件是否存在且有效
+  if (!fs.existsSync(sourcePath)) {
+    throw new Error(`Source audio file does not exist: ${sourcePath}`);
+  }
+
+  const stats = fs.statSync(sourcePath);
+  if (stats.size === 0) {
+    throw new Error(`Source audio file is empty: ${sourcePath}`);
+  }
+
+  // 确保目标目录存在
+  const destDir = path.dirname(destPath);
+  if (!fs.existsSync(destDir)) {
+    fs.mkdirSync(destDir, { recursive: true });
+  }
+
+  // 使用流复制确保数据完整性
+  const readStream = fs.createReadStream(sourcePath);
+  const writeStream = fs.createWriteStream(destPath);
+
+  await new Promise((resolve, reject) => {
+    readStream.pipe(writeStream);
+    writeStream.on("finish", resolve);
+    writeStream.on("error", reject);
+  });
+
+  // 验证目标文件
+  if (!fs.existsSync(destPath)) {
+    throw new Error(`Failed to create destination file: ${destPath}`);
+  }
+
+  const destStats = fs.statSync(destPath);
+  if (destStats.size === 0) {
+    throw new Error(`Destination audio file is empty: ${destPath}`);
+  }
+
+  console.log(
+    `[Audio] File copied successfully: ${destPath} (${destStats.size} bytes)`
+  );
+  return destPath;
+}
+
 module.exports = {
   saveAudioFile,
   createReadableStreamFromBuffer,
   checkFfmpeg,
   mergeAudioFiles,
+  copyAudioFile,
 };
