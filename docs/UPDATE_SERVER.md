@@ -271,7 +271,7 @@ removeUpdateListener: () => {
 
 ## 测试更新系统
 
-1. **版本变更** - 修改 `package.json` 和 `ui/src/config/appConfig.ts` 中的版本号，确保新版本大于当前版本。
+1. **版本变更** - 修改 `package.json` 和 `ui/src/stores/appConfig.ts` 中的版本号，确保新版本大于当前版本。
 
 2. **本地测试** - 使用 `electron-builder` 的开发模式测试更新流程：
 

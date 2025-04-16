@@ -1,4 +1,4 @@
-import { appConfig } from '@/config/appConfig';
+import { appConfig } from '@/stores/appConfig';
 
 /**
  * 版本比较结果
