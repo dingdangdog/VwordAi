@@ -1,15 +1,15 @@
 /**
  * 音频处理相关工具
  */
-const fs = require('fs-extra');
-const path = require('path');
-const { Readable } = require('stream');
-const { execSync } = require('child_process');
+const fs = require("fs-extra");
+const path = require("path");
+const { Readable } = require("stream");
+const { execSync } = require("child_process");
 
 // 检查ffmpeg是否可用
 function checkFfmpeg() {
   try {
-    execSync('ffmpeg -version', { stdio: 'ignore' });
+    execSync("ffmpeg -version", { stdio: "ignore" });
     return true;
   } catch (e) {
     return false;
@@ -24,17 +24,17 @@ function checkFfmpeg() {
  * @param {string} format 音频格式 (mp3, wav)
  * @returns {string} 完整的文件路径
  */
-function saveAudioFile(audioData, outputPath, filename, format = 'mp3') {
+function saveAudioFile(audioData, outputPath, filename, format = "mp3") {
   // 确保输出目录存在
   if (!fs.existsSync(outputPath)) {
     fs.mkdirSync(outputPath, { recursive: true });
   }
-  
+
   const fullPath = path.join(outputPath, `${filename}.${format}`);
-  
+
   // 写入音频文件
   fs.writeFileSync(fullPath, audioData);
-  
+
   return fullPath;
 }
 
@@ -59,24 +59,49 @@ function createReadableStreamFromBuffer(buffer) {
  * @returns {boolean} 是否转换成功
  */
 function convertAudioFormat(inputPath, outputPath, outputFormat) {
-  // 检查ffmpeg是否可用  
+  // 检查ffmpeg是否可用
   if (!checkFfmpeg()) {
-    throw new Error('FFmpeg is not installed or not in PATH');
+    throw new Error("FFmpeg is not installed or not in PATH");
   }
-  
+
   try {
     // Check if outputPath already has the format extension
-    const finalOutputPath = outputPath.toLowerCase().endsWith(`.${outputFormat.toLowerCase()}`) 
-      ? outputPath 
+    const finalOutputPath = outputPath
+      .toLowerCase()
+      .endsWith(`.${outputFormat.toLowerCase()}`)
+      ? outputPath
       : `${outputPath}.${outputFormat}`;
-      
-    execSync(`ffmpeg -i "${inputPath}" "${finalOutputPath}"`, { 
-      stdio: 'pipe' 
-    });
+
+    // 检查输入文件是否存在
+    if (!fs.existsSync(inputPath)) {
+      throw new Error(`Input file does not exist: ${inputPath}`);
+    }
+
+    // 确保输出目录存在
+    const outputDir = path.dirname(finalOutputPath);
+    if (!fs.existsSync(outputDir)) {
+      fs.mkdirSync(outputDir, { recursive: true });
+    }
+
+    // 添加更多参数以提高转换的稳定性
+    execSync(
+      `ffmpeg -y -i "${inputPath}" -c:a libmp3lame -q:a 2 "${finalOutputPath}"`,
+      {
+        stdio: "pipe",
+      }
+    );
+
+    // 验证输出文件是否成功创建
+    if (!fs.existsSync(finalOutputPath)) {
+      throw new Error(`Failed to create output file: ${finalOutputPath}`);
+    }
+
     return true;
   } catch (error) {
-    console.error('Error converting audio format:', error);
-    throw error; // Propagate error up
+    console.error("Error converting audio format:", error);
+    console.error("Input path:", inputPath);
+    console.error("Output path:", outputPath);
+    throw new Error(`Audio conversion failed: ${error.message}`);
   }
 }
 
@@ -87,10 +112,10 @@ function convertAudioFormat(inputPath, outputPath, outputFormat) {
  * @param {string} format 输出音频格式 (mp3, wav)
  * @returns {string} 输出文件路径
  */
-function mergeAudioFiles(inputPaths, outputPath, format = 'mp3') {
+function mergeAudioFiles(inputPaths, outputPath, format = "mp3") {
   // 检查ffmpeg是否可用
   if (!checkFfmpeg()) {
-    throw new Error('FFmpeg is not installed or not in PATH');
+    throw new Error("FFmpeg is not installed or not in PATH");
   }
 
   // 确保输出目录存在
@@ -101,21 +126,26 @@ function mergeAudioFiles(inputPaths, outputPath, format = 'mp3') {
 
   try {
     // 创建一个临时文件列表
-    const tempListFile = path.join(outputDir, 'temp_file_list.txt');
-    const fileList = inputPaths.map(filePath => `file '${filePath.replace(/'/g, "'\\''")}'`).join('\n');
+    const tempListFile = path.join(outputDir, "temp_file_list.txt");
+    const fileList = inputPaths
+      .map((filePath) => `file '${filePath.replace(/'/g, "'\\''")}'`)
+      .join("\n");
     fs.writeFileSync(tempListFile, fileList);
 
     // 使用ffmpeg的concat方法合并文件
-    execSync(`ffmpeg -f concat -safe 0 -i "${tempListFile}" -c copy "${outputPath}"`, {
-      stdio: 'ignore'
-    });
+    execSync(
+      `ffmpeg -f concat -safe 0 -i "${tempListFile}" -c copy "${outputPath}"`,
+      {
+        stdio: "ignore",
+      }
+    );
 
     // 删除临时文件
     fs.removeSync(tempListFile);
 
     return outputPath;
   } catch (error) {
-    console.error('Error merging audio files:', error);
+    console.error("Error merging audio files:", error);
     throw error;
   }
 }
@@ -125,5 +155,5 @@ module.exports = {
   createReadableStreamFromBuffer,
   convertAudioFormat,
   checkFfmpeg,
-  mergeAudioFiles
-}; 
+  mergeAudioFiles,
+};

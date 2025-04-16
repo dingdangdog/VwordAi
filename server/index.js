@@ -1,81 +1,81 @@
 /**
- * 主进程服务入口
- * 初始化所有控制器和服务
+ * Main process service entry
+ * Initializes all controllers and services
  */
-const { app } = require('electron');
-const path = require('path');
-const fs = require('fs-extra');
+const { app } = require("electron");
+const path = require("path");
+const fs = require("fs-extra");
 
-// 导入控制器
-const ProjectController = require('./controllers/ProjectController');
-const ChapterController = require('./controllers/ChapterController');
-const SettingsController = require('./controllers/SettingsController');
-const ServiceProviderController = require('./controllers/ServiceProviderController');
-const TTSController = require('./controllers/TTSController');
+// Import controllers
+const ProjectController = require("./controllers/ProjectController");
+const ChapterController = require("./controllers/ChapterController");
+const SettingsController = require("./controllers/SettingsController");
+const ServiceProviderController = require("./controllers/ServiceProviderController");
+const TTSController = require("./controllers/TTSController");
 
-// 导入工具
-const storage = require('./utils/storage');
+// Import utilities
+const storage = require("./utils/storage");
 
 /**
- * 初始化存储目录
+ * Initialize storage directories
  */
 function initStorageDirs() {
-  // 获取应用数据目录
-  const userDataPath = app.getPath('userData');
-  
-  // 设置基础存储目录
+  // Get application data directory
+  const userDataPath = app.getPath("userData");
+
+  // Set base storage directory
   storage.setBaseDir(userDataPath);
-  
-  // 确保必要的目录存在
-  const configDir = path.join(userDataPath, 'config');
-  const storageDir = path.join(userDataPath, 'storage');
-  const outputDir = path.join(userDataPath, 'output');
-  
+
+  // Ensure necessary directories exist
+  const configDir = path.join(userDataPath, "config");
+  const storageDir = path.join(userDataPath, "storage");
+  const outputDir = path.join(userDataPath, "output");
+
   fs.ensureDirSync(configDir);
   fs.ensureDirSync(storageDir);
   fs.ensureDirSync(outputDir);
-  
-  console.log('存储目录初始化完成');
+
+  console.log("Storage directories initialized");
 }
 
 /**
- * 初始化所有控制器
+ * Initialize all controllers
  */
 function initControllers() {
-  // 初始化项目控制器
+  // Initialize project controller
   ProjectController.initProjectListeners();
-  console.log('项目控制器初始化完成');
-  
-  // 初始化章节控制器
+  console.log("Project controller initialized");
+
+  // Initialize chapter controller
   ChapterController.initChapterListeners();
-  console.log('章节控制器初始化完成');
-  
-  // 初始化设置控制器
+  console.log("Chapter controller initialized");
+
+  // Initialize settings controller
   SettingsController.init();
-  console.log('设置控制器初始化完成');
-  
-  // 初始化服务商控制器
+  console.log("Settings controller initialized");
+
+  // Initialize service provider controller
   ServiceProviderController.init();
-  console.log('服务商控制器初始化完成');
-  
-  // 初始化语音合成控制器
+  console.log("Service provider controller initialized");
+
+  // Initialize TTS controller
   TTSController.init();
-  console.log('语音合成控制器初始化完成');
+  console.log("TTS controller initialized");
 }
 
 /**
- * 初始化主进程服务
+ * Initialize main process service
  */
 function init() {
-  // 初始化存储目录
+  // Initialize storage directories
   initStorageDirs();
-  
-  // 初始化控制器
+
+  // Initialize controllers
   initControllers();
-  
-  console.log('主进程服务初始化完成');
+
+  console.log("Main process service initialized");
 }
 
 module.exports = {
-  init
-}; 
+  init,
+};
