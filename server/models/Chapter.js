@@ -63,6 +63,8 @@ function createChapter(chapterData) {
     name: chapterData.name,
     text: chapterData.text || "",
     settings: chapterData.settings || { ...project.defaultVoiceSettings },
+    audioPath: chapterData.audioPath || "",
+    status: chapterData.status || "idle", // 'idle', 'processing', 'completed', 'error'
     createAt: now,
     updateAt: now,
   };
@@ -108,6 +110,14 @@ function updateChapter(id, chapterData) {
       chapterData.settings !== undefined
         ? chapterData.settings
         : chapters[index].settings,
+    audioPath:
+      chapterData.audioPath !== undefined
+        ? chapterData.audioPath
+        : chapters[index].audioPath || "",
+    status:
+      chapterData.status !== undefined
+        ? chapterData.status
+        : chapters[index].status || "idle",
     updateAt: new Date(),
   };
 
@@ -158,6 +168,16 @@ function deleteChaptersByProjectId(projectId) {
   return deletedCount;
 }
 
+/**
+ * 检查章节是否已经合成过语音
+ * @param {string} id 章节ID
+ * @returns {boolean} 是否有合成过的语音
+ */
+function hasAudio(id) {
+  const chapter = getChapterById(id);
+  return chapter && chapter.audioPath && chapter.status === "completed";
+}
+
 module.exports = {
   getAllChapters,
   getChaptersByProjectId,
@@ -166,4 +186,5 @@ module.exports = {
   updateChapter,
   deleteChapter,
   deleteChaptersByProjectId,
+  hasAudio,
 };

@@ -216,6 +216,43 @@ async function synthesizeChapter(chapterId) {
       throw new Error("Chapter text is empty");
     }
 
+    // Check if chapter already has audio and file exists
+    if (chapter.audioPath && chapter.status === "completed") {
+      const audioExists = fs.existsSync(chapter.audioPath);
+      if (audioExists) {
+        // Check if file size is valid (not empty)
+        const stats = fs.statSync(chapter.audioPath);
+        if (stats.size > 0) {
+          console.log(
+            `[TTS] Using existing audio file for chapter ${chapterId}: ${chapter.audioPath}`
+          );
+
+          const audioUrl = `file://${chapter.audioPath
+            .replace(/\\/g, "/")
+            .replace(/#/g, "%23")
+            .replace(/\?/g, "%3F")
+            .replace(/\s/g, "%20")}`;
+
+          // Return existing audio info
+          return success({
+            chapterId: chapter.id,
+            outputPath: chapter.audioPath,
+            audioUrl: audioUrl,
+            settings: chapter.settings,
+            fromCache: true,
+          });
+        } else {
+          console.log(
+            `[TTS] Existing audio file is empty, regenerating: ${chapter.audioPath}`
+          );
+        }
+      } else {
+        console.log(
+          `[TTS] Existing audio file not found, regenerating: ${chapter.audioPath}`
+        );
+      }
+    }
+
     // Get project to use in file path
     const project = Project.getProjectById(chapter.projectId);
     if (!project) {

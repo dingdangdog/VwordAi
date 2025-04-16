@@ -35,7 +35,7 @@ function createWindow() {
     // icon: path.join(__dirname, 'icon.ico'),
     webPreferences: {
       // devTools: true,
-      nodeIntegration: false, // 关闭 Node.js 集成以增强安全性
+      nodeIntegration: true, // 启用 Node.js 集成以便访问本地文件
       contextIsolation: true, // 启用上下文隔离
       preload: path.join(__dirname, "preload.js"), // 预加载脚本
       webSecurity: false, // 允许加载不安全的内容

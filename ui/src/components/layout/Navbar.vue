@@ -117,7 +117,13 @@ const isDarkMode = computed(() => settingsStore.theme === "dark");
 const isMax = ref(false);
 
 function toggleTheme() {
+  const newTheme = settingsStore.theme === "light" ? "dark" : "light";
   settingsStore.toggleTheme();
+  
+  // Save theme to settings for persistence across sessions
+  settingsStore.updateSettings({ theme: newTheme }).catch(error => {
+    console.error("Failed to save theme to settings:", error);
+  });
 }
 
 function navigateTo(path: string) {

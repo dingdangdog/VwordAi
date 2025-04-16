@@ -14,8 +14,19 @@ import { useSettingsStore } from '@/stores/settings';
 
 const settingsStore = useSettingsStore();
 
-onMounted(() => {
-  // Apply theme from settings
-  settingsStore.initTheme();
+onMounted(async () => {
+  // First load settings to get the saved theme from backend
+  await settingsStore.loadSettings();
+  
+  // Only initialize theme if not already set from settings
+  if (!settingsStore.settings?.theme) {
+    settingsStore.initTheme();
+  } else {
+    // Apply theme from settings
+    if (settingsStore.theme !== settingsStore.settings.theme) {
+      settingsStore.theme = settingsStore.settings.theme;
+      settingsStore.applyTheme();
+    }
+  }
 });
 </script> 

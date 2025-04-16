@@ -146,18 +146,36 @@
                       @click="toggleExpandChapter(chapter.id)"
                     >
                       <div class="min-w-0 flex-1 cursor-pointer">
-                        <div class="flex items-center justify-between">
+                        <div class="flex items-center">
                           <p
                             class="text-md font-medium text-blue-600 dark:text-blue-400 truncate"
                           >
                             {{ chapter.name }}
                           </p>
+                          <!-- Audio status indicator -->
+                          <span 
+                            v-if="chapter.audioPath && chapter.status === 'completed'" 
+                            class="ml-2 px-2 py-0.5 text-xs font-medium rounded-full bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300"
+                          >
+                            已合成
+                          </span>
+                          <span 
+                            v-else-if="chapter.status === 'processing'" 
+                            class="ml-2 px-2 py-0.5 text-xs font-medium rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300"
+                          >
+                            处理中
+                          </span>
+                          <span 
+                            v-else-if="chapter.status === 'error'" 
+                            class="ml-2 px-2 py-0.5 text-xs font-medium rounded-full bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300"
+                          >
+                            合成失败
+                          </span>
                         </div>
-                        <div class="mt-2 flex justify-between">
+                        <div class="mt-2">
                           <div class="text-sm text-gray-500 dark:text-gray-400">
                             <p>
                               最后更新：{{ formatDate(chapter.updateAt) }}
-                              <!-- Debug: {{ Object.keys(chapter).join(', ') }} -->
                             </p>
                             <p class="mt-1 line-clamp-1">
                               {{ chapter.text || "暂无内容" }}
@@ -354,8 +372,20 @@ function loadData() {
     // If project doesn't exist, show error
     if (!project.value) {
       toast.error("项目不存在或已被删除");
+    } else {
+      // Auto-expand chapters with audio
+      expandChaptersWithAudio();
     }
   }, 500);
+}
+
+// Automatically expand chapters that have completed audio
+function expandChaptersWithAudio() {
+  chapters.value.forEach(chapter => {
+    if (chapter.audioPath && chapter.status === 'completed') {
+      expandedChapters.value[chapter.id] = true;
+    }
+  });
 }
 
 // Modal functions
@@ -430,7 +460,20 @@ async function startBatchSynthesis() {
     return;
   }
 
-  toast.info("开始批量合成，这可能需要一些时间...");
+  // Filter out chapters that already have audio
+  const chaptersToProcess = chaptersWithText.filter(
+    (c) => !c.audioPath || c.status !== 'completed'
+  );
+
+  // If all chapters already have audio
+  if (chaptersToProcess.length === 0) {
+    toast.info("所有章节已经合成过语音，无需重新合成");
+    // Expand chapters to show existing audio
+    expandChaptersWithAudio();
+    return;
+  }
+
+  toast.info(`开始批量合成 ${chaptersToProcess.length} 个章节，这可能需要一些时间...`);
 
   try {
     // 显示进度通知
@@ -441,11 +484,11 @@ async function startBatchSynthesis() {
 
     // 执行批量合成
     const results = await batchSynthesizeChapters(
-      chaptersWithText,
+      chaptersToProcess,
       (progress, chapterIndex) => {
         // 更新进度通知
         toast.update(progressToastId, {
-          content: `合成进度: ${progress}% (${chapterIndex + 1}/${chaptersWithText.length})`,
+          content: `合成进度: ${progress}% (${chapterIndex + 1}/${chaptersToProcess.length})`,
         });
       }
     );

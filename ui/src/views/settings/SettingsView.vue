@@ -71,9 +71,6 @@ const activeTab = computed(() => settingsStore.activeTab);
 
 // 初始化
 onMounted(async () => {
-  // 初始化主题
-  settingsStore.initTheme();
-
   // 加载所有设置（包含服务商配置、存储路径等）
   await settingsStore.loadSettings();
 });
