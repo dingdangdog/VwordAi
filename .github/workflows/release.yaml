@@ -63,34 +63,25 @@ jobs:
         with:
           node-version: "20"
 
-      # Install VLC on macOS
-      - name: Install VLC on macOS
-        if: ${{ matrix.platform == 'Mac' }}
-        run: |
-          brew update
-          brew install --cask vlc
+      # # Install VLC on macOS
+      # - name: Install VLC on macOS
+      #   if: ${{ matrix.platform == 'Mac' }}
+      #   run: |
+      #     brew update
+      #     brew install --cask vlc
 
-      # Install VLC on Ubuntu
-      - name: Install VLC on Ubuntu
-        if: ${{ matrix.platform == 'Linux' }}
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y vlc
+      # # Install VLC on Ubuntu
+      # - name: Install VLC on Ubuntu
+      #   if: ${{ matrix.platform == 'Linux' }}
+      #   run: |
+      #     sudo apt-get update
+      #     sudo apt-get install -y vlc
 
-      # Install VLC on Windows
-      - name: Install VLC on Windows
-        if: ${{ matrix.platform == 'Windows' }}
-        run: |
-          choco install vlc -y
-
-      # Configure NPM for non-interactive mode on Windows
-      - name: Configure NPM for Windows
-        if: ${{ matrix.platform == 'Windows' }}
-        run: |
-          npm config set fund false --global
-          npm config set audit false --global
-          npm config set update-notifier false --global
-          npm config set progress false --global
+      # # Install VLC on Windows
+      # - name: Install VLC on Windows
+      #   if: ${{ matrix.platform == 'Windows' }}
+      #   run: |
+      #     choco install vlc -y
 
       # 前端打包
       - name: Install UI dependencies
@@ -111,10 +102,10 @@ jobs:
 
       - name: Show Builds
         if: ${{ matrix.platform == 'Windows' }}
-        run: dir build
+        run: dir package
       - name: Show Builds
         if: ${{ matrix.platform != 'Windows' }}
-        run: ls -la build
+        run: ls -la package
 
       - name: Mac Release
         uses: softprops/action-gh-release@v2
