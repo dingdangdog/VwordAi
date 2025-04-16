@@ -176,7 +176,6 @@ async function synthesizeWithProvider(
       settings,
       providerConfig
     );
-    console.log(result);
     if (
       !result.success ||
       !result.data ||
@@ -295,7 +294,7 @@ async function synthesizeChapter(chapterId) {
     Chapter.updateChapter(chapterId, { status: "processing" });
 
     // 7. Create temp directory
-    const tempDir = path.join(outputDir, `${chapterId}_${timestamp}`);
+    const tempDir = path.join(outputDir, `temp`, `${chapterId}`);
     fs.ensureDirSync(tempDir);
 
     // 8. Synthesize each chunk
@@ -357,7 +356,41 @@ async function synthesizeChapter(chapterId) {
       fs.copyFileSync(mergedFilePath, finalOutputPath);
       tempAudioFiles.push(mergedFilePath);
     } else if (tempAudioFiles.length === 1) {
-      fs.copyFileSync(tempAudioFiles[0], finalOutputPath);
+      console.log(
+        `[TTS] Single audio file, copying from ${tempAudioFiles[0]} to ${finalOutputPath}`
+      );
+      // 直接复制文件可能会导致音频元数据丢失或格式不兼容
+      // 检查文件是否存在且有效
+      if (
+        !fs.existsSync(tempAudioFiles[0]) ||
+        fs.statSync(tempAudioFiles[0]).size === 0
+      ) {
+        throw new Error(
+          `Source audio file is invalid or empty: ${tempAudioFiles[0]}`
+        );
+      }
+
+      // 使用流复制确保数据完整性
+      const readStream = fs.createReadStream(tempAudioFiles[0]);
+      const writeStream = fs.createWriteStream(finalOutputPath);
+
+      await new Promise((resolve, reject) => {
+        readStream.pipe(writeStream);
+        writeStream.on("finish", resolve);
+        writeStream.on("error", reject);
+      });
+
+      // 验证目标文件
+      if (
+        !fs.existsSync(finalOutputPath) ||
+        fs.statSync(finalOutputPath).size === 0
+      ) {
+        throw new Error(
+          `Failed to create valid output audio file: ${finalOutputPath}`
+        );
+      }
+
+      console.log(`[TTS] File copied successfully to ${finalOutputPath}`);
     } else {
       throw new Error("No audio files were generated");
     }
@@ -393,15 +426,15 @@ async function synthesizeChapter(chapterId) {
   } finally {
     // Cleanup code is commented out in the original
     console.log(`[TTS] Cleaning up temporary files`);
-    // tempAudioFiles.forEach((fp) => {
-    //   if (fp && fs.existsSync(fp)) {
-    //     try {
-    //       fs.removeSync(fp);
-    //     } catch (e) {
-    //       console.error(`[TTS] Failed to delete temporary file ${fp}:`, e);
-    //     }
-    //   }
-    // });
+    tempAudioFiles.forEach((fp) => {
+      if (fp && fs.existsSync(fp)) {
+        try {
+          fs.removeSync(fp);
+        } catch (e) {
+          console.error(`[TTS] Failed to delete temporary file ${fp}:`, e);
+        }
+      }
+    });
   }
 }
 

@@ -24,7 +24,9 @@ const synthesize = (text, fileName, settings, config) => {
       return Promise.reject(error("Azure configuration is incomplete"));
     }
 
-    console.log(`[Azure] Synthesizing text (${text.length} chars) to ${fileName}`);
+    console.log(
+      `[Azure] Synthesizing text (${text.length} chars) to ${fileName}`
+    );
     console.log(`[Azure] Using voice: ${settings.voice}`);
 
     const speechConfig = sdk.SpeechConfig.fromSubscription(
@@ -41,12 +43,19 @@ const synthesize = (text, fileName, settings, config) => {
     if (settings.speed) {
       // Convert to string with percent format
       const speedValue = settings.speed.toString();
-      speechConfig.setProperty("SpeechServiceConnection_SynthesisRate", speedValue);
+      speechConfig.speechSynthesisRate = speedValue;
+      // speechConfig.setProperty("SpeechServiceConnection_SynthesisRate",
+      //   speedValue
+      // );
       console.log(`[Azure] Set speech rate to: ${speedValue}`);
     }
-    
+
     if (settings.emotion) {
-      speechConfig.setProperty("SpeechServiceConnection_SynthesisEmotionStyle", settings.emotion);
+      speechConfig.speechSynthesisEmotionStyle = settings.emotion;
+      // speechConfig.setProperty(
+      //   "SpeechServiceConnection_SynthesisEmotionStyle",
+      //   settings.emotion
+      // );
       console.log(`[Azure] Set emotion to: ${settings.emotion}`);
     }
 
@@ -65,49 +74,27 @@ const synthesize = (text, fileName, settings, config) => {
       speechConfig,
       audioConfig
     );
-
-    // Return a Promise to handle asynchronous operation
+    // 返回一个 Promise，用于处理异步操作
     return new Promise((resolve, reject) => {
-      console.log("[Azure] Starting speech synthesis...");
-      
-      // Use speakTextAsync to synthesize speech
+      // 使用 speakTextAsync 播放语音
       speechSynthesizer.speakTextAsync(
         text,
         (result) => {
           if (result.reason === sdk.ResultReason.SynthesizingAudioCompleted) {
-            // Verify the file exists and has content
-            try {
-              if (!fs.existsSync(fileName)) {
-                speechSynthesizer.close();
-                return reject(error(`File not created: ${fileName}`));
-              }
-              
-              const stats = fs.statSync(fileName);
-              console.log(`[Azure] Generated audio file: ${fileName} (${stats.size} bytes)`);
-              
-              if (stats.size === 0) {
-                speechSynthesizer.close();
-                return reject(error(`Generated audio file is empty: ${fileName}`));
-              }
-              
-              // On success, return the file path
-              resolve(success({ filePath: fileName }, "success"));
-            } catch (err) {
-              speechSynthesizer.close();
-              reject(error(`File validation error: ${err.message}`));
-            }
+            // 将 ArrayBuffer 转换为 Buffer
+            const audioData = Buffer.from(result.audioData);
+
+            // 成功时，返回音频数据
+            resolve(success({ filePath: fileName, audioData }, "success"));
           } else {
-            console.error("[Azure] Synthesis failed. Reason:", result.errorDetails);
-            speechSynthesizer.close();
-            reject(error(result.errorDetails || "Unknown synthesis error")); // On failure, return error
+            console.error("Synthesis failed. Reason:", result.errorDetails);
+            reject(error(result.errorDetails)); // 失败时返回错误
           }
           speechSynthesizer.close();
         },
-        (err) => {
-          console.error("[Azure] Error in speech synthesis:", err);
-          reject(
-            error(err.message || "An error occurred during speech synthesis")
-          );
+        (error) => {
+          console.log("Error:", error);
+          reject(new Error(error)); // 失败时返回错误
           speechSynthesizer.close();
         }
       );
