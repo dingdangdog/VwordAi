@@ -3,13 +3,12 @@ const sdk = require("microsoft-cognitiveservices-speech-sdk");
 const path = require("path");
 const { success, error } = require("../utils/result");
 
-const Settings = require("../models/Settings");
-
 /**
  * Synthesize text to speech and save to file
  * @param {string} text The text to synthesize
  * @param {string} fileName The output file path
  * @param {Object} settings Synthesis settings
+ * @param {Object} config Provider configuration
  * @returns {Promise} Returns a Promise containing the file path
  */
 const synthesize = (text, fileName, settings, config) => {
@@ -126,9 +125,10 @@ const synthesize = (text, fileName, settings, config) => {
  * @param {string} ssml SSML formatted text
  * @param {string} fileName The output file path
  * @param {Object} settings Synthesis settings
+ * @param {Object} config Provider configuration
  * @returns {Promise} Returns a Promise containing the file path
  */
-const synthesizeSSML = (ssml, fileName, settings) => {
+const synthesizeSSML = (ssml, fileName, settings, config) => {
   if (!ssml) {
     return Promise.reject(error("SSML content is empty"));
   }
@@ -136,7 +136,7 @@ const synthesizeSSML = (ssml, fileName, settings) => {
   if (!settings || !settings.voice) {
     return Promise.reject(error("Speech voice is not specified"));
   }
-  const config = Settings.getProviderSettings("config");
+
   try {
     if (!config || !config.key || !config.region) {
       return Promise.reject(error("Azure configuration is incomplete"));
@@ -168,7 +168,7 @@ const synthesizeSSML = (ssml, fileName, settings) => {
         xmlns:mstts="https://www.w3.org/2001/mstts" 
         xmlns:emo="http://www.w3.org/2009/10/emotionml" 
         xml:lang="zh-CN"> 
-        <voice name="${settings.model}" rate="${settings.speed || "1.0"}">
+        <voice name="${settings.voice}" rate="${settings.speed || "1.0"}">
         ${ssml}
         </voice>
         </speak>`;
@@ -252,20 +252,20 @@ const buildSSML = (text, settings) => {
 /**
  * Play speech directly (without saving file, returns audio data)
  * @param {string} text The text to synthesize
- * @param {string} model Speech model
+ * @param {Object} settings Speech settings
+ * @param {Object} config Provider configuration
  * @returns {Promise} Returns a Promise containing audio data
  */
-const play = (text, model) => {
+const play = (text, settings, config) => {
   if (!text) {
     return Promise.reject(error("Text content is empty"));
   }
 
-  if (!model) {
-    return Promise.reject(error("Speech model is not specified"));
+  if (!settings || !settings.voice) {
+    return Promise.reject(error("Speech voice is not specified"));
   }
 
   try {
-    const config = Settings.getProviderSettings("config");
     if (!config || !config.key || !config.region) {
       return Promise.reject(error("Azure configuration is incomplete"));
     }
@@ -276,7 +276,7 @@ const play = (text, model) => {
     );
 
     // Set speech model
-    speechConfig.speechSynthesisVoiceName = model;
+    speechConfig.speechSynthesisVoiceName = settings.voice;
 
     // Specify audio output format as .wav
     speechConfig.speechSynthesisOutputFormat =
@@ -324,15 +324,20 @@ const play = (text, model) => {
 /**
  * Play speech directly using SSML (without saving file, returns audio data)
  * @param {string} ssml SSML formatted text
+ * @param {Object} settings Speech settings
+ * @param {Object} config Provider configuration
  * @returns {Promise} Returns a Promise containing audio data
  */
-const playSSML = (ssml) => {
+const playSSML = (ssml, settings, config) => {
   if (!ssml) {
     return Promise.reject(error("SSML content is empty"));
   }
 
+  if (!settings || !settings.voice) {
+    return Promise.reject(error("Speech voice is not specified"));
+  }
+
   try {
-    const config = Settings.getProviderSettings("config");
     if (!config || !config.key || !config.region) {
       return Promise.reject(error("Azure configuration is incomplete"));
     }
@@ -355,7 +360,9 @@ const playSSML = (ssml) => {
       xmlns:mstts="https://www.w3.org/2001/mstts" 
       xmlns:emo="http://www.w3.org/2009/10/emotionml"
       xml:lang="zh-CN"> 
+      <voice name="${settings.voice}" rate="${settings.speed || "1.0"}">
       ${ssml}
+      </voice>
       </speak>`;
 
       speechSynthesizer.speakSsmlAsync(

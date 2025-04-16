@@ -1,12 +1,12 @@
 /**
  * 章节模型
  */
-const { v4: uuidv4 } = require('uuid');
-const storage = require('../utils/storage');
-const Project = require('./Project');
+const { v4: uuidv4 } = require("uuid");
+const storage = require("../utils/storage");
+const Project = require("./Project");
 
 // 存储文件名
-const STORAGE_FILE = 'chapters';
+const STORAGE_FILE = "chapters";
 
 /**
  * 获取所有章节
@@ -23,7 +23,7 @@ function getAllChapters() {
  */
 function getChaptersByProjectId(projectId) {
   const chapters = getAllChapters();
-  return chapters.filter(chapter => chapter.projectId === projectId);
+  return chapters.filter((chapter) => chapter.projectId === projectId);
 }
 
 /**
@@ -33,7 +33,7 @@ function getChaptersByProjectId(projectId) {
  */
 function getChapterById(id) {
   const chapters = getAllChapters();
-  return chapters.find(chapter => chapter.id === id) || null;
+  return chapters.find((chapter) => chapter.id === id) || null;
 }
 
 /**
@@ -43,33 +43,33 @@ function getChapterById(id) {
  */
 function createChapter(chapterData) {
   const chapters = getAllChapters();
-  
+
   // 检查项目是否存在
   const project = Project.getProjectById(chapterData.projectId);
   if (!project) {
-    throw new Error('项目不存在');
+    throw new Error("项目不存在");
   }
-  
+
   // 检查章节名称在项目中是否唯一
   const projectChapters = getChaptersByProjectId(chapterData.projectId);
-  if (projectChapters.some(c => c.name === chapterData.name)) {
-    throw new Error('章节名称在当前项目中已存在');
+  if (projectChapters.some((c) => c.name === chapterData.name)) {
+    throw new Error("章节名称在当前项目中已存在");
   }
-  
+
   const now = new Date();
   const newChapter = {
     id: uuidv4(),
     projectId: chapterData.projectId,
     name: chapterData.name,
-    text: chapterData.text || '',
-    settings: chapterData.settings || { ...project.defaultSettings },
+    text: chapterData.text || "",
+    settings: chapterData.settings || { ...project.defaultVoiceSettings },
     createAt: now,
-    updateAt: now
+    updateAt: now,
   };
-  
+
   chapters.push(newChapter);
   storage.saveData(STORAGE_FILE, chapters);
-  
+
   return newChapter;
 }
 
@@ -81,32 +81,39 @@ function createChapter(chapterData) {
  */
 function updateChapter(id, chapterData) {
   const chapters = getAllChapters();
-  const index = chapters.findIndex(chapter => chapter.id === id);
-  
+  const index = chapters.findIndex((chapter) => chapter.id === id);
+
   if (index === -1) {
     return null;
   }
-  
+
   // 如果更改了名称，检查是否在项目中与其他章节重名
   if (chapterData.name && chapterData.name !== chapters[index].name) {
     const projectChapters = getChaptersByProjectId(chapters[index].projectId);
-    const nameExists = projectChapters.some(c => c.id !== id && c.name === chapterData.name);
+    const nameExists = projectChapters.some(
+      (c) => c.id !== id && c.name === chapterData.name
+    );
     if (nameExists) {
-      throw new Error('章节名称在当前项目中已存在');
+      throw new Error("章节名称在当前项目中已存在");
     }
   }
-  
+
   const updatedChapter = {
     ...chapters[index],
-    name: chapterData.name !== undefined ? chapterData.name : chapters[index].name,
-    text: chapterData.text !== undefined ? chapterData.text : chapters[index].text,
-    settings: chapterData.settings !== undefined ? chapterData.settings : chapters[index].settings,
-    updateAt: new Date()
+    name:
+      chapterData.name !== undefined ? chapterData.name : chapters[index].name,
+    text:
+      chapterData.text !== undefined ? chapterData.text : chapters[index].text,
+    settings:
+      chapterData.settings !== undefined
+        ? chapterData.settings
+        : chapters[index].settings,
+    updateAt: new Date(),
   };
-  
+
   chapters[index] = updatedChapter;
   storage.saveData(STORAGE_FILE, chapters);
-  
+
   return updatedChapter;
 }
 
@@ -118,13 +125,13 @@ function updateChapter(id, chapterData) {
 function deleteChapter(id) {
   const chapters = getAllChapters();
   const initialLength = chapters.length;
-  
-  const filteredChapters = chapters.filter(chapter => chapter.id !== id);
-  
+
+  const filteredChapters = chapters.filter((chapter) => chapter.id !== id);
+
   if (filteredChapters.length === initialLength) {
     return false; // 没有删除任何章节
   }
-  
+
   storage.saveData(STORAGE_FILE, filteredChapters);
   return true;
 }
@@ -137,15 +144,17 @@ function deleteChapter(id) {
 function deleteChaptersByProjectId(projectId) {
   const chapters = getAllChapters();
   const initialLength = chapters.length;
-  
-  const filteredChapters = chapters.filter(chapter => chapter.projectId !== projectId);
-  
+
+  const filteredChapters = chapters.filter(
+    (chapter) => chapter.projectId !== projectId
+  );
+
   const deletedCount = initialLength - filteredChapters.length;
-  
+
   if (deletedCount > 0) {
     storage.saveData(STORAGE_FILE, filteredChapters);
   }
-  
+
   return deletedCount;
 }
 
@@ -156,5 +165,5 @@ module.exports = {
   createChapter,
   updateChapter,
   deleteChapter,
-  deleteChaptersByProjectId
-}; 
+  deleteChaptersByProjectId,
+};

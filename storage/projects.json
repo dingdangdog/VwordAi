@@ -10,14 +10,6 @@
     "tags": [],
     "wordCount": 0,
     "chapterCount": 0,
-    "defaultSettings": {
-      "serviceProvider": "",
-      "voiceRole": "",
-      "speed": 1,
-      "pitch": 0,
-      "volume": 100,
-      "emotion": ""
-    },
     "defaultVoiceSettings": {
       "serviceProvider": "",
       "voice": "",

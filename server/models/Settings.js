@@ -39,13 +39,6 @@ const DEFAULT_SETTINGS = {
     apiKey: '',
     endpoint: 'https://api.openai.com/v1'
   },
-  defaultVoiceSettings: {
-    serviceProvider: null,
-    voice: null,
-    speed: 1.0,
-    pitch: 1.0,
-    volume: 1.0
-  },
   autoSave: true,
   autoSaveInterval: 5, // 分钟
   maxConcurrentTasks: 2,

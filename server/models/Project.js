@@ -47,7 +47,15 @@ class Project {
       coverImage: projectData.coverImage || null,
       tags: projectData.tags || [],
       wordCount: 0,
-      chapterCount: 0
+      chapterCount: 0,
+      defaultVoiceSettings: projectData.defaultVoiceSettings || {
+        serviceProvider: '',
+        voice: '',
+        speed: 1,
+        pitch: 0,
+        volume: 100,
+        emotion: ''
+      }
     };
     
     projects.push(newProject);

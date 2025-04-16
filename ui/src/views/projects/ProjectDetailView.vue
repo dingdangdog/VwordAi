@@ -543,11 +543,11 @@ function getEmotionName(id: string): string {
 
   // Fallback
   const emotions = [
-    { id: "neutral", name: "平静" },
-    { id: "happy", name: "快乐" },
-    { id: "sad", name: "伤感" },
+    { code: "neutral", name: "平静" },
+    { code: "happy", name: "快乐" },
+    { code: "sad", name: "伤感" },
   ];
-  return emotions.find((e) => e.id === id)?.name || id;
+  return emotions.find((e) => e.code === id)?.name || id;
 }
 
 function getDeleteMessage(): string {
