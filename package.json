@@ -16,7 +16,7 @@
     "package": "cd ui && npm run build-only && cd ../ && electron-builder"
   },
   "build": {
-    "appId": "top.oldmoon.vwordai",
+    "appId": "com.vwordai",
     "productName": "VwordAI",
     "directories": {
       "output": "package"
