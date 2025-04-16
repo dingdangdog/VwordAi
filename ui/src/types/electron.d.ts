@@ -23,7 +23,10 @@ export interface ElectronAPI {
   
   // 更新相关
   checkForUpdates: () => Promise<any>;
-  downloadUpdate: (updateInfo: any) => Promise<any>;
+  downloadUpdate: () => Promise<any>;
+  installUpdate: () => Promise<any>;
+  onUpdateMessage: (callback: (data: any) => void) => void;
+  removeUpdateListener: () => void;
 }
 
 interface ApiInterface {

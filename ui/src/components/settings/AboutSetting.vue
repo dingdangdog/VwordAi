@@ -66,14 +66,17 @@
       :show="showUpdateDialog"
       :update-info="updateInfo"
       :current-version="appConfig.version"
+      :download-progress="downloadProgress"
+      :download-state="downloadState"
       @close="showUpdateDialog = false"
       @download="handleDownloadUpdate"
+      @install="handleInstallUpdate"
     />
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from "vue";
+import { ref, onMounted, onUnmounted } from "vue";
 import { useToast } from "vue-toastification";
 import GithubIcon from "@/components/icon/github.vue";
 import { appConfig } from "@/config/appConfig";
@@ -99,12 +102,72 @@ const updateInfo = ref<UpdateInfo>({
   releaseNotes: ""
 });
 
+// 添加下载进度状态
+const downloadProgress = ref(0);
+const downloadState = ref<'idle' | 'downloading' | 'downloaded' | 'error'>('idle');
+
 // 组件挂载时检查是否需要自动更新
 onMounted(() => {
   if (shouldCheckForUpdates()) {
     checkForUpdates(false);
   }
+  
+  // 注册更新消息监听
+  if (window.electron) {
+    window.electron.onUpdateMessage(handleUpdateMessage);
+  }
 });
+
+// 组件卸载时移除监听器
+onUnmounted(() => {
+  if (window.electron) {
+    window.electron.removeUpdateListener();
+  }
+});
+
+// 处理来自主进程的更新消息
+function handleUpdateMessage(data: { message: string, data: any }) {
+  switch (data.message) {
+    case 'update-available':
+      // 有可用更新
+      updateInfo.value = {
+        version: data.data.version,
+        releaseDate: new Date().toLocaleDateString(),
+        downloadUrl: "", // 不需要下载链接，因为electron-updater会自动处理
+        releaseNotes: data.data.releaseNotes || "无详细更新说明"
+      };
+      showUpdateDialog.value = true;
+      isCheckingUpdate.value = false;
+      break;
+      
+    case 'update-not-available':
+      // 无更新可用
+      if (isCheckingUpdate.value) {
+        toast.success("当前已是最新版本");
+        isCheckingUpdate.value = false;
+      }
+      break;
+      
+    case 'download-progress':
+      // 更新下载进度
+      downloadProgress.value = data.data.percent || 0;
+      downloadState.value = 'downloading';
+      break;
+      
+    case 'update-downloaded':
+      // 更新已下载完成
+      downloadState.value = 'downloaded';
+      toast.success("更新已下载完成，可以安装");
+      break;
+      
+    case 'error':
+      // 更新过程出错
+      isCheckingUpdate.value = false;
+      downloadState.value = 'error';
+      toast.error(`更新错误: ${data.data}`);
+      break;
+  }
+}
 
 function getPlatformName(): string {
   const userAgent = navigator.userAgent.toLowerCase();
@@ -126,41 +189,46 @@ async function checkForUpdates(showMessage = true) {
   }
 
   try {
-    const result = await UpdateService.checkForUpdates();
-    
     // 保存检查时间
     saveLastUpdateCheck();
-    
-    // 处理检查结果
-    switch (result.status) {
-      case VersionCompareResult.NewerAvailable:
-        if (result.updateInfo) {
-          // 显示更新对话框
-          updateInfo.value = result.updateInfo;
-          showUpdateDialog.value = true;
-        }
-        break;
-        
-      case VersionCompareResult.UpToDate:
-        if (showMessage) {
-          toast.success("当前已是最新版本");
-        }
-        break;
-        
-      case VersionCompareResult.Error:
-        if (showMessage) {
-          toast.error(`检查更新失败: ${result.error || '网络错误'}`);
-        }
-        break;
+
+    // 使用 electron-updater 检查更新
+    if (window.electron) {
+      await window.electron.checkForUpdates();
+    } else {
+      // 降级到基于HTTP的更新检查
+      const result = await UpdateService.checkForUpdates();
+      handleLegacyUpdateCheck(result);
     }
   } catch (error) {
     if (showMessage) {
       toast.error(`检查更新错误: ${error instanceof Error ? error.message : '未知错误'}`);
     }
     console.error('检查更新失败:', error);
-  } finally {
     isCheckingUpdate.value = false;
   }
+}
+
+// 处理传统方式的更新检查结果
+function handleLegacyUpdateCheck(result: any) {
+  switch (result.status) {
+    case VersionCompareResult.NewerAvailable:
+      if (result.updateInfo) {
+        updateInfo.value = result.updateInfo;
+        showUpdateDialog.value = true;
+      }
+      break;
+      
+    case VersionCompareResult.UpToDate:
+      toast.success("当前已是最新版本");
+      break;
+      
+    case VersionCompareResult.Error:
+      toast.error(`检查更新失败: ${result.error || '网络错误'}`);
+      break;
+  }
+  
+  isCheckingUpdate.value = false;
 }
 
 function openWebsite() {
@@ -172,18 +240,35 @@ function openGithub() {
 }
 
 async function handleDownloadUpdate() {
-  toast.success(`正在下载新版本 ${updateInfo.value.version}`);
+  if (!window.electron) {
+    // 降级到基础方式打开下载页面
+    window.open(updateInfo.value.downloadUrl, "_blank");
+    toast.info("已打开下载页面");
+    return;
+  }
   
   try {
-    const result = await UpdateService.downloadUpdate(updateInfo.value);
-    if (result) {
-      toast.info("下载已启动，请按照提示完成安装");
-    } else {
-      toast.error("下载失败，请稍后再试或访问官网手动下载");
-    }
+    downloadState.value = 'downloading';
+    downloadProgress.value = 0;
+    await window.electron.downloadUpdate();
+    toast.info("更新下载已开始，请稍候...");
   } catch (error) {
+    downloadState.value = 'error';
     toast.error(`下载出错: ${error instanceof Error ? error.message : '未知错误'}`);
     console.error('下载更新出错:', error);
+  }
+}
+
+async function handleInstallUpdate() {
+  if (!window.electron) {
+    return;
+  }
+  
+  try {
+    await window.electron.installUpdate();
+  } catch (error) {
+    toast.error(`安装更新失败: ${error instanceof Error ? error.message : '未知错误'}`);
+    console.error('安装更新失败:', error);
   }
 }
 </script>

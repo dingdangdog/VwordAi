@@ -20,179 +20,175 @@ export interface UpdateInfo {
 }
 
 /**
- * 检查更新结果
+ * 检查结果接口
  */
-export interface CheckUpdateResult {
+export interface CheckResult {
   status: VersionCompareResult;
-  currentVersion: string;
-  latestVersion?: string;
   updateInfo?: UpdateInfo;
   error?: string;
 }
 
 /**
- * 是否为Electron环境
- */
-const isElectron = (): boolean => {
-  return typeof window !== 'undefined' && 
-         typeof window.electron !== 'undefined';
-}
-
-/**
- * 更新服务类
- */
-export class UpdateService {
-  /**
-   * 检查最新版本
-   */
-  static async checkForUpdates(): Promise<CheckUpdateResult> {
-    try {
-      // 获取当前应用版本
-      const currentVersion = appConfig.version;
-      
-      let updateData: any;
-      
-      // 根据环境选择不同的更新方式
-      if (isElectron()) {
-        // 在Electron环境中使用IPC通信
-        updateData = await window.electron.checkForUpdates();
-      } else {
-        // 在Web环境中使用HTTP请求
-        const response = await fetch(appConfig.updateURL, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            currentVersion,
-            platform: this.getPlatform(),
-            appId: 'vwordai'
-          })
-        });
-
-        if (!response.ok) {
-          throw new Error(`网络请求失败: ${response.status}`);
-        }
-
-        updateData = await response.json();
-      }
-      
-      // 检查是否有错误
-      if (updateData.error) {
-        throw new Error(updateData.error);
-      }
-      
-      // 比较版本
-      if (this.compareVersions(updateData.version, currentVersion) > 0) {
-        // 有新版本
-        return {
-          status: VersionCompareResult.NewerAvailable,
-          currentVersion,
-          latestVersion: updateData.version,
-          updateInfo: {
-            version: updateData.version,
-            releaseDate: updateData.releaseDate,
-            downloadUrl: updateData.downloadUrl,
-            releaseNotes: updateData.releaseNotes
-          }
-        };
-      } else {
-        // 当前已是最新版本
-        return {
-          status: VersionCompareResult.UpToDate,
-          currentVersion
-        };
-      }
-    } catch (error) {
-      console.error('检查更新失败:', error);
-      return {
-        status: VersionCompareResult.Error,
-        currentVersion: appConfig.version,
-        error: error instanceof Error ? error.message : '未知错误'
-      };
-    }
-  }
-
-  /**
-   * 下载更新
-   */
-  static async downloadUpdate(updateInfo: UpdateInfo): Promise<boolean> {
-    try {
-      if (isElectron()) {
-        // 在Electron环境中使用IPC通信
-        const result = await window.electron.downloadUpdate(updateInfo);
-        return result.success;
-      } else {
-        // 在Web环境中直接打开下载链接
-        window.open(updateInfo.downloadUrl, '_blank');
-        return true;
-      }
-    } catch (error) {
-      console.error('下载更新失败:', error);
-      return false;
-    }
-  }
-
-  /**
-   * 获取当前平台
-   */
-  static getPlatform(): string {
-    const userAgent = navigator.userAgent.toLowerCase();
-    
-    if (userAgent.includes('win')) return 'windows';
-    if (userAgent.includes('mac')) return 'macos';
-    if (userAgent.includes('linux')) return 'linux';
-    
-    return 'unknown';
-  }
-
-  /**
-   * 比较版本号
-   * @param v1 版本1
-   * @param v2 版本2
-   * @returns 如果v1>v2返回1，如果v1<v2返回-1，如果相等返回0
-   */
-  static compareVersions(v1: string, v2: string): number {
-    const parts1 = v1.split('.').map(Number);
-    const parts2 = v2.split('.').map(Number);
-    
-    const maxLength = Math.max(parts1.length, parts2.length);
-    
-    for (let i = 0; i < maxLength; i++) {
-      const part1 = i < parts1.length ? parts1[i] : 0;
-      const part2 = i < parts2.length ? parts2[i] : 0;
-      
-      if (part1 > part2) return 1;
-      if (part1 < part2) return -1;
-    }
-    
-    return 0;
-  }
-}
-
-/**
  * 保存最后检查更新的时间
  */
-export function saveLastUpdateCheck(): void {
-  localStorage.setItem('lastUpdateCheck', Date.now().toString());
-}
-
-/**
- * 获取上次检查更新的时间
- */
-export function getLastUpdateCheck(): number {
-  const lastCheck = localStorage.getItem('lastUpdateCheck');
-  return lastCheck ? parseInt(lastCheck, 10) : 0;
+export function saveLastUpdateCheck() {
+  try {
+    localStorage.setItem('lastUpdateCheck', Date.now().toString());
+  } catch (error) {
+    console.error('Failed to save last update check time:', error);
+  }
 }
 
 /**
  * 是否应该检查更新
+ * 根据上次检查时间和配置的检查间隔决定
  */
 export function shouldCheckForUpdates(): boolean {
-  if (!appConfig.enableAutoUpdate) return false;
+  try {
+    const lastCheck = localStorage.getItem('lastUpdateCheck');
+    
+    // 如果未开启自动更新，则不自动检查
+    if (!appConfig.enableAutoUpdate) {
+      return false;
+    }
+    
+    // 如果没有上次检查记录，应该检查
+    if (!lastCheck) {
+      return true;
+    }
+    
+    const lastCheckTime = parseInt(lastCheck, 10);
+    const now = Date.now();
+    const interval = appConfig.updateCheckInterval || 7 * 24 * 60 * 60 * 1000; // 默认7天
+    
+    return (now - lastCheckTime) > interval;
+  } catch (error) {
+    console.error('Error checking update schedule:', error);
+    return false;
+  }
+}
+
+/**
+ * 更新服务
+ * 提供检查更新和下载更新的功能
+ */
+export class UpdateService {
+  /**
+   * 检查更新
+   */
+  static async checkForUpdates(): Promise<CheckResult> {
+    try {
+      // 电子应用优先使用 electron-updater
+      if (window.electron) {
+        // 仅发起检查请求，结果会通过事件来通知
+        await window.electron.checkForUpdates();
+        return { status: VersionCompareResult.NewerAvailable };
+      }
+      
+      // 降级到HTTP API检查
+      const response = await fetch(appConfig.updateURL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          currentVersion: appConfig.version,
+          platform: getOSPlatform(),
+          appId: 'vwordai'
+        })
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Server responded with ${response.status}: ${response.statusText}`);
+      }
+      
+      const data = await response.json();
+      
+      // 比较版本
+      const comparison = compareVersions(data.version, appConfig.version);
+      
+      if (comparison > 0) {
+        // 有新版本
+        return {
+          status: VersionCompareResult.NewerAvailable,
+          updateInfo: {
+            version: data.version,
+            releaseDate: data.releaseDate || new Date().toLocaleDateString(),
+            downloadUrl: data.downloadUrl || '',
+            releaseNotes: data.releaseNotes || ''
+          }
+        };
+      } else {
+        // 已是最新版本
+        return { status: VersionCompareResult.UpToDate };
+      }
+    } catch (error) {
+      console.error('Update check failed:', error);
+      return { 
+        status: VersionCompareResult.Error,
+        error: error instanceof Error ? error.message : 'Unknown error'
+      };
+    }
+  }
   
-  const lastCheck = getLastUpdateCheck();
-  const now = Date.now();
+  /**
+   * 下载更新
+   * 注意：此方法仅在没有electron时作为备用方案
+   */
+  static async downloadUpdate(updateInfo: UpdateInfo): Promise<boolean> {
+    try {
+      if (window.electron) {
+        // 使用electron-updater下载
+        await window.electron.downloadUpdate();
+        return true;
+      }
+      
+      // 如果不在Electron环境中，直接打开下载链接
+      if (updateInfo.downloadUrl) {
+        window.open(updateInfo.downloadUrl, '_blank');
+        return true;
+      }
+      
+      return false;
+    } catch (error) {
+      console.error('Download update failed:', error);
+      return false;
+    }
+  }
+}
+
+/**
+ * 比较版本号
+ * @param version1 第一个版本 
+ * @param version2 第二个版本
+ * @returns 如果version1 > version2，返回1；如果version1 < version2，返回-1；相等返回0
+ */
+function compareVersions(version1: string, version2: string): number {
+  const parts1 = version1.split('.').map(Number);
+  const parts2 = version2.split('.').map(Number);
   
-  return (now - lastCheck) > appConfig.updateCheckInterval;
+  const maxLength = Math.max(parts1.length, parts2.length);
+  
+  for (let i = 0; i < maxLength; i++) {
+    const part1 = i < parts1.length ? parts1[i] : 0;
+    const part2 = i < parts2.length ? parts2[i] : 0;
+    
+    if (part1 > part2) return 1;
+    if (part1 < part2) return -1;
+  }
+  
+  return 0;
+}
+
+/**
+ * 获取当前操作系统平台
+ */
+function getOSPlatform(): string {
+  const userAgent = navigator.userAgent.toLowerCase();
+  
+  if (userAgent.includes('win')) return 'windows';
+  if (userAgent.includes('mac')) return 'macos';
+  if (userAgent.includes('linux')) return 'linux';
+  
+  return 'unknown';
 } 

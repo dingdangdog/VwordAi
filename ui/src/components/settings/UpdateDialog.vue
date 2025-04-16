@@ -2,9 +2,11 @@
   <div
     v-if="show"
     class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50"
+    @click="$emit('close')"
   >
     <div
       class="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-md mx-4 overflow-hidden"
+      @click.stop
     >
       <!-- 标题栏 -->
       <div
@@ -14,46 +16,100 @@
           <ArrowUpCircleIcon class="h-6 w-6 mr-2" />
           发现新版本
         </h2>
-        <button @click="close" class="focus:outline-none">
-          <XMarkIcon class="h-6 w-6" />
+        <button
+          @click="$emit('close')"
+          class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+        >
+          <svg
+            class="w-5 h-5"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M6 18L18 6M6 6l12 12"
+            ></path>
+          </svg>
         </button>
       </div>
 
       <!-- 内容区域 -->
       <div class="py-6 px-6">
         <div class="mb-4">
-          <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-2">
-            {{ updateInfo.version }} 已发布
-          </h3>
-          <p class="text-gray-500 dark:text-gray-400 text-sm">
-            发布日期: {{ updateInfo.releaseDate }}
-          </p>
+          <div class="flex justify-between mb-1">
+            <span class="text-gray-700 dark:text-gray-300 font-medium"
+              >当前版本:</span
+            >
+            <span class="text-gray-600 dark:text-gray-400">{{
+              currentVersion
+            }}</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-gray-700 dark:text-gray-300 font-medium"
+              >最新版本:</span
+            >
+            <span class="text-green-600 dark:text-green-400 font-medium">{{
+              updateInfo.version
+            }}</span>
+          </div>
         </div>
 
-        <!-- 更新内容 -->
-        <div
-          class="mb-6 bg-gray-50 dark:bg-gray-700 p-3 rounded-md max-h-48 overflow-y-auto"
-        >
-          <h4 class="font-medium text-gray-900 dark:text-white mb-2">
+        <div class="mb-4">
+          <span class="text-gray-700 dark:text-gray-300 font-medium"
+            >发布日期:</span
+          >
+          <span class="text-gray-600 dark:text-gray-400 ml-2">{{
+            updateInfo.releaseDate
+          }}</span>
+        </div>
+
+        <div v-if="updateInfo.releaseNotes" class="mb-4">
+          <div class="text-gray-700 dark:text-gray-300 font-medium mb-2">
             更新内容:
-          </h4>
+          </div>
           <div
-            class="text-gray-600 dark:text-gray-300 text-sm whitespace-pre-line"
+            class="bg-gray-50 dark:bg-gray-700 p-3 rounded-md text-sm text-gray-600 dark:text-gray-300 whitespace-pre-line overflow-y-auto max-h-48"
             v-html="formattedReleaseNotes"
           ></div>
         </div>
-
-        <!-- 当前版本信息 -->
-        <div class="mb-6 text-sm text-gray-500 dark:text-gray-400">
-          当前版本: {{ currentVersion }}
+        
+        <!-- 下载进度 -->
+        <div v-if="downloadState === 'downloading'" class="mb-4">
+          <div class="flex justify-between mb-1">
+            <span class="text-sm font-medium text-blue-700 dark:text-blue-400">正在下载更新 {{ Math.round(downloadProgress || 0) }}%</span>
+          </div>
+          <div class="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700">
+            <div class="bg-blue-600 h-2.5 rounded-full" :style="{ width: `${downloadProgress || 0}%` }"></div>
+          </div>
         </div>
 
         <!-- 按钮区域 -->
         <div class="flex space-x-3 justify-end">
-          <button @click="close" class="btn btn-secondary">稍后更新</button>
-          <button @click="downloadUpdate" class="btn btn-primary">
+          <button
+            v-if="downloadState === 'idle'"
+            @click="$emit('download')"
+            class="btn btn-primary"
+          >
             <ArrowDownTrayIcon class="h-5 w-5 mr-1" />
-            立即更新
+            下载更新
+          </button>
+          <button
+            v-if="downloadState === 'downloaded'"
+            @click="$emit('install')"
+            class="btn btn-primary"
+          >
+            <ArrowDownTrayIcon class="h-5 w-5 mr-1" />
+            立即安装
+          </button>
+          <button
+            @click="$emit('close')"
+            class="btn btn-secondary"
+            :class="{ 'ml-auto': downloadState !== 'idle' && downloadState !== 'downloaded' }"
+          >
+            {{ downloadState === 'downloaded' ? '稍后安装' : '关闭' }}
           </button>
         </div>
       </div>
@@ -62,8 +118,8 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from "vue";
-import { XMarkIcon, ArrowDownTrayIcon, ArrowUpCircleIcon } from "@heroicons/vue/24/outline";
+import { computed } from "vue";
+import { ArrowDownTrayIcon, ArrowUpCircleIcon } from "@heroicons/vue/24/outline";
 import type { UpdateInfo } from "@/services/updateService";
 
 // Props
@@ -71,35 +127,27 @@ const props = defineProps<{
   show: boolean;
   updateInfo: UpdateInfo;
   currentVersion: string;
+  downloadProgress?: number;
+  downloadState?: 'idle' | 'downloading' | 'downloaded' | 'error';
 }>();
 
 // Emits
 const emit = defineEmits<{
   (e: "close"): void;
   (e: "download"): void;
+  (e: "install"): void;
 }>();
 
 // 格式化发布说明
 const formattedReleaseNotes = computed(() => {
+  if (!props.updateInfo.releaseNotes) return '';
+  
+  // 替换 Markdown 风格的标题和列表
   return props.updateInfo.releaseNotes
-    .replace(/\n/g, "<br>")
-    .replace(
-      /\*\*(.*?)\*\*/g,
-      '<span class="font-bold text-blue-600 dark:text-blue-400">$1</span>'
-    );
+    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\n- /g, '<br>• ')
+    .replace(/\n\n/g, '<br><br>');
 });
-
-// 关闭对话框
-function close() {
-  emit("close");
-}
-
-// 下载更新
-function downloadUpdate() {
-  emit("download");
-  window.open(props.updateInfo.downloadUrl, "_blank");
-  close();
-}
 </script>
 
 <style scoped>

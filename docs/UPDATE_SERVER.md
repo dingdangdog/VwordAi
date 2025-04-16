@@ -1,239 +1,313 @@
-# 文声AI (VwordAI) 更新服务配置指南
+# 文声AI (VwordAI) 自动更新系统 - 基于 electron-updater
 
-本文档提供了如何设置和配置 文声AI (VwordAI) 的自动更新系统的详细说明。
+本文档提供了如何使用 electron-updater 设置和配置 VwordAI 的自动更新系统的详细指南。
 
 ## 概述
 
-VwordAI 的自动更新系统由以下部分组成：
+VwordAI 的自动更新系统使用 electron-updater 库，支持以下功能：
 
-1. **客户端更新检查逻辑** - 已集成到应用程序中
-2. **更新服务器** - 需要您自行搭建
-3. **发布流程** - 用于发布新版本的步骤
+1. **自动检查更新** - 应用程序会定期检查是否有新版本可用
+2. **自动下载更新** - 用户确认后，更新会在后台下载
+3. **安装更新** - 更新下载完成后，用户可以选择立即安装
+4. **多平台支持** - 支持 Windows、macOS 和 Linux 平台
 
-## 更新服务器配置
+## 技术栈
 
-### 选项 1: 简单的静态文件服务器
+- **electron-updater**: 用于管理更新过程
+- **electron-builder**: 用于构建和发布应用程序
+- **GitHub/自有服务器**: 作为更新发布平台
 
-最简单的方法是使用静态 JSON 文件来提供更新信息。
+## 安装和配置
 
-#### 步骤:
+### 1. 依赖安装
 
-1. 在您的网站或服务器上创建一个目录结构:
-   ```
-   /updates/
-     latest.json
-     /downloads/
-       vwordai-1.0.0.exe
-       vwordai-1.0.0.dmg
-       vwordai-1.0.0.AppImage
-   ```
+确保项目中已安装以下依赖：
 
-2. 编辑 `latest.json` 文件，包含最新版本的信息:
-   ```json
-   {
-     "version": "1.0.0",
-     "releaseDate": "2024年7月1日",
-     "downloadUrl": {
-       "windows": "https://yourserver.com/updates/downloads/vwordai-1.0.0.exe",
-       "macos": "https://yourserver.com/updates/downloads/vwordai-1.0.0.dmg",
-       "linux": "https://yourserver.com/updates/downloads/vwordai-1.0.0.AppImage"
-     },
-     "releaseNotes": "**新功能**\n- 功能1\n- 功能2\n\n**修复**\n- 修复1\n- 修复2"
-   }
-   ```
+```bash
+npm install electron-updater electron-log --save
+```
 
-3. 更新 VwordAI 应用程序中的 `appConfig.ts` 文件，将 `updateURL` 指向您的 JSON 文件:
-   ```typescript
-   updateURL: "https://yourserver.com/updates/latest.json",
-   ```
+### 2. 配置 package.json
 
-4. 修改 `main.js` 中的 `check-updates` 处理程序，使用 HTTP 请求获取 JSON 文件而不是模拟数据。
+在 `package.json` 文件中添加或更新以下配置：
 
-### 选项 2: 动态更新服务器 (推荐)
+```json
+{
+  "build": {
+    "appId": "com.vwordai",
+    "productName": "VwordAI",
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "dingdangdog",
+        "repo": "vwordai"
+      }
+    ],
+    "win": {
+      "target": ["nsis"],
+      "artifactName": "${productName}-Setup-${version}.${ext}"
+    },
+    "mac": {
+      "target": ["dmg", "zip"],
+      "artifactName": "${productName}-${version}.${ext}"
+    },
+    "linux": {
+      "target": ["AppImage", "deb"],
+      "artifactName": "${productName}-${version}.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "perMachine": false,
+      "deleteAppDataOnUninstall": false
+    }
+  },
+  "scripts": {
+    "publish": "electron-builder --publish always"
+  }
+}
+```
 
-对于更复杂和安全的更新系统，建议设置一个专用的更新服务器。
+### 3. 配置 main.js
 
-#### 步骤:
-
-1. 创建一个 Node.js 服务器 (示例使用 Express):
+在主进程文件 (main.js) 中添加以下代码：
 
 ```javascript
-const express = require('express');
-const cors = require('cors');
-const app = express();
-const port = process.env.PORT || 3000;
+const { autoUpdater } = require('electron-updater');
+const log = require('electron-log');
 
-// 中间件
-app.use(cors());
-app.use(express.json());
+// 配置日志
+log.transports.file.level = "debug";
+autoUpdater.logger = log;
+autoUpdater.autoDownload = false;
 
-// 存储不同版本的信息
-const releases = {
-  '1.0.0': {
-    version: '1.0.0',
-    releaseDate: '2024年7月1日',
-    downloadUrl: {
-      windows: 'https://yourserver.com/downloads/vwordai-1.0.0.exe',
-      macos: 'https://yourserver.com/downloads/vwordai-1.0.0.dmg',
-      linux: 'https://yourserver.com/downloads/vwordai-1.0.0.AppImage'
-    },
-    releaseNotes: '首次发布版本'
-  },
-  '1.1.0': {
-    version: '1.1.0',
-    releaseDate: '2024年7月15日',
-    downloadUrl: {
-      windows: 'https://yourserver.com/downloads/vwordai-1.1.0.exe',
-      macos: 'https://yourserver.com/downloads/vwordai-1.1.0.dmg',
-      linux: 'https://yourserver.com/downloads/vwordai-1.1.0.AppImage'
-    },
-    releaseNotes: '**新功能**\n- 增加批量导出功能\n- 支持更多语音服务\n\n**修复**\n- 修复界面显示问题\n- 提高转换速度'
-  }
-};
-
-// 获取最新版本
-const getLatestVersion = () => {
-  return Object.values(releases).reduce((latest, current) => {
-    if (!latest || compareVersions(current.version, latest.version) > 0) {
-      return current;
+// 设置自动更新事件处理
+function setupAutoUpdater() {
+  // 发送更新消息到渲染进程
+  function sendStatusToWindow(text, data = null) {
+    if (win) {
+      win.webContents.send('update-message', { message: text, data });
     }
-    return latest;
-  }, null);
-};
-
-// 比较版本号
-function compareVersions(v1, v2) {
-  const parts1 = v1.split('.').map(Number);
-  const parts2 = v2.split('.').map(Number);
-  
-  const maxLength = Math.max(parts1.length, parts2.length);
-  
-  for (let i = 0; i < maxLength; i++) {
-    const part1 = i < parts1.length ? parts1[i] : 0;
-    const part2 = i < parts2.length ? parts2[i] : 0;
-    
-    if (part1 > part2) return 1;
-    if (part1 < part2) return -1;
   }
-  
-  return 0;
+
+  // 检查到更新
+  autoUpdater.on('update-available', (info) => {
+    log.info('发现更新:', info);
+    sendStatusToWindow('update-available', info);
+  });
+
+  // 未检查到更新
+  autoUpdater.on('update-not-available', (info) => {
+    log.info('已是最新版本', info);
+    sendStatusToWindow('update-not-available', info);
+  });
+
+  // 更新下载进度
+  autoUpdater.on('download-progress', (progressObj) => {
+    let message = `下载速度: ${progressObj.bytesPerSecond} - 已下载 ${progressObj.percent}% (${progressObj.transferred}/${progressObj.total})`;
+    log.info(message);
+    sendStatusToWindow('download-progress', progressObj);
+  });
+
+  // 更新下载完成
+  autoUpdater.on('update-downloaded', (info) => {
+    log.info('更新已下载', info);
+    sendStatusToWindow('update-downloaded', info);
+  });
+
+  // 更新错误
+  autoUpdater.on('error', (err) => {
+    log.error('自动更新错误:', err);
+    sendStatusToWindow('error', err.toString());
+  });
 }
 
-// 检查更新的接口
-app.post('/check-update', (req, res) => {
-  try {
-    const { currentVersion, platform, appId } = req.body;
-    
-    // 验证请求
-    if (!currentVersion || !platform || appId !== 'vwordai') {
-      return res.status(400).json({ error: '无效的请求参数' });
-    }
-    
-    // 获取最新版本
-    const latestVersion = getLatestVersion();
-    
-    if (!latestVersion) {
-      return res.status(404).json({ error: '未找到版本信息' });
-    }
-    
-    // 准备响应
-    const response = {
-      version: latestVersion.version,
-      releaseDate: latestVersion.releaseDate,
-      releaseNotes: latestVersion.releaseNotes
-    };
-    
-    // 根据平台提供下载链接
-    if (typeof latestVersion.downloadUrl === 'object') {
-      response.downloadUrl = latestVersion.downloadUrl[platform] || latestVersion.downloadUrl.windows;
-    } else {
-      response.downloadUrl = latestVersion.downloadUrl;
-    }
-    
-    res.json(response);
-  } catch (error) {
-    console.error('处理更新请求出错:', error);
-    res.status(500).json({ error: '服务器内部错误' });
+// 应用就绪后初始化更新
+app.whenReady().then(() => {
+  // 创建窗口和其他初始化...
+  
+  // 设置自动更新
+  setupAutoUpdater();
+  
+  // 在开发环境下不检查更新
+  if (process.env.NODE_ENV !== "development") {
+    // 应用启动时检查更新，延迟3秒让应用完全加载
+    setTimeout(() => {
+      autoUpdater.checkForUpdates().catch(err => {
+        log.error('自动检查更新失败:', err);
+      });
+    }, 3000);
   }
 });
 
-// 启动服务器
-app.listen(port, () => {
-  console.log(`更新服务器运行在端口 ${port}`);
+// IPC 处理更新相关的事件
+ipcMain.handle("check-updates", async () => {
+  try {
+    log.info('手动检查更新');
+    const result = await autoUpdater.checkForUpdates();
+    return { checking: true };
+  } catch (err) {
+    log.error('检查更新失败:', err);
+    return { error: err.message || "检查更新失败" };
+  }
+});
+
+ipcMain.handle("download-update", async () => {
+  try {
+    log.info('开始下载更新');
+    autoUpdater.downloadUpdate();
+    return { success: true, message: "更新下载已开始" };
+  } catch (err) {
+    log.error('下载更新失败:', err);
+    return { success: false, error: err.message || "下载更新失败" };
+  }
+});
+
+ipcMain.handle("install-update", async () => {
+  try {
+    log.info('安装更新');
+    autoUpdater.quitAndInstall(false, true);
+    return { success: true };
+  } catch (err) {
+    log.error('安装更新失败:', err);
+    return { success: false, error: err.message || "安装更新失败" };
+  }
 });
 ```
 
-2. 部署此服务器到您的云服务提供商 (例如 Vercel, Netlify, AWS, Azure 等)。
+### 4. 配置预加载脚本 (preload.js)
 
-3. 更新 VwordAI 应用程序中的 `appConfig.ts` 文件，将 `updateURL` 指向您的 API 端点:
-   ```typescript
-   updateURL: "https://your-update-server.com/check-update",
-   ```
+在预加载脚本中添加以下代码，以便渲染进程可以访问更新功能：
 
-4. 确保修改 `main.js` 中的 `check-updates` 处理程序以正确处理您的 API 响应。
+```javascript
+// 更新相关
+checkForUpdates: async () => {
+  return await ipcRenderer.invoke("check-updates");
+},
+downloadUpdate: async () => {
+  return await ipcRenderer.invoke("download-update");
+},
+installUpdate: async () => {
+  return await ipcRenderer.invoke("install-update");
+},
+onUpdateMessage: (callback) => {
+  ipcRenderer.on('update-message', (event, data) => {
+    callback(data);
+  });
+},
+removeUpdateListener: () => {
+  ipcRenderer.removeAllListeners('update-message');
+}
+```
 
-## 发布新版本的步骤
+## 发布流程
 
-当您准备发布新版本时，请按照以下步骤操作:
+### 使用 GitHub 作为更新服务器
 
-1. 更新应用程序的 `package.json` 中的版本号
-2. 更新 `ui/src/config/appConfig.ts` 中的版本信息
-3. 构建应用程序的新版本
-4. 更新您的更新服务器配置，添加新版本的信息
-5. 将构建好的应用程序上传到您的下载服务器
-6. 测试自动更新功能
+1. **创建 GitHub 仓库** - 确保您有一个可用的 GitHub 仓库来托管应用程序更新。
 
-## 使用 electron-updater (可选)
+2. **生成访问令牌** - 创建一个具有 `repo` 权限的个人访问令牌 (PAT)。
 
-对于更先进的自动更新功能，可以考虑集成 `electron-updater` 库:
+3. **配置环境变量** - 在构建环境中设置 `GH_TOKEN` 环境变量：
 
-1. 安装依赖:
    ```bash
-   npm install electron-updater
+   export GH_TOKEN=your_github_token
    ```
 
-2. 修改 `main.js` 以使用 `electron-updater`:
-   ```javascript
-   const { autoUpdater } = require('electron-updater');
-   
-   // 配置自动更新
-   autoUpdater.setFeedURL({
-     provider: 'generic',
-     url: 'https://yourserver.com/updates/'
-   });
-   
-   // 检查更新
-   autoUpdater.checkForUpdates();
-   
-   // 自动更新事件
-   autoUpdater.on('update-available', () => {
-     // 通知渲染进程有可用更新
-   });
-   
-   autoUpdater.on('update-downloaded', () => {
-     // 更新已下载，可以安装
-   });
+   或在 Windows 中：
+
+   ```
+   set GH_TOKEN=your_github_token
    ```
 
-3. 参考 electron-updater 文档进行更详细的配置。
+4. **构建并发布**:
 
-## 安全性注意事项
+   ```bash
+   npm run publish
+   ```
 
-1. **签名验证**: 应用程序更新包应当进行代码签名，以防止恶意软件分发。
-2. **HTTPS**: 所有更新请求和下载应当通过 HTTPS 进行，以确保传输安全。
-3. **访问控制**: 更新服务器应当有适当的访问控制，防止未授权的版本发布。
+### 使用自有服务器作为更新服务器
 
-## 常见问题解答
+1. **修改 package.json 的 publish 配置**:
 
-**Q: 如何测试更新系统?**
-A: 可以通过发布测试版本，并将版本号设置为高于当前版本来测试。也可以临时修改应用程序中的版本检查代码以模拟更新场景。
+   ```json
+   "publish": [
+     {
+       "provider": "generic",
+       "url": "https://your-server.com/downloads/"
+     }
+   ]
+   ```
 
-**Q: 是否需要为不同操作系统提供不同的更新?**
-A: 是的，通常需要为 Windows (.exe)、macOS (.dmg) 和 Linux (.AppImage) 提供不同的安装包。我们的更新服务器示例已经考虑了这一点。
+2. **设置服务器目录结构**:
 
-**Q: 如何处理强制更新?**
-A: 在 API 响应中可以添加一个 `mandatory` 字段，指示是否为强制更新。然后在客户端中实现逻辑，不允许用户继续使用旧版本。
+   ```
+   /downloads/
+     /latest/
+       latest-mac.yml    # macOS更新信息
+       latest-linux.yml  # Linux更新信息
+       latest.yml        # Windows更新信息
+     /v1.0.0/
+       VwordAI-1.0.0.dmg
+       VwordAI-1.0.0.AppImage
+       VwordAI-Setup-1.0.0.exe
+   ```
 
-## 技术支持
+3. **发布更新**:
 
-如有关于更新系统设置的问题，请联系我们的技术支持团队。 
+   每次发布新版本后，将构建好的安装包和 YAML 文件上传到服务器对应目录。
+
+## 更新流程说明
+
+1. **检查更新** - 应用程序定期或在用户点击"检查更新"按钮时，向更新服务器查询是否有新版本可用。
+
+2. **提示用户** - 如果发现更新，应用程序会显示更新对话框，用户可以选择下载更新或稍后再说。
+
+3. **下载更新** - 用户确认后，应用程序开始在后台下载更新，并显示下载进度。
+
+4. **安装更新** - 下载完成后，用户可以选择立即安装或下次启动时安装。
+
+5. **应用更新** - 应用程序会关闭，然后安装新版本并重新启动。
+
+## 测试更新系统
+
+1. **版本变更** - 修改 `package.json` 和 `ui/src/config/appConfig.ts` 中的版本号，确保新版本大于当前版本。
+
+2. **本地测试** - 使用 `electron-builder` 的开发模式测试更新流程：
+
+   ```bash
+   # 首先构建和发布一个版本
+   npm run publish
+   
+   # 修改版本号后再发布一个新版本
+   npm run publish
+   
+   # 安装旧版本，然后测试更新到新版本
+   ```
+
+3. **调试问题** - 查看 electron-log 创建的日志文件，位置通常在：
+   - Windows: `%USERPROFILE%\AppData\Roaming\{app name}\logs\`
+   - macOS: `~/Library/Logs/{app name}/`
+   - Linux: `~/.config/{app name}/logs/`
+
+## 常见问题
+
+1. **更新检查失败** - 通常是由于网络问题或 GitHub 令牌权限不足导致。请检查网络连接和令牌权限。
+
+2. **下载更新失败** - 可能是网络问题或磁盘空间不足。
+
+3. **安装更新失败** - 可能是权限问题或文件被占用。建议重启应用程序后再尝试安装。
+
+4. **签名问题** - 如果使用代码签名，确保签名证书有效且被正确应用到安装包。
+
+## 安全注意事项
+
+1. **HTTPS** - 确保所有更新请求和下载都通过 HTTPS 进行，以防止中间人攻击。
+
+2. **代码签名** - 对于生产环境，强烈建议对应用程序进行代码签名，以验证更新包的完整性和来源。
+
+3. **令牌安全** - 不要在源代码中硬编码 GitHub 令牌，使用环境变量或 CI/CD 系统的秘密管理功能。
+
+## 结论
+
+使用 electron-updater 实现的自动更新系统大大简化了应用程序的更新流程，提高了用户体验。通过合理配置和持续维护，可以确保用户始终使用最新版本的 VwordAI 应用程序。 

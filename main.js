@@ -7,6 +7,13 @@ const fs = require("fs");
 const { error, success } = require("./server/util.js");
 const https = require("https");
 const http = require("http");
+const { autoUpdater } = require("electron-updater");
+const log = require("electron-log");
+
+// 配置日志
+log.transports.file.level = "debug";
+autoUpdater.logger = log;
+autoUpdater.autoDownload = false;
 
 require("dotenv").config(); // Load environment variables from .env file
 
@@ -67,6 +74,47 @@ function createWindow() {
   win.on("close", () => {});
 }
 
+// 应用更新相关事件处理
+function setupAutoUpdater() {
+  // 发送更新消息到渲染进程
+  function sendStatusToWindow(text, data = null) {
+    if (win) {
+      win.webContents.send('update-message', { message: text, data });
+    }
+  }
+
+  // 检查到更新
+  autoUpdater.on('update-available', (info) => {
+    log.info('发现更新:', info);
+    sendStatusToWindow('update-available', info);
+  });
+
+  // 未检查到更新
+  autoUpdater.on('update-not-available', (info) => {
+    log.info('已是最新版本', info);
+    sendStatusToWindow('update-not-available', info);
+  });
+
+  // 更新下载进度
+  autoUpdater.on('download-progress', (progressObj) => {
+    let message = `下载速度: ${progressObj.bytesPerSecond} - 已下载 ${progressObj.percent}% (${progressObj.transferred}/${progressObj.total})`;
+    log.info(message);
+    sendStatusToWindow('download-progress', progressObj);
+  });
+
+  // 更新下载完成
+  autoUpdater.on('update-downloaded', (info) => {
+    log.info('更新已下载', info);
+    sendStatusToWindow('update-downloaded', info);
+  });
+
+  // 更新错误
+  autoUpdater.on('error', (err) => {
+    log.error('自动更新错误:', err);
+    sendStatusToWindow('error', err.toString());
+  });
+}
+
 // 当 Electron 完成初始化时，创建窗口
 app.whenReady().then(async () => {
   console.log("Electron app is ready");
@@ -82,6 +130,17 @@ app.whenReady().then(async () => {
   }
 
   createWindow();
+  setupAutoUpdater();
+  
+  // 在开发环境下不检查更新
+  if (process.env.NODE_ENV !== "development") {
+    // 应用启动时检查更新，延迟3秒让应用完全加载
+    setTimeout(() => {
+      autoUpdater.checkForUpdates().catch(err => {
+        log.error('自动检查更新失败:', err);
+      });
+    }, 3000);
+  }
 
   app.on("activate", () => {
     // 在 macOS 上，当点击 dock 图标并且没有其他窗口打开时，
@@ -234,82 +293,39 @@ ipcMain.handle("open-file", async () => {
   }
 });
 
+// 更新相关的IPC处理
 // 检查更新
-ipcMain.handle("check-updates", async (event, currentVersion) => {
+ipcMain.handle("check-updates", async () => {
   try {
-    const appInfo = JSON.parse(fs.readFileSync(path.join(__dirname, "package.json"), "utf8"));
-    const appVersion = appInfo.version || "1.0.0";
-    
-    // 这里应该调用您的更新服务器API
-    // 以下是一个模拟实现，实际应用中应该连接到真实的更新服务器
-    
-    // 如果您有真实的更新服务器，取消注释以下代码并进行修改
-    /*
-    const updateUrl = "https://api.example.com/vwordai/check-update";
-    const response = await new Promise((resolve, reject) => {
-      const req = https.request(
-        updateUrl,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-        },
-        (res) => {
-          let data = "";
-          res.on("data", (chunk) => {
-            data += chunk;
-          });
-          res.on("end", () => {
-            try {
-              resolve(JSON.parse(data));
-            } catch (e) {
-              reject(e);
-            }
-          });
-        }
-      );
-      
-      req.on("error", reject);
-      req.write(JSON.stringify({
-        currentVersion: appVersion,
-        platform: process.platform,
-        appId: "vwordai"
-      }));
-      req.end();
-    });
-    
-    return response;
-    */
-    
-    // 模拟更新检查结果 - 仅用于开发测试
-    // 实际生产环境应该连接到实际更新服务器
-    const mockResponse = {
-      version: "1.1.0", // 模拟有新版本
-      releaseDate: "2024年7月15日",
-      downloadUrl: "https://example.com/downloads/vwordai-1.1.0.exe",
-      releaseNotes: "**新功能**\n- 增加批量导出功能\n- 支持更多语音服务\n\n**修复**\n- 修复界面显示问题\n- 提高转换速度",
-    };
-    
-    return mockResponse;
+    log.info('手动检查更新');
+    const result = await autoUpdater.checkForUpdates();
+    return { checking: true };
   } catch (err) {
-    console.error("检查更新失败:", err);
+    log.error('检查更新失败:', err);
     return { error: err.message || "检查更新失败" };
   }
 });
 
-// 下载和安装更新
-ipcMain.handle("download-update", async (event, updateInfo) => {
+// 下载更新
+ipcMain.handle("download-update", async () => {
   try {
-    // 在实际应用中，这里应该下载并安装更新
-    // 以下是打开下载链接的简单实现
-    // 如果您需要自动更新，可以考虑使用 electron-updater 等库
-    
-    shell.openExternal(updateInfo.downloadUrl);
-    
-    return { success: true, message: "已打开下载页面" };
+    log.info('开始下载更新');
+    autoUpdater.downloadUpdate();
+    return { success: true, message: "更新下载已开始" };
   } catch (err) {
-    console.error("下载更新失败:", err);
+    log.error('下载更新失败:', err);
     return { success: false, error: err.message || "下载更新失败" };
+  }
+});
+
+// 安装更新
+ipcMain.handle("install-update", async () => {
+  try {
+    log.info('安装更新');
+    autoUpdater.quitAndInstall(false, true);
+    return { success: true };
+  } catch (err) {
+    log.error('安装更新失败:', err);
+    return { success: false, error: err.message || "安装更新失败" };
   }
 });

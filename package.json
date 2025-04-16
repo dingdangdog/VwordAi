@@ -13,7 +13,8 @@
     "build": "",
     "electron": "electron .",
     "dev": "electron .",
-    "package": "cd ui && npm run build-only && cd ../ && electron-builder"
+    "package": "cd ui && npm run build-only && cd ../ && electron-builder",
+    "publish": "cd ui && npm run build-only && cd ../ && electron-builder --publish always"
   },
   "build": {
     "appId": "com.vwordai",
@@ -28,25 +29,41 @@
       "server/**",
       "ui/dist/**"
     ],
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "dingdangdog",
+        "repo": "vwordai"
+      }
+    ],
     "linux": {
       "target": [
         "AppImage",
         "deb"
       ],
-      "category": "Utility"
+      "category": "Utility",
+      "artifactName": "${productName}-${version}.${ext}"
     },
     "mac": {
       "target": [
         "dmg",
         "zip"
       ],
-      "category": "public.app-category.utilities"
+      "category": "public.app-category.utilities",
+      "artifactName": "${productName}-${version}.${ext}"
     },
     "win": {
       "target": [
         "nsis"
       ],
-      "icon": "ui/public/logo.ico"
+      "icon": "ui/public/logo.ico",
+      "artifactName": "${productName}-Setup-${version}.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "perMachine": false,
+      "deleteAppDataOnUninstall": false
     }
   },
   "dependencies": {
@@ -54,6 +71,8 @@
     "axios": "^1.7.8",
     "chardet": "^2.0.0",
     "dotenv": "^16.4.5",
+    "electron-log": "^5.0.3",
+    "electron-updater": "^6.1.7",
     "fs-extra": "^11.2.0",
     "iconv-lite": "^0.6.3",
     "microsoft-cognitiveservices-speech-sdk": "^1.41.0",

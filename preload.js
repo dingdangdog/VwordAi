@@ -29,9 +29,26 @@ contextBridge.exposeInMainWorld("electron", {
     return await ipcRenderer.invoke("check-updates");
   },
 
-  // 下载和安装更新
-  downloadUpdate: async (updateInfo) => {
-    return await ipcRenderer.invoke("download-update", updateInfo);
+  // 下载更新
+  downloadUpdate: async () => {
+    return await ipcRenderer.invoke("download-update");
+  },
+  
+  // 安装更新
+  installUpdate: async () => {
+    return await ipcRenderer.invoke("install-update");
+  },
+  
+  // 监听更新消息
+  onUpdateMessage: (callback) => {
+    ipcRenderer.on('update-message', (event, data) => {
+      callback(data);
+    });
+  },
+  
+  // 移除更新消息监听
+  removeUpdateListener: () => {
+    ipcRenderer.removeAllListeners('update-message');
   }
 });
 
