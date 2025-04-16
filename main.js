@@ -38,6 +38,8 @@ function createWindow() {
       nodeIntegration: false, // 关闭 Node.js 集成以增强安全性
       contextIsolation: true, // 启用上下文隔离
       preload: path.join(__dirname, "preload.js"), // 预加载脚本
+      webSecurity: false, // 允许加载不安全的内容
+      allowRunningInsecureContent: true, // 允许运行不安全的内容
     },
     frame: false, // 无边框窗口
     transparent: true, // 透明窗口
@@ -65,18 +67,18 @@ function createWindow() {
 
 // 当 Electron 完成初始化时，创建窗口
 app.whenReady().then(async () => {
-  console.log('Electron app is ready');
-  console.log('Current working directory:', process.cwd());
-  console.log('__dirname:', __dirname);
-  
+  console.log("Electron app is ready");
+  console.log("Current working directory:", process.cwd());
+  console.log("__dirname:", __dirname);
+
   // 尝试加载server/util.js文件
   try {
-    const serverUtil = require('./server/util.js');
-    console.log('server/util.js loaded successfully');
+    const serverUtil = require("./server/util.js");
+    console.log("server/util.js loaded successfully");
   } catch (err) {
-    console.error('Failed to load server/util.js:', err);
+    console.error("Failed to load server/util.js:", err);
   }
-  
+
   createWindow();
 
   app.on("activate", () => {
@@ -131,17 +133,17 @@ ipcMain.handle("is-maximized", () => {
 // 实现data-handler调用
 ipcMain.handle("data-handler", async (event, functionName, args) => {
   console.log(`调用处理器: ${functionName}, 参数:`, args);
-  
+
   // 检查处理器是否存在
-  if (typeof handler[functionName] !== 'function') {
+  if (typeof handler[functionName] !== "function") {
     console.error(`处理器函数不存在: ${functionName}`);
     return { success: false, error: `处理器函数不存在: ${functionName}` };
   }
-  
+
   try {
     // 解析参数
-    const parsedArgs = args.map(arg => {
-      if (typeof arg === 'string') {
+    const parsedArgs = args.map((arg) => {
+      if (typeof arg === "string") {
         try {
           // 尝试解析JSON字符串
           return JSON.parse(arg);
@@ -152,7 +154,7 @@ ipcMain.handle("data-handler", async (event, functionName, args) => {
       }
       return arg;
     });
-    
+
     // 调用处理器函数
     return await handler[functionName](...parsedArgs);
   } catch (error) {
@@ -177,14 +179,14 @@ ipcMain.handle("get-media-url", async (event, filePath) => {
       console.error(`媒体文件不存在: ${filePath}`);
       return null;
     }
-    
+
     // 确保路径中特殊字符被正确编码
     const encodedPath = filePath
       .replace(/\\/g, "/")
       .replace(/#/g, "%23")
       .replace(/\?/g, "%3F")
       .replace(/\s/g, "%20");
-    
+
     // 返回正确的file://协议URL
     return `file://${encodedPath}`;
   } catch (err) {

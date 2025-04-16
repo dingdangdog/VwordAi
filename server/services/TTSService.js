@@ -176,7 +176,7 @@ async function synthesizeWithProvider(
       settings,
       providerConfig
     );
-    
+
     if (
       !result.success ||
       !result.data ||
@@ -216,7 +216,7 @@ async function synthesizeChapter(chapterId) {
       throw new Error("Chapter text is empty");
     }
 
-    // Get project to use in file path 
+    // Get project to use in file path
     const project = Project.getProjectById(chapter.projectId);
     if (!project) {
       throw new Error("Project not found for this chapter");
@@ -225,7 +225,7 @@ async function synthesizeChapter(chapterId) {
     // 1. Determine Provider and Settings
     const globalSettings = Settings.getAllSettings();
     const chapterSettings = chapter.settings || {};
-    
+
     // If chapter has no service provider, check project settings
     if (!chapterSettings.serviceProvider) {
       if (
@@ -236,7 +236,7 @@ async function synthesizeChapter(chapterId) {
         Object.assign(chapterSettings, project.defaultVoiceSettings);
       }
     }
-    
+
     const providerType = chapterSettings.serviceProvider;
 
     if (
@@ -261,8 +261,7 @@ async function synthesizeChapter(chapterId) {
     const safeChapterName = chapter.name
       .replace(/[^a-zA-Z0-9\u4e00-\u9fa5._-]/g, "_")
       .substring(0, 50);
-    const safeProjectId = project.id.slice(-6); // 使用项目ID的后6位
-    const finalOutputFileName = `${safeProjectId}_${safeChapterName}_${chapterId.slice(
+    const finalOutputFileName = `${safeChapterName}_${chapterId.slice(
       -6
     )}_${timestamp}`;
 
@@ -281,7 +280,7 @@ async function synthesizeChapter(chapterId) {
     } else {
       outputDir = path.join(process.cwd(), "audio_output");
     }
-    
+
     // 添加项目ID到输出路径，便于分类查看
     const projectDir = path.join(outputDir, project.id);
     fs.ensureDirSync(projectDir);

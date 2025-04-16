@@ -108,7 +108,7 @@
         <div class="bg-gray-50 dark:bg-gray-700 p-4 rounded-md">
           <div class="flex flex-col space-y-2">
             <div v-if="audioUrl" class="audio-player-container">
-              <audio
+              <!-- <audio
                 ref="audioPlayer"
                 :src="audioUrl"
                 class="w-full"
@@ -119,7 +119,17 @@
                 controls
               >
                 您的浏览器不支持音频播放。
-              </audio>
+              </audio> -->
+              <audio
+                ref="audioPlayer"
+                controls
+                class="w-full"
+                @play="onPlay"
+                @pause="onPause"
+                @ended="onEnded"
+                @error="onAudioError"
+                :src="audioUrl"
+              ></audio>
 
               <div
                 v-if="audioError"
