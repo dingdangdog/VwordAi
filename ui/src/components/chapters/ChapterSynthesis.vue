@@ -59,7 +59,7 @@
       <!-- Audio Player - Show when audio exists or synthesis was successful -->
       <div
         v-if="synthesisStatus === 'success' || chapter.audioPath"
-        class="bg-gray-50 dark:bg-gray-700 p-4 rounded-md"
+        class="bg-gray-50 dark:bg-gray-700 rounded-md"
       >
         <div class="flex flex-col space-y-2">
           <div v-if="audioUrl" class="audio-player-container">
@@ -87,36 +87,31 @@
               </button>
             </div>
 
-            <div class="flex justify-between items-center mt-3">
-              <div class="flex items-center">
-                <button
-                  v-if="isPlaying"
-                  @click="stopAudio"
-                  class="btn btn-danger btn-sm flex justify-center items-center"
-                  title="停止播放"
-                >
-                  <StopIcon class="h-4 w-4 mr-1" />
-                  停止
-                </button>
-              </div>
-
-              <div class="flex justify-end space-x-2">
-                <button
-                  @click="downloadAudio"
-                  class="btn btn-secondary btn-sm flex justify-center items-center"
-                  :disabled="!audioUrl"
-                >
-                  <ArrowDownTrayIcon class="h-4 w-4 mr-1" />
-                  下载
-                </button>
-                <button
-                  @click="synthesize"
-                  class="btn btn-primary btn-sm flex justify-center items-center"
-                >
-                  <ArrowPathIcon class="h-4 w-4 mr-1" />
-                  重新合成
-                </button>
-              </div>
+            <div class="flex justify-center items-center space-x-2 mt-3">
+              <button
+                @click="downloadAudio"
+                class="btn btn-secondary btn-sm flex justify-center items-center"
+                :disabled="!audioUrl"
+              >
+                <ArrowDownTrayIcon class="h-4 w-4 mr-1" />
+                下载
+              </button>
+              <button
+                @click="synthesize"
+                class="btn btn-primary btn-sm flex justify-center items-center"
+              >
+                <ArrowPathIcon class="h-4 w-4 mr-1" />
+                重新合成
+              </button>
+              <button
+                v-if="isPlaying"
+                @click="stopAudio"
+                class="btn btn-danger btn-sm flex justify-center items-center"
+                title="停止播放"
+              >
+                <StopIcon class="h-4 w-4 mr-1" />
+                停止
+              </button>
             </div>
           </div>
         </div>

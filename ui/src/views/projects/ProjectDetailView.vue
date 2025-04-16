@@ -153,32 +153,35 @@
                             {{ chapter.name }}
                           </p>
                           <!-- Audio status indicator -->
-                          <span 
-                            v-if="chapter.audioPath && chapter.status === 'completed'" 
+                          <span
+                            v-if="
+                              chapter.audioPath &&
+                              chapter.status === 'completed'
+                            "
                             class="ml-2 px-2 py-0.5 text-xs font-medium rounded-full bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300"
                           >
                             已合成
                           </span>
-                          <span 
-                            v-else-if="chapter.status === 'processing'" 
+                          <span
+                            v-else-if="chapter.status === 'processing'"
                             class="ml-2 px-2 py-0.5 text-xs font-medium rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300"
                           >
                             处理中
                           </span>
-                          <span 
-                            v-else-if="chapter.status === 'error'" 
+                          <span
+                            v-else-if="chapter.status === 'error'"
                             class="ml-2 px-2 py-0.5 text-xs font-medium rounded-full bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300"
                           >
                             合成失败
                           </span>
                         </div>
-                        <div class="mt-2">
+                        <div class="">
                           <div class="text-sm text-gray-500 dark:text-gray-400">
-                            <p>
-                              最后更新：{{ formatDate(chapter.updateAt) }}
-                            </p>
                             <p class="mt-1 line-clamp-1">
                               {{ chapter.text || "暂无内容" }}
+                            </p>
+                            <p class="mt-2">
+                              最后更新：{{ formatDate(chapter.updateAt) }}
                             </p>
                           </div>
                         </div>
@@ -381,10 +384,8 @@ function loadData() {
 
 // Automatically expand chapters that have completed audio
 function expandChaptersWithAudio() {
-  chapters.value.forEach(chapter => {
-    if (chapter.audioPath && chapter.status === 'completed') {
-      expandedChapters.value[chapter.id] = true;
-    }
+  chapters.value.forEach((chapter) => {
+    expandedChapters.value[chapter.id] = false;
   });
 }
 
@@ -462,7 +463,7 @@ async function startBatchSynthesis() {
 
   // Filter out chapters that already have audio
   const chaptersToProcess = chaptersWithText.filter(
-    (c) => !c.audioPath || c.status !== 'completed'
+    (c) => !c.audioPath || c.status !== "completed"
   );
 
   // If all chapters already have audio
@@ -473,7 +474,9 @@ async function startBatchSynthesis() {
     return;
   }
 
-  toast.info(`开始批量合成 ${chaptersToProcess.length} 个章节，这可能需要一些时间...`);
+  toast.info(
+    `开始批量合成 ${chaptersToProcess.length} 个章节，这可能需要一些时间...`
+  );
 
   try {
     // 显示进度通知

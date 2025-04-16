@@ -16,7 +16,10 @@
             readonly
             placeholder="请选择默认的音频文件导出路径"
           />
-          <button @click="selectExportPath" class="btn btn-primary ml-2">
+          <button
+            @click="selectExportPath"
+            class="btn text-black dark:text-white bg-green-100 hover:bg-green-200 dark:bg-green-700 dark:hover:bg-green-600 ml-2"
+          >
             选择路径
           </button>
         </div>
@@ -26,7 +29,7 @@
       </div>
     </div>
 
-    <div class="mb-6">
+    <!-- <div class="mb-6">
       <h3 class="text-md font-semibold text-gray-700 dark:text-gray-300 mb-2">
         命名规则
       </h3>
@@ -54,9 +57,9 @@
           </p>
         </div>
       </div>
-    </div>
+    </div> -->
 
-    <div class="flex justify-end">
+    <div class="flex justify-center">
       <button
         @click="saveSettings"
         class="btn btn-primary"

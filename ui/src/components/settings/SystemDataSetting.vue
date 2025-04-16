@@ -77,14 +77,16 @@
     <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">
       重置系统数据
     </h2>
-    <p class="text-gray-600 dark:text-gray-300 mb-4">
-      危险操作：重置将清除所有项目、章节、设置和配置。这个操作无法撤销。
-    </p>
+    <div class="px-4">
+      <p class="text-gray-600 dark:text-gray-300 mb-4">
+        危险操作：重置将清除所有项目、章节、设置和配置。这个操作无法撤销。
+      </p>
 
-    <button @click="confirmReset" class="btn btn-danger flex">
-      <ExclamationTriangleIcon class="h-5 w-5 mr-2" />
-      重置所有数据
-    </button>
+      <button @click="confirmReset" class="btn btn-danger flex">
+        <ExclamationTriangleIcon class="h-5 w-5 mr-2" />
+        重置所有数据
+      </button>
+    </div>
   </div>
 </template>
 
