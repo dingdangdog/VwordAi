@@ -1,5 +1,5 @@
 {
-  "name": "dotts",
+  "name": "vwordai",
   "version": "0.0.1",
   "private": true,
   "type": "commonjs",
@@ -16,7 +16,7 @@
     "package": "cd ui && npm run build-only && cd ../ && electron-builder"
   },
   "build": {
-    "appId": "top.oldmoon.dotts",
+    "appId": "top.oldmoon.vwordai",
     "productName": "VwordAI",
     "directories": {
       "output": "package"

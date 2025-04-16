@@ -73,7 +73,7 @@ function readData(filename, defaultValue = []) {
  * @param {any} value 配置值
  */
 function saveConfig(key, value) {
-  const configPath = path.join(baseDir, "config", "dotts.json");
+  const configPath = path.join(baseDir, "config", "vwordai.json");
 
   let config = {};
   if (fs.existsSync(configPath)) {
@@ -99,7 +99,7 @@ function saveConfig(key, value) {
  * @returns {any} 配置值或默认值
  */
 function readConfig(key, defaultValue = null) {
-  const configPath = path.join(baseDir, "config", "dotts.json");
+  const configPath = path.join(baseDir, "config", "vwordai.json");
 
   if (!fs.existsSync(configPath)) {
     return defaultValue;

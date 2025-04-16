@@ -13,7 +13,7 @@ const SETTINGS_KEY = 'settings';
 // 默认设置
 const DEFAULT_SETTINGS = {
   theme: 'light',
-  defaultExportPath: path.join(os.homedir(), 'Documents', 'DOTTS'),
+  defaultExportPath: path.join(os.homedir(), 'Documents', 'vwordai'),
   language: 'zh_CN',
   azure: {
     key: '',

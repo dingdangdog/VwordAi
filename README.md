@@ -1,9 +1,12 @@
 <div align="center">
-  <img src="./logo.svg" alt="VwordAI Logo" width="100">
+  <img src="./logo.svg" alt="VwordAI Logo" width="100" height="100">
   <h1>VwordAI (文声AI)</h1>
 </div>
 
 VwordAI 是一款文本转语音工具，支持多种语音服务提供商，让您轻松将文本转为自然流畅的语音。
+
+- 官网：[https://vwordai.com](https://vwordai.com)
+- GitHub：[https://github.com/vwordai](https://github.com/dingdangdog/vwordai)
 
 ## 功能特点
 
@@ -11,8 +14,6 @@ VwordAI 是一款文本转语音工具，支持多种语音服务提供商，让
 - **多服务商支持**：集成多种 TTS 服务，包括 Microsoft Azure、阿里云、腾讯云、百度云等
 - **自有密钥使用**：使用您自己的第三方服务密钥，所有功能完全免费
 - **自定义语音设置**：可针对不同的文本内容配置不同的语音参数
-- **批量处理**：支持批量将文本转换为语音
-- **项目导入导出**：方便地导入和导出项目，便于备份和分享
 
 ## 支持的服务提供商
 
@@ -25,12 +26,6 @@ VwordAI 是一款文本转语音工具，支持多种语音服务提供商，让
 - AWS (规划中)
 
 ## 安装
-
-### 系统要求
-
-- Windows 10/11
-- macOS 10.14 或更高版本
-- Linux (主流发行版)
 
 ### 下载安装包
 
@@ -96,12 +91,3 @@ VwordAI 默认会定期检查更新。您也可以在"关于"页面手动检查�
 ## 许可证
 
 VwordAI 使用 [GPLv3 许可证](LICENSE)。
-
-## 联系我们
-
-- 官方网站：[https://example.com/vwordai](https://example.com/vwordai)
-- GitHub：[https://github.com/vwordai](https://github.com/vwordai)
-
----
-
-© 2025 VwordAI. 保留所有权利。

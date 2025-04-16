@@ -1,9 +1,13 @@
 build
 config
-dotts
+vwordai
 
 dist
 
 node_modules
 
 package
+storage
+
+.env
+
