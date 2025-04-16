@@ -66,7 +66,6 @@ function createWindow() {
       // 打开开发者工具
       win.webContents.openDevTools({ mode: "detach" });
     }
-    win.webContents.openDevTools({ mode: "detach" });
   });
   // 加载应用程序
 

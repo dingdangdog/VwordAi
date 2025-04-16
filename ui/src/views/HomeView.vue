@@ -4,11 +4,11 @@
       <div class="flex justify-center items-center mb-4 space-x-4">
         <img class="h-12 w-auto" src="@/assets/logo.svg" alt="Logo" />
         <h1 class="text-3xl font-bold text-gray-900 dark:text-white">
-          文声AI（VwordAI）
+          文声AI（VwordAi）
         </h1>
       </div>
       <p class="text-lg text-gray-600 dark:text-gray-300 max-w-3xl mx-auto">
-        欢迎使用文声AI（VwordAI）。本软件可以让您轻松地将文本转换为高质量的语音。
+        欢迎使用文声AI（VwordAi）。本软件可以让您轻松地将文本转换为高质量的语音。
       </p>
     </div>
 

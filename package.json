@@ -18,7 +18,7 @@
   },
   "build": {
     "appId": "com.vwordai",
-    "productName": "VwordAI",
+    "productName": "VwordAi",
     "directories": {
       "output": "package"
     },
@@ -33,7 +33,7 @@
       {
         "provider": "github",
         "owner": "dingdangdog",
-        "repo": "vwordai"
+        "repo": "VwordAi"
       }
     ],
     "linux": {

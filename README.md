@@ -1,9 +1,9 @@
 <div align="center">
-  <img src="./logo.svg" alt="VwordAI Logo" width="100" height="100">
-  <h1>VwordAI (文声AI)</h1>
+  <img src="./logo.svg" alt="VwordAi Logo" width="100" height="100">
+  <h1>VwordAi (文声AI)</h1>
 </div>
 
-VwordAI 是一款文本转语音工具，支持多种语音服务提供商，让您轻松将文本转为自然流畅的语音。
+VwordAi 是一款文本转语音工具，支持多种语音服务提供商，让您轻松将文本转为自然流畅的语音。
 
 - 官网：[https://vwordai.com](https://vwordai.com)
 - GitHub：[https://github.com/vwordai](https://github.com/dingdangdog/vwordai)
@@ -29,7 +29,7 @@ VwordAI 是一款文本转语音工具，支持多种语音服务提供商，让
 
 ### 下载安装包
 
-您可以从以下地址下载最新版本的 VwordAI：
+您可以从以下地址下载最新版本的 VwordAi：
 
 - [GitHub Releases](https://github.com/vwordai/releases)
 - [官方网站](https://example.com/vwordai)
@@ -38,14 +38,14 @@ VwordAI 是一款文本转语音工具，支持多种语音服务提供商，让
 
 ## 快速开始
 
-1. **启动应用**：安装完成后，启动 VwordAI 应用程序
+1. **启动应用**：安装完成后，启动 VwordAi 应用程序
 2. **配置服务**：在"设置"中配置您的语音服务提供商密钥
 3. **创建项目**：创建一个新项目、新章节，并添加要转换为语音的文本内容
 4. **转换语音**：选择合适的语音配置，点击"转换"按钮开始处理
 
 ## 配置服务提供商
 
-要使用 VwordAI，您需要至少配置一个语音服务提供商：
+要使用 VwordAi，您需要至少配置一个语音服务提供商：
 
 1. 进入"设置" > "服务商设置"
 2. 选择您要使用的服务提供商
@@ -54,7 +54,7 @@ VwordAI 是一款文本转语音工具，支持多种语音服务提供商，让
 
 ## 项目管理
 
-VwordAI 采用项目和章节的结构来组织您的内容：
+VwordAi 采用项目和章节的结构来组织您的内容：
 
 - **项目**：一个完整的作品，如一本书、一篇文章
 - **章节**：项目中的各个部分，可以单独设置语音参数
@@ -73,16 +73,16 @@ VwordAI 采用项目和章节的结构来组织您的内容：
 
 ## 自动更新
 
-VwordAI 默认会定期检查更新。您也可以在"关于"页面手动检查更新。
+VwordAi 默认会定期检查更新。您也可以在"关于"页面手动检查更新。
 
 ## 常见问题
 
-**问：VwordAI 是否免费使用？**  
-答：VwordAI 软件本身是免费的，但您需要使用自己的第三方服务提供商密钥。各服务提供商可能会对其 API 使用收费。
+**问：VwordAi 是否免费使用？**  
+答：VwordAi 软件本身是免费的，但您需要使用自己的第三方服务提供商密钥。各服务提供商可能会对其 API 使用收费。
 
 ## 贡献指南
 
-我们欢迎并感谢任何形式的贡献！如果您希望参与改进 VwordAI，可以通过以下方式：
+我们欢迎并感谢任何形式的贡献！如果您希望参与改进 VwordAi，可以通过以下方式：
 
 1. 提交 Issue 报告问题或建议新功能
 2. 提交 Pull Request 贡献代码
@@ -90,4 +90,4 @@ VwordAI 默认会定期检查更新。您也可以在"关于"页面手动检查�
 
 ## 许可证
 
-VwordAI 使用 [GPLv3 许可证](LICENSE)。
+VwordAi 使用 [GPLv3 许可证](LICENSE)。

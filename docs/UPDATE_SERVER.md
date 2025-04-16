@@ -1,10 +1,10 @@
-# 文声AI (VwordAI) 自动更新系统 - 基于 electron-updater
+# 文声AI (VwordAi) 自动更新系统 - 基于 electron-updater
 
-本文档提供了如何使用 electron-updater 设置和配置 VwordAI 的自动更新系统的详细指南。
+本文档提供了如何使用 electron-updater 设置和配置 VwordAi 的自动更新系统的详细指南。
 
 ## 概述
 
-VwordAI 的自动更新系统使用 electron-updater 库，支持以下功能：
+VwordAi 的自动更新系统使用 electron-updater 库，支持以下功能：
 
 1. **自动检查更新** - 应用程序会定期检查是否有新版本可用
 2. **自动下载更新** - 用户确认后，更新会在后台下载
@@ -35,7 +35,7 @@ npm install electron-updater electron-log --save
 {
   "build": {
     "appId": "com.vwordai",
-    "productName": "VwordAI",
+    "productName": "VwordAi",
     "publish": [
       {
         "provider": "github",
@@ -248,9 +248,9 @@ removeUpdateListener: () => {
        latest-linux.yml  # Linux更新信息
        latest.yml        # Windows更新信息
      /v1.0.0/
-       VwordAI-1.0.0.dmg
-       VwordAI-1.0.0.AppImage
-       VwordAI-Setup-1.0.0.exe
+       VwordAi-1.0.0.dmg
+       VwordAi-1.0.0.AppImage
+       VwordAi-Setup-1.0.0.exe
    ```
 
 3. **发布更新**:
@@ -310,4 +310,4 @@ removeUpdateListener: () => {
 
 ## 结论
 
-使用 electron-updater 实现的自动更新系统大大简化了应用程序的更新流程，提高了用户体验。通过合理配置和持续维护，可以确保用户始终使用最新版本的 VwordAI 应用程序。 
+使用 electron-updater 实现的自动更新系统大大简化了应用程序的更新流程，提高了用户体验。通过合理配置和持续维护，可以确保用户始终使用最新版本的 VwordAi 应用程序。 
