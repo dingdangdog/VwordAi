@@ -3,7 +3,9 @@ const { contextBridge, ipcRenderer } = require("electron");
 // 系统API
 contextBridge.exposeInMainWorld("electron", {
   // 文件系统相关
-  selectFolder: () => ipcRenderer.invoke("select-folder"),
+  selectFolder: async () => {
+    return await ipcRenderer.invoke("select-folder");
+  },
   openFolder: (dir) => ipcRenderer.invoke("open-folder", dir),
   openFile: () => ipcRenderer.invoke("open-file"),
 
@@ -16,6 +18,21 @@ contextBridge.exposeInMainWorld("electron", {
 
   // 主进程通用通信API
   invoke: (channel, ...args) => ipcRenderer.invoke(channel, ...args),
+
+  // 获取媒体URL
+  getMediaUrl: async (filePath) => {
+    return await ipcRenderer.invoke("get-media-url", filePath);
+  },
+
+  // 检查更新
+  checkForUpdates: async () => {
+    return await ipcRenderer.invoke("check-updates");
+  },
+
+  // 下载和安装更新
+  downloadUpdate: async (updateInfo) => {
+    return await ipcRenderer.invoke("download-update", updateInfo);
+  }
 });
 
 // 业务API

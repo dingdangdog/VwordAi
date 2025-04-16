@@ -1,18 +1,29 @@
-interface ElectronAPI {
+/**
+ * Electron API 类型定义
+ * 这个文件定义了Electron暴露给渲染进程的API
+ */
+
+export interface ElectronAPI {
+  // 窗口控制
+  closeApp: () => void;
+  minimizeApp: () => void;
+  maximizeApp: () => void;
+  
   // 文件系统相关
   selectFolder: () => Promise<string>;
-  openFolder: (dir: string) => Promise<void>;
+  openFolder: (dir: string) => Promise<any>;
   openFile: () => Promise<string>;
   
-  // 窗口控制
-  isMaximized: () => Promise<boolean>;
-  minimize: () => void;
-  maximize: () => void;
-  close: () => void;
-  restoreWindow: () => void;
-  
-  // 主进程通用通信API
+  // 数据处理
   invoke: (channel: string, ...args: any[]) => Promise<any>;
+  dataHandler: (functionName: string, args: any[]) => Promise<any>;
+  
+  // 媒体URL
+  getMediaUrl: (filePath: string) => Promise<string>;
+  
+  // 更新相关
+  checkForUpdates: () => Promise<any>;
+  downloadUpdate: (updateInfo: any) => Promise<any>;
 }
 
 interface ApiInterface {
@@ -67,7 +78,9 @@ interface ApiInterface {
   };
 }
 
-declare interface Window {
-  electron: ElectronAPI;
-  api: ApiInterface;
+declare global {
+  interface Window {
+    electron: ElectronAPI;
+    api: ApiInterface;
+  }
 } 

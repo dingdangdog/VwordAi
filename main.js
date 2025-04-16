@@ -5,6 +5,8 @@ const chardet = require("chardet");
 const iconv = require("iconv-lite");
 const fs = require("fs");
 const { error, success } = require("./server/util.js");
+const https = require("https");
+const http = require("http");
 
 require("dotenv").config(); // Load environment variables from .env file
 
@@ -229,5 +231,85 @@ ipcMain.handle("open-file", async () => {
 
     // Send file content to renderer
     return content;
+  }
+});
+
+// 检查更新
+ipcMain.handle("check-updates", async (event, currentVersion) => {
+  try {
+    const appInfo = JSON.parse(fs.readFileSync(path.join(__dirname, "package.json"), "utf8"));
+    const appVersion = appInfo.version || "1.0.0";
+    
+    // 这里应该调用您的更新服务器API
+    // 以下是一个模拟实现，实际应用中应该连接到真实的更新服务器
+    
+    // 如果您有真实的更新服务器，取消注释以下代码并进行修改
+    /*
+    const updateUrl = "https://api.example.com/vwordai/check-update";
+    const response = await new Promise((resolve, reject) => {
+      const req = https.request(
+        updateUrl,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        },
+        (res) => {
+          let data = "";
+          res.on("data", (chunk) => {
+            data += chunk;
+          });
+          res.on("end", () => {
+            try {
+              resolve(JSON.parse(data));
+            } catch (e) {
+              reject(e);
+            }
+          });
+        }
+      );
+      
+      req.on("error", reject);
+      req.write(JSON.stringify({
+        currentVersion: appVersion,
+        platform: process.platform,
+        appId: "vwordai"
+      }));
+      req.end();
+    });
+    
+    return response;
+    */
+    
+    // 模拟更新检查结果 - 仅用于开发测试
+    // 实际生产环境应该连接到实际更新服务器
+    const mockResponse = {
+      version: "1.1.0", // 模拟有新版本
+      releaseDate: "2024年7月15日",
+      downloadUrl: "https://example.com/downloads/vwordai-1.1.0.exe",
+      releaseNotes: "**新功能**\n- 增加批量导出功能\n- 支持更多语音服务\n\n**修复**\n- 修复界面显示问题\n- 提高转换速度",
+    };
+    
+    return mockResponse;
+  } catch (err) {
+    console.error("检查更新失败:", err);
+    return { error: err.message || "检查更新失败" };
+  }
+});
+
+// 下载和安装更新
+ipcMain.handle("download-update", async (event, updateInfo) => {
+  try {
+    // 在实际应用中，这里应该下载并安装更新
+    // 以下是打开下载链接的简单实现
+    // 如果您需要自动更新，可以考虑使用 electron-updater 等库
+    
+    shell.openExternal(updateInfo.downloadUrl);
+    
+    return { success: true, message: "已打开下载页面" };
+  } catch (err) {
+    console.error("下载更新失败:", err);
+    return { success: false, error: err.message || "下载更新失败" };
   }
 });
