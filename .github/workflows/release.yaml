@@ -116,7 +116,7 @@ jobs:
           tag_name: ${{ github.event.inputs.target }}
           append_body: true
           # VwordAi-2.0.0-arm64.dmg
-          files: build/VwordAi-${{ github.event.inputs.target }}-arm64.dmg
+          files: package/VwordAi-${{ github.event.inputs.target }}-arm64.dmg
 
       - name: Linux Release
         uses: softprops/action-gh-release@v2
@@ -126,10 +126,10 @@ jobs:
           name: 🎉Release ${{ github.event.inputs.target }}
           tag_name: ${{ github.event.inputs.target }}
           append_body: true
-          # vwordai_2.0.0_amd64.deb/VwordAi-2.0.0.AppImage
+          # VwordAi_2.0.0_amd64.deb/VwordAi-2.0.0.AppImage
           files: |
-            build/vwordai_${{ github.event.inputs.target }}_amd64.deb
-            build/VwordAi-${{ github.event.inputs.target }}.AppImage
+            package/VwordAi_${{ github.event.inputs.target }}_amd64.deb
+            package/VwordAi-${{ github.event.inputs.target }}.AppImage
 
       - name: Windows Release
         uses: softprops/action-gh-release@v2
@@ -141,4 +141,4 @@ jobs:
           tag_name: ${{ github.event.inputs.target }}
           append_body: true
           # VwordAi Setup 2.0.0.exe
-          files: build/VwordAi-Setup-${{ github.event.inputs.target }}.exe
+          files: package/VwordAi-Setup-${{ github.event.inputs.target }}.exe
