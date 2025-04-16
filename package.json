@@ -56,7 +56,7 @@
       "target": [
         "nsis"
       ],
-      "icon": "ui/public/logo.ico",
+      "icon": "ui/public/icon_256.ico",
       "artifactName": "${productName}-Setup-${version}.${ext}"
     },
     "nsis": {
