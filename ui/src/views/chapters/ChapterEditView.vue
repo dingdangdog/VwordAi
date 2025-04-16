@@ -200,7 +200,7 @@ import { useRoute, useRouter } from "vue-router";
 import { useProjectsStore } from "@/stores/projects";
 import { useToast } from "vue-toastification";
 import type { VoiceSettings } from "@/types";
-import { SUPPORTED_PROVIDERS } from "@/services/tts";
+import { SUPPORTED_PROVIDERS } from "@/stores/settings";
 
 const route = useRoute();
 const router = useRouter();
