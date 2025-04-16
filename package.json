@@ -46,7 +46,7 @@
       "target": [
         "nsis"
       ],
-      "icon": "ui/public/favicon.ico"
+      "icon": "ui/public/logo.ico"
     }
   },
   "dependencies": {
