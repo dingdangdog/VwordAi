@@ -6,6 +6,7 @@ const path = require("path");
 const os = require("os");
 const storage = require("../utils/storage");
 const { success, error } = require("../utils/result");
+const fs = require("fs-extra");
 
 // 设置存储键
 const SETTINGS_KEY = "settings";
@@ -44,6 +45,7 @@ const DEFAULT_SETTINGS = {
   maxConcurrentTasks: 2,
   fileNamingRule: "chapter_title",
   customNamingFormat: "{project}-{chapter}",
+  outputFormat: "mp3",
 };
 
 /**
@@ -92,6 +94,23 @@ class Settings {
       // 保存合并后的设置
       storage.saveConfig(SETTINGS_KEY, updatedSettings);
       console.log("Settings saved");
+
+      // 尝试导出一份配置到应用安装目录，以便在应用升级时保留设置
+      try {
+        const configDir = storage.getConfigPath();
+        console.log(`Current config dir: ${configDir}`);
+
+        // 写入配置文件
+        fs.writeFileSync(
+          path.join(configDir, "settings_backup.json"),
+          JSON.stringify(updatedSettings, null, 2),
+          "utf-8"
+        );
+        console.log("Backup settings saved");
+      } catch (backupErr) {
+        console.error("Failed to save backup settings:", backupErr);
+        // 备份失败不影响主流程
+      }
 
       return success(updatedSettings);
     } catch (err) {

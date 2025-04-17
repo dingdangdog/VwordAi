@@ -109,7 +109,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, watchEffect } from "vue";
+import { ref, reactive, watchEffect, onMounted } from "vue";
 import { useToast } from "vue-toastification";
 
 const props = defineProps({
@@ -142,6 +142,11 @@ watchEffect(() => {
   }
 });
 
+// 组件挂载时记录当前配置
+onMounted(() => {
+  console.log("AzureProviderForm mounted with provider:", props.provider);
+});
+
 // 保存表单
 async function saveForm() {
   if (!form.key) {
@@ -163,8 +168,16 @@ async function saveForm() {
       endpoint: form.endpoint,
     };
 
+    console.log("Saving Azure provider data:", JSON.stringify(data, null, 2));
+
     // 通知父组件更新
     emit("save", data);
+
+    // 检查并输出表单状态日志，帮助调试
+    setTimeout(() => {
+      console.log("Form state after save:", JSON.stringify(form, null, 2));
+      console.log("Props after save:", JSON.stringify(props.provider, null, 2));
+    }, 1000);
   } catch (error) {
     console.error("保存 Azure 配置失败:", error);
     toast.error(

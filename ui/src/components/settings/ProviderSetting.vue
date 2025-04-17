@@ -169,7 +169,7 @@ function updateProviderField(field: string, value: any) {
 }
 
 // 保存当前服务商配置
-async function saveCurrentProvider() {
+async function saveCurrentProvider(data?: Record<string, any>) {
   if (!selectedProviderType.value) {
     toast.warning("请先选择一个服务商");
     return;
@@ -178,17 +178,47 @@ async function saveCurrentProvider() {
   isLoading.value = true;
   try {
     const type = selectedProviderType.value;
-    const data = { ...providerData.value };
+    console.log(
+      `Saving provider ${type} config:`,
+      JSON.stringify(data || providerData.value, null, 2)
+    );
+
+    // 使用传入的数据或当前数据
+    const providerConfig = data || { ...providerData.value };
 
     // 通过设置存储保存服务商配置
-    const success = await settingsStore.updateServiceProvider(type, data);
+    const success = await settingsStore.updateServiceProvider(
+      type,
+      providerConfig
+    );
 
     if (success) {
+      // 更新本地状态以反映保存的配置
+      providerData.value = { ...providerConfig };
       toast.success("服务商配置保存成功");
+
+      console.log(`Provider ${type} config saved successfully`);
+      console.log(
+        `Current provider data:`,
+        JSON.stringify(providerData.value, null, 2)
+      );
+
+      // 为了确保数据被正确保存，重新加载一次设置
+      setTimeout(async () => {
+        await settingsStore.loadSettings();
+        // 检查是否正确保存
+        const savedConfig = settingsStore.getServiceProviderConfig(type);
+        console.log(
+          `Reloaded provider ${type} config:`,
+          JSON.stringify(savedConfig, null, 2)
+        );
+      }, 1000);
     } else {
+      console.error(`Failed to save provider ${type} config`);
       toast.error("保存失败: 未知错误");
     }
   } catch (error) {
+    console.error("Save provider config error:", error);
     toast.error(
       `保存失败: ${error instanceof Error ? error.message : "未知错误"}`
     );

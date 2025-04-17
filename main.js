@@ -25,12 +25,17 @@ autoUpdater.setFeedURL({
 require("dotenv").config(); // Load environment variables from .env file
 
 if (process.env.NODE_ENV === "development") {
-  // const devPath = path.join(__dirname, "config");
+  console.log("Running in development mode");
   console.log("__dirname:", __dirname);
-  handler.setBaseDir(__dirname);
+  // Always use userData path to ensure settings persistence
+  const userDataPath = app.getPath("userData");
+  console.log("User data path:", userDataPath);
+  handler.setBaseDir(userDataPath);
 } else {
-  const defaultPath = app.getPath("userData");
-  handler.setBaseDir(defaultPath);
+  console.log("Running in production mode");
+  const userDataPath = app.getPath("userData");
+  console.log("User data path:", userDataPath);
+  handler.setBaseDir(userDataPath);
 }
 
 let win;
