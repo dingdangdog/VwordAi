@@ -19,7 +19,7 @@ autoUpdater.setFeedURL({
   provider: "github",
   owner: "dingdangdog",
   repo: "vwordai",
-  releaseType: "release"
+  releaseType: "release",
 });
 
 require("dotenv").config(); // Load environment variables from .env file

@@ -199,7 +199,7 @@ export const useSettingsStore = defineStore("settings", () => {
       // Update on backend
       const partialSettings: Partial<Settings> = {};
       partialSettings[type] = config;
-
+      // console.log("partialSettings", partialSettings);
       const response = await settingsApi.update(partialSettings);
       return response.success;
     } catch (error) {

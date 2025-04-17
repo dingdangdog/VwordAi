@@ -55,9 +55,9 @@ class Settings {
    * @returns {Object} 所有设置
    */
   static getAllSettings() {
-    console.log("正在读取所有设置...");
+    console.log("Reading all settings...");
     const settings = storage.readConfig(SETTINGS_KEY, {});
-    console.log("读取的设置:", JSON.stringify(settings, null, 2));
+    console.log("Read settings Successfully");
     const mergedSettings = { ...DEFAULT_SETTINGS, ...settings };
     return mergedSettings;
   }
@@ -84,18 +84,18 @@ class Settings {
    */
   static updateSettings(settingsData) {
     try {
-      console.log("更新设置:", JSON.stringify(settingsData, null, 2));
+      console.log("Update Settings:", JSON.stringify(settingsData, null, 2));
       // 获取当前设置并合并新设置
       const currentSettings = this.getAllSettings();
       const updatedSettings = { ...currentSettings, ...settingsData };
 
       // 保存合并后的设置
       storage.saveConfig(SETTINGS_KEY, updatedSettings);
-      console.log("设置已保存");
+      console.log("Settings saved");
 
       return success(updatedSettings);
     } catch (err) {
-      console.error("更新设置失败:", err);
+      console.error("Update settings failed:", err);
       return error(err.message);
     }
   }
@@ -109,7 +109,7 @@ class Settings {
       storage.saveConfig(SETTINGS_KEY, DEFAULT_SETTINGS);
       return success(DEFAULT_SETTINGS);
     } catch (err) {
-      console.error("重置设置失败:", err);
+      console.error("Reset settings failed:", err);
       return error(err.message);
     }
   }
@@ -136,7 +136,7 @@ class Settings {
       storage.saveConfig(SETTINGS_KEY, settings);
       return success({ path });
     } catch (err) {
-      console.error("设置导出路径失败:", err);
+      console.error("Set export path failed:", err);
       return error(err.message);
     }
   }
@@ -148,12 +148,12 @@ class Settings {
    */
   static getProviderSettings(provider) {
     try {
-      console.log(`获取服务商 ${provider} 的配置`);
+      console.log(`Get provider ${provider} settings`);
       const settings = this.getAllSettings();
 
       // 确保provider字段存在
       if (!settings[provider] && DEFAULT_SETTINGS[provider]) {
-        console.log(`服务商 ${provider} 的配置不存在，使用默认配置`);
+        console.log(`Provider ${provider} settings not found, using default`);
         return success({
           provider,
           settings: DEFAULT_SETTINGS[provider],
@@ -162,7 +162,7 @@ class Settings {
 
       const providerSettings = settings[provider] || {};
       console.log(
-        `服务商 ${provider} 的配置:`,
+        `Provider ${provider} settings:`,
         JSON.stringify(providerSettings, null, 2)
       );
 
@@ -171,7 +171,7 @@ class Settings {
         settings: providerSettings,
       });
     } catch (err) {
-      console.error(`获取${provider}配置失败:`, err);
+      console.error(`Get ${provider} settings failed:`, err);
       return error(err.message);
     }
   }
@@ -185,14 +185,14 @@ class Settings {
   static updateProviderSettings(provider, providerData) {
     try {
       console.log(
-        `更新服务商 ${provider} 的配置:`,
+        `Update provider ${provider} settings:`,
         JSON.stringify(providerData, null, 2)
       );
       const settings = this.getAllSettings();
 
       // 确保provider字段存在
       if (!settings[provider]) {
-        console.log(`服务商 ${provider} 的配置不存在，创建新配置`);
+        console.log(`Provider ${provider} settings not found, creating new`);
         settings[provider] = DEFAULT_SETTINGS[provider] || {};
       }
 
@@ -201,7 +201,7 @@ class Settings {
 
       // 保存并记录配置
       console.log(
-        `保存服务商 ${provider} 的配置:`,
+        `Save provider ${provider} settings:`,
         JSON.stringify(settings[provider], null, 2)
       );
       storage.saveConfig(SETTINGS_KEY, settings);
@@ -211,7 +211,7 @@ class Settings {
         settings: settings[provider],
       });
     } catch (err) {
-      console.error(`更新${provider}配置失败:`, err);
+      console.error(`Update ${provider} settings failed:`, err);
       return error(err.message);
     }
   }
@@ -223,29 +223,16 @@ class Settings {
    */
   static testProviderConnection(provider) {
     try {
-      console.log(`测试服务商 ${provider} 的连接`);
-      console.log(`检查配置文件路径: ${storage.getConfigPath()}`);
+      console.log(`Test provider ${provider} connection`);
 
-      // 验证配置文件是否存在
-      const configFilePath = path.join(storage.getConfigPath(), "vwordai.json");
-      console.log(`配置文件路径: ${configFilePath}`);
-      console.log(
-        `配置文件是否存在: ${require("fs").existsSync(configFilePath)}`
-      );
-
-      // 读取并记录所有设置
+      // 读取设置
       const settings = this.getAllSettings();
-      console.log(`所有设置:`, JSON.stringify(settings, null, 2));
 
       // 检查服务商配置
       const providerSettings = settings[provider];
-      console.log(
-        `服务商 ${provider} 的配置:`,
-        JSON.stringify(providerSettings, null, 2)
-      );
 
       if (!providerSettings) {
-        console.error(`服务商 ${provider} 配置不存在!`);
+        console.error(`Provider ${provider} not found`);
         return error(`服务商 ${provider} 配置不存在`);
       }
 
@@ -284,18 +271,20 @@ class Settings {
 
       if (!isValid) {
         console.log(
-          `服务商 ${provider} 配置不完整，缺少: ${missingFields.join(", ")}`
+          `Provider ${provider} settings incomplete, missing: ${missingFields.join(
+            ", "
+          )}`
         );
         return error(`服务商配置不完整，缺少: ${missingFields.join(", ")}`);
       }
 
       // 如果配置有效，返回成功
-      console.log(`服务商 ${provider} 配置有效`);
+      console.log(`Provider ${provider} settings valid`);
       return success({
         message: `${provider} 配置有效`,
       });
     } catch (err) {
-      console.error(`测试${provider}连接失败:`, err);
+      console.error(`Test ${provider} connection failed:`, err);
       return error(err.message);
     }
   }

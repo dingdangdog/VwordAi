@@ -72,14 +72,14 @@
         >
           取消
         </button> -->
-        <button
+        <!-- <button
           type="button"
           class="btn btn-secondary"
           @click="testConnection"
           :disabled="isTesting"
         >
           {{ isTesting ? "测试中..." : "测试连接" }}
-        </button>
+        </button> -->
         <button type="submit" class="btn btn-primary" :disabled="isSaving">
           {{ isSaving ? "保存中..." : "保存配置" }}
         </button>

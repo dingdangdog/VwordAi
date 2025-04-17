@@ -59,7 +59,7 @@
       </div>
 
       <div class="flex justify-end space-x-2 mt-6">
-        <button
+        <!-- <button
           type="button"
           class="btn btn-secondary"
           @click="$emit('cancel')"
@@ -73,7 +73,7 @@
           :disabled="isTesting"
         >
           {{ isTesting ? "测试中..." : "测试连接" }}
-        </button>
+        </button> -->
         <button type="submit" class="btn btn-primary" :disabled="isSaving">
           {{ isSaving ? "保存中..." : "保存配置" }}
         </button>
