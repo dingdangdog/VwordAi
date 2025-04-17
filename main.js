@@ -5,8 +5,6 @@ const chardet = require("chardet");
 const iconv = require("iconv-lite");
 const fs = require("fs");
 const { error, success } = require("./server/util.js");
-const https = require("https");
-const http = require("http");
 const { autoUpdater } = require("electron-updater");
 const log = require("electron-log");
 
@@ -58,9 +56,11 @@ function createWindow() {
   if (process.env.NODE_ENV === "development") {
     win.loadURL("http://localhost:5173/");
   } else {
-    win.loadFile(path.join(__dirname, "ui/dist/index.html"));
+    win.loadFile(path.join(__dirname, "ui/index.html"));
   }
   win.webContents.on("did-finish-load", () => {
+    // 打开开发者工具
+    win.webContents.openDevTools({ mode: "detach" });
     if (process.env.NODE_ENV === "development") {
       console.log("process.env.NODE_ENV", process.env.NODE_ENV);
       // 打开开发者工具

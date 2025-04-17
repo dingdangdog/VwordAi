@@ -26,8 +26,13 @@
       "main.js",
       "preload.js",
       "handler.js",
-      "server/**",
-      "ui/dist/**"
+      "server/**"
+    ],
+    "extraResources": [
+      {
+        "from": "ui/dist/",
+        "to": "app/ui/"
+      }
     ],
     "publish": [
       {
