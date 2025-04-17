@@ -15,9 +15,9 @@
       </p>
 
       <div
-        class="max-w-md w-full bg-gray-50 dark:bg-gray-800 rounded-lg p-4 mb-6"
+        class="max-w-md w-full bg-gray-50 dark:bg-gray-700 rounded-lg p-4 mb-6"
       >
-        <h3 class="font-medium text-gray-900 dark:text-white mb-2">软件信息</h3>
+        <h3 class="font-medium text-gray-900 dark:text-white mb-2 border-b text-center border-gray-200 dark:border-gray-600">软件信息</h3>
         <div class="space-y-2 text-sm">
           <div class="flex justify-between">
             <span class="text-gray-500 dark:text-gray-400">版本</span>
@@ -154,7 +154,7 @@
         </div>
         <div class="flex justify-center space-x-2 mt-4 px-2 pb-4">
           <button class="btn btn-secondary" @click="copyDebugInfo">
-            复制调试信息
+            复制系统信息
           </button>
           <button class="btn btn-primary" @click="refreshDebugInfo">
             刷新
@@ -382,11 +382,11 @@ async function openDebugPanel() {
   await refreshDebugInfo();
 }
 
-// 刷新调试信息
+// 刷新系统信息
 async function refreshDebugInfo() {
   try {
     if (window.electron) {
-      // 获取应用调试信息
+      // 获取应用系统信息
       const appInfo = await window.electron.getAppInfo();
       appDebugInfo.value = JSON.stringify(appInfo, null, 2);
 
@@ -421,12 +421,12 @@ async function refreshDebugInfo() {
       );
     }
   } catch (error) {
-    console.error("获取调试信息失败:", error);
-    toast.error("获取调试信息失败");
+    console.error("获取系统信息失败:", error);
+    toast.error("获取系统信息失败");
   }
 }
 
-// 复制调试信息
+// 复制系统信息
 function copyDebugInfo() {
   const allInfo = `
 应用信息:
@@ -442,7 +442,7 @@ ${systemInfo.value}
   navigator.clipboard
     .writeText(allInfo)
     .then(() => {
-      toast.success("调试信息已复制到剪贴板");
+      toast.success("系统信息已复制到剪贴板");
     })
     .catch((err) => {
       console.error("复制失败:", err);
