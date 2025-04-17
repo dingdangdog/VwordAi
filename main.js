@@ -4,7 +4,7 @@ const handler = require("./handler.js"); // 函数封装在handler.js中
 const chardet = require("chardet");
 const iconv = require("iconv-lite");
 const fs = require("fs");
-const { error, success } = require("./server/util.js");
+const { error, success } = require("./server/utils/result");
 const { autoUpdater } = require("electron-updater");
 const log = require("electron-log");
 
@@ -24,18 +24,16 @@ autoUpdater.setFeedURL({
 
 require("dotenv").config(); // Load environment variables from .env file
 
+// 设置应用程序基础目录
+const userDataPath = app.getPath("userData");
+console.log("User data path:", userDataPath);
+handler.setBaseDir(userDataPath);
+
 if (process.env.NODE_ENV === "development") {
   console.log("Running in development mode");
   console.log("__dirname:", __dirname);
-  // Always use userData path to ensure settings persistence
-  const userDataPath = app.getPath("userData");
-  console.log("User data path:", userDataPath);
-  handler.setBaseDir(userDataPath);
 } else {
   console.log("Running in production mode");
-  const userDataPath = app.getPath("userData");
-  console.log("User data path:", userDataPath);
-  handler.setBaseDir(userDataPath);
 }
 
 let win;
@@ -139,10 +137,10 @@ app.whenReady().then(async () => {
 
   // 尝试加载server/util.js文件
   try {
-    const serverUtil = require("./server/util.js");
-    console.log("server/util.js loaded successfully");
+    const serverUtil = require("./server/utils/result.js");
+    console.log("server/utils/result.js loaded successfully");
   } catch (err) {
-    console.error("Failed to load server/util.js:", err);
+    console.error("Failed to load server/utils/result.js:", err);
   }
 
   createWindow();
