@@ -62,6 +62,7 @@
         <button class="btn flex space-x-1 dark:text-white" @click="openGithub">
           <GithubIcon class="w-7 h-7" />
         </button>
+        <button class="btn btn-warning" @click="openDebugPanel">调试</button>
       </div>
     </div>
 
@@ -82,11 +83,82 @@
       @download="handleDownloadUpdate"
       @install="handleInstallUpdate"
     />
+
+    <!-- 调试对话框 -->
+    <div
+      v-if="showDebugPanel"
+      class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50"
+    >
+      <div
+        class="bg-white dark:bg-gray-800 rounded-lg shadow-lg w-11/12 max-w-4xl max-h-[80vh] overflow-auto"
+      >
+        <div
+          class="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center"
+        >
+          <h3 class="text-lg font-medium text-gray-900 dark:text-white">
+            应用调试面板
+          </h3>
+          <button
+            @click="showDebugPanel = false"
+            class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+          >
+            <svg
+              class="w-5 h-5"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M6 18L18 6M6 6l12 12"
+              ></path>
+            </svg>
+          </button>
+        </div>
+        <div class="p-4 max-h-[65vh] overflow-auto">
+          <div class="mb-4">
+            <h4 class="font-medium text-gray-900 dark:text-white mb-2">
+              应用信息
+            </h4>
+            <div class="bg-gray-100 dark:bg-gray-700 p-2 rounded">
+              <pre class="whitespace-pre-wrap text-sm">{{ appDebugInfo }}</pre>
+            </div>
+          </div>
+          <div class="mb-4">
+            <h4 class="font-medium text-gray-900 dark:text-white mb-2">
+              存储路径
+            </h4>
+            <div class="bg-gray-100 dark:bg-gray-700 p-2 rounded">
+              <pre class="whitespace-pre-wrap text-sm">{{ storagePaths }}</pre>
+            </div>
+          </div>
+          <div class="mb-4">
+            <h4 class="font-medium text-gray-900 dark:text-white mb-2">
+              系统环境
+            </h4>
+            <div class="bg-gray-100 dark:bg-gray-700 p-2 rounded">
+              <pre class="whitespace-pre-wrap text-sm">{{ systemInfo }}</pre>
+            </div>
+          </div>
+        </div>
+        <div class="flex justify-center space-x-2 mt-4 px-2 pb-4">
+          <button class="btn btn-secondary" @click="copyDebugInfo">
+            复制调试信息
+          </button>
+          <button class="btn btn-primary" @click="refreshDebugInfo">
+            刷新
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from "vue";
+import { ref, onMounted, onUnmounted, computed } from "vue";
 import { useToast } from "vue-toastification";
 import GithubIcon from "@/components/icon/github.vue";
 import { appConfig } from "@/stores/appConfig";
@@ -117,6 +189,12 @@ const downloadProgress = ref(0);
 const downloadState = ref<"idle" | "downloading" | "downloaded" | "error">(
   "idle"
 );
+
+// 调试面板相关
+const showDebugPanel = ref(false);
+const appDebugInfo = ref("");
+const storagePaths = ref("");
+const systemInfo = ref("");
 
 // 组件挂载时检查是否需要自动更新
 onMounted(() => {
@@ -288,5 +366,79 @@ async function handleInstallUpdate() {
     );
     console.error("安装更新失败:", error);
   }
+}
+
+// 打开调试面板
+async function openDebugPanel() {
+  showDebugPanel.value = true;
+  await refreshDebugInfo();
+}
+
+// 刷新调试信息
+async function refreshDebugInfo() {
+  try {
+    if (window.electron) {
+      // 获取应用调试信息
+      const appInfo = await window.electron.getAppInfo();
+      appDebugInfo.value = JSON.stringify(appInfo, null, 2);
+
+      // 获取存储路径信息
+      const paths = await window.electron.getStoragePaths();
+      storagePaths.value = JSON.stringify(paths, null, 2);
+
+      // 获取系统信息
+      const sysInfo = await window.electron.getSystemInfo();
+      systemInfo.value = JSON.stringify(sysInfo, null, 2);
+    } else {
+      appDebugInfo.value = JSON.stringify(
+        {
+          version: appConfig.version,
+          environment: "Web环境",
+          buildDate: appConfig.releaseDate,
+        },
+        null,
+        2
+      );
+
+      storagePaths.value = "Web环境无法获取存储路径";
+
+      systemInfo.value = JSON.stringify(
+        {
+          platform: platform.value,
+          userAgent: navigator.userAgent,
+          language: navigator.language,
+        },
+        null,
+        2
+      );
+    }
+  } catch (error) {
+    console.error("获取调试信息失败:", error);
+    toast.error("获取调试信息失败");
+  }
+}
+
+// 复制调试信息
+function copyDebugInfo() {
+  const allInfo = `
+应用信息:
+${appDebugInfo.value}
+
+存储路径:
+${storagePaths.value}
+
+系统环境:
+${systemInfo.value}
+`;
+
+  navigator.clipboard
+    .writeText(allInfo)
+    .then(() => {
+      toast.success("调试信息已复制到剪贴板");
+    })
+    .catch((err) => {
+      console.error("复制失败:", err);
+      toast.error("复制失败");
+    });
 }
 </script>

@@ -49,6 +49,19 @@ contextBridge.exposeInMainWorld("electron", {
   // 移除更新消息监听
   removeUpdateListener: () => {
     ipcRenderer.removeAllListeners('update-message');
+  },
+  
+  // 调试相关API
+  getAppInfo: async () => {
+    return await ipcRenderer.invoke("get-app-info");
+  },
+  
+  getStoragePaths: async () => {
+    return await ipcRenderer.invoke("get-storage-paths");
+  },
+  
+  getSystemInfo: async () => {
+    return await ipcRenderer.invoke("get-system-info");
   }
 });
 

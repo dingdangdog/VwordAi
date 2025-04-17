@@ -27,6 +27,11 @@ export interface ElectronAPI {
   installUpdate: () => Promise<any>;
   onUpdateMessage: (callback: (data: any) => void) => void;
   removeUpdateListener: () => void;
+  
+  // 调试相关
+  getAppInfo: () => Promise<any>;
+  getStoragePaths: () => Promise<any>;
+  getSystemInfo: () => Promise<any>;
 }
 
 interface ApiInterface {

@@ -7,6 +7,8 @@ const fs = require("fs");
 const { error, success } = require("./server/utils/result");
 const { autoUpdater } = require("electron-updater");
 const log = require("electron-log");
+const os = require("os");
+const storage = require("./server/utils/storage");
 
 // 配置日志
 log.transports.file.level = "debug";
@@ -72,8 +74,6 @@ function createWindow() {
   }
 
   win.webContents.on("did-finish-load", () => {
-    // 打开开发者工具
-    win.webContents.openDevTools({ mode: "detach" });
     if (process.env.NODE_ENV === "development") {
       console.log("process.env.NODE_ENV", process.env.NODE_ENV);
       // 打开开发者工具
@@ -145,6 +145,7 @@ app.whenReady().then(async () => {
 
   createWindow();
   setupAutoUpdater();
+  setupDebugHandlers(); // 设置调试相关的IPC处理器
 
   // 在开发环境下不检查更新
   if (process.env.NODE_ENV !== "development") {
@@ -346,3 +347,55 @@ ipcMain.handle("install-update", async () => {
     return { success: false, error: err.message || "Install update failed" };
   }
 });
+
+// 设置调试相关的IPC处理器
+function setupDebugHandlers() {
+  // 获取应用信息
+  ipcMain.handle("get-app-info", () => {
+    return {
+      version: app.getVersion(),
+      name: app.getName(),
+      appPath: app.getAppPath(),
+      locale: app.getLocale(),
+      isPackaged: app.isPackaged,
+      electron: process.versions.electron,
+      node: process.versions.node,
+      chrome: process.versions.chrome,
+      v8: process.versions.v8,
+      buildDate: new Date().toISOString(),
+      processEnv: process.env.NODE_ENV || "production"
+    };
+  });
+
+  // 获取存储路径信息
+  ipcMain.handle("get-storage-paths", () => {
+    const userDataPath = app.getPath("userData");
+    return {
+      userDataPath: userDataPath,
+      storagePath: storage.getStoragePath(),
+      configPath: storage.getConfigPath(),
+      tempPath: app.getPath("temp"),
+      documentsPath: app.getPath("documents"),
+      downloadsPath: app.getPath("downloads"),
+      appPath: app.getAppPath(),
+      exePath: app.getPath("exe"),
+    };
+  });
+
+  // 获取系统信息
+  ipcMain.handle("get-system-info", () => {
+    return {
+      platform: process.platform,
+      arch: process.arch,
+      osVersion: os.version(),
+      osRelease: os.release(),
+      hostname: os.hostname(),
+      userInfo: os.userInfo().username,
+      cpus: os.cpus().length,
+      totalMemory: Math.round(os.totalmem() / (1024 * 1024 * 1024)) + "GB",
+      freeMemory: Math.round(os.freemem() / (1024 * 1024 * 1024)) + "GB",
+      uptime: Math.round(os.uptime() / 3600) + "小时",
+      loadAvg: os.loadavg(),
+    };
+  });
+}
