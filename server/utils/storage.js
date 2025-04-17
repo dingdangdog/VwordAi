@@ -36,21 +36,9 @@ function setBaseDir(dir) {
     fs.writeFileSync(configFilePath, JSON.stringify({}, null, 2), "utf-8");
   } else {
     try {
-      // 尝试读取配置文件
+      // 尝试读取配置文件以验证格式
       const configData = fs.readFileSync(configFilePath, "utf-8");
-      const configObj = JSON.parse(configData);
-
-      // 处理旧版本配置格式：如果存在settings顶级键，则将其内容提取到顶层
-      if (configObj.settings && typeof configObj.settings === "object") {
-        const updatedConfig = { ...configObj, ...configObj.settings };
-        delete updatedConfig.settings; // 删除settings顶层键
-        fs.writeFileSync(
-          configFilePath,
-          JSON.stringify(updatedConfig, null, 2),
-          "utf-8"
-        );
-        console.log("Updated configuration format from old structure");
-      }
+      JSON.parse(configData);
     } catch (error) {
       console.error(`Config file error:`, error);
       // 如果配置文件损坏，重新创建
@@ -139,6 +127,7 @@ function saveConfig(key, value) {
     }
   }
 
+  // 统一使用扁平结构，不再使用嵌套的settings对象
   config[key] = value;
 
   // 确保config目录存在
@@ -164,16 +153,7 @@ function readConfig(key, defaultValue = null) {
     const data = fs.readFileSync(configPath, "utf-8");
     const config = JSON.parse(data);
 
-    // 向后兼容：检查是否使用旧结构（含settings顶层键）
-    if (
-      config.settings &&
-      typeof config.settings === "object" &&
-      config.settings[key] !== undefined
-    ) {
-      console.log(`Using setting from legacy structure: ${key}`);
-      return config.settings[key];
-    }
-
+    // 直接从顶层读取，不再检查旧结构
     return config[key] !== undefined ? config[key] : defaultValue;
   } catch (error) {
     console.error("Read config file failed:", error);

@@ -7,9 +7,6 @@ const os = require("os");
 const storage = require("../utils/storage");
 const { success, error } = require("../utils/result");
 
-// 设置存储键
-const SETTINGS_KEY = "settings";
-
 // 默认设置
 const DEFAULT_SETTINGS = {
   theme: "light",
@@ -57,7 +54,17 @@ class Settings {
    */
   static getAllSettings() {
     console.log("Reading all settings...");
-    const settings = storage.readConfig(SETTINGS_KEY, {});
+    // 直接获取所有配置项并逐个合并
+    const settings = {};
+    
+    // 将每个默认设置键值获取对应的存储值
+    Object.keys(DEFAULT_SETTINGS).forEach(key => {
+      const storedValue = storage.readConfig(key, undefined);
+      if (storedValue !== undefined) {
+        settings[key] = storedValue;
+      }
+    });
+    
     console.log("Read settings Successfully");
     const mergedSettings = { ...DEFAULT_SETTINGS, ...settings };
     return mergedSettings;
@@ -69,12 +76,12 @@ class Settings {
    * @returns {any} 设置值
    */
   static getSetting(key) {
-    const settings = this.getAllSettings();
-    const value = settings[key];
+    // 直接从存储中读取指定键的值
+    const value = storage.readConfig(key, DEFAULT_SETTINGS[key]);
 
     return success({
       key,
-      value: value !== undefined ? value : DEFAULT_SETTINGS[key],
+      value,
     });
   }
 
@@ -86,15 +93,18 @@ class Settings {
   static updateSettings(settingsData) {
     try {
       console.log("Update Settings:", JSON.stringify(settingsData, null, 2));
-      // 获取当前设置并合并新设置
-      const currentSettings = this.getAllSettings();
-      const updatedSettings = { ...currentSettings, ...settingsData };
-
-      // 保存合并后的设置
-      storage.saveConfig(SETTINGS_KEY, updatedSettings);
+      
+      // 分别保存每个设置项
+      Object.entries(settingsData).forEach(([key, value]) => {
+        storage.saveConfig(key, value);
+      });
+      
       console.log("Settings saved");
+      
+      // 获取更新后的所有设置
+      const allSettings = this.getAllSettings();
 
-      return success(updatedSettings);
+      return success(allSettings);
     } catch (err) {
       console.error("Update settings failed:", err);
       return error(err.message);
@@ -107,7 +117,11 @@ class Settings {
    */
   static resetToDefaults() {
     try {
-      storage.saveConfig(SETTINGS_KEY, DEFAULT_SETTINGS);
+      // 分别保存每个默认设置
+      Object.entries(DEFAULT_SETTINGS).forEach(([key, value]) => {
+        storage.saveConfig(key, value);
+      });
+      
       return success(DEFAULT_SETTINGS);
     } catch (err) {
       console.error("Reset settings failed:", err);
@@ -120,8 +134,8 @@ class Settings {
    * @returns {Object} 包含导出路径的结果对象
    */
   static getDefaultExportPath() {
-    const settings = this.getAllSettings();
-    return success({ path: settings.defaultExportPath });
+    const exportPath = storage.readConfig("defaultExportPath", DEFAULT_SETTINGS.defaultExportPath);
+    return success({ path: exportPath });
   }
 
   /**
@@ -131,10 +145,7 @@ class Settings {
    */
   static setDefaultExportPath(path) {
     try {
-      const settings = this.getAllSettings();
-      settings.defaultExportPath = path;
-
-      storage.saveConfig(SETTINGS_KEY, settings);
+      storage.saveConfig("defaultExportPath", path);
       return success({ path });
     } catch (err) {
       console.error("Set export path failed:", err);
@@ -150,18 +161,8 @@ class Settings {
   static getProviderSettings(provider) {
     try {
       console.log(`Get provider ${provider} settings`);
-      const settings = this.getAllSettings();
-
-      // 确保provider字段存在
-      if (!settings[provider] && DEFAULT_SETTINGS[provider]) {
-        console.log(`Provider ${provider} settings not found, using default`);
-        return success({
-          provider,
-          settings: DEFAULT_SETTINGS[provider],
-        });
-      }
-
-      const providerSettings = settings[provider] || {};
+      const providerSettings = storage.readConfig(provider, DEFAULT_SETTINGS[provider] || {});
+      
       console.log(
         `Provider ${provider} settings:`,
         JSON.stringify(providerSettings, null, 2)
@@ -189,27 +190,24 @@ class Settings {
         `Update provider ${provider} settings:`,
         JSON.stringify(providerData, null, 2)
       );
-      const settings = this.getAllSettings();
-
-      // 确保provider字段存在
-      if (!settings[provider]) {
-        console.log(`Provider ${provider} settings not found, creating new`);
-        settings[provider] = DEFAULT_SETTINGS[provider] || {};
-      }
-
-      // 合并新的配置数据
-      settings[provider] = { ...settings[provider], ...providerData };
-
-      // 保存并记录配置
+      
+      // 获取当前的服务商设置
+      const currentProviderSettings = storage.readConfig(provider, DEFAULT_SETTINGS[provider] || {});
+      
+      // 合并新的设置
+      const updatedSettings = { ...currentProviderSettings, ...providerData };
+      
+      // 保存更新后的设置
+      storage.saveConfig(provider, updatedSettings);
+      
       console.log(
         `Save provider ${provider} settings:`,
-        JSON.stringify(settings[provider], null, 2)
+        JSON.stringify(updatedSettings, null, 2)
       );
-      storage.saveConfig(SETTINGS_KEY, settings);
 
       return success({
         provider,
-        settings: settings[provider],
+        settings: updatedSettings,
       });
     } catch (err) {
       console.error(`Update ${provider} settings failed:`, err);
@@ -227,10 +225,7 @@ class Settings {
       console.log(`Test provider ${provider} connection`);
 
       // 读取设置
-      const settings = this.getAllSettings();
-
-      // 检查服务商配置
-      const providerSettings = settings[provider];
+      const providerSettings = storage.readConfig(provider, null);
 
       if (!providerSettings) {
         console.error(`Provider ${provider} not found`);
