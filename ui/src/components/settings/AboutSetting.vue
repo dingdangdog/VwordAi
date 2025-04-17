@@ -62,7 +62,9 @@
         <button class="btn flex space-x-1 dark:text-white" @click="openGithub">
           <GithubIcon class="w-7 h-7" />
         </button>
-        <button class="btn btn-warning" @click="openDebugPanel">调试</button>
+        <button class="btn text-black dark:text-white" @click="openDebugPanel">
+          系统信息
+        </button>
       </div>
     </div>
 
@@ -123,7 +125,9 @@
             <h4 class="font-medium text-gray-900 dark:text-white mb-2">
               应用信息
             </h4>
-            <div class="bg-gray-100 dark:bg-gray-700 p-2 rounded">
+            <div
+              class="bg-gray-100 dark:bg-gray-700 p-2 rounded text-gray-700 dark:text-gray-200"
+            >
               <pre class="whitespace-pre-wrap text-sm">{{ appDebugInfo }}</pre>
             </div>
           </div>
@@ -131,7 +135,9 @@
             <h4 class="font-medium text-gray-900 dark:text-white mb-2">
               存储路径
             </h4>
-            <div class="bg-gray-100 dark:bg-gray-700 p-2 rounded">
+            <div
+              class="bg-gray-100 dark:bg-gray-700 p-2 rounded text-gray-700 dark:text-gray-200"
+            >
               <pre class="whitespace-pre-wrap text-sm">{{ storagePaths }}</pre>
             </div>
           </div>
@@ -139,7 +145,9 @@
             <h4 class="font-medium text-gray-900 dark:text-white mb-2">
               系统环境
             </h4>
-            <div class="bg-gray-100 dark:bg-gray-700 p-2 rounded">
+            <div
+              class="bg-gray-100 dark:bg-gray-700 p-2 rounded text-gray-700 dark:text-gray-200"
+            >
               <pre class="whitespace-pre-wrap text-sm">{{ systemInfo }}</pre>
             </div>
           </div>

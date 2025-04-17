@@ -75,18 +75,15 @@ function registerAzureTestHandlers() {
   // 测试Azure TTS服务
   ipcMain.handle("test-azure-tts", async (event, data) => {
     try {
-      const { config, text, voice } = data;
+      const { config } = data;
       if (!config || !config.key || !config.region) {
         return { success: false, error: "Azure配置不完整" };
       }
 
-      if (!text || !voice) {
-        return { success: false, error: "测试参数不完整" };
-      }
-
+      const text = "azure配置成功";
       // 设置测试参数
       const settings = {
-        voice: voice,
+        voice: "zh-CN-XiaoxiaoMultilingualNeural",
         speed: 1.0,
         emotion: "general",
       };

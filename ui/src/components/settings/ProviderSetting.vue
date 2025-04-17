@@ -87,7 +87,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed } from "vue";
+import { ref, onMounted } from "vue";
 import { useToast } from "vue-toastification";
 import { SUPPORTED_PROVIDERS, useSettingsStore } from "@/stores/settings";
 import { ServerIcon, CloudIcon } from "@heroicons/vue/24/outline";
@@ -104,9 +104,6 @@ const providerData = ref<any>({});
 const toast = useToast();
 const settingsStore = useSettingsStore();
 const isLoading = ref(false);
-
-// 获取所有设置
-const allSettings = computed(() => settingsStore.settings);
 
 // 初始化
 onMounted(async () => {
@@ -220,20 +217,12 @@ async function testCurrentProvider(providerConfig = null) {
 
   isLoading.value = true;
   try {
-    toast.info("正在测试连接，请稍候...");
-
-    // 固定测试文本和角色
-    const testText = "azure配置成功";
-    const testVoice = "zh-CN-XiaoxiaoMultilingualNeural";
-
     // 直接通过API调用测试
     let result;
     if (selectedProviderType.value === "azure") {
       // 使用 play 函数直接播放
       result = await window.api.tts.testAzureTTS({
         config: configToTest,
-        text: testText,
-        voice: testVoice,
       });
     } else {
       // 其他服务商的测试逻辑
