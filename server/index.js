@@ -17,52 +17,34 @@ const TTSController = require("./controllers/TTSController");
 const storage = require("./utils/storage");
 
 /**
- * 获取应用程序安装目录
- * @returns {string} 应用程序安装目录
- */
-function getAppInstallPath() {
-  const isProduction = process.env.NODE_ENV === 'production';
-  if (isProduction) {
-    // 获取应用程序路径 (Electron app.getAppPath 返回应用程序所在目录)
-    const appPath = app.getAppPath();
-    // 如果是打包后的应用，app.getAppPath() 返回的是 app.asar 目录
-    // 我们需要获取其上级目录作为应用安装目录
-    return path.dirname(appPath.includes('app.asar') ? path.dirname(appPath) : appPath);
-  } else {
-    // 开发环境下，返回当前工作目录
-    return process.cwd();
-  }
-}
-
-/**
  * Initialize storage directories
  */
 function initStorageDirs() {
   // Get application data directory for user data
   const userDataPath = app.getPath("userData");
   console.log("User data path:", userDataPath);
-  
+
   // Get application installation directory for configs
-  const appInstallPath = getAppInstallPath();
-  console.log("Application installation path:", appInstallPath);
-  
+  const defaultStoragePath = storage.getConfigPath();
+  console.log("Application installation path:", defaultStoragePath);
+
   // Set base storage directory
   storage.setBaseDir(userDataPath);
-  
+
   // Ensure necessary directories exist in user data
   const storageDir = path.join(userDataPath, "storage");
   const outputDir = path.join(userDataPath, "output");
   const localConfigDir = path.join(userDataPath, "config");
-  
+
   // Ensure necessary directories exist in app installation directory
-  const appConfigDir = path.join(appInstallPath, "config");
-  
+  const appConfigDir = path.join(defaultStoragePath, "config");
+
   // 创建所有必要的目录
   fs.ensureDirSync(storageDir);
   fs.ensureDirSync(outputDir);
   fs.ensureDirSync(localConfigDir);
   fs.ensureDirSync(appConfigDir);
-  
+
   console.log("Storage directories initialized:");
   console.log("- Storage dir:", storageDir);
   console.log("- Output dir:", outputDir);

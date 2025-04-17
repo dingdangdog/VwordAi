@@ -26,7 +26,7 @@ require("dotenv").config(); // Load environment variables from .env file
 
 if (process.env.NODE_ENV === "development") {
   // const devPath = path.join(__dirname, "config");
-  console.log(__dirname);
+  console.log("__dirname:", __dirname);
   handler.setBaseDir(__dirname);
 } else {
   const defaultPath = app.getPath("userData");
@@ -94,13 +94,13 @@ function setupAutoUpdater() {
 
   // 检查到更新
   autoUpdater.on("update-available", (info) => {
-    log.info("发现更新:", info);
+    log.info("Find update:", info);
     sendStatusToWindow("update-available", info);
   });
 
   // 未检查到更新
   autoUpdater.on("update-not-available", (info) => {
-    log.info("已是最新版本", info);
+    log.info("Already the latest version", info);
     sendStatusToWindow("update-not-available", info);
   });
 
@@ -113,13 +113,13 @@ function setupAutoUpdater() {
 
   // 更新下载完成
   autoUpdater.on("update-downloaded", (info) => {
-    log.info("更新已下载", info);
+    log.info("Update downloaded", info);
     sendStatusToWindow("update-downloaded", info);
   });
 
   // 更新错误
   autoUpdater.on("error", (err) => {
-    log.error("自动更新错误:", err);
+    log.error("Auto update error:", err);
     sendStatusToWindow("error", err.toString());
   });
 }
@@ -148,7 +148,7 @@ app.whenReady().then(async () => {
     // 应用启动时检查更新，延迟3秒让应用完全加载
     setTimeout(() => {
       autoUpdater.checkForUpdates().catch((err) => {
-        log.error("自动检查更新失败:", err);
+        log.error("Auto check update failed:", err);
       });
     }, 3000);
   }
@@ -204,12 +204,15 @@ ipcMain.handle("is-maximized", () => {
 
 // 实现data-handler调用
 ipcMain.handle("data-handler", async (event, functionName, args) => {
-  console.log(`调用处理器: ${functionName}, 参数:`, args);
+  console.log(`Call handler: ${functionName}, args:`, args);
 
   // 检查处理器是否存在
   if (typeof handler[functionName] !== "function") {
-    console.error(`处理器函数不存在: ${functionName}`);
-    return { success: false, error: `处理器函数不存在: ${functionName}` };
+    console.error(`Handler function not found: ${functionName}`);
+    return {
+      success: false,
+      error: `Handler function not found: ${functionName}`,
+    };
   }
 
   try {
@@ -230,7 +233,7 @@ ipcMain.handle("data-handler", async (event, functionName, args) => {
     // 调用处理器函数
     return await handler[functionName](...parsedArgs);
   } catch (error) {
-    console.error(`处理器调用失败: ${functionName}`, error);
+    console.error(`Handler call failed: ${functionName}`, error);
     return { success: false, error: error.message };
   }
 });
@@ -248,7 +251,7 @@ ipcMain.handle("get-media-url", async (event, filePath) => {
   try {
     // 验证文件是否存在
     if (!fs.existsSync(filePath)) {
-      console.error(`媒体文件不存在: ${filePath}`);
+      console.error(`Media file not found: ${filePath}`);
       return null;
     }
 
@@ -262,7 +265,7 @@ ipcMain.handle("get-media-url", async (event, filePath) => {
     // 返回正确的file://协议URL
     return `file://${encodedPath}`;
   } catch (err) {
-    console.error("处理媒体URL时出错:", err);
+    console.error("Error processing media URL:", err);
     return null;
   }
 });
@@ -274,9 +277,9 @@ ipcMain.handle("open-folder", (event, dir) => {
   const folder = path.join(...dirs);
   if (fs.existsSync(folder)) {
     shell.openPath(folder);
-    return success("文件夹已打开");
+    return success("Folder opened");
   } else {
-    return error("本地项目不存在，请先下载！");
+    return error("Local project not found, please download first!");
   }
 });
 
@@ -308,35 +311,35 @@ ipcMain.handle("open-file", async () => {
 // 检查更新
 ipcMain.handle("check-updates", async () => {
   try {
-    log.info("手动检查更新");
+    log.info("Manually check update");
     const result = await autoUpdater.checkForUpdates();
     return { checking: true };
   } catch (err) {
-    log.error("检查更新失败:", err);
-    return { error: err.message || "检查更新失败" };
+    log.error("Check update failed:", err);
+    return { error: err.message || "Check update failed" };
   }
 });
 
 // 下载更新
 ipcMain.handle("download-update", async () => {
   try {
-    log.info("开始下载更新");
+    log.info("Start downloading update");
     autoUpdater.downloadUpdate();
-    return { success: true, message: "更新下载已开始" };
+    return { success: true, message: "Update downloading started" };
   } catch (err) {
-    log.error("下载更新失败:", err);
-    return { success: false, error: err.message || "下载更新失败" };
+    log.error("Download update failed:", err);
+    return { success: false, error: err.message || "Download update failed" };
   }
 });
 
 // 安装更新
 ipcMain.handle("install-update", async () => {
   try {
-    log.info("安装更新");
+    log.info("Install update");
     autoUpdater.quitAndInstall(false, true);
     return { success: true };
   } catch (err) {
-    log.error("安装更新失败:", err);
-    return { success: false, error: err.message || "安装更新失败" };
+    log.error("Install update failed:", err);
+    return { success: false, error: err.message || "Install update failed" };
   }
 });

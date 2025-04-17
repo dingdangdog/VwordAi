@@ -3,35 +3,11 @@
  */
 const fs = require("fs-extra");
 const path = require("path");
-const { app } = require("electron");
 
 // 基础目录，会在handler.js中通过setBaseDir设置
 let baseDir = "";
 // 配置文件夹路径
 let configDir = "";
-// 是否是生产环境
-const isProduction = process.env.NODE_ENV === "production";
-
-/**
- * 获取应用程序安装目录
- * 在生产环境中，应用程序安装目录是打包后的安装路径
- * 在开发环境中，应用程序安装目录就是项目根目录
- * @returns {string} 应用程序安装目录
- */
-function getAppInstallPath() {
-  if (isProduction) {
-    // 获取应用程序路径 (Electron app.getAppPath 返回应用程序所在目录)
-    const appPath = app.getAppPath();
-    // 如果是打包后的应用，app.getAppPath() 返回的是 app.asar 目录
-    // 我们需要获取其上级目录作为应用安装目录
-    return path.dirname(
-      appPath.includes("app.asar") ? path.dirname(appPath) : appPath
-    );
-  } else {
-    // 开发环境下，返回当前工作目录
-    return process.cwd();
-  }
-}
 
 /**
  * 设置基础存储目录
@@ -40,48 +16,27 @@ function getAppInstallPath() {
 function setBaseDir(dir) {
   baseDir = dir;
 
-  // 在生产环境中，配置文件夹放在软件安装目录下的config文件夹中
-  if (isProduction) {
-    const appDir = getAppInstallPath();
-    configDir = path.join(appDir, "config");
-    console.log(
-      `Production: Config directory set to app install directory: ${configDir}`
-    );
-  } else {
-    // 开发环境下，配置文件夹与baseDir保持一致
-    configDir = path.join(baseDir, "config");
-    console.log(
-      `Development: Config directory set to user data directory: ${configDir}`
-    );
-  }
+  // 开发环境下，配置文件夹与baseDir保持一致
+  configDir = path.join(baseDir, "config");
 
   // 确保存储目录和配置目录存在
   ensureDirectoryExists(getStoragePath());
   ensureDirectoryExists(configDir);
 
-  console.log(`Storage base directory: ${baseDir}`);
-  console.log(`Config directory: ${configDir}`);
+  console.log(`Storage base directory set to: ${baseDir}`);
 
   // 如果配置目录不存在，立即初始化配置文件
   const configFilePath = path.join(configDir, "vwordai.json");
   if (!fs.existsSync(configFilePath)) {
-    console.log(
-      `Config file not found, creating default config file: ${configFilePath}`
-    );
     fs.writeFileSync(configFilePath, JSON.stringify({}, null, 2), "utf-8");
   } else {
-    console.log(`Config file exists: ${configFilePath}`);
     try {
       const configData = fs.readFileSync(configFilePath, "utf-8");
-      const config = JSON.parse(configData);
-      console.log(
-        `Successfully read config file, content size: ${configData.length} bytes`
-      );
+      JSON.parse(configData);
     } catch (error) {
-      console.error(`Read config file failed:`, error);
+      console.error(`Config file error:`, error);
       // 如果配置文件损坏，重新创建
       fs.writeFileSync(configFilePath, JSON.stringify({}, null, 2), "utf-8");
-      console.log(`Config file has been recreated`);
     }
   }
 }
@@ -99,13 +54,6 @@ function getStoragePath() {
  * @returns {string} 配置目录路径
  */
 function getConfigPath() {
-  if (!configDir) {
-    console.warn(
-      "Warning: Config directory not initialized, using default path"
-    );
-    // 如果configDir未初始化，使用应用安装目录下的config
-    return path.join(getAppInstallPath(), "config");
-  }
   return configDir;
 }
 
@@ -209,7 +157,6 @@ const read = readData;
 
 module.exports = {
   setBaseDir,
-  getAppInstallPath,
   getStoragePath,
   getConfigPath,
   saveData,

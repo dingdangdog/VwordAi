@@ -24,7 +24,7 @@ let baseDir = "";
 function setBaseDir(dir) {
   baseDir = dir;
   storage.setBaseDir(dir);
-  console.log(`基础目录设置为: ${dir}`);
+  console.log(`Base Directory set to: ${dir}`);
 
   // 确保必要的目录存在
   const configDir = path.join(dir, "config");
@@ -52,7 +52,7 @@ function init() {
   // 初始化语音合成控制器
   TTSController.init();
 
-  console.log("所有控制器初始化完成");
+  console.log("All controllers initialized");
 }
 
 // 项目相关处理函数
