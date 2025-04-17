@@ -30,26 +30,10 @@
 
       <div class="flex items-center space-x-2">
         <label
-          for="endpoint"
-          class="block text-sm font-medium text-gray-700 dark:text-gray-300 w-20"
-        >
-          endpoint <span class="text-red-500">*</span>
-        </label>
-        <input
-          type="text"
-          id="endpoint"
-          v-model="form.endpoint"
-          class="input w-full"
-          placeholder="例如：https://your-resource.cognitiveservices.azure.com/"
-        />
-      </div>
-
-      <div class="flex items-center space-x-2">
-        <label
           for="region"
           class="block text-sm font-medium text-gray-700 dark:text-gray-300 w-20"
         >
-          region
+          region <span class="text-red-500">*</span>
         </label>
         <input
           type="text"
@@ -63,6 +47,22 @@
           您的服务部署的 Azure 区域（例如：eastus，westeurope）。
         </p> -->
       </div>
+
+      <!-- <div class="flex items-center space-x-2">
+        <label
+          for="endpoint"
+          class="block text-sm font-medium text-gray-700 dark:text-gray-300 w-20"
+        >
+          endpoint(optional)
+        </label>
+        <input
+          type="text"
+          id="endpoint"
+          v-model="form.endpoint"
+          class="input w-full"
+          placeholder="例如：https://your-resource.cognitiveservices.azure.com/"
+        />
+      </div> -->
 
       <div class="flex justify-center space-x-2 mt-6">
         <!-- <button
