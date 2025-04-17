@@ -7,14 +7,14 @@
           v-for="tab in tabs"
           :key="tab.id"
           @click="setActiveTab(tab.id)"
-          class="py-3 px-4 text-center border-b-2 font-medium text-sm whitespace-nowrap duration-200 transition-all"
+          class="py-2 pl-3 pr-4 text-center border-b-2 font-medium text-sm whitespace-nowrap duration-200 transition-all"
           :class="
             activeTab === tab.id
               ? 'border-blue-500 text-blue-600  dark:text-blue-400'
               : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
           "
         >
-          <component :is="tab.icon" class="h-5 w-5 inline-block mr-2" />
+          <component :is="tab.icon" class="h-5 w-5 inline-block mr-1" />
           {{ tab.name }}
         </button>
       </nav>
