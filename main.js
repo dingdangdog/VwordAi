@@ -56,7 +56,7 @@ function createWindow() {
   if (process.env.NODE_ENV === "development") {
     win.loadURL("http://localhost:5173/");
   } else {
-    win.loadFile(path.join(__dirname, "ui/index.html"));
+    win.loadFile(path.join(__dirname, "ui/dist/index.html"));
   }
   win.webContents.on("did-finish-load", () => {
     // 打开开发者工具
