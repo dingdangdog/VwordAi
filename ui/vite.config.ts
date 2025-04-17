@@ -6,7 +6,7 @@ const env = loadEnv("", process.cwd());
 
 // https://vitejs.dev/config/
 export default defineConfig({
-  base: env.VITE_APP_BASE_URL || "/",
+  base: env.VITE_MOD == "WEB" ? "/" : "./",
   plugins: [vue()],
   resolve: {
     alias: {

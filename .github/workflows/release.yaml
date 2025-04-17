@@ -67,8 +67,6 @@ jobs:
       - name: Install UI dependencies
         run: cd ui && npm ci --no-interactive
       - name: Build UI
-        env:
-          VITE_APP_BASE_URL: ./
         run: cd ui && npm run build-only
       - name: Install Main dependencies
         run: npm ci --no-interactive
