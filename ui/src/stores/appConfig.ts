@@ -7,9 +7,9 @@ export const appConfig = {
   // 基本信息
   name: "文声AI",
   nameEn: "VwordAi",
-  version: "0.0.8",
-  releaseDate: "2025年4月16日",
-  copyright: "© 2025 VwordAi.com 保留所有权利。",
+  version: "0.0.9",
+  releaseDate: "2025年4月17日",
+  copyright: "©2025 VwordAi.com 保留所有权利。",
   
   // 描述信息
   description: "VwordAi 是一款文本转语音工具，支持多种语音服务提供商，让您轻松将文本转为自然流畅的语音。",
