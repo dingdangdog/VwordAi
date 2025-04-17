@@ -96,6 +96,7 @@ jobs:
           files: |
             package/VwordAi-${{ github.event.inputs.target }}.dmg
             package/VwordAi-${{ github.event.inputs.target }}.zip
+            package/latest-mac.yml
 
       - name: Linux Release
         uses: softprops/action-gh-release@v2
@@ -109,6 +110,7 @@ jobs:
           files: |
             package/VwordAi_${{ github.event.inputs.target }}_amd64.deb
             package/VwordAi-${{ github.event.inputs.target }}.AppImage
+            package/latest-linux.yml
 
       - name: Windows Release
         uses: softprops/action-gh-release@v2
@@ -120,4 +122,6 @@ jobs:
           tag_name: ${{ github.event.inputs.target }}
           append_body: true
           # VwordAi Setup 2.0.0.exe
-          files: package/VwordAi-Setup-${{ github.event.inputs.target }}.exe
+          files: |
+            package/VwordAi-Setup-${{ github.event.inputs.target }}.exe
+            package/latest.yml

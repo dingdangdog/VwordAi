@@ -3,7 +3,7 @@
     class="w-full h-12 bg-gray-950 fixed top-0 left-0 flex justify-between items-center drag-area rounded-t-md overflow-hidden border-b-2 border-gray-600"
   >
     <div class="w-1/2 px-3 flex items-center h-full">
-      <img src="/logo.ico" class="w-8 h-8" />
+      <img src="/logo.svg" class="w-8 h-8" />
       <h1 class="text-md px-2">文声 - Voice of Words</h1>
       <!-- <a
         class="h-full flex justify-center items-center px-4 hover:bg-gray-800 case-in-out duration-300"
