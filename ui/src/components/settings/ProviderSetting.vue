@@ -227,25 +227,67 @@ async function saveCurrentProvider(data?: Record<string, any>) {
   }
 }
 
-// 测试当前服务商连接
-async function testCurrentProvider() {
+// 更新测试服务商连接的函数
+async function testCurrentProvider(providerConfig = null) {
   if (!selectedProviderType.value) {
     toast.warning("请先选择一个服务商");
     return;
   }
 
-  // 先保存配置
-  await saveCurrentProvider();
+  // 获取配置数据 - 使用传入的配置或当前数据
+  const configToTest = providerConfig || providerData.value;
+  if (!configToTest) {
+    toast.warning("请先完成配置");
+    return;
+  }
 
   isLoading.value = true;
+  testResult.value = null;
   try {
-    // 测试连接
-    const result = await settingsStore.testServiceProviderConnection(
-      selectedProviderType.value
-    );
+    // 固定测试文本和角色
+    const testText = "azure配置成功";
+    const testVoice = "zh-CN-XiaoxiaoMultilingualNeural";
+    
+    // 直接通过API调用测试
+    let result;
+    if (selectedProviderType.value === 'azure') {
+      // 使用 play 函数直接播放
+      result = await window.api.tts.testAzureTTS({
+        config: configToTest,
+        text: testText,
+        voice: testVoice
+      });
+    } else {
+      // 其他服务商的测试逻辑
+      // 先保存配置
+      await settingsStore.updateServiceProvider(selectedProviderType.value, configToTest);
+      result = await settingsStore.testServiceProviderConnection(
+        selectedProviderType.value
+      );
+    }
 
-    testResult.value = result;
+    // 处理音频播放
+    if (result.success && result.data && result.data.audioData) {
+      // 创建音频元素并播放
+      const audioBlob = new Blob([new Uint8Array(result.data.audioData).buffer], { type: 'audio/wav' });
+      const audioUrl = URL.createObjectURL(audioBlob);
+      
+      const audio = new Audio(audioUrl);
+      audio.onended = () => URL.revokeObjectURL(audioUrl);
+      audio.play();
+
+      testResult.value = {
+        success: true,
+        message: "测试成功！正在播放测试音频..."
+      };
+    } else {
+      testResult.value = {
+        success: false,
+        message: result.error || "测试失败"
+      };
+    }
   } catch (error) {
+    console.error("测试失败:", error);
     testResult.value = {
       success: false,
       message: `测试失败: ${error instanceof Error ? error.message : "未知错误"}`,

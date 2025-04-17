@@ -42,6 +42,13 @@
             <PencilSquareIcon class="h-5 w-5 mr-2" />
             编辑项目
           </button>
+          <button
+            @click="exportProject"
+            class="btn btn-secondary flex items-center"
+          >
+            <ArrowUpTrayIcon class="h-5 w-5 mr-2" />
+            导出项目
+          </button>
           <router-link to="/projects" class="btn btn-primary">
             返回
           </router-link>
@@ -239,29 +246,6 @@
         </div>
       </div>
 
-      <!-- Batch Operations -->
-      <div v-if="chapters.length > 0" class="card p-4 text-center">
-        <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-3">
-          批量操作
-        </h3>
-        <div class="flex flex-wrap justify-center gap-4">
-          <button
-            class="btn btn-primary flex items-center"
-            @click="startBatchSynthesis"
-          >
-            <SpeakerWaveIcon class="h-5 w-5 mr-2" />
-            合成全部章节
-          </button>
-          <button
-            class="btn btn-secondary flex items-center"
-            @click="exportProject"
-          >
-            <ArrowUpTrayIcon class="h-5 w-5 mr-2" />
-            导出项目设置
-          </button>
-        </div>
-      </div>
-
       <!-- Edit Project Modal -->
       <ProjectFormModal
         v-if="showEditProjectModal"
@@ -305,10 +289,8 @@ import {
   PencilSquareIcon,
   ChevronRightIcon,
   ChevronDownIcon,
-  SpeakerWaveIcon,
   ArrowUpTrayIcon,
 } from "@heroicons/vue/24/outline";
-import { batchSynthesizeChapters } from "@/utils/tts-utils";
 import { formatDate } from "@/utils/common";
 
 const route = useRoute();
@@ -439,89 +421,6 @@ async function deleteChapter() {
   }
 }
 
-// Batch operations
-async function startBatchSynthesis() {
-  if (chapters.value.length === 0) {
-    toast.error("项目中没有章节，无法进行批量合成");
-    return;
-  }
-
-  const chaptersWithText = chapters.value.filter(
-    (c) => c.text.trim().length > 0
-  );
-  if (chaptersWithText.length === 0) {
-    toast.error("所有章节都是空的，无法进行合成");
-    return;
-  }
-
-  // 检查章节是否都有语音设置
-  const chaptersWithoutSettings = chaptersWithText.filter(
-    (c) => !c.settings.serviceProvider || !c.settings.voice
-  );
-
-  if (chaptersWithoutSettings.length > 0) {
-    toast.error(
-      `有 ${chaptersWithoutSettings.length} 个章节缺少语音设置，请先配置`
-    );
-    return;
-  }
-
-  // Filter out chapters that already have audio
-  const chaptersToProcess = chaptersWithText.filter(
-    (c) => !c.audioPath || c.status !== "completed"
-  );
-
-  // If all chapters already have audio
-  if (chaptersToProcess.length === 0) {
-    toast.info("所有章节已经合成过语音，无需重新合成");
-    // Expand chapters to show existing audio
-    expandChaptersWithAudio();
-    return;
-  }
-
-  toast.info(
-    `开始批量合成 ${chaptersToProcess.length} 个章节，这可能需要一些时间...`
-  );
-
-  try {
-    // 显示进度通知
-    const progressToastId = toast.info("合成进度: 0%", {
-      timeout: false,
-      closeOnClick: false,
-    });
-
-    // 执行批量合成
-    const results = await batchSynthesizeChapters(
-      chaptersToProcess,
-      (progress, chapterIndex) => {
-        // 更新进度通知
-        toast.update(progressToastId, {
-          content: `合成进度: ${progress}% (${chapterIndex + 1}/${chaptersToProcess.length})`,
-        });
-      }
-    );
-
-    // 关闭进度通知
-    toast.dismiss(progressToastId);
-
-    // 显示成功消息
-    const successCount = Object.keys(results).length;
-    toast.success(`成功合成 ${successCount} 个章节的语音`);
-
-    // 扩展已合成的章节，以便用户查看
-    Object.keys(results).forEach((chapterId) => {
-      expandedChapters.value[chapterId] = true;
-    });
-
-    // 刷新章节数据以显示新的音频路径
-    await projectsStore.loadChaptersByProjectId(projectId.value);
-  } catch (error) {
-    toast.error(
-      `批量合成失败: ${error instanceof Error ? error.message : "未知错误"}`
-    );
-  }
-}
-
 async function exportProject() {
   if (!project.value) {
     toast.error("项目不存在");
@@ -547,7 +446,7 @@ async function exportProject() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `${project.value.title.replace(/[^\w\s]/gi, "_")}_export.json`;
+    a.download = `${project.value.title}.json`;
     document.body.appendChild(a);
     a.click();
 

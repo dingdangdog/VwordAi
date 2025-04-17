@@ -65,21 +65,14 @@
       </div> -->
 
       <div class="flex justify-center space-x-2 mt-6">
-        <!-- <button
-          type="button"
-          class="btn btn-secondary"
-          @click="$emit('cancel')"
-        >
-          取消
-        </button> -->
-        <!-- <button
+        <button
           type="button"
           class="btn btn-secondary"
           @click="testConnection"
           :disabled="isTesting"
         >
-          {{ isTesting ? "测试中..." : "测试连接" }}
-        </button> -->
+          {{ isTesting ? "测试中..." : "测试配置" }}
+        </button>
         <button type="submit" class="btn btn-primary" :disabled="isSaving">
           {{ isSaving ? "保存中..." : "保存配置" }}
         </button>
@@ -188,7 +181,7 @@ async function saveForm() {
   }
 }
 
-// 测试连接
+// 测试配置
 async function testConnection() {
   if (!form.key) {
     toast.error("请提供您的 Azure 订阅密钥");
@@ -205,7 +198,11 @@ async function testConnection() {
 
   try {
     // 通知父组件执行测试
-    emit("test");
+    emit("test", {
+      key: form.key,
+      region: form.region,
+      endpoint: form.endpoint,
+    });
   } catch (error) {
     testResult.value = {
       success: false,

@@ -61,7 +61,7 @@
           @click="testConnection"
           :disabled="isTesting"
         >
-          {{ isTesting ? "测试中..." : "测试连接" }}
+          {{ isTesting ? "测试中..." : "测试配置" }}
         </button> -->
         <button type="submit" class="btn btn-primary" :disabled="isSaving">
           {{ isSaving ? "保存中..." : "保存配置" }}
@@ -150,7 +150,7 @@ async function saveForm() {
   }
 }
 
-// 测试连接
+// 测试配置
 async function testConnection() {
   if (!form.apiKey) {
     toast.error("请提供您的 OpenAI API 密钥");

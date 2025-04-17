@@ -72,7 +72,7 @@
           @click="testConnection"
           :disabled="isTesting"
         >
-          {{ isTesting ? "测试中..." : "测试连接" }}
+          {{ isTesting ? "测试中..." : "测试配置" }}
         </button> -->
         <button type="submit" class="btn btn-primary" :disabled="isSaving">
           {{ isSaving ? "保存中..." : "保存配置" }}
@@ -165,7 +165,7 @@ async function saveForm() {
   }
 }
 
-// 测试连接
+// 测试配置
 async function testConnection() {
   if (!form.appkey || !form.token || !form.endpoint) {
     toast.error("请先填写必填字段");

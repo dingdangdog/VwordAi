@@ -104,7 +104,7 @@ function init() {
     }
   });
 
-  // TTS服务测试连接 - 转发到设置控制器
+  // TTS服务测试配置 - 转发到设置控制器
   ipcMain.handle("tts:test-provider-connection", async (event, provider) => {
     try {
       return Settings.testProviderConnection(provider);

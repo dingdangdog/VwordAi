@@ -99,9 +99,17 @@
               <button
                 @click="synthesize"
                 class="btn btn-primary btn-sm flex justify-center items-center"
+                :disabled="synthesisStatus === 'loading'"
               >
-                <ArrowPathIcon class="h-4 w-4 mr-1" />
-                重新合成
+                <ArrowPathIcon
+                  v-if="synthesisStatus !== 'loading'"
+                  class="h-4 w-4 mr-1"
+                />
+                <div
+                  v-else
+                  class="animate-spin h-4 w-4 mr-1 border-2 border-white border-t-transparent rounded-full"
+                ></div>
+                {{ synthesisStatus === "loading" ? "合成中..." : "重新合成" }}
               </button>
               <button
                 v-if="isPlaying"
@@ -293,10 +301,12 @@ async function openAudioFolder() {
   try {
     // 使用Electron API打开文件夹
     if (window.electron) {
-      // 获取文件所在目录路径
+      // 获取文件所在目录路径 - 修复路径分隔符问题
       const folderPath = audioFilePath.value.substring(
         0,
-        audioFilePath.value.lastIndexOf("/")
+        audioFilePath.value.lastIndexOf(
+          audioFilePath.value.includes("/") ? "/" : "\\"
+        )
       );
       const result = await window.electron.openFolder(folderPath);
 

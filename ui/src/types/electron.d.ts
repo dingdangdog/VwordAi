@@ -8,26 +8,26 @@ export interface ElectronAPI {
   closeApp: () => void;
   minimizeApp: () => void;
   maximizeApp: () => void;
-  
+
   // 文件系统相关
   selectFolder: () => Promise<string>;
   openFolder: (dir: string) => Promise<any>;
   openFile: () => Promise<string>;
-  
+
   // 数据处理
   invoke: (channel: string, ...args: any[]) => Promise<any>;
   dataHandler: (functionName: string, args: any[]) => Promise<any>;
-  
+
   // 媒体URL
   getMediaUrl: (filePath: string) => Promise<string>;
-  
+
   // 更新相关
   checkForUpdates: () => Promise<any>;
   downloadUpdate: () => Promise<any>;
   installUpdate: () => Promise<any>;
   onUpdateMessage: (callback: (data: any) => void) => void;
   removeUpdateListener: () => void;
-  
+
   // 调试相关
   getAppInfo: () => Promise<any>;
   getStoragePaths: () => Promise<any>;
@@ -37,7 +37,7 @@ export interface ElectronAPI {
 interface ApiInterface {
   // 通用处理器调用方法
   invokeHandler: (functionName: string, args: any[]) => Promise<any>;
-  
+
   // 项目相关API
   project: {
     getAll: () => Promise<any>;
@@ -46,7 +46,7 @@ interface ApiInterface {
     update: (id: string, data: any) => Promise<any>;
     delete: (id: string) => Promise<any>;
   };
-  
+
   // 章节相关API
   chapter: {
     getByProjectId: (projectId: string) => Promise<any>;
@@ -55,7 +55,7 @@ interface ApiInterface {
     update: (id: string, data: any) => Promise<any>;
     delete: (id: string) => Promise<any>;
   };
-  
+
   // 服务商相关API
   serviceProvider: {
     getAll: () => Promise<any>;
@@ -66,15 +66,17 @@ interface ApiInterface {
     testConnection: (id: string) => Promise<any>;
     getVoiceRoles: (id: string) => Promise<any>;
   };
-  
+
   // TTS相关API
   tts: {
     synthesize: (chapterId: string) => Promise<any>;
     synthesizeMultiple: (chapterIds: string[]) => Promise<any>;
     getVoiceRoles: (providerId: string) => Promise<any>;
     getEmotions: (providerId: string) => Promise<any>;
+    testProviderConnection: (type: string) => Promise<any>;
+    testAzureTTS: (data: any) => Promise<any>;
   };
-  
+
   // 设置相关API
   settings: {
     getAll: () => Promise<any>;
@@ -91,4 +93,4 @@ declare global {
     electron: ElectronAPI;
     api: ApiInterface;
   }
-} 
+}

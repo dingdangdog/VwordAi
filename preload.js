@@ -33,36 +33,36 @@ contextBridge.exposeInMainWorld("electron", {
   downloadUpdate: async () => {
     return await ipcRenderer.invoke("download-update");
   },
-  
+
   // 安装更新
   installUpdate: async () => {
     return await ipcRenderer.invoke("install-update");
   },
-  
+
   // 监听更新消息
   onUpdateMessage: (callback) => {
-    ipcRenderer.on('update-message', (event, data) => {
+    ipcRenderer.on("update-message", (event, data) => {
       callback(data);
     });
   },
-  
+
   // 移除更新消息监听
   removeUpdateListener: () => {
-    ipcRenderer.removeAllListeners('update-message');
+    ipcRenderer.removeAllListeners("update-message");
   },
-  
+
   // 调试相关API
   getAppInfo: async () => {
     return await ipcRenderer.invoke("get-app-info");
   },
-  
+
   getStoragePaths: async () => {
     return await ipcRenderer.invoke("get-storage-paths");
   },
-  
+
   getSystemInfo: async () => {
     return await ipcRenderer.invoke("get-system-info");
-  }
+  },
 });
 
 // 业务API
@@ -116,6 +116,7 @@ contextBridge.exposeInMainWorld("api", {
       ipcRenderer.invoke("tts:get-emotions", providerId),
     testProviderConnection: (type) =>
       ipcRenderer.invoke("tts:test-provider-connection", type),
+    testAzureTTS: (data) => ipcRenderer.invoke("test-azure-tts", data),
   },
 
   // 设置相关API

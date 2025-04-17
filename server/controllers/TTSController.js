@@ -20,6 +20,9 @@ function init() {
 
   // 模型相关事件处理
   registerModelHandlers();
+
+  // Azure TTS测试处理
+  registerAzureTestHandlers();
 }
 
 /**
@@ -61,6 +64,44 @@ function registerModelHandlers() {
     } catch (err) {
       console.error("读取语音模型文件失败:", err);
       return error(`读取语音模型失败: ${err.message}`);
+    }
+  });
+}
+
+/**
+ * 注册Azure TTS测试相关的IPC事件处理程序
+ */
+function registerAzureTestHandlers() {
+  // 测试Azure TTS服务
+  ipcMain.handle("test-azure-tts", async (event, data) => {
+    try {
+      const { config, text, voice } = data;
+      if (!config || !config.key || !config.region) {
+        return { success: false, error: "Azure配置不完整" };
+      }
+
+      if (!text || !voice) {
+        return { success: false, error: "测试参数不完整" };
+      }
+
+      // 设置测试参数
+      const settings = {
+        voice: voice,
+        speed: 1.0,
+        emotion: "general",
+      };
+
+      // 使用Azure Provider调用play方法（直接播放不保存）
+      const azureProvider = require("../provider/azure");
+      const result = await azureProvider.play(text, settings, config);
+
+      return result;
+    } catch (error) {
+      console.error("测试Azure TTS出错:", error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : "测试时发生未知错误",
+      };
     }
   });
 }

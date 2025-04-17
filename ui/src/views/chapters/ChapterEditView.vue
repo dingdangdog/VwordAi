@@ -195,7 +195,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, watchEffect, onMounted, computed } from "vue";
+import { ref, reactive, watchEffect, watch, onMounted, computed } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useProjectsStore } from "@/stores/projects";
 import { useToast } from "vue-toastification";
@@ -364,31 +364,33 @@ watchEffect(() => {
   }
 });
 
-// Watch for changes in the voice selection
-watchEffect(() => {
-  if (form.settings.voice) {
-    // Reset emotion if it's not valid for the selected voice
-    const currentVoice = form.settings.voice;
+// 监听语音角色变化，更新情感选项
+watch(() => form.settings.voice, (newVoice, oldVoice) => {
+  if (newVoice && newVoice !== oldVoice) {
+    console.log(`Voice changed from ${oldVoice} to ${newVoice}, updating emotions`);
+    
+    // 检查当前情感是否对该声音有效
     const currentEmotion = form.settings.emotion;
-
     if (currentEmotion) {
-      const model = projectsStore.getVoiceModelByCode(currentVoice);
-
-      if (model && model.emotions) {
-        const emotionExists = model.emotions.some(
-          (e) => e.code === currentEmotion
-        );
-
+      const model = projectsStore.getVoiceModelByCode(newVoice);
+      
+      // 检查这个模型是否有情感选项
+      if (model && model.emotions && model.emotions.length > 0) {
+        const emotionExists = model.emotions.some(e => e.code === currentEmotion);
+        
         if (!emotionExists) {
-          form.settings.emotion = "";
+          console.log(`Emotion ${currentEmotion} is not valid for voice ${newVoice}, resetting`);
+          form.settings.emotion = ""; // 重置情感设置
+        } else {
+          console.log(`Emotion ${currentEmotion} is valid for voice ${newVoice}, keeping it`);
         }
       } else {
-        // If model has no emotions, reset emotion
-        form.settings.emotion = "";
+        console.log(`Voice ${newVoice} has no emotions, resetting emotion setting`);
+        form.settings.emotion = ""; // 如果新声音没有情感设置，重置情感
       }
     }
   }
-});
+}, { immediate: true });
 
 function validateForm() {
   errors.name = "";
