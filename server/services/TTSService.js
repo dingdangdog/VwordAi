@@ -4,8 +4,6 @@
  */
 const path = require("path");
 const fs = require("fs-extra");
-const os = require("os");
-const { v4: uuidv4 } = require("uuid");
 
 const Chapter = require("../models/Chapter");
 const Settings = require("../models/Settings");
@@ -48,7 +46,7 @@ try {
 }
 
 // Load voice model data
-const MODELS_JSON_PATH = path.join(__dirname, "../../config/models.json");
+const MODELS_JSON_PATH = path.join(__dirname, "../assets/models.json");
 let voiceModels = [];
 
 try {

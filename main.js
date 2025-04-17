@@ -52,12 +52,13 @@ function createWindow() {
     transparent: true, // 透明窗口
   });
   // 初始最大化窗口
-  // win.maximize()
-  if (process.env.NODE_ENV === "development") {
-    win.loadURL("http://localhost:5173/");
+
+  if (app.isPackaged) {
+    win.loadFile(path.join(__dirname, "ui", "dist", "index.html"));
   } else {
-    win.loadFile(path.join(__dirname, "ui/dist/index.html"));
+    win.loadURL("http://localhost:5173/");
   }
+
   win.webContents.on("did-finish-load", () => {
     // 打开开发者工具
     win.webContents.openDevTools({ mode: "detach" });
@@ -78,39 +79,39 @@ function setupAutoUpdater() {
   // 发送更新消息到渲染进程
   function sendStatusToWindow(text, data = null) {
     if (win) {
-      win.webContents.send('update-message', { message: text, data });
+      win.webContents.send("update-message", { message: text, data });
     }
   }
 
   // 检查到更新
-  autoUpdater.on('update-available', (info) => {
-    log.info('发现更新:', info);
-    sendStatusToWindow('update-available', info);
+  autoUpdater.on("update-available", (info) => {
+    log.info("发现更新:", info);
+    sendStatusToWindow("update-available", info);
   });
 
   // 未检查到更新
-  autoUpdater.on('update-not-available', (info) => {
-    log.info('已是最新版本', info);
-    sendStatusToWindow('update-not-available', info);
+  autoUpdater.on("update-not-available", (info) => {
+    log.info("已是最新版本", info);
+    sendStatusToWindow("update-not-available", info);
   });
 
   // 更新下载进度
-  autoUpdater.on('download-progress', (progressObj) => {
+  autoUpdater.on("download-progress", (progressObj) => {
     let message = `下载速度: ${progressObj.bytesPerSecond} - 已下载 ${progressObj.percent}% (${progressObj.transferred}/${progressObj.total})`;
     log.info(message);
-    sendStatusToWindow('download-progress', progressObj);
+    sendStatusToWindow("download-progress", progressObj);
   });
 
   // 更新下载完成
-  autoUpdater.on('update-downloaded', (info) => {
-    log.info('更新已下载', info);
-    sendStatusToWindow('update-downloaded', info);
+  autoUpdater.on("update-downloaded", (info) => {
+    log.info("更新已下载", info);
+    sendStatusToWindow("update-downloaded", info);
   });
 
   // 更新错误
-  autoUpdater.on('error', (err) => {
-    log.error('自动更新错误:', err);
-    sendStatusToWindow('error', err.toString());
+  autoUpdater.on("error", (err) => {
+    log.error("自动更新错误:", err);
+    sendStatusToWindow("error", err.toString());
   });
 }
 
@@ -119,6 +120,8 @@ app.whenReady().then(async () => {
   console.log("Electron app is ready");
   console.log("Current working directory:", process.cwd());
   console.log("__dirname:", __dirname);
+  console.log("app.isPackaged:", app.isPackaged);
+  console.log("process.resourcesPath:", process.resourcesPath);
 
   // 尝试加载server/util.js文件
   try {
@@ -130,13 +133,13 @@ app.whenReady().then(async () => {
 
   createWindow();
   setupAutoUpdater();
-  
+
   // 在开发环境下不检查更新
   if (process.env.NODE_ENV !== "development") {
     // 应用启动时检查更新，延迟3秒让应用完全加载
     setTimeout(() => {
-      autoUpdater.checkForUpdates().catch(err => {
-        log.error('自动检查更新失败:', err);
+      autoUpdater.checkForUpdates().catch((err) => {
+        log.error("自动检查更新失败:", err);
       });
     }, 3000);
   }
@@ -296,11 +299,11 @@ ipcMain.handle("open-file", async () => {
 // 检查更新
 ipcMain.handle("check-updates", async () => {
   try {
-    log.info('手动检查更新');
+    log.info("手动检查更新");
     const result = await autoUpdater.checkForUpdates();
     return { checking: true };
   } catch (err) {
-    log.error('检查更新失败:', err);
+    log.error("检查更新失败:", err);
     return { error: err.message || "检查更新失败" };
   }
 });
@@ -308,11 +311,11 @@ ipcMain.handle("check-updates", async () => {
 // 下载更新
 ipcMain.handle("download-update", async () => {
   try {
-    log.info('开始下载更新');
+    log.info("开始下载更新");
     autoUpdater.downloadUpdate();
     return { success: true, message: "更新下载已开始" };
   } catch (err) {
-    log.error('下载更新失败:', err);
+    log.error("下载更新失败:", err);
     return { success: false, error: err.message || "下载更新失败" };
   }
 });
@@ -320,11 +323,11 @@ ipcMain.handle("download-update", async () => {
 // 安装更新
 ipcMain.handle("install-update", async () => {
   try {
-    log.info('安装更新');
+    log.info("安装更新");
     autoUpdater.quitAndInstall(false, true);
     return { success: true };
   } catch (err) {
-    log.error('安装更新失败:', err);
+    log.error("安装更新失败:", err);
     return { success: false, error: err.message || "安装更新失败" };
   }
 });

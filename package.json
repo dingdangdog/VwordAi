@@ -10,13 +10,13 @@
   },
   "scripts": {
     "ui": "cd ui && npm run dev",
-    "build": "",
-    "electron": "electron .",
+    "build-only": "cd ui && npm run build",
     "dev": "electron .",
-    "package": "cd ui && npm run build-only && cd ../ && electron-builder",
+    "package": "npm run build-only && electron-builder",
     "publish": "cd ui && npm run build-only && cd ../ && electron-builder --publish always"
   },
   "build": {
+    "asar": true,
     "appId": "com.vwordai",
     "productName": "VwordAi",
     "directories": {
@@ -79,7 +79,7 @@
     "uuid": "^9.0.1"
   },
   "devDependencies": {
-    "electron": "^33.4.9",
-    "electron-builder": "^25.1.8"
+    "electron": "^35.1.5",
+    "electron-builder": "^26.0.12"
   }
 }
