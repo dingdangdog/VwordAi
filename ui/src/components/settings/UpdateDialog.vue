@@ -39,7 +39,7 @@
       <!-- 内容区域 -->
       <div class="py-6 px-6">
         <div class="mb-4">
-          <div class="flex justify-between mb-1">
+          <div class="flex space-x-2 mb-1">
             <span class="text-gray-700 dark:text-gray-300 font-medium"
               >当前版本:</span
             >
@@ -47,7 +47,7 @@
               currentVersion
             }}</span>
           </div>
-          <div class="flex justify-between">
+          <div class="flex space-x-2">
             <span class="text-gray-700 dark:text-gray-300 font-medium"
               >最新版本:</span
             >
@@ -57,11 +57,11 @@
           </div>
         </div>
 
-        <div class="mb-4">
+        <div class="flex space-x-2">
           <span class="text-gray-700 dark:text-gray-300 font-medium"
             >发布日期:</span
           >
-          <span class="text-gray-600 dark:text-gray-400 ml-2">{{
+          <span class="text-gray-600 dark:text-gray-400">{{
             updateInfo.releaseDate
           }}</span>
         </div>
