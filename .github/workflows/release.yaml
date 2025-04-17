@@ -63,32 +63,11 @@ jobs:
         with:
           node-version: "20"
 
-      # # Install VLC on macOS
-      # - name: Install VLC on macOS
-      #   if: ${{ matrix.platform == 'Mac' }}
-      #   run: |
-      #     brew update
-      #     brew install --cask vlc
-
-      # # Install VLC on Ubuntu
-      # - name: Install VLC on Ubuntu
-      #   if: ${{ matrix.platform == 'Linux' }}
-      #   run: |
-      #     sudo apt-get update
-      #     sudo apt-get install -y vlc
-
-      # # Install VLC on Windows
-      # - name: Install VLC on Windows
-      #   if: ${{ matrix.platform == 'Windows' }}
-      #   run: |
-      #     choco install vlc -y
-
       # 前端打包
       - name: Install UI dependencies
         run: cd ui && npm ci --no-interactive
       - name: Build UI
         env:
-          VITE_MOD: LOCAL # electron 打包需要
           VITE_APP_BASE_URL: ./
         run: cd ui && npm run build-only
       - name: Install Main dependencies
