@@ -24,22 +24,15 @@ autoUpdater.setFeedURL({
   releaseType: "release",
 });
 
-require("dotenv").config(); // Load environment variables from .env file
-
 // 设置应用程序基础目录
-const userDataPath = app.getPath("userData");
-console.log("User data path:", userDataPath);
-handler.setBaseDir(userDataPath);
-
-if (process.env.NODE_ENV === "development") {
-  console.log("Running in development mode");
-  console.log("__dirname:", __dirname);
+if (app.isPackaged) {
+  const defaultPath = path.join(app.getPath("userData"));
+  handler.setBaseDir(defaultPath);
 } else {
-  console.log("Running in production mode");
+  handler.setBaseDir(__dirname);
 }
 
 let win;
-
 // 设置应用程序的默认语言为中文
 // app.locale = 'zh-CN';
 // app.commandLine.appendSwitch('--lang', 'zh-CN')
@@ -363,7 +356,7 @@ function setupDebugHandlers() {
       chrome: process.versions.chrome,
       v8: process.versions.v8,
       buildDate: new Date().toISOString(),
-      processEnv: process.env.NODE_ENV || "production"
+      processEnv: process.env.NODE_ENV || "production",
     };
   });
 
