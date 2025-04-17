@@ -67,8 +67,7 @@ function createWindow() {
   }
 
   win.webContents.on("did-finish-load", () => {
-    if (process.env.NODE_ENV === "development") {
-      console.log("process.env.NODE_ENV", process.env.NODE_ENV);
+    if (!app.isPackaged) {
       // 打开开发者工具
       win.webContents.openDevTools({ mode: "detach" });
     }

@@ -23,33 +23,28 @@
       <div
         class="flex flex-col md:flex-row justify-between items-start md:items-center mb-2"
       >
-        <div>
+        <div class="flex items-center space-x-2">
           <h1 class="text-xl font-bold text-gray-900 dark:text-white">
             {{ project.title }}
           </h1>
-          <p
-            v-if="project.description"
-            class="text-gray-600 dark:text-gray-300 mt-1"
-          >
-            {{ project.description }}
-          </p>
-        </div>
-        <div class="flex mt-4 md:mt-0 space-x-4">
+
           <button
             @click="openEditProjectModal"
-            class="btn btn-secondary flex items-center"
+            class="btn text-sm text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 flex items-center"
           >
             <PencilSquareIcon class="h-5 w-5 mr-2" />
             编辑项目
           </button>
           <button
             @click="exportProject"
-            class="btn btn-secondary flex items-center"
+            class="btn text-sm text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 flex items-center"
           >
             <ArrowUpTrayIcon class="h-5 w-5 mr-2" />
             导出项目
           </button>
-          <router-link to="/projects" class="btn btn-primary">
+        </div>
+        <div class="flex mt-4 md:mt-0 space-x-4">
+          <router-link to="/projects" class="btn text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400">
             返回
           </router-link>
         </div>
@@ -276,10 +271,10 @@ import { useRoute, useRouter } from "vue-router";
 import { useProjectsStore } from "@/stores/projects";
 import { useToast } from "vue-toastification";
 import type { Project, Chapter } from "@/types";
-import { 
-  getProviderName as getProviderDisplayName, 
-  getVoiceRoleName as getVoiceDisplayName, 
-  getEmotionName as getEmotionDisplayName 
+import {
+  getProviderName as getProviderDisplayName,
+  getVoiceRoleName as getVoiceDisplayName,
+  getEmotionName as getEmotionDisplayName,
 } from "@/utils/voice-utils";
 import ProjectFormModal from "@/components/projects/ProjectFormModal.vue";
 import ConfirmationModal from "@/components/common/ConfirmationModal.vue";

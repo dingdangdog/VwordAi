@@ -57,10 +57,7 @@
       </div>
 
       <!-- Audio Player - Show when audio exists or synthesis was successful -->
-      <div
-        v-if="synthesisStatus === 'success' || chapter.audioPath"
-        class="bg-gray-50 dark:bg-gray-700 rounded-md"
-      >
+      <div v-if="synthesisStatus === 'success'">
         <div class="flex flex-col space-y-2">
           <div v-if="audioUrl" class="audio-player-container">
             <audio
@@ -99,17 +96,9 @@
               <button
                 @click="synthesize"
                 class="btn btn-primary btn-sm flex justify-center items-center"
-                :disabled="synthesisStatus === 'loading'"
               >
-                <ArrowPathIcon
-                  v-if="synthesisStatus !== 'loading'"
-                  class="h-4 w-4 mr-1"
-                />
-                <div
-                  v-else
-                  class="animate-spin h-4 w-4 mr-1 border-2 border-white border-t-transparent rounded-full"
-                ></div>
-                {{ synthesisStatus === "loading" ? "合成中..." : "重新合成" }}
+                <ArrowPathIcon class="h-4 w-4 mr-1" />
+                {{ "重新合成" }}
               </button>
               <button
                 v-if="isPlaying"
@@ -168,12 +157,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onUnmounted, watch, onMounted } from "vue";
+import { ref, computed, watch, onMounted } from "vue";
 import {
   SpeakerWaveIcon,
   ExclamationCircleIcon,
-  CheckCircleIcon,
-  ArrowDownTrayIcon,
   ArrowPathIcon,
   StopIcon,
   FolderOpenIcon,
