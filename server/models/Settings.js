@@ -2,48 +2,48 @@
  * 设置模型
  * 管理应用的全局设置
  */
-const path = require('path');
-const os = require('os');
-const storage = require('../utils/storage');
-const { success, error } = require('../utils/result');
+const path = require("path");
+const os = require("os");
+const storage = require("../utils/storage");
+const { success, error } = require("../utils/result");
 
 // 设置存储键
-const SETTINGS_KEY = 'settings';
+const SETTINGS_KEY = "settings";
 
 // 默认设置
 const DEFAULT_SETTINGS = {
-  theme: 'light',
-  defaultExportPath: path.join(os.homedir(), 'Documents', 'vwordai'),
-  language: 'zh_CN',
+  theme: "light",
+  defaultExportPath: path.join(os.homedir(), "Documents", "vwordai"),
+  language: "zh_CN",
   azure: {
-    key: '',
-    region: '',
-    endpoint: ''
+    key: "",
+    region: "",
+    endpoint: "",
   },
   aliyun: {
-    appkey: '',
-    token: '',
-    endpoint: ''
+    appkey: "",
+    token: "",
+    endpoint: "",
   },
   tencent: {
-    secretId: '',
-    secretKey: '',
-    endpoint: ''
+    secretId: "",
+    secretKey: "",
+    endpoint: "",
   },
   baidu: {
-    apiKey: '',
-    secretKey: '',
-    endpoint: ''
+    apiKey: "",
+    secretKey: "",
+    endpoint: "",
   },
   openai: {
-    apiKey: '',
-    endpoint: 'https://api.openai.com/v1'
+    apiKey: "",
+    endpoint: "https://api.openai.com/v1",
   },
   autoSave: true,
   autoSaveInterval: 5, // 分钟
   maxConcurrentTasks: 2,
-  fileNamingRule: 'chapter_title',
-  customNamingFormat: '{project}-{chapter}'
+  fileNamingRule: "chapter_title",
+  customNamingFormat: "{project}-{chapter}",
 };
 
 /**
@@ -55,8 +55,11 @@ class Settings {
    * @returns {Object} 所有设置
    */
   static getAllSettings() {
+    console.log("正在读取所有设置...");
     const settings = storage.readConfig(SETTINGS_KEY, {});
-    return { ...DEFAULT_SETTINGS, ...settings };
+    console.log("读取的设置:", JSON.stringify(settings, null, 2));
+    const mergedSettings = { ...DEFAULT_SETTINGS, ...settings };
+    return mergedSettings;
   }
 
   /**
@@ -67,10 +70,10 @@ class Settings {
   static getSetting(key) {
     const settings = this.getAllSettings();
     const value = settings[key];
-    
+
     return success({
       key,
-      value: value !== undefined ? value : DEFAULT_SETTINGS[key]
+      value: value !== undefined ? value : DEFAULT_SETTINGS[key],
     });
   }
 
@@ -81,16 +84,18 @@ class Settings {
    */
   static updateSettings(settingsData) {
     try {
+      console.log("更新设置:", JSON.stringify(settingsData, null, 2));
       // 获取当前设置并合并新设置
       const currentSettings = this.getAllSettings();
       const updatedSettings = { ...currentSettings, ...settingsData };
-      
+
       // 保存合并后的设置
       storage.saveConfig(SETTINGS_KEY, updatedSettings);
-      
+      console.log("设置已保存");
+
       return success(updatedSettings);
     } catch (err) {
-      console.error('更新设置失败:', err);
+      console.error("更新设置失败:", err);
       return error(err.message);
     }
   }
@@ -104,7 +109,7 @@ class Settings {
       storage.saveConfig(SETTINGS_KEY, DEFAULT_SETTINGS);
       return success(DEFAULT_SETTINGS);
     } catch (err) {
-      console.error('重置设置失败:', err);
+      console.error("重置设置失败:", err);
       return error(err.message);
     }
   }
@@ -127,11 +132,11 @@ class Settings {
     try {
       const settings = this.getAllSettings();
       settings.defaultExportPath = path;
-      
+
       storage.saveConfig(SETTINGS_KEY, settings);
       return success({ path });
     } catch (err) {
-      console.error('设置导出路径失败:', err);
+      console.error("设置导出路径失败:", err);
       return error(err.message);
     }
   }
@@ -143,12 +148,27 @@ class Settings {
    */
   static getProviderSettings(provider) {
     try {
+      console.log(`获取服务商 ${provider} 的配置`);
       const settings = this.getAllSettings();
-      const providerSettings = settings[provider] || DEFAULT_SETTINGS[provider];
-      
-      return success({ 
+
+      // 确保provider字段存在
+      if (!settings[provider] && DEFAULT_SETTINGS[provider]) {
+        console.log(`服务商 ${provider} 的配置不存在，使用默认配置`);
+        return success({
+          provider,
+          settings: DEFAULT_SETTINGS[provider],
+        });
+      }
+
+      const providerSettings = settings[provider] || {};
+      console.log(
+        `服务商 ${provider} 的配置:`,
+        JSON.stringify(providerSettings, null, 2)
+      );
+
+      return success({
         provider,
-        settings: providerSettings 
+        settings: providerSettings,
       });
     } catch (err) {
       console.error(`获取${provider}配置失败:`, err);
@@ -164,20 +184,31 @@ class Settings {
    */
   static updateProviderSettings(provider, providerData) {
     try {
+      console.log(
+        `更新服务商 ${provider} 的配置:`,
+        JSON.stringify(providerData, null, 2)
+      );
       const settings = this.getAllSettings();
-      
+
       // 确保provider字段存在
       if (!settings[provider]) {
-        settings[provider] = {};
+        console.log(`服务商 ${provider} 的配置不存在，创建新配置`);
+        settings[provider] = DEFAULT_SETTINGS[provider] || {};
       }
-      
+
       // 合并新的配置数据
       settings[provider] = { ...settings[provider], ...providerData };
-      
+
+      // 保存并记录配置
+      console.log(
+        `保存服务商 ${provider} 的配置:`,
+        JSON.stringify(settings[provider], null, 2)
+      );
       storage.saveConfig(SETTINGS_KEY, settings);
-      return success({ 
-        provider, 
-        settings: settings[provider] 
+
+      return success({
+        provider,
+        settings: settings[provider],
       });
     } catch (err) {
       console.error(`更新${provider}配置失败:`, err);
@@ -192,53 +223,76 @@ class Settings {
    */
   static testProviderConnection(provider) {
     try {
+      console.log(`测试服务商 ${provider} 的连接`);
+      console.log(`检查配置文件路径: ${storage.getConfigPath()}`);
+
+      // 验证配置文件是否存在
+      const configFilePath = path.join(storage.getConfigPath(), "vwordai.json");
+      console.log(`配置文件路径: ${configFilePath}`);
+      console.log(
+        `配置文件是否存在: ${require("fs").existsSync(configFilePath)}`
+      );
+
+      // 读取并记录所有设置
       const settings = this.getAllSettings();
+      console.log(`所有设置:`, JSON.stringify(settings, null, 2));
+
+      // 检查服务商配置
       const providerSettings = settings[provider];
-      
+      console.log(
+        `服务商 ${provider} 的配置:`,
+        JSON.stringify(providerSettings, null, 2)
+      );
+
       if (!providerSettings) {
+        console.error(`服务商 ${provider} 配置不存在!`);
         return error(`服务商 ${provider} 配置不存在`);
       }
-      
+
       // 此处只检查配置是否存在基本字段，实际API连接测试可以在TTSService中实现
       let isValid = false;
       let missingFields = [];
-      
-      switch(provider) {
-        case 'azure':
+
+      switch (provider) {
+        case "azure":
           isValid = providerSettings.key && providerSettings.region;
-          if (!providerSettings.key) missingFields.push('key');
-          if (!providerSettings.region) missingFields.push('region');
+          if (!providerSettings.key) missingFields.push("key");
+          if (!providerSettings.region) missingFields.push("region");
           break;
-        case 'aliyun':
+        case "aliyun":
           isValid = providerSettings.appkey && providerSettings.token;
-          if (!providerSettings.appkey) missingFields.push('appkey');
-          if (!providerSettings.token) missingFields.push('token');
+          if (!providerSettings.appkey) missingFields.push("appkey");
+          if (!providerSettings.token) missingFields.push("token");
           break;
-        case 'tencent':
+        case "tencent":
           isValid = providerSettings.secretId && providerSettings.secretKey;
-          if (!providerSettings.secretId) missingFields.push('secretId');
-          if (!providerSettings.secretKey) missingFields.push('secretKey');
+          if (!providerSettings.secretId) missingFields.push("secretId");
+          if (!providerSettings.secretKey) missingFields.push("secretKey");
           break;
-        case 'baidu':
+        case "baidu":
           isValid = providerSettings.apiKey && providerSettings.secretKey;
-          if (!providerSettings.apiKey) missingFields.push('apiKey');
-          if (!providerSettings.secretKey) missingFields.push('secretKey');
+          if (!providerSettings.apiKey) missingFields.push("apiKey");
+          if (!providerSettings.secretKey) missingFields.push("secretKey");
           break;
-        case 'openai':
+        case "openai":
           isValid = providerSettings.apiKey;
-          if (!providerSettings.apiKey) missingFields.push('apiKey');
+          if (!providerSettings.apiKey) missingFields.push("apiKey");
           break;
         default:
           return error(`不支持的服务商: ${provider}`);
       }
-      
+
       if (!isValid) {
-        return error(`服务商配置不完整，缺少: ${missingFields.join(', ')}`);
+        console.log(
+          `服务商 ${provider} 配置不完整，缺少: ${missingFields.join(", ")}`
+        );
+        return error(`服务商配置不完整，缺少: ${missingFields.join(", ")}`);
       }
-      
+
       // 如果配置有效，返回成功
+      console.log(`服务商 ${provider} 配置有效`);
       return success({
-        message: `${provider} 配置有效`
+        message: `${provider} 配置有效`,
       });
     } catch (err) {
       console.error(`测试${provider}连接失败:`, err);
@@ -247,4 +301,4 @@ class Settings {
   }
 }
 
-module.exports = Settings; 
+module.exports = Settings;

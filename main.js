@@ -13,6 +13,15 @@ log.transports.file.level = "debug";
 autoUpdater.logger = log;
 autoUpdater.autoDownload = false;
 
+// 配置 GitHub 更新源
+// 指定正确的 GitHub 仓库信息
+autoUpdater.setFeedURL({
+  provider: "github",
+  owner: "dingdangdog",
+  repo: "vwordai",
+  releaseType: "release"
+});
+
 require("dotenv").config(); // Load environment variables from .env file
 
 if (process.env.NODE_ENV === "development") {

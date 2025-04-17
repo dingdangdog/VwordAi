@@ -20,6 +20,30 @@ export interface UpdateInfo {
 }
 
 /**
+ * GitHub API 资源文件接口
+ */
+interface GitHubAsset {
+  name: string;
+  browser_download_url: string;
+  size: number;
+  created_at: string;
+  updated_at: string;
+  content_type: string;
+}
+
+/**
+ * GitHub API 发布信息接口
+ */
+interface GitHubRelease {
+  tag_name: string;
+  name: string;
+  published_at: string;
+  body: string;
+  html_url: string;
+  assets: GitHubAsset[];
+}
+
+/**
  * 检查结果接口
  */
 export interface CheckResult {
@@ -85,39 +109,63 @@ export class UpdateService {
         return { status: VersionCompareResult.NewerAvailable };
       }
 
-      // 降级到HTTP API检查
+      // 降级到GitHub API检查
+      console.log("正在从GitHub API检查更新:", appConfig.updateURL);
       const response = await fetch(appConfig.updateURL, {
-        method: "POST",
+        method: "GET",
         headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          currentVersion: appConfig.version,
-          platform: getOSPlatform(),
-          appId: "com.vwordai",
-        }),
+          "Accept": "application/vnd.github.v3+json"
+        }
       });
 
       if (!response.ok) {
+        const errorText = await response.text();
+        console.error("GitHub API 响应错误:", response.status, errorText);
         throw new Error(
-          `Server responded with ${response.status}: ${response.statusText}`
+          `GitHub API 返回 ${response.status}: ${response.statusText}. ${errorText}`
         );
       }
 
-      const data = await response.json();
+      const data = await response.json() as GitHubRelease;
+      console.log("GitHub API 返回数据:", data);
+
+      // 格式化GitHub API返回的版本号（去掉可能的v前缀）
+      const latestVersion = data.tag_name ? data.tag_name.replace(/^v/, '') : data.name?.replace(/^v/, '');
+      
+      if (!latestVersion) {
+        throw new Error("无法从GitHub API响应中提取版本号");
+      }
 
       // 比较版本
-      const comparison = compareVersions(data.version, appConfig.version);
+      const comparison = compareVersions(latestVersion, appConfig.version);
+      console.log(`版本比较: ${latestVersion} vs ${appConfig.version} = ${comparison}`);
 
       if (comparison > 0) {
         // 有新版本
+        // 查找对应的下载URL
+        let downloadUrl = "";
+        if (data.assets && data.assets.length > 0) {
+          // 查找针对当前平台的安装包
+          const platform = getOSPlatform();
+          const platformExtensions = getPlatformExtensions(platform);
+          
+          const asset = data.assets.find(asset => 
+            platformExtensions.some(ext => asset.name.toLowerCase().endsWith(ext))
+          ) || data.assets[0]; // 如果没找到针对当前平台的，就用第一个
+          
+          downloadUrl = asset.browser_download_url;
+        } else {
+          // 如果没有资源文件，使用发布页面URL
+          downloadUrl = data.html_url;
+        }
+
         return {
           status: VersionCompareResult.NewerAvailable,
           updateInfo: {
-            version: data.version,
-            releaseDate: data.releaseDate || new Date().toLocaleDateString(),
-            downloadUrl: data.downloadUrl || "",
-            releaseNotes: data.releaseNotes || "",
+            version: latestVersion,
+            releaseDate: new Date(data.published_at || Date.now()).toLocaleDateString(),
+            downloadUrl: downloadUrl,
+            releaseNotes: data.body || "无详细更新说明",
           },
         };
       } else {
@@ -193,4 +241,20 @@ function getOSPlatform(): string {
   if (userAgent.includes("linux")) return "linux";
 
   return "unknown";
+}
+
+/**
+ * 获取平台对应的安装包扩展名
+ */
+function getPlatformExtensions(platform: string): string[] {
+  switch (platform) {
+    case "windows":
+      return ['.exe', '.msi', '.zip', '-win.zip'];
+    case "macos":
+      return ['.dmg', '.pkg', '.zip', '-mac.zip'];
+    case "linux":
+      return ['.deb', '.rpm', '.AppImage', '.tar.gz', '-linux.zip'];
+    default:
+      return ['.zip', '.exe', '.dmg', '.deb', '.AppImage'];
+  }
 }
