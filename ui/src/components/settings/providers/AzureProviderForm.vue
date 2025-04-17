@@ -78,26 +78,6 @@
         </button>
       </div>
     </form>
-
-    <div
-      v-if="testResult"
-      class="mt-4 p-3 rounded-md"
-      :class="
-        testResult.success
-          ? 'bg-green-50 dark:bg-green-900/20'
-          : 'bg-red-50 dark:bg-red-900/20'
-      "
-    >
-      <p
-        :class="
-          testResult.success
-            ? 'text-green-700 dark:text-green-400'
-            : 'text-red-700 dark:text-red-400'
-        "
-      >
-        {{ testResult.message }}
-      </p>
-    </div>
   </div>
 </template>
 
@@ -117,7 +97,6 @@ const emit = defineEmits(["update", "save", "test", "cancel"]);
 const toast = useToast();
 const isSaving = ref(false);
 const isTesting = ref(false);
-const testResult = ref<{ success: boolean; message: string } | null>(null);
 
 // 表单数据
 const form = reactive({
@@ -194,20 +173,21 @@ async function testConnection() {
   }
 
   isTesting.value = true;
-  testResult.value = null;
 
   try {
-    // 通知父组件执行测试
+    // 通知父组件执行测试，不再等待返回值
     emit("test", {
       key: form.key,
       region: form.region,
       endpoint: form.endpoint,
     });
+
+    // 测试开始的消息
+    toast.info("正在测试连接，请稍候...");
   } catch (error) {
-    testResult.value = {
-      success: false,
-      message: error instanceof Error ? error.message : "连接测试出错",
-    };
+    toast.error(
+      `测试失败: ${error instanceof Error ? error.message : "连接测试出错"}`
+    );
   } finally {
     isTesting.value = false;
   }

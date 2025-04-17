@@ -9,7 +9,10 @@
 
     <form @submit.prevent="saveForm" class="space-y-4">
       <div>
-        <label for="secretId" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+        <label
+          for="secretId"
+          class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+        >
           SecretId<span class="text-red-500">*</span>
         </label>
         <input
@@ -23,7 +26,10 @@
       </div>
 
       <div>
-        <label for="secretKey" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+        <label
+          for="secretKey"
+          class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+        >
           SecretKey<span class="text-red-500">*</span>
         </label>
         <input
@@ -37,7 +43,10 @@
       </div>
 
       <div>
-        <label for="endpoint" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+        <label
+          for="endpoint"
+          class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+        >
           自定义终结点 (可选)
         </label>
         <input
@@ -50,13 +59,6 @@
       </div>
 
       <div class="flex justify-end space-x-2 mt-6">
-        <!-- <button
-          type="button"
-          class="btn btn-secondary"
-          @click="$emit('cancel')"
-        >
-          取消
-        </button>
         <button
           type="button"
           class="btn btn-secondary"
@@ -64,32 +66,12 @@
           :disabled="isTesting"
         >
           {{ isTesting ? "测试中..." : "测试配置" }}
-        </button> -->
+        </button>
         <button type="submit" class="btn btn-primary" :disabled="isSaving">
           {{ isSaving ? "保存中..." : "保存配置" }}
         </button>
       </div>
     </form>
-
-    <div
-      v-if="testResult"
-      class="mt-4 p-3 rounded-md"
-      :class="
-        testResult.success
-          ? 'bg-green-50 dark:bg-green-900/20'
-          : 'bg-red-50 dark:bg-red-900/20'
-      "
-    >
-      <p
-        :class="
-          testResult.success
-            ? 'text-green-700 dark:text-green-400'
-            : 'text-red-700 dark:text-red-400'
-        "
-      >
-        {{ testResult.message }}
-      </p>
-    </div>
   </div>
 </template>
 
@@ -116,7 +98,6 @@ const toast = useToast();
 const settingsStore = useSettingsStore();
 const isSaving = ref(false);
 const isTesting = ref(false);
-const testResult = ref<{ success: boolean; message: string } | null>(null);
 
 // 表单数据
 const form = reactive({
@@ -159,7 +140,6 @@ async function saveForm() {
     const response = await serviceProviderApi.update("tencent", data);
 
     if (response.success) {
-      
       toast.success("腾讯云配置已保存");
       emit("save", response.data);
     } else {
@@ -183,32 +163,23 @@ async function testConnection() {
   }
 
   isTesting.value = true;
-  testResult.value = null;
 
   try {
-    const response = await serviceProviderApi.testConnection("tencent");
+    // 先发送测试开始的消息
+    toast.info("正在测试连接，请稍候...");
 
-    if (response.success) {
-      testResult.value = {
-        success: true,
-        message: "连接测试成功",
-      };
-    } else {
-      testResult.value = {
-        success: false,
-        message: response.error || "连接测试失败，请检查配置信息",
-      };
-    }
-
-    emit("test", testResult.value);
+    // 通知父组件执行测试，带上当前配置
+    emit("test", {
+      secretId: form.secretId,
+      secretKey: form.secretKey,
+      endpoint: form.endpoint,
+    });
   } catch (error) {
-    testResult.value = {
-      success: false,
-      message: error instanceof Error ? error.message : "连接测试出错",
-    };
-    emit("test", testResult.value);
+    toast.error(
+      `测试失败: ${error instanceof Error ? error.message : "连接测试出错"}`
+    );
   } finally {
     isTesting.value = false;
   }
 }
-</script> 
+</script>

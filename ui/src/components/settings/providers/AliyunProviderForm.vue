@@ -59,13 +59,6 @@
       </div>
 
       <div class="flex justify-end space-x-2 mt-6">
-        <!-- <button
-          type="button"
-          class="btn btn-secondary"
-          @click="$emit('cancel')"
-        >
-          取消
-        </button>
         <button
           type="button"
           class="btn btn-secondary"
@@ -73,32 +66,12 @@
           :disabled="isTesting"
         >
           {{ isTesting ? "测试中..." : "测试配置" }}
-        </button> -->
+        </button>
         <button type="submit" class="btn btn-primary" :disabled="isSaving">
           {{ isSaving ? "保存中..." : "保存配置" }}
         </button>
       </div>
     </form>
-
-    <div
-      v-if="testResult"
-      class="mt-4 p-3 rounded-md"
-      :class="
-        testResult.success
-          ? 'bg-green-50 dark:bg-green-900/20'
-          : 'bg-red-50 dark:bg-red-900/20'
-      "
-    >
-      <p
-        :class="
-          testResult.success
-            ? 'text-green-700 dark:text-green-400'
-            : 'text-red-700 dark:text-red-400'
-        "
-      >
-        {{ testResult.message }}
-      </p>
-    </div>
   </div>
 </template>
 
@@ -118,7 +91,6 @@ const emit = defineEmits(["update", "save", "test", "cancel"]);
 const toast = useToast();
 const isSaving = ref(false);
 const isTesting = ref(false);
-const testResult = ref<{ success: boolean; message: string } | null>(null);
 
 // 表单数据
 const form = reactive({
@@ -173,16 +145,21 @@ async function testConnection() {
   }
 
   isTesting.value = true;
-  testResult.value = null;
 
   try {
     // 通知父组件执行测试
-    emit("test");
+    emit("test", {
+      appkey: form.appkey,
+      token: form.token,
+      endpoint: form.endpoint,
+    });
+
+    // 测试开始的消息
+    toast.info("正在测试连接，请稍候...");
   } catch (error) {
-    testResult.value = {
-      success: false,
-      message: error instanceof Error ? error.message : "连接测试出错",
-    };
+    toast.error(
+      `测试失败: ${error instanceof Error ? error.message : "连接测试出错"}`
+    );
   } finally {
     isTesting.value = false;
   }
