@@ -75,26 +75,42 @@
             v-html="formattedReleaseNotes"
           ></div>
         </div>
-        
+
         <!-- 下载进度 -->
         <div v-if="downloadState === 'downloading'" class="mb-4">
           <div class="flex justify-between mb-1">
-            <span class="text-sm font-medium text-blue-700 dark:text-blue-400">正在下载更新 {{ Math.round(downloadProgress || 0) }}%</span>
+            <span class="text-sm font-medium text-blue-700 dark:text-blue-400"
+              >正在下载更新 {{ Math.round(downloadProgress || 0) }}%</span
+            >
           </div>
           <div class="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700">
-            <div class="bg-blue-600 h-2.5 rounded-full" :style="{ width: `${downloadProgress || 0}%` }"></div>
+            <div
+              class="bg-blue-600 h-2.5 rounded-full"
+              :style="{ width: `${downloadProgress || 0}%` }"
+            ></div>
+          </div>
+        </div>
+
+        <!-- 下载错误提示 -->
+        <div v-if="downloadState === 'error'" class="mb-4">
+          <div
+            class="bg-red-100 border-l-4 border-red-500 text-red-700 p-3 rounded-md"
+            role="alert"
+          >
+            <p class="font-medium">下载失败</p>
+            <p>更新下载过程中出现错误，请检查网络连接后重试。</p>
           </div>
         </div>
 
         <!-- 按钮区域 -->
         <div class="flex space-x-3 justify-end">
           <button
-            v-if="downloadState === 'idle'"
+            v-if="downloadState === 'idle' || downloadState === 'error'"
             @click="$emit('download')"
             class="btn btn-primary"
           >
             <ArrowDownTrayIcon class="h-5 w-5 mr-1" />
-            下载更新
+            {{ downloadState === "error" ? "重试下载" : "下载更新" }}
           </button>
           <button
             v-if="downloadState === 'downloaded'"
@@ -107,9 +123,14 @@
           <button
             @click="$emit('close')"
             class="btn btn-secondary"
-            :class="{ 'ml-auto': downloadState !== 'idle' && downloadState !== 'downloaded' }"
+            :class="{
+              'ml-auto':
+                downloadState !== 'idle' &&
+                downloadState !== 'downloaded' &&
+                downloadState !== 'error',
+            }"
           >
-            {{ downloadState === 'downloaded' ? '稍后安装' : '关闭' }}
+            {{ downloadState === "downloaded" ? "稍后安装" : "关闭" }}
           </button>
         </div>
       </div>
@@ -119,7 +140,10 @@
 
 <script setup lang="ts">
 import { computed } from "vue";
-import { ArrowDownTrayIcon, ArrowUpCircleIcon } from "@heroicons/vue/24/outline";
+import {
+  ArrowDownTrayIcon,
+  ArrowUpCircleIcon,
+} from "@heroicons/vue/24/outline";
 import type { UpdateInfo } from "@/services/updateService";
 
 // Props
@@ -128,7 +152,7 @@ const props = defineProps<{
   updateInfo: UpdateInfo;
   currentVersion: string;
   downloadProgress?: number;
-  downloadState?: 'idle' | 'downloading' | 'downloaded' | 'error';
+  downloadState?: "idle" | "downloading" | "downloaded" | "error";
 }>();
 
 // Emits
@@ -140,13 +164,13 @@ const emit = defineEmits<{
 
 // 格式化发布说明
 const formattedReleaseNotes = computed(() => {
-  if (!props.updateInfo.releaseNotes) return '';
-  
+  if (!props.updateInfo.releaseNotes) return "";
+
   // 替换 Markdown 风格的标题和列表
   return props.updateInfo.releaseNotes
-    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-    .replace(/\n- /g, '<br>• ')
-    .replace(/\n\n/g, '<br><br>');
+    .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
+    .replace(/\n- /g, "<br>• ")
+    .replace(/\n\n/g, "<br><br>");
 });
 </script>
 
@@ -162,4 +186,4 @@ const formattedReleaseNotes = computed(() => {
 .btn-secondary {
   @apply bg-gray-200 text-gray-800 hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600;
 }
-</style> 
+</style>

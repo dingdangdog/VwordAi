@@ -223,6 +223,13 @@ onUnmounted(() => {
   }
 });
 
+// Error: Cannot parse releases feed: Error: Unable to find latest version on GitHub (https://github.com/dingdangdog/vwordai/releases/latest), please ensure a production release exists: Error: net::ERR_CONNECTION_TIMED_OUT
+// at SimpleURLLoaderWrapper.<anonymous> (node:electron/js2c/browser_init:2:123459)
+//     at SimpleURLLoaderWrapper.emit (node:events:518:28)
+//     at newError (D:\Program Files\VwordAi\resources\app.asar\node_modules\builder-util-runtime\out\error.js:5:19)
+//     at GitHubProvider.getLatestTagName (D:\Program Files\VwordAi\resources\app.asar\node_modules\electron-updater\out\providers\GitHubProvider.js:161:55)
+//     at async GitHubProvider.getLatestVersion (D:\Program Files\VwordAi\resources\app.asar\node_modules\electron-updater\out\providers\GitHubProvider.js:85:23)
+//     at async
 // 处理来自主进程的更新消息
 function handleUpdateMessage(data: { message: string; data: any }) {
   switch (data.message) {
@@ -260,9 +267,26 @@ function handleUpdateMessage(data: { message: string; data: any }) {
 
     case "error":
       // 更新过程出错
+      console.error("更新错误:", data.data);
       isCheckingUpdate.value = false;
       downloadState.value = "error";
-      toast.error(`更新错误: ${data.data}`);
+      
+      // 简化错误信息显示
+      let errorMessage = String(data.data || "");
+      
+      // 提取网络错误代码
+      if (errorMessage.includes("net::")) {
+        const netErrorMatch = errorMessage.match(/net::(ERR_\w+)/);
+        if (netErrorMatch) {
+          errorMessage = netErrorMatch[1];
+        }
+      } 
+      // 如果是其他错误，只保留第一行或限制长度
+      else if (errorMessage.length > 50) {
+        errorMessage = errorMessage.split('\n')[0].substring(0, 50) + "...";
+      }
+      
+      toast.error(`更新错误: ${errorMessage}`);
       break;
   }
 }
@@ -348,6 +372,7 @@ async function handleDownloadUpdate() {
   }
 
   try {
+    // 重置下载状态，允许重试下载
     downloadState.value = "downloading";
     downloadProgress.value = 0;
     await window.electron.downloadUpdate();
