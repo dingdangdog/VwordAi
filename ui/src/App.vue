@@ -1,5 +1,5 @@
 <template>
-  <div class="min-h-screen bg-gray-50 dark:bg-gray-900">
+  <div class="min-h-screen bg-gradient-to-b from-blue-50 to-blue-400 dark:from-gray-900 dark:to-gray-600 duration-100 transition-colors">
     <Navbar />
     <main class="p-4">
       <router-view />

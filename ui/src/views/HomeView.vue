@@ -60,7 +60,7 @@
         <div
           v-for="project in recentProjects"
           :key="project.id"
-          class="card hover:shadow-lg transition-shadow duration-200"
+          class="card transition-shadow duration-200 shadow hover:shadow-md shadow-blue-500 dark:shadow-gray-500"
         >
           <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">
             {{ project.title }}

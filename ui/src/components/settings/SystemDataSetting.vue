@@ -52,6 +52,32 @@
           class="shadow-lg bg-gray-100 dark:bg-gray-700 rounded-sm p-2 text-center"
         >
           <h3
+            class="text-base font-semibold text-gray-900 dark:text-white mb-2"
+          >
+            导出系统数据
+          </h3>
+          <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">
+            导出全部系统数据为单个JSON文件，包含所有配置和内容。
+          </p>
+
+          <button
+            @click="exportSystemData"
+            :disabled="isExporting"
+            class="btn btn-primary mt-2 flex mx-auto"
+          >
+            <ArrowUpTrayIcon v-if="!isExporting" class="h-5 w-5 mr-2" />
+            <div
+              v-else
+              class="animate-spin h-5 w-5 border-2 border-white border-t-transparent rounded-full mr-2"
+            ></div>
+            {{ isExporting ? "导出中..." : "导出全部系统数据" }}
+          </button>
+        </div>
+
+        <div
+          class="shadow-lg bg-gray-100 dark:bg-gray-700 rounded-sm p-2 text-center"
+        >
+          <h3
             class="text-base font-semibold text-gray-900 dark:text-white mb-3"
           >
             导入系统数据
@@ -79,32 +105,6 @@
               class="animate-spin h-5 w-5 border-2 border-white border-t-transparent rounded-full mr-2"
             ></div>
             {{ isImporting ? "导入中..." : "导入系统数据" }}
-          </button>
-        </div>
-
-        <div
-          class="shadow-lg bg-gray-100 dark:bg-gray-700 rounded-sm p-2 text-center"
-        >
-          <h3
-            class="text-base font-semibold text-gray-900 dark:text-white mb-2"
-          >
-            导出系统数据
-          </h3>
-          <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">
-            导出全部系统数据为单个JSON文件，包含所有配置和内容。
-          </p>
-
-          <button
-            @click="exportSystemData"
-            :disabled="isExporting"
-            class="btn btn-primary mt-2 flex mx-auto"
-          >
-            <ArrowUpTrayIcon v-if="!isExporting" class="h-5 w-5 mr-2" />
-            <div
-              v-else
-              class="animate-spin h-5 w-5 border-2 border-white border-t-transparent rounded-full mr-2"
-            ></div>
-            {{ isExporting ? "导出中..." : "导出全部系统数据" }}
           </button>
         </div>
       </div>

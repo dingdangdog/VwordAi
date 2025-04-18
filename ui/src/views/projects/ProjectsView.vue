@@ -44,7 +44,7 @@
         <div
           v-for="project in projects"
           :key="project.id"
-          class="card hover:shadow-lg transition-shadow duration-200"
+          class="card transition-shadow duration-200 shadow hover:shadow-md shadow-blue-500 dark:shadow-gray-500"
         >
           <div class="flex justify-between items-start mb-4">
             <h3 class="text-lg font-semibold text-gray-900 dark:text-white">

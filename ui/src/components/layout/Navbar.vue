@@ -14,11 +14,11 @@
           <div class="ml-10 flex items-baseline space-x-4 no-drag">
             <a
               href="#/"
-              class="px-3 py-2 rounded-md text-sm font-semibold"
+              class="px-3 py-2 text-sm font-semibold"
               :class="[
                 $route.path === '/'
-                  ? 'bg-blue-600 text-white'
-                  : 'text-gray-700 hover:bg-gray-200 dark:text-gray-300 dark:hover:bg-gray-700',
+                  ? 'bg-gradient-to-b from-blue-100/10 via-blue-500 to-blue-100/10 text-white'
+                  : 'text-gray-700 hover:bg-gradient-to-b hover:from-gray-100 hover:via-gray-200 hover:to-gray-100 dark:text-gray-300 dark:hover:from-gray-800 dark:hover:via-gray-700 dark:hover:to-gray-800',
               ]"
               @click.prevent="navigateTo('/')"
             >
@@ -26,11 +26,11 @@
             </a>
             <a
               href="#/projects"
-              class="px-3 py-2 rounded-md text-sm font-semibold"
+              class="px-3 py-2 text-sm font-semibold"
               :class="[
                 $route.path.startsWith('/projects')
-                  ? 'bg-blue-600 text-white'
-                  : 'text-gray-700 hover:bg-gray-200 dark:text-gray-300 dark:hover:bg-gray-700',
+                  ? 'bg-gradient-to-b from-blue-100/10 via-blue-500 to-blue-100/10 text-white'
+                  : 'text-gray-700 hover:bg-gradient-to-b hover:from-gray-100 hover:via-gray-200 hover:to-gray-100 dark:text-gray-300 dark:hover:from-gray-800 dark:hover:via-gray-700 dark:hover:to-gray-800',
               ]"
               @click.prevent="navigateTo('/projects')"
             >
@@ -38,11 +38,11 @@
             </a>
             <a
               href="#/settings"
-              class="px-3 py-2 rounded-md text-sm font-semibold"
+              class="px-3 py-2 text-sm font-semibold"
               :class="[
                 $route.path === '/settings'
-                  ? 'bg-blue-600 text-white'
-                  : 'text-gray-700 hover:bg-gray-200 dark:text-gray-300 dark:hover:bg-gray-700',
+                  ? 'bg-gradient-to-b from-blue-100/10 via-blue-500 to-blue-100/10 text-white'
+                  : 'text-gray-700 hover:bg-gradient-to-b hover:from-gray-100 hover:via-gray-200 hover:to-gray-100 dark:text-gray-300 dark:hover:from-gray-800 dark:hover:via-gray-700 dark:hover:to-gray-800',
               ]"
               @click.prevent="navigateTo('/settings')"
             >
@@ -119,9 +119,9 @@ const isMax = ref(false);
 function toggleTheme() {
   const newTheme = settingsStore.theme === "light" ? "dark" : "light";
   settingsStore.toggleTheme();
-  
+
   // Save theme to settings for persistence across sessions
-  settingsStore.updateSettings({ theme: newTheme }).catch(error => {
+  settingsStore.updateSettings({ theme: newTheme }).catch((error) => {
     console.error("Failed to save theme to settings:", error);
   });
 }

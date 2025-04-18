@@ -1,5 +1,5 @@
 <template>
-  <div class="container mx-auto p-4">
+  <div class="container mx-auto">
     <div v-if="loading" class="flex justify-center items-center py-4">
       <div
         class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"
@@ -103,7 +103,7 @@
       </div>
 
       <!-- Add Chapter Button -->
-      <div class="flex justify-between mb-2">
+      <div class="flex justify-between mb-2 sticky top-16">
         <h2 class="text-base font-semibold text-gray-900 dark:text-white">
           章节列表
         </h2>
@@ -117,7 +117,7 @@
       </div>
 
       <!-- Chapters List -->
-      <div class="mb-6">
+      <div class="mb-6 max-h-[60vh] overflow-y-auto rounded-md shadow-sm shadow-black dark:shadow-white">
         <div v-if="chapters.length === 0" class="card text-center py-8">
           <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-3">
             暂无章节
@@ -221,7 +221,7 @@
                     <!-- Expanded Chapter Content -->
                     <div
                       v-if="expandedChapters[chapter.id]"
-                      class="mt-2 border-t border-gray-200 dark:border-gray-700"
+                      class="mt-2 border-t border-gray-200 dark:border-gray-600"
                     >
                       <!-- Chapter Synthesis Component -->
                       <ChapterSynthesis
