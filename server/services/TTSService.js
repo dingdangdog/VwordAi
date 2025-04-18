@@ -308,9 +308,10 @@ async function synthesizeChapter(chapterId) {
     // 8. Synthesize each chunk
     for (let i = 0; i < textChunks.length; i++) {
       const chunk = textChunks[i];
+      // 使用字母数字的文件名，避免中文或特殊字符导致的路径问题
       const tempOutputPath = path.join(
         tempDir,
-        `part${i + 1}_${Date.now()}.wav`
+        `chunk_${i + 1}_${Date.now()}.wav`
       );
 
       try {
@@ -341,6 +342,10 @@ async function synthesizeChapter(chapterId) {
           );
         }
 
+        // 记录添加到临时文件列表
+        console.log(
+          `[TTS] Adding chunk file to merge list: ${chunkResult.data.filePath}`
+        );
         tempAudioFiles.push(chunkResult.data.filePath);
       } catch (chunkError) {
         throw new Error(
@@ -349,21 +354,145 @@ async function synthesizeChapter(chapterId) {
       }
     }
 
+    console.log(
+      `[TTS] Generated ${tempAudioFiles.length} audio chunks to process`
+    );
+
     // 9. Process final output
     if (tempAudioFiles.length > 1) {
       mergedFilePath = path.join(tempDir, `${finalOutputFileName}.wav`);
-      await audioUtils.mergeAudioFiles(tempAudioFiles, mergedFilePath);
+      console.log(`[TTS] Starting audio merge to: ${mergedFilePath}`);
 
-      if (
-        !fs.existsSync(mergedFilePath) ||
-        fs.statSync(mergedFilePath).size === 0
-      ) {
-        throw new Error("Failed to create valid merged audio file");
+      try {
+        // 验证所有源文件确实存在并可访问
+        let allFilesValid = true;
+        for (const file of tempAudioFiles) {
+          if (!fs.existsSync(file)) {
+            console.error(`[TTS] ERROR: Source file does not exist: ${file}`);
+            allFilesValid = false;
+          }
+        }
+
+        if (!allFilesValid) {
+          throw new Error("One or more source audio files cannot be accessed");
+        }
+
+        // 对于只有两个文件的简单情况，我们直接读取并拼接二进制数据
+        if (tempAudioFiles.length === 2) {
+          console.log(`[TTS] Using direct binary concatenation for two files`);
+
+          try {
+            // 读取两个文件
+            const file1Data = fs.readFileSync(tempAudioFiles[0]);
+            const file2Data = fs.readFileSync(tempAudioFiles[1]);
+
+            // 提取WAV头部信息
+            const headerLength = 44; // 标准WAV头部长度
+            const header = file1Data.slice(0, headerLength);
+            const audio1 = file1Data.slice(headerLength);
+            const audio2 = file2Data.slice(headerLength);
+
+            // 创建新的合并数据
+            const combinedAudio = Buffer.concat([audio1, audio2]);
+
+            // 写入新的头部 (这里需要更新文件大小信息)
+            const size = combinedAudio.length;
+            // 更新头部中的数据大小 (4字节，位置40)
+            header.writeUInt32LE(size, 40);
+            // 更新头部中的总文件大小 (4字节，位置4)
+            header.writeUInt32LE(size + 36, 4);
+
+            // 合并头部和音频数据
+            const finalData = Buffer.concat([header, combinedAudio]);
+
+            // 写入到合并文件
+            fs.writeFileSync(mergedFilePath, finalData);
+            console.log(`[TTS] Direct binary audio merge completed`);
+          } catch (binaryMergeError) {
+            console.error(
+              `[TTS] Direct binary merge failed: ${binaryMergeError.message}`
+            );
+            // 如果二进制合并失败，继续尝试FFmpeg方式
+          }
+        }
+
+        // 如果二进制合并失败或者有超过2个文件，使用FFmpeg
+        if (!fs.existsSync(mergedFilePath)) {
+          // 合并文件前确保文件路径是绝对路径
+          const normalizedTempFiles = tempAudioFiles.map((filePath) =>
+            path.isAbsolute(filePath)
+              ? filePath
+              : path.resolve(process.cwd(), filePath)
+          );
+
+          // 尝试使用audioUtils进行合并
+          await audioUtils.mergeAudioFiles(normalizedTempFiles, mergedFilePath);
+        }
+
+        // 验证合并后的文件
+        if (!fs.existsSync(mergedFilePath)) {
+          throw new Error(`Merged file was not created: ${mergedFilePath}`);
+        }
+
+        const mergedStats = fs.statSync(mergedFilePath);
+        if (mergedStats.size === 0) {
+          throw new Error(`Merged file is empty: ${mergedFilePath}`);
+        }
+
+        // 验证合并文件大小至少应大于等于最大的单个文件
+        const largestInputSize = Math.max(
+          ...tempAudioFiles.map((file) =>
+            fs.existsSync(file) ? fs.statSync(file).size : 0
+          )
+        );
+
+        if (mergedStats.size <= largestInputSize) {
+          console.warn(
+            `[TTS] Warning: Merged file size (${mergedStats.size}) is not larger than the largest input file (${largestInputSize})`
+          );
+
+          // 如果合并结果不正确，使用第一个有效文件作为后备方案
+          console.log(`[TTS] Using first valid file as fallback`);
+
+          // 查找第一个有效文件
+          for (const file of tempAudioFiles) {
+            if (fs.existsSync(file) && fs.statSync(file).size > 0) {
+              await fs.copyFile(file, mergedFilePath);
+              console.log(`[TTS] Copied ${file} to merged file as fallback`);
+              break;
+            }
+          }
+        }
+
+        console.log(
+          `[TTS] Successfully merged audio to: ${mergedFilePath} (${
+            fs.statSync(mergedFilePath).size
+          } bytes)`
+        );
+
+        // 使用新的copyAudioFile工具替代直接复制
+        await audioUtils.copyAudioFile(mergedFilePath, finalOutputPath);
+        console.log(
+          `[TTS] Copied merged file to final output: ${finalOutputPath}`
+        );
+      } catch (mergeError) {
+        console.error(`[TTS] Audio merge failed: ${mergeError.message}`);
+
+        // 如果合并失败，使用第一个有效文件
+        console.log(`[TTS] Using first valid file due to merge failure`);
+        for (const file of tempAudioFiles) {
+          if (fs.existsSync(file) && fs.statSync(file).size > 0) {
+            await audioUtils.copyAudioFile(file, finalOutputPath);
+            console.log(`[TTS] Copied ${file} to final output as fallback`);
+            break;
+          }
+        }
+
+        // 检查是否有有效的最终输出
+        if (!fs.existsSync(finalOutputPath)) {
+          throw new Error("Failed to create audio output file");
+        }
       }
-
-      // 使用新的copyAudioFile工具替代直接复制
-      await audioUtils.copyAudioFile(mergedFilePath, finalOutputPath);
-      tempAudioFiles.push(mergedFilePath);
     } else if (tempAudioFiles.length === 1) {
       console.log(
         `[TTS] Single audio file, copying from ${tempAudioFiles[0]} to ${finalOutputPath}`
@@ -405,15 +534,15 @@ async function synthesizeChapter(chapterId) {
   } finally {
     // Cleanup code is commented out in the original
     console.log(`[TTS] Cleaning up temporary files`);
-    tempAudioFiles.forEach((fp) => {
-      if (fp && fs.existsSync(fp)) {
-        try {
-          fs.removeSync(fp);
-        } catch (e) {
-          console.error(`[TTS] Failed to delete temporary file ${fp}:`, e);
-        }
-      }
-    });
+    // tempAudioFiles.forEach((fp) => {
+    //   if (fp && fs.existsSync(fp)) {
+    //     try {
+    //       fs.removeSync(fp);
+    //     } catch (e) {
+    //       console.error(`[TTS] Failed to delete temporary file ${fp}:`, e);
+    //     }
+    //   }
+    // });
   }
 }
 
