@@ -76,6 +76,7 @@
     "iconv-lite": "^0.6.3",
     "microsoft-cognitiveservices-speech-sdk": "^1.41.0",
     "qrcode": "^1.5.4",
+    "say": "^0.16.0",
     "uuid": "^9.0.1"
   },
   "devDependencies": {
