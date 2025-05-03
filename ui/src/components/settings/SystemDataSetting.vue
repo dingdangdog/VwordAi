@@ -143,7 +143,7 @@ import {
   projectApi,
   chapterApi,
   serviceProviderApi,
-} from "@/utils/api";
+} from "@/api";
 
 const toast = useToast();
 const projectsStore = useProjectsStore();

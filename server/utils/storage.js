@@ -3,6 +3,9 @@
  */
 const fs = require("fs-extra");
 const path = require("path");
+const electron = require('electron');
+const app = electron.app || (electron.remote && electron.remote.app);
+const log = require('electron-log');
 
 // 基础目录
 let baseDir = "";
@@ -52,6 +55,24 @@ function setBaseDir(dir) {
  * @returns {string} 存储路径
  */
 function getStoragePath() {
+  let userDataPath;
+  try {
+    userDataPath = (app || electron.remote.app).getPath('userData');
+    log.info(`(Storage) User data path: ${userDataPath}`);
+  } catch (err) {
+    log.error(`(Storage) Failed to get user data path:`, err);
+    userDataPath = path.join(process.cwd(), 'storage');
+    log.info(`(Storage) Using fallback storage path: ${userDataPath}`);
+  }
+  
+  const storagePath = path.join(userDataPath, 'storage');
+  
+  // Ensure storage directory exists
+  if (!fs.existsSync(storagePath)) {
+    fs.mkdirSync(storagePath, { recursive: true });
+    log.info(`(Storage) Created storage directory: ${storagePath}`);
+  }
+  
   return storagePath;
 }
 
@@ -113,27 +134,17 @@ function readData(filename, defaultValue = []) {
  * @param {any} value 配置值
  */
 function saveConfig(key, value) {
-  const configPath = path.join(getConfigPath(), "vwordai.json");
-
-  let config = {};
-  if (fs.existsSync(configPath)) {
-    try {
-      const data = fs.readFileSync(configPath, "utf-8");
-      config = JSON.parse(data);
-    } catch (error) {
-      console.error("Read config file failed:", error);
-      // 如果配置文件损坏，重新创建
-      config = {};
-    }
+  try {
+    const storagePath = getStoragePath();
+    const filePath = path.join(storagePath, `${key}.json`);
+    
+    log.debug(`(Storage) Saving config ${key}:`, value);
+    fs.writeFileSync(filePath, JSON.stringify(value, null, 2), 'utf8');
+    return true;
+  } catch (err) {
+    log.error(`(Storage) Failed to save config ${key}:`, err);
+    return false;
   }
-
-  // 统一使用扁平结构，不再使用嵌套的settings对象
-  config[key] = value;
-
-  // 确保config目录存在
-  ensureDirectoryExists(getConfigPath());
-  fs.writeFileSync(configPath, JSON.stringify(config, null, 2), "utf-8");
-  console.log(`Config saved to: ${configPath}`);
 }
 
 /**
@@ -142,21 +153,22 @@ function saveConfig(key, value) {
  * @param {any} defaultValue 默认值
  * @returns {any} 配置值或默认值
  */
-function readConfig(key, defaultValue = null) {
-  const configPath = path.join(getConfigPath(), "vwordai.json");
-  if (!fs.existsSync(configPath)) {
-    console.log(`Config file not found: ${configPath}`);
-    return defaultValue;
-  }
-
+function readConfig(key, defaultValue = {}) {
   try {
-    const data = fs.readFileSync(configPath, "utf-8");
-    const config = JSON.parse(data);
-
-    // 直接从顶层读取，不再检查旧结构
-    return config[key] !== undefined ? config[key] : defaultValue;
-  } catch (error) {
-    console.error("Read config file failed:", error);
+    const storagePath = getStoragePath();
+    const filePath = path.join(storagePath, `${key}.json`);
+    
+    if (fs.existsSync(filePath)) {
+      const data = fs.readFileSync(filePath, 'utf8');
+      const config = JSON.parse(data);
+      log.debug(`(Storage) Successfully read config ${key}`);
+      return config;
+    } else {
+      log.debug(`(Storage) Config ${key} does not exist, using default value`);
+      return defaultValue;
+    }
+  } catch (err) {
+    log.error(`(Storage) Failed to read config ${key}:`, err);
     return defaultValue;
   }
 }

@@ -1,6 +1,6 @@
 import { defineStore } from "pinia";
 import { ref, computed } from "vue";
-import { settingsApi } from "@/utils/api";
+import { settingsApi } from "@/api";
 import type {
   Settings,
   ConnectionTestResult,

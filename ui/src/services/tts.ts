@@ -1,11 +1,16 @@
+/**
+ * TTS服务
+ * 提供文本转语音功能
+ */
 import type {
   VoiceSettings,
   Result,
   ServiceProviderType,
   Settings,
 } from "@/types";
-import { ttsApi, serviceProviderApi, chapterApi } from "@/utils/api";
+import { ttsApi, serviceProviderApi, chapterApi } from "@/api";
 import { useSettingsStore, SUPPORTED_PROVIDERS } from "@/stores/settings";
+import { createErrorHandler } from "@/utils/apiBase";
 
 // TTS 合成请求接口
 interface TTSSynthesisRequest {
@@ -20,6 +25,17 @@ interface TTSSynthesisResponse {
   audioFilePath?: string;
   duration?: number;
 }
+
+// 错误处理工具
+const handleTTSError = (error: unknown, defaultMessage: string) => {
+  const errorMessage = error instanceof Error ? error.message : defaultMessage;
+  console.error(`TTSService Error: ${defaultMessage}`, error);
+  return {
+    success: false,
+    error: errorMessage,
+    data: null,
+  };
+};
 
 // TTS 服务类
 export class TTSService {
@@ -65,8 +81,7 @@ export class TTSService {
         return { success: false, error: "服务商配置不存在", data: [] };
       }
 
-      const response = await ttsApi.getVoiceRoles(serviceProviderType);
-      return response;
+      return await ttsApi.getVoiceRoles(serviceProviderType);
     } catch (error) {
       return {
         success: false,
@@ -87,8 +102,7 @@ export class TTSService {
         return { success: false, error: "服务商配置不存在", data: [] };
       }
 
-      const response = await ttsApi.getEmotions(serviceProviderType);
-      return response;
+      return await ttsApi.getEmotions(serviceProviderType);
     } catch (error) {
       return {
         success: false,
@@ -157,10 +171,8 @@ export class TTSService {
       }
 
       // 调用后端API进行合成
-      const response = await ttsApi.synthesize(tempChapterId);
-      return response;
+      return await ttsApi.synthesize(tempChapterId);
     } catch (error) {
-      console.error("TTS synthesis failed:", error);
       return {
         success: false,
         error: error instanceof Error ? error.message : "语音合成失败",
@@ -176,10 +188,8 @@ export class TTSService {
     }
 
     try {
-      const response = await ttsApi.synthesizeMultiple(chapterIds);
-      return response;
+      return await ttsApi.synthesizeMultiple(chapterIds);
     } catch (error) {
-      console.error("Batch TTS synthesis failed:", error);
       return {
         success: false,
         error: error instanceof Error ? error.message : "批量语音合成失败",
@@ -252,5 +262,6 @@ export class TTSService {
   }
 }
 
-// 导出单例实例
-export const ttsService = TTSService.getInstance();
+// 创建单例实例
+const ttsService = TTSService.getInstance();
+export default ttsService;
