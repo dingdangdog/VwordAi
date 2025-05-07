@@ -97,7 +97,7 @@ const DEFAULT_SOVITS_CONFIG = {
 async function loadAllConfig() {
   try {
     // 加载B站配置
-    const biliData = storage.readConfig("bili", DEFAULT_BILI_CONFIG);
+    const biliData = storage.read("bili", DEFAULT_BILI_CONFIG);
     console.log("biliData", biliData);
     console.log("DEFAULT_BILI_CONFIG", DEFAULT_BILI_CONFIG);
 
@@ -145,18 +145,18 @@ async function loadAllConfig() {
       log.info("(BiliLive Service) Azure config loaded from settings");
     } else {
       // 加载旧配置（向后兼容）
-      const azureData = storage.readConfig("azure", DEFAULT_AZURE_CONFIG);
+      const azureData = storage.read("azure", DEFAULT_AZURE_CONFIG);
       ttsConfig.azure = { ...DEFAULT_AZURE_CONFIG, ...azureData };
       log.info("(BiliLive Service) Azure config loaded from old config");
     }
 
     // 加载阿里云 TTS配置
-    const alibabaData = storage.readConfig("alibaba", DEFAULT_ALIBABA_CONFIG);
+    const alibabaData = storage.read("alibaba", DEFAULT_ALIBABA_CONFIG);
     ttsConfig.alibaba = { ...DEFAULT_ALIBABA_CONFIG, ...alibabaData };
     log.info("(BiliLive Service) Alibaba config loaded");
 
     // 加载SoVITS配置
-    const sovitsData = storage.readConfig("sovits", DEFAULT_SOVITS_CONFIG);
+    const sovitsData = storage.read("sovits", DEFAULT_SOVITS_CONFIG);
     ttsConfig.sovits = { ...DEFAULT_SOVITS_CONFIG, ...sovitsData };
     log.info("(BiliLive Service) SoVITS config loaded");
 
@@ -186,7 +186,7 @@ async function saveBiliConfig(configData) {
     console.log("saveBiliConfig - ttsEnabled value:", biliConfig.ttsEnabled);
 
     // 保存到文件
-    storage.saveConfig(BILI_CONFIG_KEY, biliConfig);
+    storage.save(BILI_CONFIG_KEY, biliConfig);
 
     // 记录保存的配置信息（不记录SESSDATA的具体内容）
     const logConfig = { ...biliConfig };
@@ -212,7 +212,7 @@ async function saveBiliConfig(configData) {
 async function saveTTSMode(mode) {
   try {
     // 保存到BiliLive专用存储
-    storage.saveConfig("bili_ttsMode", mode);
+    storage.save("bili_ttsMode", mode);
     ttsConfig.mode = mode;
 
     // 同步到settings共享存储
@@ -244,7 +244,7 @@ async function saveTTSMode(mode) {
 async function saveAzureConfig(configData) {
   try {
     // 保存到BiliLive专用存储
-    storage.saveConfig(BILI_AZURE_CONFIG_KEY, configData);
+    storage.save(BILI_AZURE_CONFIG_KEY, configData);
     ttsConfig.azure = configData; // Update config in memory
 
     // 同步到settings共享存储
@@ -282,7 +282,7 @@ async function saveAzureConfig(configData) {
  */
 async function saveAlibabaConfig(configData) {
   try {
-    storage.saveConfig(BILI_ALIBABA_CONFIG_KEY, configData);
+    storage.save(BILI_ALIBABA_CONFIG_KEY, configData);
     ttsConfig.alibaba = configData; // Update config in memory
     log.info("(BiliLive Service) Alibaba TTS config saved.");
     return success(configData);
@@ -298,7 +298,7 @@ async function saveAlibabaConfig(configData) {
  */
 async function saveSovitsConfig(configData) {
   try {
-    storage.saveConfig(BILI_SOVITS_CONFIG_KEY, configData);
+    storage.save(BILI_SOVITS_CONFIG_KEY, configData);
     ttsConfig.sovits = configData; // Update config in memory
     log.info("(BiliLive Service) SoVITS TTS config saved.");
     return success(configData);
@@ -312,7 +312,7 @@ async function saveSovitsConfig(configData) {
 async function getConfig() {
   try {
     // Load latest config from storage
-    const biliData = storage.readConfig("bili", DEFAULT_BILI_CONFIG);
+    const biliData = storage.read("bili", DEFAULT_BILI_CONFIG);
     console.log("getConfig - biliData:", biliData);
 
     // Properly merge with default config to ensure all fields exist
@@ -348,17 +348,17 @@ async function getConfig() {
 
     // Fallback to separate config files if settings doesn't have the info
     if (!azureProvider.key) {
-      ttsConfig.azure = storage.readConfig(
+      ttsConfig.azure = storage.read(
         BILI_AZURE_CONFIG_KEY,
         DEFAULT_AZURE_CONFIG
       );
     }
 
-    ttsConfig.alibaba = storage.readConfig(
+    ttsConfig.alibaba = storage.read(
       BILI_ALIBABA_CONFIG_KEY,
       DEFAULT_ALIBABA_CONFIG
     );
-    ttsConfig.sovits = storage.readConfig(
+    ttsConfig.sovits = storage.read(
       BILI_SOVITS_CONFIG_KEY,
       DEFAULT_SOVITS_CONFIG
     );
@@ -1549,7 +1549,7 @@ function speechText(text) {
     );
     biliConfig.ttsEnabled = true;
     // Save this change to storage
-    storage.saveConfig("bili", biliConfig);
+    storage.save("bili", biliConfig);
   }
 
   if (!text || !biliConfig.ttsEnabled) {
@@ -1732,7 +1732,7 @@ async function azureTTS(text) {
   // 检查Azure配置，如果本地没有则尝试从settings加载
   if (!config.azure_key || !config.azure_region) {
     // 尝试从settings加载
-    const azure = storage.readConfig("azure", {});
+    const azure = storage.read("azure", {});
     // console.log("settings:", azure);
     if (azure && azure.key && azure.region) {
       // 使用settings中的Azure配置
@@ -1976,7 +1976,7 @@ async function saveLocalConfig(voice) {
     biliConfig.localVoice = voice;
 
     // Save to storage
-    storage.saveConfig(BILI_CONFIG_KEY, biliConfig);
+    storage.save(BILI_CONFIG_KEY, biliConfig);
 
     log.info(
       `(BiliLive Service) Local TTS config saved with voice: ${
