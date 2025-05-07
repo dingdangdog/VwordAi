@@ -1,7 +1,7 @@
 /**
  * 项目相关API模块
  */
-import type { Result, ProjectData, ChapterData } from "@/types";
+import type { Result, Project, Chapter } from "@/types";
 import { invoke, invokeHandler } from "@/utils/apiBase";
 
 /**
@@ -11,19 +11,19 @@ export const projectApi = {
   /**
    * 获取所有项目
    */
-  getAll: () => invoke<Result<ProjectData[]>>("get-projects"),
+  getAll: () => invoke<Result<Project[]>>("get-projects"),
 
   /**
    * 获取项目详情
    * @param id 项目ID
    */
-  getById: (id: string) => invoke<Result<ProjectData>>("get-project", id),
+  getById: (id: string) => invoke<Result<Project>>("get-project", id),
 
   /**
    * 创建项目
    * @param data 项目数据
    */
-  create: (data: any) => invoke<Result<ProjectData>>("create-project", data),
+  create: (data: any) => invoke<Result<Project>>("create-project", data),
 
   /**
    * 更新项目
@@ -31,7 +31,7 @@ export const projectApi = {
    * @param data 更新数据
    */
   update: (id: string, data: any) =>
-    invoke<Result<ProjectData>>("update-project", id, data),
+    invoke<Result<Project>>("update-project", id, data),
 
   /**
    * 删除项目
@@ -42,21 +42,21 @@ export const projectApi = {
   /**
    * 通过处理器获取所有项目
    */
-  getAllViaHandler: () => invokeHandler<Result<ProjectData[]>>("getProjects"),
+  getAllViaHandler: () => invokeHandler<Result<Project[]>>("getProjects"),
 
   /**
    * 通过处理器获取项目详情
    * @param id 项目ID
    */
   getByIdViaHandler: (id: string) =>
-    invokeHandler<Result<ProjectData>>("getProject", id),
+    invokeHandler<Result<Project>>("getProject", id),
 
   /**
    * 通过处理器创建项目
    * @param data 项目数据
    */
   createViaHandler: (data: any) =>
-    invokeHandler<Result<ProjectData>>("createProject", data),
+    invokeHandler<Result<Project>>("createProject", data),
 
   /**
    * 通过处理器更新项目
@@ -64,7 +64,7 @@ export const projectApi = {
    * @param data 更新数据
    */
   updateViaHandler: (id: string, data: any) =>
-    invokeHandler<Result<ProjectData>>("updateProject", id, data),
+    invokeHandler<Result<Project>>("updateProject", id, data),
 
   /**
    * 通过处理器删除项目
@@ -83,19 +83,19 @@ export const chapterApi = {
    * @param projectId 项目ID
    */
   getByProjectId: (projectId: string) =>
-    invoke<Result<ChapterData[]>>("get-chapters-by-project-id", projectId),
+    invoke<Result<Chapter[]>>("get-chapters-by-project-id", projectId),
 
   /**
    * 获取章节详情
    * @param id 章节ID
    */
-  getById: (id: string) => invoke<Result<ChapterData>>("get-chapter", id),
+  getById: (id: string) => invoke<Result<Chapter>>("get-chapter", id),
 
   /**
    * 创建章节
    * @param data 章节数据
    */
-  create: (data: any) => invoke<Result<ChapterData>>("create-chapter", data),
+  create: (data: any) => invoke<Result<Chapter>>("create-chapter", data),
 
   /**
    * 更新章节
@@ -103,7 +103,7 @@ export const chapterApi = {
    * @param data 更新数据
    */
   update: (id: string, data: any) =>
-    invoke<Result<ChapterData>>("update-chapter", id, data),
+    invoke<Result<Chapter>>("update-chapter", id, data),
 
   /**
    * 删除章节
@@ -116,21 +116,21 @@ export const chapterApi = {
    * @param projectId 项目ID
    */
   getByProjectIdViaHandler: (projectId: string) =>
-    invokeHandler<Result<ChapterData[]>>("getChaptersByProjectId", projectId),
+    invokeHandler<Result<Chapter[]>>("getChaptersByProjectId", projectId),
 
   /**
    * 通过处理器获取章节详情
    * @param id 章节ID
    */
   getByIdViaHandler: (id: string) =>
-    invokeHandler<Result<ChapterData>>("getChapter", id),
+    invokeHandler<Result<Chapter>>("getChapter", id),
 
   /**
    * 通过处理器创建章节
    * @param data 章节数据
    */
   createViaHandler: (data: any) =>
-    invokeHandler<Result<ChapterData>>("createChapter", data),
+    invokeHandler<Result<Chapter>>("createChapter", data),
 
   /**
    * 通过处理器更新章节
@@ -138,7 +138,7 @@ export const chapterApi = {
    * @param data 更新数据
    */
   updateViaHandler: (id: string, data: any) =>
-    invokeHandler<Result<ChapterData>>("updateChapter", id, data),
+    invokeHandler<Result<Chapter>>("updateChapter", id, data),
 
   /**
    * 通过处理器删除章节

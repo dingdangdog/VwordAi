@@ -3,7 +3,12 @@
  */
 import type { Result } from "@/types";
 import { invoke } from "@/utils/apiBase";
-import type { BiliLiveConfig, AzureConfig, AlibabaConfig, SoVITSConfig } from "@/services/BiliLiveService";
+import type {
+  BiliLiveConfig,
+  AzureConfig,
+  AlibabaConfig,
+  SoVITSConfig,
+} from "@/services/BiliLiveService";
 
 /**
  * B站直播API
@@ -121,16 +126,18 @@ export const biliLiveApi = {
    */
   saveAzureConfig: (config: AzureConfig): Promise<Result<boolean>> => {
     try {
-      // Create a clean, serializable copy of the config object
-      const serializableConfig = {
-        azure_key: config.azure_key,
-        azure_region: config.azure_region,
-        azure_model: config.azure_model,
-        speed: config.speed,
-        pitch: config.pitch
-      };
-      
-      return invoke<Result<boolean>>("bililive:save-azure-config", serializableConfig);
+      // Ensure we're only passing serializable data by using JSON stringify/parse
+      const cleanConfig = JSON.parse(
+        JSON.stringify({
+          azure_key: config.azure_key,
+          azure_region: config.azure_region,
+          azure_model: config.azure_model,
+          speed: config.speed,
+          pitch: config.pitch,
+        })
+      );
+
+      return invoke<Result<boolean>>("bililive:save-azure-config", cleanConfig);
     } catch (error) {
       console.error("保存Azure配置失败:", error);
       return Promise.resolve({
@@ -182,9 +189,9 @@ export const biliLiveApi = {
    * @param {string} text 测试文本
    * @returns {Promise<Result<any>>} 测试结果
    */
-  testTTS: (text: string): Promise<Result<{audioUrl?: string}>> => {
+  testTTS: (text: string): Promise<Result<{ audioUrl?: string }>> => {
     try {
-      return invoke<Result<{audioUrl?: string}>>("bililive:test-tts", text);
+      return invoke<Result<{ audioUrl?: string }>>("bililive:test-tts", text);
     } catch (error) {
       console.error("测试TTS失败:", error);
       return Promise.resolve({
@@ -199,9 +206,11 @@ export const biliLiveApi = {
    * 获取可用的TTS声音列表
    * @returns {Promise<Result<any>>} 声音列表
    */
-  getAvailableVoices: (): Promise<Result<{voices: string[]}>> => {
+  getAvailableVoices: (): Promise<Result<{ voices: string[] }>> => {
     try {
-      return invoke<Result<{voices: string[]}>>("bililive:get-available-voices");
+      return invoke<Result<{ voices: string[] }>>(
+        "bililive:get-available-voices"
+      );
     } catch (error) {
       console.error("获取可用声音列表失败:", error);
       return Promise.resolve({
@@ -229,4 +238,4 @@ export const biliLiveApi = {
       });
     }
   },
-}; 
+};

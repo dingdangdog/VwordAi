@@ -10,34 +10,6 @@ export interface Result<T> {
   data: T;
 }
 
-// 项目相关类型
-export interface ProjectData {
-  id: string;
-  title: string;
-  description?: string;
-  author?: string;
-  tags?: string[];
-  coverImage?: string | null;
-  defaultVoiceSettings?: Partial<VoiceSettings>;
-  createAt?: string;
-  updateAt?: string;
-}
-
-// 章节相关类型
-export interface ChapterData {
-  id: string;
-  projectId: string;
-  name: string;
-  text: string;
-  settings: Partial<VoiceSettings>;
-  order: number;
-  wordCount: number;
-  audioUrl?: string;
-  audioDuration?: number;
-  createAt?: string;
-  updateAt?: string;
-}
-
 // 语音设置类型
 export interface VoiceSettings {
   serviceProvider: string | null;
@@ -76,11 +48,16 @@ export interface TTSSynthesisResponse {
 }
 
 // 服务商类型
-export type ServiceProviderType = 'azure' | 'aliyun' | 'tencent' | 'baidu' | 'openai';
+export type ServiceProviderType =
+  | "azure"
+  | "aliyun"
+  | "tencent"
+  | "baidu"
+  | "openai";
 
 // 应用设置类型
 export interface Settings {
-  theme: 'light' | 'dark';
+  theme: "light" | "dark";
   defaultExportPath: string;
   azure?: AzureProviderSettings;
   aliyun?: AliyunProviderSettings;
@@ -128,4 +105,4 @@ export interface OpenAIProviderSettings {
 export interface ConnectionTestResult {
   success: boolean;
   message: string;
-} 
+}
