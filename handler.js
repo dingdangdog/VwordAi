@@ -18,6 +18,9 @@ const BiliLiveController = require("./server/controllers/BiliLiveController");
 // 设置基础目录
 let baseDir = "";
 
+// 注意: Azure TTS测试功能现通过 SettingsController 和 Settings 模型处理，
+// TTS测试整合到了设置模块，保持接口一致性
+
 /**
  * 设置基础目录
  * @param {string} dir 目录路径

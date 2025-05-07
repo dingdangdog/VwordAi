@@ -16,25 +16,30 @@ const DEFAULT_SETTINGS = {
     key: "",
     region: "",
     endpoint: "",
+    status: "untested"
   },
   aliyun: {
     appkey: "",
     token: "",
     endpoint: "",
+    status: "untested"
   },
   tencent: {
     secretId: "",
     secretKey: "",
     endpoint: "",
+    status: "untested"
   },
   baidu: {
     apiKey: "",
     secretKey: "",
     endpoint: "",
+    status: "untested"
   },
   openai: {
     apiKey: "",
     endpoint: "https://api.openai.com/v1",
+    status: "untested"
   },
   autoSave: true,
   autoSaveInterval: 5, // 分钟
@@ -197,6 +202,15 @@ class Settings {
       // 合并新的设置
       const updatedSettings = { ...currentProviderSettings, ...providerData };
       
+      // 检测配置是否已完整填写
+      const isConfigComplete = this.isProviderConfigComplete(provider, updatedSettings);
+      
+      // 如果配置有变更，将状态设置为 untested
+      if (JSON.stringify(currentProviderSettings) !== JSON.stringify(updatedSettings)) {
+        // 只有在配置完整时才设置为 untested，否则设置为 untested
+        updatedSettings.status = isConfigComplete ? "untested" : "untested";
+      }
+      
       // 保存更新后的设置
       storage.saveConfig(provider, updatedSettings);
       
@@ -216,6 +230,38 @@ class Settings {
   }
 
   /**
+   * 检查服务商配置是否完整
+   * @param {string} provider 服务商名称
+   * @param {Object} settings 服务商配置
+   * @returns {boolean} 配置是否完整
+   */
+  static isProviderConfigComplete(provider, providerSettings) {
+    let isComplete = false;
+
+    switch (provider) {
+      case "azure":
+        isComplete = providerSettings.key && providerSettings.region;
+        break;
+      case "aliyun":
+        isComplete = providerSettings.appkey && providerSettings.token;
+        break;
+      case "tencent":
+        isComplete = providerSettings.secretId && providerSettings.secretKey;
+        break;
+      case "baidu":
+        isComplete = providerSettings.apiKey && providerSettings.secretKey;
+        break;
+      case "openai":
+        isComplete = providerSettings.apiKey;
+        break;
+      default:
+        isComplete = false;
+    }
+
+    return isComplete;
+  }
+
+  /**
    * 测试服务商连接
    * @param {string} provider 服务商名称 (azure, aliyun, tencent, baidu, openai)
    * @returns {Object} 测试结果
@@ -230,6 +276,11 @@ class Settings {
       if (!providerSettings) {
         console.error(`Provider ${provider} not found`);
         return error(`服务商 ${provider} 配置不存在`);
+      }
+
+      // Azure TTS服务需要特殊处理，使用实际的TTS测试
+      if (provider === "azure") {
+        return this.testAzureTTS(providerSettings);
       }
 
       // 此处只检查配置是否存在基本字段，实际API连接测试可以在TTSService中实现
@@ -271,17 +322,93 @@ class Settings {
             ", "
           )}`
         );
+        
+        // 更新状态为 untested
+        providerSettings.status = "untested";
+        storage.saveConfig(provider, providerSettings);
+        
         return error(`服务商配置不完整，缺少: ${missingFields.join(", ")}`);
       }
 
-      // 如果配置有效，返回成功
+      // 如果配置有效，返回成功并更新状态
       console.log(`Provider ${provider} settings valid`);
+      
+      // 更新状态为 success
+      providerSettings.status = "success";
+      storage.saveConfig(provider, providerSettings);
+      
       return success({
         message: `${provider} 配置有效`,
+        status: "success"
       });
     } catch (err) {
       console.error(`Test ${provider} connection failed:`, err);
+      
+      // 读取并更新状态为 failure
+      const providerSettings = storage.readConfig(provider, null);
+      if (providerSettings) {
+        providerSettings.status = "failure";
+        storage.saveConfig(provider, providerSettings);
+      }
+      
       return error(err.message);
+    }
+  }
+
+  /**
+   * 测试Azure TTS服务
+   * @param {Object} config Azure配置
+   * @returns {Object} 测试结果
+   */
+  static async testAzureTTS(config) {
+    try {
+      if (!config || !config.key || !config.region) {
+        // 更新状态为 untested
+        if (config) {
+          config.status = "untested";
+          storage.saveConfig("azure", config);
+        }
+        return error("Azure配置不完整");
+      }
+
+      const text = "azure配置成功";
+      // 设置测试参数
+      const settings = {
+        voice: "zh-CN-XiaoxiaoMultilingualNeural",
+        speed: 1.0,
+        emotion: "general",
+      };
+
+      // 使用Azure Provider调用play方法（直接播放不保存）
+      const azureProvider = require("../provider/azure");
+      const result = await azureProvider.play(text, settings, config);
+
+      if (result.success) {
+        // 更新状态为 success
+        config.status = "success";
+        storage.saveConfig("azure", config);
+        
+        return result;
+      } else {
+        // 更新状态为 failure
+        config.status = "failure";
+        storage.saveConfig("azure", config);
+        
+        return result;
+      }
+    } catch (error) {
+      console.error("测试Azure TTS出错:", error);
+      
+      // 更新状态为 failure
+      if (config) {
+        config.status = "failure";
+        storage.saveConfig("azure", config);
+      }
+      
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : "测试时发生未知错误",
+      };
     }
   }
 }

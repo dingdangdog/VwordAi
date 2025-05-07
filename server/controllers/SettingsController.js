@@ -113,6 +113,17 @@ function init() {
       return error(err.message);
     }
   });
+
+  // 测试Azure TTS服务
+  ipcMain.handle("test-azure-tts", async (event, data) => {
+    try {
+      const { config } = data;
+      return await Settings.testAzureTTS(config);
+    } catch (err) {
+      console.error("测试Azure TTS出错:", err);
+      return error(err.message);
+    }
+  });
 }
 
 module.exports = {

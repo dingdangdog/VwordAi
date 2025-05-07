@@ -126,6 +126,7 @@ contextBridge.exposeInMainWorld("api", {
       ipcRenderer.invoke("tts:get-emotions", providerId),
     testProviderConnection: (type) =>
       ipcRenderer.invoke("tts:test-provider-connection", type),
+    // 注意: Azure TTS测试功能已移至 settings.testProviderConnection
     testAzureTTS: (data) => ipcRenderer.invoke("test-azure-tts", data),
   },
 

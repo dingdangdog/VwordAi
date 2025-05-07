@@ -5,6 +5,8 @@ import type {
   Settings,
   ConnectionTestResult,
   ServiceProviderType,
+  ServiceProviderStatus,
+  ServiceProviderConfig
 } from "@/types";
 
 // 设置选项卡类型
@@ -145,6 +147,27 @@ export const useSettingsStore = defineStore("settings", () => {
     }));
   }
 
+  // 获取服务商状态
+  function getServiceProviderStatus(type: ServiceProviderType): ServiceProviderStatus {
+    const config = getServiceProviderConfig(type);
+    return config?.status || "unconfigured";
+  }
+
+  // 检查服务商是否已配置但未测试
+  function isProviderConfiguredButUntested(type: ServiceProviderType): boolean {
+    return getServiceProviderStatus(type) === "untested";
+  }
+
+  // 检查服务商是否配置成功
+  function isProviderConfigurationSuccess(type: ServiceProviderType): boolean {
+    return getServiceProviderStatus(type) === "success";
+  }
+
+  // 检查服务商是否配置失败
+  function isProviderConfigurationFailure(type: ServiceProviderType): boolean {
+    return getServiceProviderStatus(type) === "failure";
+  }
+
   // Test service provider connection
   async function testServiceProviderConnection(
     type: ServiceProviderType
@@ -166,17 +189,32 @@ export const useSettingsStore = defineStore("settings", () => {
       const response = await settingsApi.testProviderConnection(type);
 
       if (response.success && response.data) {
+        // 更新本地状态
+        if (settings.value && settings.value[type]) {
+          settings.value[type].status = (response.data.status as ServiceProviderStatus) || "success";
+        }
+
         return {
           success: true,
           message: response.data.message || "Connection successful",
         };
       } else {
+        // 更新本地状态
+        if (settings.value && settings.value[type]) {
+          settings.value[type].status = "failure";
+        }
+
         return {
           success: false,
           message: response.error || "Connection failed",
         };
       }
     } catch (error) {
+      // 更新本地状态
+      if (settings.value && settings.value[type]) {
+        settings.value[type].status = "failure";
+      }
+
       return {
         success: false,
         message:
@@ -188,23 +226,68 @@ export const useSettingsStore = defineStore("settings", () => {
   // Update service provider config
   async function updateServiceProvider(
     type: ServiceProviderType,
-    config: any
+    config: Partial<ServiceProviderConfig>
   ): Promise<boolean> {
     try {
+      // 检查是否有实际配置的变化（忽略status字段）
+      let hasConfigChanges = false;
+      
+      if (settings.value && settings.value[type]) {
+        const currentConfig = { ...settings.value[type] };
+        delete currentConfig.status;
+        
+        const newConfigWithoutStatus = { ...config };
+        delete newConfigWithoutStatus.status;
+        
+        // 检查是否有变化
+        const currentStr = JSON.stringify(currentConfig);
+        const newStr = JSON.stringify(newConfigWithoutStatus);
+        hasConfigChanges = currentStr !== newStr;
+      }
+      
       // Update local settings first
       if (settings.value) {
+        if (!settings.value[type]) {
+          settings.value[type] = {} as any;
+        }
+        
+        // 合并配置
         settings.value[type] = { ...settings.value[type], ...config };
+        
+        // 如果配置有变化，更新状态
+        if (hasConfigChanges) {
+          // 检查配置是否完整
+          const isConfigComplete = checkProviderConfigComplete(type, settings.value[type]);
+          settings.value[type].status = isConfigComplete ? "untested" : "unconfigured";
+        }
       }
 
       // Update on backend
       const partialSettings: Partial<Settings> = {};
       partialSettings[type] = config;
-      // console.log("partialSettings", partialSettings);
       const response = await settingsApi.update(partialSettings);
       return response.success;
     } catch (error) {
       console.error(`Failed to update ${type} config:`, error);
       return false;
+    }
+  }
+
+  // 检查服务商配置是否完整
+  function checkProviderConfigComplete(type: ServiceProviderType, config: any): boolean {
+    switch (type) {
+      case "azure":
+        return Boolean(config.key && config.region);
+      case "aliyun":
+        return Boolean(config.appkey && config.token);
+      case "tencent":
+        return Boolean(config.secretId && config.secretKey);
+      case "baidu":
+        return Boolean(config.apiKey && config.secretKey);
+      case "openai":
+        return Boolean(config.apiKey);
+      default:
+        return false;
     }
   }
 
@@ -278,5 +361,9 @@ export const useSettingsStore = defineStore("settings", () => {
     getServiceProviderConfig,
     updateServiceProvider,
     loadServiceProviders,
+    getServiceProviderStatus,
+    isProviderConfiguredButUntested,
+    isProviderConfigurationSuccess,
+    isProviderConfigurationFailure,
   };
 });

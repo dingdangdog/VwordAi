@@ -1,7 +1,7 @@
 /**
  * 设置相关API模块
  */
-import type { Result, Settings, ServiceProviderType } from "@/types";
+import type { Result, Settings, ServiceProviderType, ConnectionTestResult } from "@/types";
 import { invoke, invokeHandler } from "@/utils/apiBase";
 
 /**
@@ -62,7 +62,7 @@ export const settingsApi = {
    * @param type 服务商类型
    */
   testProviderConnection: (type: ServiceProviderType) =>
-    invoke<Result<{message: string}>>("test-provider-connection", type),
+    invoke<Result<{message: string, status: string}>>("test-provider-connection", type),
 
   /**
    * 通过处理器获取所有设置
