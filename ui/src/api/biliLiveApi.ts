@@ -185,4 +185,39 @@ export const biliLiveApi = {
       });
     }
   },
+
+  /**
+   * 获取可用的TTS声音列表
+   * @returns {Promise<Result<any>>} 声音列表
+   */
+  getAvailableVoices: (): Promise<Result<{voices: string[]}>> => {
+    try {
+      return invoke<Result<{voices: string[]}>>("bililive:get-available-voices");
+    } catch (error) {
+      console.error("获取可用声音列表失败:", error);
+      return Promise.resolve({
+        success: false,
+        error: error instanceof Error ? error.message : "获取声音列表失败",
+        data: { voices: [] },
+      });
+    }
+  },
+
+  /**
+   * 保存本地TTS配置
+   * @param {string} voice 声音名称
+   * @returns {Promise<Result<any>>} 保存结果
+   */
+  saveLocalConfig: (voice: string): Promise<Result<boolean>> => {
+    try {
+      return invoke<Result<boolean>>("bililive:save-local-config", voice);
+    } catch (error) {
+      console.error("保存本地TTS配置失败:", error);
+      return Promise.resolve({
+        success: false,
+        error: error instanceof Error ? error.message : "保存本地TTS配置失败",
+        data: false,
+      });
+    }
+  },
 }; 

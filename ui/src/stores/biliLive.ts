@@ -321,6 +321,64 @@ export const useBiliLiveStore = defineStore("biliLive", () => {
   }
   
   /**
+   * 获取可用的TTS声音
+   * @returns 可用声音列表
+   */
+  async function refreshVoices() {
+    isLoading.value = true;
+    lastError.value = null;
+    
+    try {
+      console.log("正在获取可用的TTS声音...");
+      const response = await biliLiveService.getAvailableVoices();
+      
+      if (response.success) {
+        console.log(`获取到${response.data.length || 0}个声音`);
+      } else {
+        console.warn("获取声音列表失败:", response.error);
+        lastError.value = response.error || "获取声音列表失败";
+      }
+      
+      return response;
+    } catch (error) {
+      return handleError(error, "获取声音列表失败");
+    } finally {
+      isLoading.value = false;
+    }
+  }
+  
+  /**
+   * 保存本地TTS配置
+   * @param voice 声音名称
+   * @returns 保存结果
+   */
+  async function saveLocalConfig(voice: string) {
+    isLoading.value = true;
+    lastError.value = null;
+    
+    try {
+      console.log(`正在保存本地TTS配置, 声音: ${voice || '默认'}`);
+      const response = await biliLiveService.saveLocalConfig(voice);
+      
+      if (response.success) {
+        if (config.value) {
+          config.value.localVoice = voice;
+        }
+        console.log("本地TTS配置保存成功");
+      } else {
+        console.warn("本地TTS配置保存失败:", response.error);
+        lastError.value = response.error || "保存本地TTS配置失败";
+      }
+      
+      return response;
+    } catch (error) {
+      return handleError(error, "保存本地TTS配置失败");
+    } finally {
+      isLoading.value = false;
+    }
+  }
+  
+  /**
    * 连接到直播间
    * @param roomId 房间ID
    * @returns 连接结果
@@ -577,6 +635,8 @@ export const useBiliLiveStore = defineStore("biliLive", () => {
     saveAzureConfig,
     saveAlibabaConfig,
     saveSovitsConfig,
+    refreshVoices,
+    saveLocalConfig,
     connect,
     disconnect,
     testTTS,

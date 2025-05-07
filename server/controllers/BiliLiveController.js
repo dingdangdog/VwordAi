@@ -145,6 +145,33 @@ async function testTTS(text) {
   }
 }
 
+/**
+ * 获取可用的系统TTS声音
+ */
+async function getAvailableVoices() {
+  try {
+    const voices = await BiliLiveService.getAvailableVoices();
+    console.log('[BiliLiveController] Available voices:', voices);
+    return success({ voices: voices });
+  } catch (err) {
+    console.error('[BiliLiveController] Get available voices error:', err);
+    return error('获取可用声音失败: ' + err.message);
+  }
+}
+
+/**
+ * 保存本地TTS配置
+ * @param {string} voice 声音名称
+ */
+async function saveLocalConfig(voice) {
+  try {
+    return await BiliLiveService.saveLocalConfig(voice);
+  } catch (err) {
+    console.error('[BiliLiveController] Save local TTS config error:', err);
+    return error('保存本地TTS配置失败: ' + err.message);
+  }
+}
+
 module.exports = {
   connect,
   disconnect,
@@ -155,5 +182,7 @@ module.exports = {
   saveAlibabaConfig,
   saveSovitsConfig,
   getDefaultConfig,
-  testTTS
+  testTTS,
+  getAvailableVoices,
+  saveLocalConfig
 }; 

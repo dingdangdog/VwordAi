@@ -627,6 +627,48 @@
                   </button>
                 </div>
               </div>
+
+              <!-- Inside the advanced settings section -->
+              <!-- After the section where different TTS engine configs are shown -->
+              <div v-if="ttsMode === 'local'" class="space-y-3">
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-1">系统声音</label>
+                  <div class="flex items-center">
+                    <button 
+                      @click="refreshVoices" 
+                      class="mr-2 px-2 py-1 bg-gray-200 rounded text-sm hover:bg-gray-300"
+                      :disabled="isLoadingVoices"
+                    >
+                      <span v-if="isLoadingVoices">加载中...</span>
+                      <span v-else>刷新声音列表</span>
+                    </button>
+                    <select 
+                      v-model="localVoice" 
+                      class="w-full border rounded px-3 py-2"
+                      :disabled="availableVoices.length === 0"
+                    >
+                      <option value="">系统默认</option>
+                      <option v-for="voice in availableVoices" :key="voice" :value="voice">
+                        {{ voice }}
+                      </option>
+                    </select>
+                  </div>
+                  <p v-if="availableVoices.length === 0" class="mt-1 text-sm text-red-500">
+                    未找到可用的声音，请确认系统已安装文本转语音引擎
+                  </p>
+                  <p v-else class="mt-1 text-sm text-gray-500">
+                    推荐选择中文声音（如微软讯飞/Huihui/Yaoyao等）
+                  </p>
+                </div>
+                <div class="pt-3">
+                  <button
+                    @click="saveLocalConfig"
+                    class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+                  >
+                    保存本地TTS配置
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -648,14 +690,16 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted, watch, nextTick } from "vue";
+import { ref, onMounted, onUnmounted, watch, nextTick, computed } from "vue";
 import { useToast } from "vue-toastification";
 import { useBiliLiveStore } from "@/stores/biliLive";
+import { useSettingsStore } from "@/stores/settings";
 
 // 获取toast通知实例
 const toast = useToast();
-// 获取BiliLive store
+// 获取BiliLive store和Settings store
 const biliLiveStore = useBiliLiveStore();
+const settingsStore = useSettingsStore();
 
 // 状态变量
 const roomIdInput = ref("");
@@ -666,6 +710,9 @@ const showAdvancedSettings = ref(false);
 const testText = ref("这是一条测试语音，如果你能听到，说明配置正确。");
 const showSessdataHelp = ref(false);
 const isSaving = ref(false);
+const isLoadingVoices = ref(false);
+const localVoice = ref("");
+const availableVoices = ref([]);
 
 // 消息容器引用，用于自动滚动
 const messageContainer = ref(null);
@@ -700,16 +747,47 @@ const config = ref({
   SESSDATA: "", // 新增SESSDATA字段
 });
 
-// TTS 配置
-const ttsMode = ref("local"); // local, azure, alibaba, sovits
-const azureConfig = ref({
-  azure_key: "",
-  azure_region: "",
-  azure_model: "",
-  speed: 1.0,
-  pitch: 0,
+// 获取TTS模式（从settings store）
+const ttsMode = computed({
+  get: () => {
+    const provider = settingsStore.getServiceProviderConfig("azure");
+    return provider && provider.enabled ? "azure" : "local";
+  },
+  set: (value) => {
+    if (value === "azure") {
+      // 启用Azure服务提供商
+      const currentConfig = settingsStore.getServiceProviderConfig("azure") || {};
+      settingsStore.updateServiceProvider("azure", { 
+        ...currentConfig, 
+        enabled: true 
+      });
+    } else {
+      // 禁用Azure服务提供商（但保留配置）
+      const currentConfig = settingsStore.getServiceProviderConfig("azure") || {};
+      settingsStore.updateServiceProvider("azure", { 
+        ...currentConfig, 
+        enabled: false 
+      });
+    }
+  }
 });
 
+// 使用settings store中的配置
+const azureConfig = computed({
+  get: () => {
+    const provider = settingsStore.getServiceProviderConfig("azure") || {};
+    return {
+      azure_key: provider.key || "",
+      azure_region: provider.region || "",
+      azure_model: provider.voiceName || "",
+      speed: provider.speed || 1.0,
+      pitch: provider.pitch || 0,
+    };
+  },
+  set: () => {} // 不需要设置器，使用特定方法更新
+});
+
+// 阿里云和SoVITS配置保持原样，但可以在将来也集成到settings中
 const alibabaConfig = ref({
   alibaba_appkey: "",
   alibaba_token: "",
@@ -750,6 +828,10 @@ watch(
 // 加载配置
 async function loadConfig() {
   try {
+    // 先加载设置存储中的服务提供商配置
+    await settingsStore.loadSettings();
+    
+    // 加载B站直播特有配置
     const response = await window.api.biliLive.getConfig();
     if (response.success && response.data) {
       if (response.data.room_ids) {
@@ -761,13 +843,14 @@ async function loadConfig() {
       config.value.readEnter = response.data.readEnter ?? true;
       config.value.readLike = response.data.readLike ?? true;
       config.value.SESSDATA = response.data.SESSDATA ?? "";
-
-      ttsMode.value = response.data.mode || "local";
-
-      if (response.data.azure) {
-        azureConfig.value = response.data.azure;
+      
+      // 加载本地TTS语音设置
+      if (response.data.localVoice) {
+        localVoice.value = response.data.localVoice;
+        console.log("Loaded local voice preference:", localVoice.value);
       }
-
+      
+      // 加载阿里云和SoVITS配置（保持原样）
       if (response.data.alibaba) {
         alibabaConfig.value = response.data.alibaba;
       }
@@ -780,11 +863,13 @@ async function loadConfig() {
       const defaultResponse = await window.api.biliLive.getDefaultConfig();
       if (defaultResponse.success && defaultResponse.data) {
         config.value = { ...defaultResponse.data.bili };
-        azureConfig.value = { ...defaultResponse.data.azure };
         alibabaConfig.value = { ...defaultResponse.data.alibaba };
         sovitsConfig.value = { ...defaultResponse.data.sovits };
       }
     }
+    
+    // 加载完成后，自动刷新声音列表
+    refreshVoices();
   } catch (err) {
     console.error("Failed to load config:", err);
     addSystemMessage("error", "加载配置失败: " + err.message);
@@ -819,9 +904,11 @@ const saveConfig = async () => {
   }
 };
 
-// 保存TTS模式
+// 保存TTS模式（更新为使用settings store）
 async function saveTTSMode() {
   try {
+    // ttsMode计算属性会自动更新settings store
+    // 同时更新BiliLive服务
     const response = await biliLiveStore.saveTTSMode(ttsMode.value);
     if (response.success) {
       toast.success(`TTS模式已切换为: ${ttsMode.value}`);
@@ -834,9 +921,24 @@ async function saveTTSMode() {
   }
 }
 
-// 保存Azure配置
+// 保存Azure配置（更新为使用settings store）
 async function saveAzureConfig() {
   try {
+    // 从表单值更新settings store
+    const currentConfig = settingsStore.getServiceProviderConfig("azure") || {};
+    const updatedConfig = {
+      ...currentConfig,
+      key: azureConfig.value.azure_key,
+      region: azureConfig.value.azure_region,
+      voiceName: azureConfig.value.azure_model,
+      speed: azureConfig.value.speed,
+      pitch: azureConfig.value.pitch,
+      enabled: ttsMode.value === "azure"
+    };
+    
+    await settingsStore.updateServiceProvider("azure", updatedConfig);
+    
+    // 同时更新BiliLive服务
     const response = await biliLiveStore.saveAzureConfig(azureConfig.value);
     if (response.success) {
       toast.success("Azure TTS配置已保存");
@@ -1102,6 +1204,39 @@ onUnmounted(() => {
   // 移除监听器
   removeListeners();
 });
+
+// Additional methods for local TTS
+async function refreshVoices() {
+  isLoadingVoices.value = true;
+  try {
+    const response = await biliLiveStore.refreshVoices();
+    if (response.success) {
+      availableVoices.value = response.data.voices;
+      toast.success("声音列表已刷新");
+    } else {
+      toast.error("刷新声音列表失败: " + response.error);
+    }
+  } catch (err) {
+    console.error("Failed to refresh voices:", err);
+    toast.error("刷新声音列表失败: " + err.message);
+  } finally {
+    isLoadingVoices.value = false;
+  }
+}
+
+async function saveLocalConfig() {
+  try {
+    const response = await biliLiveStore.saveLocalConfig(localVoice.value);
+    if (response.success) {
+      toast.success("本地TTS配置已保存");
+    } else {
+      toast.error("保存本地TTS配置失败: " + response.error);
+    }
+  } catch (err) {
+    console.error("Failed to save local config:", err);
+    toast.error("保存本地TTS配置失败: " + err.message);
+  }
+}
 </script>
 
 <style scoped>

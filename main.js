@@ -456,4 +456,14 @@ function setupBiliLiveHandlers() {
   ipcMain.handle("bililive:test-tts", async (event, text) => {
     return await handler.testBiliLiveTTS(text);
   });
+
+  // 获取可用的TTS声音列表
+  ipcMain.handle("bililive:get-available-voices", async () => {
+    return await handler.getBiliLiveAvailableVoices();
+  });
+  
+  // 保存本地TTS配置
+  ipcMain.handle("bililive:save-local-config", async (event, voice) => {
+    return await handler.saveBiliLiveLocalConfig(voice);
+  });
 }

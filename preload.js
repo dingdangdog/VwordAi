@@ -159,5 +159,7 @@ contextBridge.exposeInMainWorld("api", {
     saveAlibabaConfig: (data) => ipcRenderer.invoke("bililive:save-alibaba-config", data),
     saveSovitsConfig: (data) => ipcRenderer.invoke("bililive:save-sovits-config", data),
     testTTS: (text) => ipcRenderer.invoke("bililive:test-tts", text),
+    getAvailableVoices: () => ipcRenderer.invoke("bililive:get-available-voices"),
+    saveLocalConfig: (voice) => ipcRenderer.invoke("bililive:save-local-config", voice),
   },
 });

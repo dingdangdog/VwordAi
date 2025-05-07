@@ -241,6 +241,16 @@ const testBiliLiveTTS = async (text) => {
   return await BiliLiveController.testTTS(text);
 };
 
+// 获取可用的TTS声音列表
+const getBiliLiveAvailableVoices = async () => {
+  return await BiliLiveController.getAvailableVoices();
+};
+
+// 保存本地TTS配置
+const saveBiliLiveLocalConfig = async (voice) => {
+  return await BiliLiveController.saveLocalConfig(voice);
+};
+
 // 初始化
 init();
 
@@ -276,4 +286,6 @@ module.exports = {
   saveBiliLiveAlibabaConfig,
   saveBiliLiveSovitsConfig,
   testBiliLiveTTS,
+  getBiliLiveAvailableVoices,
+  saveBiliLiveLocalConfig,
 };

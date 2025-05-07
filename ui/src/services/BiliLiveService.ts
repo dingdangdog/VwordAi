@@ -11,6 +11,7 @@ export interface BiliLiveConfig {
   readGift: boolean;
   readEnter: boolean;
   readLike: boolean;
+  localVoice?: string;
   [key: string]: any;
 }
 
@@ -290,6 +291,52 @@ export class BiliLiveService {
    */
   public getConfig(): BiliLiveConfig | null {
     return this.config;
+  }
+
+  /**
+   * 获取可用的TTS声音
+   * @returns 声音列表
+   */
+  public async getAvailableVoices(): Promise<Result<any>> {
+    try {
+      console.log("正在获取可用的TTS声音...");
+      const response = await biliLiveApi.getAvailableVoices();
+      
+      if (response.success) {
+        console.log(`获取到${response.data.voices?.length || 0}个声音`);
+      } else {
+        console.warn("获取声音列表失败:", response.error);
+      }
+      
+      return response;
+    } catch (error) {
+      return handleError(error, "获取声音列表失败");
+    }
+  }
+
+  /**
+   * 保存本地TTS配置
+   * @param voice 声音名称
+   * @returns 保存结果
+   */
+  public async saveLocalConfig(voice: string): Promise<Result<any>> {
+    try {
+      console.log(`正在保存本地TTS配置, 声音: ${voice || '默认'}`);
+      const response = await biliLiveApi.saveLocalConfig(voice);
+      
+      if (response.success) {
+        if (this.config) {
+          this.config.localVoice = voice;
+        }
+        console.log("本地TTS配置保存成功");
+      } else {
+        console.warn("本地TTS配置保存失败:", response.error);
+      }
+      
+      return response;
+    } catch (error) {
+      return handleError(error, "保存本地TTS配置失败");
+    }
   }
 }
 
