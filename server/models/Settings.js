@@ -384,13 +384,24 @@ class Settings {
       const result = await azureProvider.play(text, settings, config);
 
       if (result.success) {
-        // 更新状态为 success
-        config.status = "success";
-        storage.saveConfig("azure", config);
+        // 添加日志
+        console.log("测试成功，更新Azure状态为: success");
         
-        return result;
+        // 确保保存完整的配置对象
+        const updatedConfig = {...config, status: "success"};
+        storage.saveConfig("azure", updatedConfig);
+        
+        // 验证保存是否成功
+        const savedConfig = storage.readConfig("azure");
+        console.log("保存后的Azure配置状态:", savedConfig.status);
+        
+        return success({
+          ...result.data,
+          status: "success"
+        });
       } else {
         // 更新状态为 failure
+        console.log("测试失败，更新Azure状态为: failure");
         config.status = "failure";
         storage.saveConfig("azure", config);
         
