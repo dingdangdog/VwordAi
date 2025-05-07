@@ -121,7 +121,16 @@ export const biliLiveApi = {
    */
   saveAzureConfig: (config: AzureConfig): Promise<Result<boolean>> => {
     try {
-      return invoke<Result<boolean>>("bililive:save-azure-config", config);
+      // Create a clean, serializable copy of the config object
+      const serializableConfig = {
+        azure_key: config.azure_key,
+        azure_region: config.azure_region,
+        azure_model: config.azure_model,
+        speed: config.speed,
+        pitch: config.pitch
+      };
+      
+      return invoke<Result<boolean>>("bililive:save-azure-config", serializableConfig);
     } catch (error) {
       console.error("保存Azure配置失败:", error);
       return Promise.resolve({

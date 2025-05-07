@@ -41,7 +41,7 @@ export interface ServiceProviderConfig {
 }
 
 // 服务商类型
-export type ServiceProviderType = "azure" | "aliyun" | "tencent" | "baidu" | "openai";
+export type ServiceProviderType = "azure" | "aliyun" | "tencent" | "baidu" | "openai" | "blive";
 
 // 连接测试结果
 export interface ConnectionTestResult {

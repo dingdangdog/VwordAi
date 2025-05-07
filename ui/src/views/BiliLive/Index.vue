@@ -632,28 +632,37 @@
               <!-- After the section where different TTS engine configs are shown -->
               <div v-if="ttsMode === 'local'" class="space-y-3">
                 <div>
-                  <label class="block text-sm font-medium text-gray-700 mb-1">系统声音</label>
+                  <label class="block text-sm font-medium text-gray-700 mb-1"
+                    >系统声音</label
+                  >
                   <div class="flex items-center">
-                    <button 
-                      @click="refreshVoices" 
+                    <button
+                      @click="refreshVoices"
                       class="mr-2 px-2 py-1 bg-gray-200 rounded text-sm hover:bg-gray-300"
                       :disabled="isLoadingVoices"
                     >
                       <span v-if="isLoadingVoices">加载中...</span>
                       <span v-else>刷新声音列表</span>
                     </button>
-                    <select 
-                      v-model="localVoice" 
+                    <select
+                      v-model="localVoice"
                       class="w-full border rounded px-3 py-2"
                       :disabled="availableVoices.length === 0"
                     >
                       <option value="">系统默认</option>
-                      <option v-for="voice in availableVoices" :key="voice" :value="voice">
+                      <option
+                        v-for="voice in availableVoices"
+                        :key="voice"
+                        :value="voice"
+                      >
                         {{ voice }}
                       </option>
                     </select>
                   </div>
-                  <p v-if="availableVoices.length === 0" class="mt-1 text-sm text-red-500">
+                  <p
+                    v-if="availableVoices.length === 0"
+                    class="mt-1 text-sm text-red-500"
+                  >
                     未找到可用的声音，请确认系统已安装文本转语音引擎
                   </p>
                   <p v-else class="mt-1 text-sm text-gray-500">
@@ -750,26 +759,57 @@ const config = ref({
 // 获取TTS模式（从settings store）
 const ttsMode = computed({
   get: () => {
+    // 从BiliLive专用存储中获取TTS模式设置
+    const biliTTSMode = biliLiveStore.getTTSMode();
+
+    // 检查是否有有效值
+    if (
+      biliTTSMode &&
+      ["local", "azure", "alibaba", "sovits"].includes(biliTTSMode)
+    ) {
+      return biliTTSMode;
+    }
+
+    // 兼容: 如果没有从BiliLive获取到值，尝试从settings中判断
     const provider = settingsStore.getServiceProviderConfig("azure");
     return provider && provider.enabled ? "azure" : "local";
   },
   set: (value) => {
+    // 确保值在允许的范围内
+    if (!["local", "azure", "alibaba", "sovits"].includes(value)) {
+      console.warn(`Invalid TTS mode: ${value}, defaulting to local`);
+      value = "local";
+    }
+
+    // 如果是Azure模式，确保在settings中启用
     if (value === "azure") {
       // 启用Azure服务提供商
-      const currentConfig = settingsStore.getServiceProviderConfig("azure") || {};
-      settingsStore.updateServiceProvider("azure", { 
-        ...currentConfig, 
-        enabled: true 
+      const currentConfig =
+        settingsStore.getServiceProviderConfig("azure") || {};
+      settingsStore.updateServiceProvider("azure", {
+        ...currentConfig,
+        enabled: true,
       });
-    } else {
-      // 禁用Azure服务提供商（但保留配置）
-      const currentConfig = settingsStore.getServiceProviderConfig("azure") || {};
-      settingsStore.updateServiceProvider("azure", { 
-        ...currentConfig, 
-        enabled: false 
+    } else if (value !== "azure") {
+      // 如果不是Azure模式，禁用settings中的Azure
+      const currentConfig =
+        settingsStore.getServiceProviderConfig("azure") || {};
+      settingsStore.updateServiceProvider("azure", {
+        ...currentConfig,
+        enabled: false,
       });
     }
-  }
+
+    // 无论是什么模式，都通过saveTTSMode更新
+    biliLiveStore
+      .saveTTSMode(value)
+      .then(() => {
+        console.log(`TTS mode updated to: ${value}`);
+      })
+      .catch((err) => {
+        console.error("Failed to save TTS mode:", err);
+      });
+  },
 });
 
 // 使用settings store中的配置
@@ -784,7 +824,7 @@ const azureConfig = computed({
       pitch: provider.pitch || 0,
     };
   },
-  set: () => {} // 不需要设置器，使用特定方法更新
+  set: () => {}, // 不需要设置器，使用特定方法更新
 });
 
 // 阿里云和SoVITS配置保持原样，但可以在将来也集成到settings中
@@ -830,7 +870,7 @@ async function loadConfig() {
   try {
     // 先加载设置存储中的服务提供商配置
     await settingsStore.loadSettings();
-    
+
     // 加载B站直播特有配置
     const response = await window.api.biliLive.getConfig();
     if (response.success && response.data) {
@@ -843,13 +883,13 @@ async function loadConfig() {
       config.value.readEnter = response.data.readEnter ?? true;
       config.value.readLike = response.data.readLike ?? true;
       config.value.SESSDATA = response.data.SESSDATA ?? "";
-      
+
       // 加载本地TTS语音设置
       if (response.data.localVoice) {
         localVoice.value = response.data.localVoice;
         console.log("Loaded local voice preference:", localVoice.value);
       }
-      
+
       // 加载阿里云和SoVITS配置（保持原样）
       if (response.data.alibaba) {
         alibabaConfig.value = response.data.alibaba;
@@ -867,7 +907,7 @@ async function loadConfig() {
         sovitsConfig.value = { ...defaultResponse.data.sovits };
       }
     }
-    
+
     // 加载完成后，自动刷新声音列表
     refreshVoices();
   } catch (err) {
@@ -933,11 +973,12 @@ async function saveAzureConfig() {
       voiceName: azureConfig.value.azure_model,
       speed: azureConfig.value.speed,
       pitch: azureConfig.value.pitch,
-      enabled: ttsMode.value === "azure"
+      enabled: ttsMode.value === "azure",
     };
-    
-    await settingsStore.updateServiceProvider("azure", updatedConfig);
-    
+    console.log("updatedConfig:", updatedConfig);
+
+    await biliLiveStore.saveAzureConfig({ azure: updatedConfig });
+
     // 同时更新BiliLive服务
     const response = await biliLiveStore.saveAzureConfig(azureConfig.value);
     if (response.success) {

@@ -16,7 +16,7 @@ export async function invoke<T>(channel: string, ...args: any[]): Promise<T> {
     const result = await window.electron.invoke(channel, ...args);
     return result;
   } catch (error) {
-    console.error(`调用[${channel}]失败:`, error);
+    console.error(`调用[${channel}]失败:`, error, args);
     throw error;
   }
 }

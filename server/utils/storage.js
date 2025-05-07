@@ -136,6 +136,7 @@ function readData(filename, defaultValue = []) {
 function saveConfig(key, value) {
   try {
     const storagePath = getStoragePath();
+    console.log(`(Storage) Storage path: ${storagePath}`);
     const filePath = path.join(storagePath, `${key}.json`);
     
     log.debug(`(Storage) Saving config ${key}:`, value);

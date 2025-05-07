@@ -603,20 +603,27 @@ export const useBiliLiveStore = defineStore("biliLive", () => {
     systemMessages.value = [];
   }
   
+  /**
+   * 获取当前TTS模式
+   * @returns 当前TTS模式
+   */
+  function getTTSMode(): string | null {
+    if (config.value && config.value.ttsMode) {
+      return config.value.ttsMode;
+    }
+    
+    // 如果没有在内存中找到，尝试从服务获取最新状态
+    console.log("TTS mode not found in memory config, fetching from service");
+    return null;
+  }
+  
   return {
     // 状态
-    isConnected,
-    currentRoomId,
-    popularity,
     isLoading,
     lastError,
-    
-    // 配置
+    isConnected,
+    currentRoomId,
     config,
-    ttsMode,
-    azureConfig,
-    alibabaConfig,
-    sovitsConfig,
     
     // 消息
     danmakuMessages,
@@ -625,28 +632,25 @@ export const useBiliLiveStore = defineStore("biliLive", () => {
     enterMessages,
     systemMessages,
     
-    // 计算属性
-    isServiceEnabled,
-    
     // 方法
     loadConfig,
     saveBiliConfig,
     saveTTSMode,
     saveAzureConfig,
-    saveAlibabaConfig,
+    saveAlibabaConfig, 
     saveSovitsConfig,
-    refreshVoices,
     saveLocalConfig,
     connect,
     disconnect,
     testTTS,
+    refreshVoices,
     addDanmakuMessage,
     addGiftMessage,
     addLikeMessage,
     addEnterMessage,
     addSystemMessage,
-    setConnectionStatus,
     setPopularity,
     clearMessages,
+    getTTSMode,
   };
 }); 

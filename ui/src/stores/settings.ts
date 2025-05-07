@@ -6,7 +6,7 @@ import type {
   ConnectionTestResult,
   ServiceProviderType,
   ServiceProviderStatus,
-  ServiceProviderConfig
+  ServiceProviderConfig,
 } from "@/types";
 
 // 设置选项卡类型
@@ -148,7 +148,9 @@ export const useSettingsStore = defineStore("settings", () => {
   }
 
   // 获取服务商状态
-  function getServiceProviderStatus(type: ServiceProviderType): ServiceProviderStatus {
+  function getServiceProviderStatus(
+    type: ServiceProviderType
+  ): ServiceProviderStatus {
     const config = getServiceProviderConfig(type);
     return config?.status || "unconfigured";
   }
@@ -191,7 +193,8 @@ export const useSettingsStore = defineStore("settings", () => {
       if (response.success && response.data) {
         // 更新本地状态
         if (settings.value && settings.value[type]) {
-          settings.value[type].status = (response.data.status as ServiceProviderStatus) || "success";
+          settings.value[type].status =
+            (response.data.status as ServiceProviderStatus) || "success";
         }
 
         return {
@@ -231,34 +234,39 @@ export const useSettingsStore = defineStore("settings", () => {
     try {
       // 检查是否有实际配置的变化（忽略status字段）
       let hasConfigChanges = false;
-      
+
       if (settings.value && settings.value[type]) {
         const currentConfig = { ...settings.value[type] };
         delete currentConfig.status;
-        
+
         const newConfigWithoutStatus = { ...config };
         delete newConfigWithoutStatus.status;
-        
+
         // 检查是否有变化
         const currentStr = JSON.stringify(currentConfig);
         const newStr = JSON.stringify(newConfigWithoutStatus);
         hasConfigChanges = currentStr !== newStr;
       }
-      
+
       // Update local settings first
       if (settings.value) {
         if (!settings.value[type]) {
           settings.value[type] = {} as any;
         }
-        
+
         // 合并配置
         settings.value[type] = { ...settings.value[type], ...config };
-        
+
         // 如果配置有变化，更新状态
         if (hasConfigChanges) {
           // 检查配置是否完整
-          const isConfigComplete = checkProviderConfigComplete(type, settings.value[type]);
-          settings.value[type].status = isConfigComplete ? "untested" : "unconfigured";
+          const isConfigComplete = checkProviderConfigComplete(
+            type,
+            settings.value[type]
+          );
+          settings.value[type].status = isConfigComplete
+            ? "untested"
+            : "unconfigured";
         }
       }
 
@@ -273,8 +281,26 @@ export const useSettingsStore = defineStore("settings", () => {
     }
   }
 
+  // async function saveBiliConfig(key: string, config: any): Promise<boolean> {
+  //   try {
+  //     // Update locally first for immediate UI response
+  //     if (settings.value && settings.value.blive) {
+  //       settings.value.blive[key] = config;
+  //     }
+  //     const bliveConfig = settings.value?.blive || {};
+  //     const response = await updateServiceProvider("blive", bliveConfig);
+  //     return response;
+  //   } catch (error) {
+  //     console.error("Failed to save bili config:", error);
+  //     return false;
+  //   }
+  // }
+
   // 检查服务商配置是否完整
-  function checkProviderConfigComplete(type: ServiceProviderType, config: any): boolean {
+  function checkProviderConfigComplete(
+    type: ServiceProviderType,
+    config: any
+  ): boolean {
     switch (type) {
       case "azure":
         return Boolean(config.key && config.region);

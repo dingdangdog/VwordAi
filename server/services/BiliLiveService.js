@@ -100,13 +100,13 @@ async function loadAllConfig() {
     const biliData = storage.readConfig("bili", DEFAULT_BILI_CONFIG);
     console.log("biliData", biliData);
     console.log("DEFAULT_BILI_CONFIG", DEFAULT_BILI_CONFIG);
-    
+
     // 确保正确合并默认配置和存储的配置
     biliConfig = {
       ...DEFAULT_BILI_CONFIG,
       ...(biliData || {}),
     };
-    
+
     console.log("Merged biliConfig:", biliConfig);
     console.log("ttsEnabled value:", biliConfig.ttsEnabled);
 
@@ -118,7 +118,9 @@ async function loadAllConfig() {
 
     // Check and fix structure if needed
     if (biliConfig.ttsEnabled === undefined) {
-      log.warn("(BiliLive Service) ttsEnabled is undefined, setting to default true");
+      log.warn(
+        "(BiliLive Service) ttsEnabled is undefined, setting to default true"
+      );
       biliConfig.ttsEnabled = true;
     }
 
@@ -173,19 +175,19 @@ async function saveBiliConfig(configData) {
   try {
     console.log("saveBiliConfig - received data:", configData);
     console.log("saveBiliConfig - current biliConfig:", biliConfig);
-    
+
     // 合并新配置，保留其他未修改的字段
     biliConfig = {
       ...biliConfig,
       ...configData,
     };
-    
+
     console.log("saveBiliConfig - merged biliConfig:", biliConfig);
     console.log("saveBiliConfig - ttsEnabled value:", biliConfig.ttsEnabled);
-    
+
     // 保存到文件
     storage.saveConfig(BILI_CONFIG_KEY, biliConfig);
-    
+
     // 记录保存的配置信息（不记录SESSDATA的具体内容）
     const logConfig = { ...biliConfig };
     if (logConfig.SESSDATA) {
@@ -195,7 +197,7 @@ async function saveBiliConfig(configData) {
       )}...（长度: ${logConfig.SESSDATA.length}）`;
     }
     log.info("(BiliLive Service) Bili config saved:", logConfig);
-    
+
     return success({ message: "Bili config saved", config: biliConfig });
   } catch (err) {
     log.error("(BiliLive Service) Failed to save Bili config:", err);
@@ -312,26 +314,28 @@ async function getConfig() {
     // Load latest config from storage
     const biliData = storage.readConfig("bili", DEFAULT_BILI_CONFIG);
     console.log("getConfig - biliData:", biliData);
-    
+
     // Properly merge with default config to ensure all fields exist
     const mergedBiliConfig = {
       ...DEFAULT_BILI_CONFIG,
-      ...(biliData || {})
+      ...(biliData || {}),
     };
-    
+
     // Ensure ttsEnabled is set
     if (mergedBiliConfig.ttsEnabled === undefined) {
       mergedBiliConfig.ttsEnabled = true;
-      log.warn("(BiliLive Service) getConfig: ttsEnabled is undefined, setting to default true");
+      log.warn(
+        "(BiliLive Service) getConfig: ttsEnabled is undefined, setting to default true"
+      );
     }
-    
+
     // Update the global biliConfig
     biliConfig = mergedBiliConfig;
-    
+
     // Get TTS-related configs
     const settingsConfig = storage.readConfig("settings", {});
     const azureProvider = settingsConfig.azure || {};
-    
+
     // Update ttsConfig from settings
     ttsConfig.mode = azureProvider.enabled ? "azure" : "local";
     ttsConfig.azure = {
@@ -339,34 +343,43 @@ async function getConfig() {
       azure_region: azureProvider.region || "",
       azure_model: azureProvider.voiceName || "",
       speed: azureProvider.speed || 1.0,
-      pitch: azureProvider.pitch || 0
+      pitch: azureProvider.pitch || 0,
     };
-    
+
     // Fallback to separate config files if settings doesn't have the info
     if (!azureProvider.key) {
-      ttsConfig.azure = storage.readConfig(BILI_AZURE_CONFIG_KEY, DEFAULT_AZURE_CONFIG);
+      ttsConfig.azure = storage.readConfig(
+        BILI_AZURE_CONFIG_KEY,
+        DEFAULT_AZURE_CONFIG
+      );
     }
-    
-    ttsConfig.alibaba = storage.readConfig(BILI_ALIBABA_CONFIG_KEY, DEFAULT_ALIBABA_CONFIG);
-    ttsConfig.sovits = storage.readConfig(BILI_SOVITS_CONFIG_KEY, DEFAULT_SOVITS_CONFIG);
-    
+
+    ttsConfig.alibaba = storage.readConfig(
+      BILI_ALIBABA_CONFIG_KEY,
+      DEFAULT_ALIBABA_CONFIG
+    );
+    ttsConfig.sovits = storage.readConfig(
+      BILI_SOVITS_CONFIG_KEY,
+      DEFAULT_SOVITS_CONFIG
+    );
+
     // Return merged config for API
-    return { 
-      ...biliConfig, 
+    return {
+      ...biliConfig,
       mode: ttsConfig.mode,
       azure: ttsConfig.azure,
       alibaba: ttsConfig.alibaba,
-      sovits: ttsConfig.sovits
+      sovits: ttsConfig.sovits,
     };
   } catch (err) {
     log.error("(BiliLive Service) Error in getConfig:", err);
     // Return at least default config if error
-    return { 
+    return {
       ...DEFAULT_BILI_CONFIG,
       mode: "local",
       azure: DEFAULT_AZURE_CONFIG,
       alibaba: DEFAULT_ALIBABA_CONFIG,
-      sovits: DEFAULT_SOVITS_CONFIG
+      sovits: DEFAULT_SOVITS_CONFIG,
     };
   }
 }
@@ -1515,33 +1528,37 @@ function speechText(text) {
   console.log("biliConfig:", biliConfig);
   console.log("biliConfig.ttsEnabled:", biliConfig.ttsEnabled);
   console.log("ttsConfig.mode:", ttsConfig.mode);
-  
+
   // Check if biliConfig is loaded properly
-  if (!biliConfig || typeof biliConfig !== 'object') {
+  if (!biliConfig || typeof biliConfig !== "object") {
     log.error("(BiliLive Service) biliConfig is not properly initialized");
     // Load config if it's not initialized
     loadAllConfig().then(() => {
-      log.info("(BiliLive Service) Config reloaded, trying to process speech again");
+      log.info(
+        "(BiliLive Service) Config reloaded, trying to process speech again"
+      );
       speechText(text); // Try again
     });
     return;
   }
-  
+
   // Ensure ttsEnabled is set, defaulting to true
   if (biliConfig.ttsEnabled === undefined) {
-    log.warn("(BiliLive Service) ttsEnabled is undefined, setting to default true");
+    log.warn(
+      "(BiliLive Service) ttsEnabled is undefined, setting to default true"
+    );
     biliConfig.ttsEnabled = true;
     // Save this change to storage
     storage.saveConfig("bili", biliConfig);
   }
-  
+
   if (!text || !biliConfig.ttsEnabled) {
     log.debug(
       `(BiliLive Service) TTS skipped: ${!text ? "Empty text" : "TTS disabled"}`
     );
     return;
   }
-  
+
   log.debug(`(BiliLive Service) Added to TTS queue: "${text}"`);
   speechQueue.push(text);
   processSpeechQueue();
@@ -1595,7 +1612,11 @@ async function processSpeechQueue() {
         break;
       case "local":
       default:
-        log.debug(`(BiliLive Service) Using local TTS to speak: "${text}" (localVoice: ${biliConfig.localVoice || 'not set'})`);
+        log.debug(
+          `(BiliLive Service) Using local TTS to speak: "${text}" (localVoice: ${
+            biliConfig.localVoice || "not set"
+          })`
+        );
         await localTTS(text);
         break;
     }
@@ -1631,21 +1652,38 @@ async function processSpeechQueue() {
 function localTTS(text) {
   return new Promise(async (resolve, reject) => {
     log.info(`(BiliLive Service) Starting local TTS playback: "${text}"`);
-    
+
     try {
       // Get available voices
       const availableVoices = await getAvailableVoices();
-      log.debug(`(BiliLive Service) Available voices: ${JSON.stringify(availableVoices)}`);
-      
+      log.debug(
+        `(BiliLive Service) Available voices: ${JSON.stringify(
+          availableVoices
+        )}`
+      );
+
       // Check user preference first
       let selectedVoice = null;
-      if (biliConfig.localVoice && availableVoices.includes(biliConfig.localVoice)) {
+      if (
+        biliConfig.localVoice &&
+        availableVoices.includes(biliConfig.localVoice)
+      ) {
         selectedVoice = biliConfig.localVoice;
-        log.info(`(BiliLive Service) Using user-preferred voice: ${selectedVoice}`);
-      } 
+        log.info(
+          `(BiliLive Service) Using user-preferred voice: ${selectedVoice}`
+        );
+      }
       // If no preference or preferred voice not available, try to find a Chinese voice
-      else if (availableVoices.includes('Microsoft Huihui Desktop')) {
-        selectedVoice = 'Microsoft Huihui Desktop';
+      else if (availableVoices.includes("Microsoft Huihui Desktop")) {
+        selectedVoice = "Microsoft Huihui Desktop";
+        log.info(`(BiliLive Service) Using Chinese voice: ${selectedVoice}`);
+      }
+      // Try other known Chinese voices
+      else if (availableVoices.includes("Microsoft Yaoyao Desktop")) {
+        selectedVoice = "Microsoft Yaoyao Desktop";
+        log.info(`(BiliLive Service) Using Chinese voice: ${selectedVoice}`);
+      } else if (availableVoices.includes("Microsoft Kangkang Desktop")) {
+        selectedVoice = "Microsoft Kangkang Desktop";
         log.info(`(BiliLive Service) Using Chinese voice: ${selectedVoice}`);
       }
       // Fallback to any available voice
@@ -1653,9 +1691,20 @@ function localTTS(text) {
         selectedVoice = availableVoices[0];
         log.info(`(BiliLive Service) Using fallback voice: ${selectedVoice}`);
       }
-      
+
+      // Windows can have encoding issues with Chinese characters, ensure proper encoding
+      // 对于Windows系统，确保中文字符能被正确处理
+      const isWindows = process.platform === "win32";
+      if (isWindows) {
+        log.debug(`(BiliLive Service) Using Windows-specific handling for TTS`);
+      }
+
       // Use say.js to speak the text
-      log.debug(`(BiliLive Service) Speaking with voice: ${selectedVoice || 'default'}`);
+      log.debug(
+        `(BiliLive Service) Speaking with voice: ${selectedVoice || "default"}`
+      );
+
+      // 确保文本被正确传递给TTS引擎
       say.speak(text, selectedVoice, 1.0, (err) => {
         if (err) {
           log.error("(BiliLive Service) Local TTS playback error:", err);
@@ -1677,18 +1726,26 @@ function localTTS(text) {
  * @param {string} text
  */
 async function azureTTS(text) {
-  const config = ttsConfig.azure;
-  if (!config || !config.azure_key || !config.azure_region) {
+  // 先初始化config对象以防未定义
+  const config = ttsConfig.azure || {};
+
+  // 检查Azure配置，如果本地没有则尝试从settings加载
+  if (!config.azure_key || !config.azure_region) {
     // 尝试从settings加载
-    const settings = storage.readConfig("settings", {});
-    if (settings.azure && settings.azure.key && settings.azure.region) {
+    const azure = storage.readConfig("azure", {});
+    // console.log("settings:", azure);
+    if (azure && azure.key && azure.region) {
       // 使用settings中的Azure配置
       log.info("(BiliLive Service) 使用settings中的Azure配置");
-      config.azure_key = settings.azure.key;
-      config.azure_region = settings.azure.region;
-      config.azure_model = settings.azure.voiceName || "zh-CN-XiaoxiaoNeural";
-      config.speed = settings.azure.speed || 1.0;
-      config.pitch = settings.azure.pitch || 0;
+      config.azure_key = azure.key;
+      config.azure_region = azure.region;
+      config.azure_model = azure.voiceName || "zh-CN-XiaoxiaoNeural";
+      config.speed = azure.speed || 1.0;
+      config.pitch = azure.pitch || 0;
+
+      // 更新内存中的配置
+      if (!ttsConfig.azure) ttsConfig.azure = {};
+      Object.assign(ttsConfig.azure, config);
     } else {
       throw new Error(
         "Azure TTS configuration incomplete (Key and Region required)"
@@ -1696,61 +1753,66 @@ async function azureTTS(text) {
     }
   }
 
-  // endpoint has higher priority than region
-  const endpoint =
-    config.azure_endpoint ||
-    `https://${config.azure_region}.tts.speech.microsoft.com/cognitiveservices/v1`;
+  log.info(
+    `(BiliLive Service) Azure TTS: 使用Key=${config.azure_key.substring(
+      0,
+      4
+    )}..., Region=${config.azure_region}, Model=${
+      config.azure_model || "default"
+    }`
+  );
+
+  // 创建语音配置
   const speechConfig = sdk.SpeechConfig.fromSubscription(
     config.azure_key,
     config.azure_region
   );
-  // speechConfig.speechEndpointId = endpoint; // Method to set endpoint may need to check latest SDK docs
-  speechConfig.endpointId = config.azure_endpoint; // Try setting endpointId directly
 
-  // Set speech synthesis language and voice name
+  // 设置语音合成语言和声音名称
   if (config.azure_model) {
     speechConfig.speechSynthesisVoiceName = config.azure_model;
   } else {
     speechConfig.speechSynthesisVoiceName = "zh-CN-XiaoxiaoNeural"; // Default
   }
 
-  // Set output format to audio stream
+  // 设置输出格式为音频流
   speechConfig.speechSynthesisOutputFormat =
-    sdk.SpeechSynthesisOutputFormat.Audio16Khz32KBitRateMonoMp3; // Or other formats
+    sdk.SpeechSynthesisOutputFormat.Audio16Khz32KBitRateMonoMp3; // 或其他格式
 
-  // Create audio config, use default speaker output
+  // 创建音频配置，使用默认扬声器输出
   const audioConfig = sdk.AudioConfig.fromDefaultSpeakerOutput();
 
-  // Create speech synthesizer
+  // 创建语音合成器
   const synthesizer = new sdk.SpeechSynthesizer(speechConfig, audioConfig);
 
-  // SSML supports richer control (speed, pitch etc.)
-  const speed = config.speed || 1.0;
-  const pitch = config.pitch || 0; // SSML pitch uses "x-low", "low", "medium", "high", "x-high", "default" or "+n%", "-n%"
-  let pitchValue = "default";
-  if (pitch > 0) pitchValue = `+${pitch}%`;
-  if (pitch < 0) pitchValue = `${pitch}%`; // SSML negative value doesn't need +
+  // 设置语速
+  if (config.speed && config.speed !== 1.0) {
+    speechConfig.setProperty(
+      "SpeechServiceConnection_SynthesisRate",
+      config.speed.toString()
+    );
+    log.debug(
+      `(BiliLive Service) Azure TTS set speech rate to: ${config.speed}`
+    );
+  }
 
-  const ssml = `
-    <speak version="1.0" xmlns="http://www.w3.org/2001/10/synthesis" xmlns:mstts="https://www.w3.org/2001/mstts" xml:lang="zh-CN">
-      <voice name="${speechConfig.speechSynthesisVoiceName}">
-        <prosody rate="${speed}" pitch="${pitchValue}">
-          ${text
-            .replace(/&/g, "&amp;")
-            .replace(/</g, "&lt;")
-            .replace(/>/g, "&gt;")
-            .replace(/"/g, "&quot;")
-            .replace(/'/g, "&apos;")}
-        </prosody>
-      </voice>
-    </speak>
-  `;
+  // 设置音调
+  if (config.pitch && config.pitch !== 0) {
+    speechConfig.setProperty(
+      "SpeechServiceConnection_SynthesisPitch",
+      config.pitch.toString()
+    );
+    log.debug(`(BiliLive Service) Azure TTS set pitch to: ${config.pitch}`);
+  }
 
-  log.debug("(BiliLive Service) Azure SSML:", ssml);
+  log.debug(
+    `(BiliLive Service) Azure TTS using model: ${speechConfig.speechSynthesisVoiceName}, text: "${text}"`
+  );
 
   return new Promise((resolve, reject) => {
-    synthesizer.speakSsmlAsync(
-      ssml,
+    // 使用普通文本合成而非SSML
+    synthesizer.speakTextAsync(
+      text,
       (result) => {
         if (result.reason === sdk.ResultReason.SynthesizingAudioCompleted) {
           log.debug("(BiliLive Service) Azure TTS playback finished.");
@@ -1764,7 +1826,7 @@ async function azureTTS(text) {
         synthesizer.close();
       },
       (err) => {
-        log.error("(BiliLive Service) Azure TTS speakSsmlAsync Error:", err);
+        log.error("(BiliLive Service) Azure TTS speakTextAsync Error:", err);
         reject(err);
         synthesizer.close();
       }
@@ -1882,7 +1944,7 @@ async function sovitsTTS(text) {
 function getAvailableVoices() {
   return new Promise((resolve) => {
     log.debug("(BiliLive Service) Getting installed voices...");
-    
+
     say.getInstalledVoices((err, voices) => {
       if (err) {
         log.error("(BiliLive Service) Error getting installed voices:", err);
@@ -1893,7 +1955,9 @@ function getAvailableVoices() {
           log.warn("(BiliLive Service) No voices returned or invalid format");
           resolve([]);
         } else {
-          log.debug(`(BiliLive Service) Available voices: ${voices.join(', ')}`);
+          log.debug(
+            `(BiliLive Service) Available voices: ${voices.join(", ")}`
+          );
           resolve(voices);
         }
       }
@@ -1910,15 +1974,19 @@ async function saveLocalConfig(voice) {
   try {
     // Update localVoice in biliConfig
     biliConfig.localVoice = voice;
-    
+
     // Save to storage
     storage.saveConfig(BILI_CONFIG_KEY, biliConfig);
-    
-    log.info(`(BiliLive Service) Local TTS config saved with voice: ${voice || 'default'}`);
-    
-    return success({ 
+
+    log.info(
+      `(BiliLive Service) Local TTS config saved with voice: ${
+        voice || "default"
+      }`
+    );
+
+    return success({
       message: "Local TTS config saved",
-      voice
+      voice,
     });
   } catch (err) {
     log.error("(BiliLive Service) Failed to save local TTS config:", err);
