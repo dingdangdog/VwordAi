@@ -90,7 +90,10 @@ export const biliLiveApi = {
    */
   saveBiliConfig: (config: BiliLiveConfig): Promise<Result<boolean>> => {
     try {
-      return invoke<Result<boolean>>("bililive:save-bili-config", config);
+      return invoke<Result<boolean>>(
+        "bililive:save-bili-config",
+        JSON.parse(JSON.stringify(config))
+      );
     } catch (error) {
       console.error("保存B站配置失败:", error);
       return Promise.resolve({
@@ -126,18 +129,9 @@ export const biliLiveApi = {
    */
   saveAzureConfig: (config: AzureConfig): Promise<Result<boolean>> => {
     try {
-      // Ensure we're only passing serializable data by using JSON stringify/parse
-      const cleanConfig = JSON.parse(
-        JSON.stringify({
-          azure_key: config.azure_key,
-          azure_region: config.azure_region,
-          azure_model: config.azure_model,
-          speed: config.speed,
-          pitch: config.pitch,
-        })
-      );
-
-      return invoke<Result<boolean>>("bililive:save-azure-config", cleanConfig);
+      return invoke<Result<boolean>>("bililive:save-azure-config", {
+        ...config,
+      });
     } catch (error) {
       console.error("保存Azure配置失败:", error);
       return Promise.resolve({
@@ -155,7 +149,9 @@ export const biliLiveApi = {
    */
   saveAlibabaConfig: (config: AlibabaConfig): Promise<Result<boolean>> => {
     try {
-      return invoke<Result<boolean>>("bililive:save-alibaba-config", config);
+      return invoke<Result<boolean>>("bililive:save-alibaba-config", {
+        ...config,
+      });
     } catch (error) {
       console.error("保存阿里云配置失败:", error);
       return Promise.resolve({
@@ -173,7 +169,9 @@ export const biliLiveApi = {
    */
   saveSovitsConfig: (config: SoVITSConfig): Promise<Result<boolean>> => {
     try {
-      return invoke<Result<boolean>>("bililive:save-sovits-config", config);
+      return invoke<Result<boolean>>("bililive:save-sovits-config", {
+        ...config,
+      });
     } catch (error) {
       console.error("保存SoVITS配置失败:", error);
       return Promise.resolve({

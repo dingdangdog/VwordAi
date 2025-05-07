@@ -928,7 +928,7 @@ const saveConfig = async () => {
       ? config.value.SESSDATA.length
       : 0;
     console.log(`正在保存B站配置，SESSDATA长度: ${sessdataLength}`);
-
+    console.log("config.value:", config.value);
     const response = await biliLiveStore.saveBiliConfig(config.value);
 
     if (response.success) {
