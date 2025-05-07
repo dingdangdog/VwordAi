@@ -175,6 +175,13 @@ async function saveBiliConfig(configData) {
   try {
     console.log("saveBiliConfig - received data:", configData);
     console.log("saveBiliConfig - current biliConfig:", biliConfig);
+    
+    // 检查是否有房间ID数据
+    if (configData.room_ids) {
+      console.log("saveBiliConfig - received room_ids:", JSON.stringify(configData.room_ids));
+    } else {
+      console.log("saveBiliConfig - no room_ids in received data");
+    }
 
     // 合并新配置，保留其他未修改的字段
     biliConfig = {
@@ -184,6 +191,7 @@ async function saveBiliConfig(configData) {
 
     console.log("saveBiliConfig - merged biliConfig:", biliConfig);
     console.log("saveBiliConfig - ttsEnabled value:", biliConfig.ttsEnabled);
+    console.log("saveBiliConfig - merged room_ids:", JSON.stringify(biliConfig.room_ids || []));
 
     // 保存到文件
     storage.save(BILI_CONFIG_KEY, biliConfig);

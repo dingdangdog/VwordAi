@@ -310,7 +310,7 @@
                 type="checkbox"
                 v-model="config.ttsEnabled"
                 class="sr-only peer"
-                @change="saveBiliConfig"
+                @change="saveConfig"
               />
               <div
                 class="w-9 h-5 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600"
@@ -372,7 +372,7 @@
                     id="readDanmaku"
                     v-model="config.readDanmaku"
                     class="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
-                    @change="saveBiliConfig"
+                    @change="saveConfig"
                   />
                   <label
                     for="readDanmaku"
@@ -387,7 +387,7 @@
                     id="readGift"
                     v-model="config.readGift"
                     class="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
-                    @change="saveBiliConfig"
+                    @change="saveConfig"
                   />
                   <label
                     for="readGift"
@@ -402,7 +402,7 @@
                     id="readEnter"
                     v-model="config.readEnter"
                     class="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
-                    @change="saveBiliConfig"
+                    @change="saveConfig"
                   />
                   <label
                     for="readEnter"
@@ -417,7 +417,7 @@
                     id="readLike"
                     v-model="config.readLike"
                     class="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
-                    @change="saveBiliConfig"
+                    @change="saveConfig"
                   />
                   <label
                     for="readLike"
@@ -875,7 +875,13 @@ async function loadConfig() {
     const response = await window.api.biliLive.getConfig();
     if (response.success && response.data) {
       if (response.data.room_ids) {
-        config.value.room_ids = response.data.room_ids;
+        console.log("loadConfig - 原始房间ID列表:", JSON.stringify(response.data.room_ids));
+        // 将所有房间ID统一为字符串类型
+        config.value.room_ids = response.data.room_ids.map(room => ({
+          id: String(room.id), 
+          name: room.name || `房间 ${room.id}`
+        }));
+        console.log("loadConfig - 处理后的房间ID列表:", JSON.stringify(config.value.room_ids));
       }
       config.value.ttsEnabled = response.data.ttsEnabled ?? true;
       config.value.readDanmaku = response.data.readDanmaku ?? true;
@@ -929,10 +935,13 @@ const saveConfig = async () => {
       : 0;
     console.log(`正在保存B站配置，SESSDATA长度: ${sessdataLength}`);
     console.log("config.value:", config.value);
+    console.log("保存的房间ID列表:", JSON.stringify(config.value.room_ids));
+    
     const response = await biliLiveStore.saveBiliConfig(config.value);
 
     if (response.success) {
       toast.success("配置保存成功");
+      console.log("配置保存成功，当前房间ID列表:", JSON.stringify(config.value.room_ids));
     } else {
       toast.error(`保存失败: ${response.error}`);
     }
@@ -1138,19 +1147,30 @@ function setupListeners() {
       toast.success(`已连接到房间 ${data.roomId}`);
 
       // 保存该房间ID到历史记录
+      const roomIdStr = String(data.roomId);
       const roomIndex = config.value.room_ids.findIndex(
-        (r) => r.id === data.roomId
+        (r) => String(r.id) === roomIdStr
       );
+
+      console.log(`检查房间ID ${roomIdStr} 是否存在于历史记录:`, 
+        config.value.room_ids.map(r => String(r.id)),
+        `结果: ${roomIndex}`
+      );
+
       if (roomIndex === -1) {
+        console.log(`将房间ID ${roomIdStr} 添加到历史记录`);
         config.value.room_ids.unshift({
-          id: data.roomId,
-          name: `房间 ${data.roomId}`,
+          id: roomIdStr,
+          name: `房间 ${roomIdStr}`,
         });
         // 限制最多保存10个历史记录
         if (config.value.room_ids.length > 10) {
           config.value.room_ids.pop();
         }
+        // 立即保存配置
         saveConfig();
+      } else {
+        console.log(`房间ID ${roomIdStr} 已存在于历史记录，位置: ${roomIndex}`);
       }
     } else {
       toast.info("已断开连接");
