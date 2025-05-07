@@ -231,6 +231,7 @@
                             `/projects/${projectId}/chapters/${chapter.id}`
                           )
                         "
+                        @synthesis-complete="handleSynthesisComplete"
                       />
                     </div>
                   </div>
@@ -478,5 +479,29 @@ function getDeleteMessage(): string {
 
 function toggleExpandChapter(chapterId: string) {
   expandedChapters.value[chapterId] = !expandedChapters.value[chapterId];
+}
+
+// 合成完成处理
+async function handleSynthesisComplete(data: { chapterId: string; audioPath?: string; status: string }) {
+  // 刷新项目章节数据
+  await projectsStore.loadChaptersByProjectId(projectId.value);
+  
+  // 更新UI显示
+  const chapter = chapters.value.find(c => c.id === data.chapterId);
+  if (chapter) {
+    // 自动展开刚刚合成完成的章节
+    if (data.status === 'completed') {
+      expandedChapters.value[data.chapterId] = true;
+      toast.success(`章节 "${chapter.name}" 合成成功`);
+    } else if (data.status === 'error') {
+      expandedChapters.value[data.chapterId] = true;
+      toast.error(`章节 "${chapter.name}" 合成失败`);
+    }
+  }
+}
+
+// 确保模型数据已加载
+if (projectsStore.voiceModels.length === 0) {
+  projectsStore.loadVoiceModels();
 }
 </script>
