@@ -239,6 +239,8 @@ export const useProjectsStore = defineStore("projects", () => {
   async function updateChapter(
     id: string,
     data: {
+      audioPath?: string;
+      status?: string;
       name?: string;
       text?: string;
       settings?: Partial<VoiceSettings>;

@@ -42,9 +42,10 @@ export interface VoiceModel {
 
 // TTS合成响应
 export interface TTSSynthesisResponse {
+  chapterId?: string;
   audioUrl?: string;
-  audioFilePath?: string;
-  duration?: number;
+  outputPath?: string;
+  settings?: string;
 }
 
 // 服务商类型

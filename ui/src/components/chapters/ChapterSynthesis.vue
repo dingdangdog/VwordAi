@@ -165,7 +165,7 @@ import {
   StopIcon,
   FolderOpenIcon,
 } from "@heroicons/vue/24/outline";
-import { ttsApi } from "@/utils/api";
+import { ttsApi } from "@/api";
 import type { Chapter } from "@/types";
 import { useToast } from "vue-toastification";
 import { useProjectsStore } from "@/stores/projects";
@@ -206,10 +206,10 @@ onMounted(() => {
   if (props.chapter.audioPath) {
     synthesisStatus.value = "success";
     setupAudio(props.chapter.audioPath);
-  } else if (props.chapter.status === 'processing') {
+  } else if (props.chapter.status === "processing") {
     // 如果章节状态为处理中
     synthesisStatus.value = "loading";
-  } else if (props.chapter.status === 'error') {
+  } else if (props.chapter.status === "error") {
     // 如果章节状态为错误
     synthesisStatus.value = "error";
     errorMessage.value = "上次合成失败，请重试";
@@ -277,38 +277,38 @@ async function synthesize() {
     if (response.success && response.data) {
       await setupAudio(response.data.outputPath || "");
       synthesisStatus.value = "success";
-      
+
       // 更新章节状态
       if (response.data.outputPath) {
         // 更新章节在store中的状态
         await updateChapterStatus(response.data.outputPath);
-        
+
         // 通知父组件合成已完成
         emit("synthesis-complete", {
           chapterId: props.chapter.id,
           audioPath: response.data.outputPath,
-          status: 'completed'
+          status: "completed",
         });
       }
     } else {
       synthesisStatus.value = "error";
       errorMessage.value = response.error || "合成失败，请稍后重试";
-      
+
       // 通知父组件合成失败
       emit("synthesis-complete", {
         chapterId: props.chapter.id,
-        status: 'error'
+        status: "error",
       });
     }
   } catch (error) {
     synthesisStatus.value = "error";
     errorMessage.value =
       error instanceof Error ? error.message : "合成过程中发生错误";
-      
+
     // 通知父组件合成失败
     emit("synthesis-complete", {
       chapterId: props.chapter.id,
-      status: 'error'
+      status: "error",
     });
   }
 }
@@ -319,7 +319,7 @@ async function updateChapterStatus(audioPath: string) {
     // 更新章节在store中的状态
     await projectsStore.updateChapter(props.chapter.id, {
       audioPath: audioPath,
-      status: 'completed'
+      status: "completed",
     });
   } catch (error) {
     console.error("更新章节状态失败:", error);
@@ -442,9 +442,9 @@ watch(
     if (newChapter.audioPath) {
       synthesisStatus.value = "success";
       setupAudio(newChapter.audioPath);
-    } else if (newChapter.status === 'processing') {
+    } else if (newChapter.status === "processing") {
       synthesisStatus.value = "loading";
-    } else if (newChapter.status === 'error') {
+    } else if (newChapter.status === "error") {
       synthesisStatus.value = "error";
       errorMessage.value = "合成失败，请重试";
     } else {
