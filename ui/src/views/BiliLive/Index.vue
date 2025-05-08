@@ -59,7 +59,7 @@
 
       <!-- 消息显示区域 -->
       <div
-        class="flex-1 overflow-auto p-4 max-h-[calc(100vh-6rem)] bg-gray-100/30"
+        class="flex-1 overflow-auto p-4 max-h-[calc(100vh-13rem)] bg-gray-100/30"
         ref="messageContainer"
       >
         <!-- 弹幕 -->
@@ -79,6 +79,45 @@
             class="text-gray-500 text-center py-8"
           >
             暂无弹幕消息
+          </div>
+        </div>
+
+        <!-- DEBUG - Raw Messages -->
+        <div v-if="currentTab === 'debug'" class="space-y-2">
+          <div class="bg-yellow-100 p-2 mb-4 text-yellow-800 rounded">
+            <strong>调试模式</strong>: 显示所有原始消息，用于排查问题。
+            <div class="flex mt-2">
+              <button 
+                @click="clearDebugMessages" 
+                class="px-2 py-1 bg-yellow-200 text-yellow-800 rounded hover:bg-yellow-300 mr-2"
+              >
+                清空消息
+              </button>
+              <button 
+                @click="testDirectDanmaku" 
+                class="px-2 py-1 bg-blue-500 text-white rounded hover:bg-blue-600"
+              >
+                测试发送弹幕
+              </button>
+            </div>
+          </div>
+          
+          <div
+            v-for="(msg, index) in messages.debug"
+            :key="index"
+            class="border p-2 mb-2 rounded text-xs font-mono bg-gray-50 break-all"
+          >
+            <div class="flex justify-between mb-1">
+              <span class="font-bold text-purple-600">{{ msg.cmd || 'Unknown' }}</span>
+              <span class="text-gray-500">{{ new Date(msg.timestamp).toLocaleTimeString() }}</span>
+            </div>
+            <pre class="whitespace-pre-wrap overflow-auto max-h-40 bg-gray-200">{{ JSON.stringify(msg.data, null, 2) }}</pre>
+          </div>
+          <div
+            v-if="messages.debug.length === 0"
+            class="text-gray-500 text-center py-8"
+          >
+            暂无调试消息
           </div>
         </div>
 
@@ -733,6 +772,7 @@ const messages = ref({
   like: [], // 点赞
   enter: [], // 进场
   system: [], // 系统消息
+  debug: [], // 调试消息
 });
 
 // 标签页设置
@@ -743,6 +783,7 @@ const tabs = [
   { id: "like", name: "点赞" },
   { id: "enter", name: "进场" },
   { id: "system", name: "系统" },
+  { id: "debug", name: "调试" },
 ];
 
 // 配置
@@ -1136,6 +1177,42 @@ function addEnterMessage(data) {
   }
 }
 
+// Add debug message
+function addDebugMessage(data) {
+  // Add message to debug list
+  messages.value.debug.unshift({
+    cmd: data.cmd || 'UNKNOWN',
+    data: data,
+    timestamp: Date.now()
+  });
+  
+  // Limit debug messages to avoid performance issues
+  if (messages.value.debug.length > 200) {
+    messages.value.debug.pop();
+  }
+}
+
+// Test function to simulate a danmaku message directly
+function testDirectDanmaku() {
+  const testDanmaku = {
+    uid: 12345678,
+    uname: "测试用户",
+    msg: "这是一条测试弹幕消息",
+    timestamp: Date.now()
+  };
+  
+  // Add to local danmaku display
+  addDanmakuMessage(testDanmaku);
+  
+  // Also show in debug
+  addDebugMessage({
+    cmd: "TEST_DANMAKU",
+    info: [0, testDanmaku.msg, [testDanmaku.uid, testDanmaku.uname, 0, 0, 0]]
+  });
+  
+  toast.success("已添加测试弹幕消息");
+}
+
 // IPC 监听器
 function setupListeners() {
   // 连接状态
@@ -1184,6 +1261,7 @@ function setupListeners() {
 
   // 弹幕
   window.electron.listenToChannel("bililive-danmaku", (data) => {
+    console.log("Received danmaku:", data);
     addDanmakuMessage(data);
   });
 
@@ -1232,6 +1310,18 @@ function setupListeners() {
       console.log("Speaking:", data.text);
     }
   });
+  
+  // 新增: 原始消息监听（用于调试）
+  window.electron.listenToChannel("bililive-raw-message", (data) => {
+    console.log("Received raw message:", data);
+    addDebugMessage(data);
+  });
+  
+  // 新增: 调试消息监听
+  window.electron.listenToChannel("bililive-debug-message", (data) => {
+    console.log("Received debug message:", data);
+    addDebugMessage(data);
+  });
 }
 
 // 移除监听器
@@ -1244,6 +1334,8 @@ function removeListeners() {
   window.electron.removeListener("bililive-enter");
   window.electron.removeListener("bililive-message");
   window.electron.removeListener("bililive-tts-status");
+  window.electron.removeListener("bililive-raw-message");
+  window.electron.removeListener("bililive-debug-message");
 }
 
 onMounted(async () => {
@@ -1297,6 +1389,12 @@ async function saveLocalConfig() {
     console.error("Failed to save local config:", err);
     toast.error("保存本地TTS配置失败: " + err.message);
   }
+}
+
+// Additional methods for debugging
+function clearDebugMessages() {
+  messages.value.debug = [];
+  toast.success("调试消息已清空");
 }
 </script>
 

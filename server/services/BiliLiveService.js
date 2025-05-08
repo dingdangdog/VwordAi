@@ -7,13 +7,12 @@ const path = require("path");
 const axios = require("axios");
 const log = require("electron-log");
 const say = require("say");
-const WebSocket = require("ws");
 const sdk = require("microsoft-cognitiveservices-speech-sdk");
 const storage = require("../utils/storage");
 const { success, error } = require("../utils/result");
+const { BLiveClient } = require("../blive/client");
 
-let ws = null;
-let heartbeatInterval = null;
+let client = null;
 let win = null;
 let currentRoomId = null;
 let biliConfig = {};
@@ -175,10 +174,13 @@ async function saveBiliConfig(configData) {
   try {
     console.log("saveBiliConfig - received data:", configData);
     console.log("saveBiliConfig - current biliConfig:", biliConfig);
-    
+
     // 检查是否有房间ID数据
     if (configData.room_ids) {
-      console.log("saveBiliConfig - received room_ids:", JSON.stringify(configData.room_ids));
+      console.log(
+        "saveBiliConfig - received room_ids:",
+        JSON.stringify(configData.room_ids)
+      );
     } else {
       console.log("saveBiliConfig - no room_ids in received data");
     }
@@ -191,7 +193,10 @@ async function saveBiliConfig(configData) {
 
     console.log("saveBiliConfig - merged biliConfig:", biliConfig);
     console.log("saveBiliConfig - ttsEnabled value:", biliConfig.ttsEnabled);
-    console.log("saveBiliConfig - merged room_ids:", JSON.stringify(biliConfig.room_ids || []));
+    console.log(
+      "saveBiliConfig - merged room_ids:",
+      JSON.stringify(biliConfig.room_ids || [])
+    );
 
     // 保存到文件
     storage.save(BILI_CONFIG_KEY, biliConfig);
@@ -392,33 +397,18 @@ async function getConfig() {
   }
 }
 
-// --- Core logic functions migrated from blivevoice/handler.js ---
-// e.g.: connect, closeBLiveClient, getRealRoomId, getWebSocketInfo,
-//       makeAuthPacket, makeHeartbeatPacket, makePacket, handleMessage,
-//       processMessage, handleDanmakuMessage, handleGiftMessage,
-//       handleLikeMessage, handleEnterMessage, speechText,
-//       localTTS, azureTTS, alibabaTTS, sovitsTTS etc.
-
-// Note: These functions need to be modified to:
-// 1. Use getConfig and saveConfig for configuration
-// 2. Get BrowserWindow instance (win) through parameters or global variables
-// 3. Use vwordai's logging system (if different)
-// 4. Unify event names sent via win.webContents.send or pass to Controller
-// 5. Keep error handling and return format consistent with vwordai
-
-// --- Bilibili Live Connection and Message Handling ---
-
 /**
  * Connect to Bilibili live room
  * @param {number} roomIdValue Room ID
  */
 async function connect(roomIdValue) {
-  if (isConnecting || ws) {
+  if (isConnecting || client?.isConnected) {
     log.warn(
       `(BiliLive Service) Already connecting or connected to room ${currentRoomId}.`
     );
     return error(`Already connecting or connected to room ${currentRoomId}`);
   }
+
   isConnecting = true;
   log.info(`(BiliLive Service) Attempting to connect to room: ${roomIdValue}`);
   sendToRenderer(
@@ -444,87 +434,36 @@ async function connect(roomIdValue) {
 
     currentRoomId = parseInt(roomIdValue);
 
-    // Get real room ID and WebSocket address
-    log.debug(`(BiliLive Service) Getting real room ID for ${currentRoomId}`);
-    const realRoomId = await getRealRoomId(currentRoomId);
-    if (!realRoomId) {
-      sendToRenderer(
-        "bililive-status-text",
-        `Connection failed: Failed to get real room ID`
-      );
-      log.error(
-        `(BiliLive Service) Failed to get real room ID for ${currentRoomId}`
-      );
-      isConnecting = false;
-      return error("Failed to get real room ID");
-    }
-    log.info(`(BiliLive Service) Got real room ID: ${realRoomId}`);
-
-    // Get WebSocket connection info
-    log.debug(
-      `(BiliLive Service) Getting WebSocket info for room ${realRoomId}`
-    );
-    const wsInfo = await getWebSocketInfo(realRoomId);
-    if (!wsInfo || !wsInfo.host) {
-      sendToRenderer(
-        "bililive-status-text",
-        `Connection failed: Failed to get WebSocket info`
-      );
-      log.error(
-        `(BiliLive Service) Failed to get WebSocket info for room ${realRoomId}`
-      );
-      isConnecting = false;
-      return error("Failed to get WebSocket connection info");
-    }
-    log.info(
-      `(BiliLive Service) Got WebSocket info: wss://${
-        wsInfo.host
-      }/sub (token length: ${wsInfo.token?.length || 0} bytes)`
+    // Create BLiveClient instance
+    client = new BLiveClient(
+      {
+        SESSDATA: biliConfig.SESSDATA,
+        heartbeatInterval: 30000, // 30 seconds
+      },
+      handleLiveMessage
     );
 
-    // Connect WebSocket
-    const wsUrl = `wss://${wsInfo.host}/sub`;
-    log.debug(`(BiliLive Service) Starting WebSocket connection: ${wsUrl}`);
-    ws = new WebSocket(wsUrl);
-
-    ws.on("open", () => {
+    // Set up client event handlers
+    client.onOpen = (roomId) => {
       isConnecting = false;
-      log.info(
-        `(BiliLive Service) WebSocket connection established, room ID: ${currentRoomId}`
-      );
-      sendConnectionStatus(true, currentRoomId);
+      sendConnectionStatus(true, roomId);
       sendToRenderer("bililive-message", {
         type: "info",
-        content: `Connected to room ${currentRoomId}`,
+        content: `Connected to room ${roomId}`,
       });
-      sendToRenderer(
-        "bililive-status-text",
-        `Connected to room ${currentRoomId}`
-      );
+      sendToRenderer("bililive-status-text", `Connected to room ${roomId}`);
+    };
 
-      // Send auth packet
-      log.debug(
-        `(BiliLive Service) Sending auth packet, room ID: ${realRoomId}, token length: ${
-          wsInfo.token?.length || 0
-        } bytes`
-      );
-      const authPacket = makeAuthPacket(realRoomId, wsInfo.token);
-      ws.send(authPacket);
-      log.debug("(BiliLive Service) Auth packet sent");
+    client.onClose = (code, reason) => {
+      sendConnectionStatus(false, currentRoomId);
+      sendToRenderer("bililive-message", {
+        type: "info",
+        content: "WebSocket connection closed",
+      });
+      sendToRenderer("bililive-status-text", `Connection closed`);
+    };
 
-      // Start heartbeat
-      log.debug("(BiliLive Service) Starting heartbeat");
-      startHeartbeat();
-    });
-
-    ws.on("message", (data) => {
-      // Logging handled inside handleMessage
-      handleMessage(data);
-    });
-
-    ws.on("error", (err) => {
-      isConnecting = false;
-      log.error("(BiliLive Service) WebSocket connection error:", err);
+    client.onError = (err) => {
       sendConnectionStatus(false, currentRoomId);
       sendToRenderer("bililive-message", {
         type: "error",
@@ -534,33 +473,24 @@ async function connect(roomIdValue) {
         "bililive-status-text",
         `Connection error: ${err.message}`
       );
-      closeClient(); // Close connection on error
-    });
+    };
 
-    ws.on("close", (code, reason) => {
+    client.onHeartbeat = (popularity) => {
+      sendToRenderer("bililive-popularity", popularity);
+    };
+
+    // Connect to room
+    const result = await client.connect(currentRoomId);
+    if (!result) {
       isConnecting = false;
-      if (!isClosing) {
-        // Avoid duplicate logging on manual close
-        log.warn(
-          `(BiliLive Service) WebSocket connection closed. Code: ${code}, Reason: ${reason}`
-        );
-        sendConnectionStatus(false, currentRoomId);
-        sendToRenderer("bililive-message", {
-          type: "info",
-          content: "WebSocket connection closed",
-        });
-        sendToRenderer("bililive-status-text", `Connection closed`);
-      }
-      stopHeartbeat();
-      ws = null;
-      currentRoomId = null;
-      log.debug("(BiliLive Service) Connection resources cleaned up");
-    });
+      sendConnectionStatus(false, currentRoomId);
+      return error("Failed to connect to room");
+    }
 
     log.info(
       `(BiliLive Service) WebSocket connection process started, waiting for connection`
     );
-    return success({ message: "Connecting..." }); // Return success, indicating connection process started
+    return success({ message: "Connecting..." });
   } catch (err) {
     isConnecting = false;
     log.error("(BiliLive Service) Connection failed:", err);
@@ -579,15 +509,16 @@ async function connect(roomIdValue) {
  * Close WebSocket connection
  */
 function closeClient() {
-  if (isClosing || !ws) {
+  if (isClosing || !client) {
     return;
   }
+
   isClosing = true;
   log.info("(BiliLive Service) Closing WebSocket connection...");
-  stopHeartbeat();
-  if (ws) {
-    ws.close();
-    ws = null; // Ensure ws is nullified
+
+  if (client) {
+    client.close();
+    client = null;
     sendConnectionStatus(false, currentRoomId);
     sendToRenderer("bililive-message", {
       type: "info",
@@ -596,429 +527,9 @@ function closeClient() {
     sendToRenderer("bililive-status-text", `Connection closed`);
     currentRoomId = null;
   }
+
   giftMergeMap.clear(); // Clear gift merge map
   isClosing = false; // Reset flag after closing attempt
-}
-
-/**
- * Start heartbeat
- */
-function startHeartbeat() {
-  stopHeartbeat(); // Stop old one first
-  log.debug("(BiliLive Service) Starting heartbeat.");
-  heartbeatInterval = setInterval(() => {
-    if (ws && ws.readyState === WebSocket.OPEN) {
-      try {
-        ws.send(makeHeartbeatPacket());
-        log.debug("(BiliLive Service) Heartbeat sent.");
-      } catch (err) {
-        log.error("(BiliLive Service) Failed to send heartbeat:", err);
-        closeClient(); // Close connection if heartbeat fails
-      }
-    } else {
-      log.warn("(BiliLive Service) WebSocket not open, stopping heartbeat.");
-      stopHeartbeat(); // Stop heartbeat if connection is closed
-    }
-  }, 30000); // Bilibili requires 30 seconds
-}
-
-/**
- * Stop heartbeat
- */
-function stopHeartbeat() {
-  if (heartbeatInterval) {
-    log.debug("(BiliLive Service) Stopping heartbeat.");
-    clearInterval(heartbeatInterval);
-    heartbeatInterval = null;
-  }
-}
-
-/**
- * Get real room ID
- * @param {number} shortRoomId Short ID or original ID
- * @returns {Promise<number|null>} Real room ID or null
- */
-async function getRealRoomId(shortRoomId) {
-  try {
-    const url = `https://api.live.bilibili.com/room/v1/Room/room_init?id=${shortRoomId}`;
-    const response = await axios.get(url, { timeout: 5000 });
-    if (response.data.code === 0) {
-      return response.data.data.room_id;
-    } else {
-      log.error(
-        `(BiliLive Service) Failed to get real room ID for ${shortRoomId}:`,
-        response.data.message
-      );
-      return null;
-    }
-  } catch (err) {
-    log.error(
-      `(BiliLive Service) Error getting real room ID for ${shortRoomId}:`,
-      err
-    );
-    return null;
-  }
-}
-
-/**
- * Get WebSocket connection info (host, port, token)
- * @param {number} realRoomId Real room ID
- * @returns {Promise<object|null>} Connection info or null
- */
-async function getWebSocketInfo(realRoomId) {
-  try {
-    // 注意：需要使用已登录的 Cookie 获取带有 token 的地址，否则可能无法接收所有消息
-    const headers = {};
-    if (biliConfig.SESSDATA) {
-      headers.Cookie = `SESSDATA=${biliConfig.SESSDATA}`;
-      log.info(
-        `(BiliLive Service) 使用SESSDATA进行认证，长度: ${biliConfig.SESSDATA.length}`
-      );
-    } else {
-      log.warn(
-        `(BiliLive Service) 未提供SESSDATA，弹幕用户名可能会被打码，UID会变成0`
-      );
-    }
-
-    const url = `https://api.live.bilibili.com/xlive/web-room/v1/index/getDanmuInfo?id=${realRoomId}`;
-    const response = await axios.get(url, { headers, timeout: 5000 });
-    if (response.data.code === 0) {
-      // 优先选择 host_list 中的 wss 地址
-      const hostInfo = response.data.data.host_list.find(
-        (h) => h.host && h.wss_port === 443
-      );
-      if (hostInfo) {
-        return {
-          host: hostInfo.host,
-          port: hostInfo.wss_port,
-          token: response.data.data.token,
-        };
-      } else {
-        log.warn(
-          `(BiliLive Service) 找不到适合的WSS主机，房间ID: ${realRoomId}，回退到默认选项`
-        );
-        // Fallback or handle error appropriately if no suitable host is found
-        if (response.data.data.host_list.length > 0) {
-          const firstHost = response.data.data.host_list[0];
-          return {
-            host: firstHost.host,
-            port: firstHost.wss_port || firstHost.ws_port,
-            token: response.data.data.token,
-          };
-        }
-      }
-    } else {
-      log.error(
-        `(BiliLive Service) 获取房间 ${realRoomId} 的WebSocket信息失败:`,
-        response.data.message
-      );
-    }
-    return null;
-  } catch (err) {
-    log.error(
-      `(BiliLive Service) 获取房间 ${realRoomId} 的WebSocket信息时出错:`,
-      err
-    );
-    return null;
-  }
-}
-
-/**
- * 构造认证包
- * @param {number} roomId 真实房间ID
- * @param {string} token 连接令牌
- * @returns {Buffer}
- */
-function makeAuthPacket(roomId, token) {
-  const authBody = JSON.stringify({
-    uid: 0, // B站改版，uid可以为0
-    roomid: roomId,
-    protover: 3, // 使用 protover 3 支持 brotli 压缩
-    platform: "web",
-    type: 2,
-    key: token,
-  });
-
-  log.debug(`(BiliLive Service) 认证包内容: ${authBody}`);
-
-  return makePacket(7, Buffer.from(authBody)); // Operation 7 for Auth
-}
-
-/**
- * Make heartbeat packet
- * @returns {Buffer}
- */
-function makeHeartbeatPacket() {
-  return makePacket(2, Buffer.from("")); // Operation 2 for Heartbeat
-}
-
-/**
- * Make WebSocket data packet (protocol version 2)
- * Header (16 bytes) + Body
- * Header:
- *   Packet Length (4 bytes, Big Endian) - Total length including header
- *   Header Length (2 bytes, Big Endian) - Usually 16
- *   Protocol Version (2 bytes, Big Endian) - 0 (Raw JSON), 1 (Heartbeat/View Count), 2 (Zlib), 3 (Brotli)
- *   Operation (4 bytes, Big Endian) - 2 (Heartbeat), 3 (View Count), 5 (Command), 7 (Auth), 8 (Auth Reply)
- *   Sequence ID (4 bytes, Big Endian) - Usually 1
- * @param {number} operation Operation code
- * @param {Buffer} body Data body
- * @returns {Buffer} Complete data packet Buffer
- */
-function makePacket(operation, body) {
-  const headerLength = 16;
-  const packetLength = headerLength + body.length;
-  const header = Buffer.alloc(headerLength);
-
-  header.writeUInt32BE(packetLength, 0); // Packet Length
-  header.writeUInt16BE(headerLength, 4); // Header Length
-  // Protocol Version: 0 for Auth/Heartbeat JSON, 1 for ViewCount, use 0 for simplicity here?
-  // Bilibili now uses version 1 for heartbeat, version 3 (brotli) or 2 (zlib) or 0 (json) for auth and messages
-  // Auth packet uses protover 3, so should this also use 3? But heartbeat uses 1.
-  // Based on practice, heartbeat uses Op=2, Ver=1; auth Op=7, Ver=0/2/3 (depends on body); message notification Op=5, Ver=3.
-  // For simplicity, heartbeat Op=2, Ver=1; auth Op=7, Ver=0; handle Ver=3 when receiving messages.
-  const protocolVersion = operation === 2 ? 1 : 0;
-  header.writeUInt16BE(protocolVersion, 6); // Protocol Version
-  header.writeUInt32BE(operation, 8); // Operation
-  header.writeUInt32BE(1, 12); // Sequence ID
-
-  return Buffer.concat([header, body]);
-}
-
-/**
- * Handle received raw message data (may contain multiple packets)
- * @param {Buffer} data
- */
-async function handleMessage(data) {
-  log.debug(
-    `(BiliLive Service) Received data packet, total length: ${data.length} bytes`
-  );
-  const reader = new BufferReader(data);
-  while (reader.hasMore()) {
-    try {
-      const packetLen = reader.readUInt32BE();
-      const headerLen = reader.readUInt16BE();
-      const protoVer = reader.readUInt16BE();
-      const op = reader.readUInt32BE();
-      const seq = reader.readUInt32BE(); // Sequence (ignored)
-
-      const bodyLen = packetLen - headerLen;
-      if (bodyLen < 0) {
-        log.error(
-          `(BiliLive Service) Invalid packet length received: packetLen=${packetLen}, headerLen=${headerLen}`
-        );
-        break; // Stop processing this buffer
-      }
-
-      const body = reader.readBuffer(bodyLen); // Read the actual body based on calculated length
-      log.debug(
-        `(BiliLive Service) Parsing data packet: op=${op}, protoVer=${protoVer}, bodyLen=${bodyLen}`
-      );
-      switch (op) {
-        case 3: // Heartbeat Reply (Popularity)
-          const popularity = body.readUInt32BE();
-          log.debug(
-            `(BiliLive Service) Received popularity value: ${popularity}`
-          );
-          sendToRenderer("bililive-popularity", popularity);
-          break;
-        case 5: // Command (Notification)
-          log.debug(
-            `(BiliLive Service) Received notification command: protoVer=${protoVer}, bodyLen=${bodyLen}`
-          );
-          await processCommand(protoVer, body);
-          break;
-        case 8: // Auth Reply
-          log.info(
-            "(BiliLive Service) Authentication successful, live room connection established"
-          );
-          sendToRenderer("bililive-message", {
-            type: "info",
-            content: "Live room connection authenticated",
-          });
-          break;
-        default:
-          log.warn(
-            `(BiliLive Service) Received unhandled operation type: op=${op}, protoVer=${protoVer}`
-          );
-      }
-    } catch (err) {
-      log.error(
-        "(BiliLive Service) Error parsing message data packet:",
-        err,
-        "Raw data segment may be corrupted"
-      );
-      log.error(
-        "Data segment causing error:",
-        reader.buffer.toString("hex").substring(0, 100) + "..." // Limit log length and show ellipsis
-      );
-      break; // Stop processing this buffer if parsing fails
-    }
-  }
-}
-
-/**
- * Process command message (Op=5)
- * @param {number} protoVer Protocol version (0: JSON, 2: Zlib, 3: Brotli)
- * @param {Buffer} body Data body
- */
-async function processCommand(protoVer, body) {
-  let messages;
-  log.debug(
-    `(BiliLive Service) 处理协议版本 ${protoVer} 的命令消息，数据长度: ${body.length}`
-  );
-  try {
-    switch (protoVer) {
-      case 0: // Raw JSON
-        log.debug("(BiliLive Service) 处理原始JSON数据");
-        messages = [JSON.parse(body.toString("utf8"))];
-        break;
-      case 2: // Zlib compressed JSON
-        log.debug("(BiliLive Service) 处理Zlib压缩数据，尝试解压");
-        try {
-          const zlib = require("zlib");
-          const decompressedZlib = zlib.inflateSync(body);
-          log.debug(
-            `(BiliLive Service) Zlib解压成功，解压后数据大小: ${decompressedZlib.length}`
-          );
-          await handleMessage(decompressedZlib); // Decompressed data might contain multiple packets
-          return; // handleMessage will process the decompressed packets
-        } catch (zlibErr) {
-          log.error("(BiliLive Service) Zlib数据解压失败:", zlibErr);
-          return;
-        }
-      case 3: // Brotli compressed JSON
-        log.debug("(BiliLive Service) 处理Brotli压缩数据，尝试解压");
-        try {
-          // 尝试加载brotli依赖
-          let brotli;
-          try {
-            brotli = require("brotli");
-            log.debug("(BiliLive Service) 成功加载brotli模块");
-          } catch (loadErr) {
-            log.error("(BiliLive Service) 加载brotli模块失败:", loadErr);
-            // 尝试安装brotli
-            log.info("(BiliLive Service) 尝试自动安装brotli模块...");
-            try {
-              const { execSync } = require("child_process");
-              execSync("npm install brotli", { stdio: "inherit" });
-              log.info("(BiliLive Service) brotli模块安装成功，尝试重新加载");
-              brotli = require("brotli");
-            } catch (installErr) {
-              log.error("(BiliLive Service) 自动安装brotli失败:", installErr);
-              throw new Error(
-                "无法加载brotli模块，请手动运行 npm install brotli 安装"
-              );
-            }
-          }
-
-          // 保存原始压缩数据以便调试
-          if (process.env.NODE_ENV === "development") {
-            const fs = require("fs");
-            const path = require("path");
-            const logDir = path.join(__dirname, "../../logs");
-            if (!fs.existsSync(logDir)) {
-              fs.mkdirSync(logDir, { recursive: true });
-            }
-
-            const fileName = `brotli_data_${Date.now()}.bin`;
-            fs.writeFileSync(path.join(logDir, fileName), body);
-            log.debug(
-              `(BiliLive Service) 已保存Brotli压缩数据到 ${fileName} 文件`
-            );
-          }
-
-          // 尝试解压
-          log.debug(
-            `(BiliLive Service) 开始解压Brotli数据，长度: ${body.length}`
-          );
-          const decompressedBrotli = Buffer.from(brotli.decompress(body));
-          log.debug(
-            `(BiliLive Service) Brotli解压成功，解压后数据大小: ${decompressedBrotli.length}`
-          );
-
-          // 记录解压后的数据前100字节，用于调试
-          log.debug(
-            `(BiliLive Service) 解压后数据前100字节: ${decompressedBrotli
-              .slice(0, 100)
-              .toString("hex")}`
-          );
-
-          await handleMessage(decompressedBrotli); // Decompressed data might contain multiple packets
-          return; // handleMessage will process the decompressed packets
-        } catch (brotliErr) {
-          // 降级处理：如果缺少brotli模块，发送错误消息但继续运行
-          if (brotliErr.code === "MODULE_NOT_FOUND") {
-            log.error(
-              "(BiliLive Service) 缺少Brotli模块。请通过运行: npm install brotli 安装该模块"
-            );
-            sendToRenderer("bililive-message", {
-              type: "error",
-              content:
-                "处理Brotli压缩消息失败: brotli模块未安装，请运行 npm install brotli 安装后重启应用",
-            });
-          } else {
-            log.error("(BiliLive Service) Brotli数据解压失败:", brotliErr);
-            log.error(
-              "(BiliLive Service) Brotli数据前50字节:",
-              body.slice(0, 50).toString("hex")
-            );
-            sendToRenderer("bililive-message", {
-              type: "error",
-              content: "处理Brotli压缩消息失败: " + brotliErr.message,
-            });
-          }
-          return;
-        }
-      default:
-        log.warn(`(BiliLive Service) 不支持的命令消息协议版本: ${protoVer}`);
-        return;
-    }
-
-    log.debug(
-      `(BiliLive Service) 解析得到 ${messages.length} 条消息，开始处理`
-    );
-    messages.forEach((msgObj) => processSingleMessage(msgObj));
-  } catch (err) {
-    log.error(
-      "(BiliLive Service) 处理命令数据时出错:",
-      err,
-      `协议版本: ${protoVer}`
-    );
-  }
-}
-
-/**
- * Buffer Reader helper class (simplified)
- */
-class BufferReader {
-  constructor(buffer) {
-    this.buffer = buffer;
-    this.offset = 0;
-  }
-  hasMore() {
-    return this.offset < this.buffer.length;
-  }
-  readUInt32BE() {
-    const value = this.buffer.readUInt32BE(this.offset);
-    this.offset += 4;
-    return value;
-  }
-  readUInt16BE() {
-    const value = this.buffer.readUInt16BE(this.offset);
-    this.offset += 2;
-    return value;
-  }
-  readBuffer(length) {
-    if (this.offset + length > this.buffer.length) {
-      throw new Error(
-        `BufferReader: Attempt to read beyond buffer bounds. Offset=${this.offset}, Length=${length}, BufferSize=${this.buffer.length}`
-      );
-    }
-    const value = this.buffer.slice(this.offset, this.offset + length);
-    this.offset += length;
-    return value;
-  }
 }
 
 /**
@@ -1053,12 +564,39 @@ function sendConnectionStatus(connected, roomId) {
 }
 
 /**
+ * Handle live message from client
+ * @param {Object} message Message from BLiveClient
+ */
+function handleLiveMessage(message) {
+  // Handle custom events first
+  if (message.cmd === "CONNECTED") {
+    log.info("(BiliLive Service) Connection authenticated");
+    sendToRenderer("bililive-message", {
+      type: "info",
+      content: "Live room connection authenticated",
+    });
+    return;
+  }
+
+  // SEND ALL MESSAGES TO FRONTEND FOR DEBUGGING
+  try {
+    // Send raw message to a debug channel
+    sendToRenderer("bililive-debug-message", message);
+  } catch (err) {
+    log.error(`(BiliLive Service) Error sending debug message:`, err);
+  }
+
+  // Process normal messages
+  processSingleMessage(message);
+}
+
+/**
  * Process a single decompressed/parsed message object
  * @param {object} msgObj
  */
 function processSingleMessage(msgObj) {
   const cmd = msgObj.cmd;
-  log.debug(`(BiliLive Service) 处理命令: ${cmd}`);
+  // log.debug(`(BiliLive Service) Process message: ${cmd}`);
 
   // 打印消息详情（限制大小以避免日志过大）
   try {
@@ -1067,7 +605,7 @@ function processSingleMessage(msgObj) {
       stringifiedMsg.length > 300
         ? stringifiedMsg.substring(0, 300) + "..."
         : stringifiedMsg;
-    log.debug(`(BiliLive Service) 消息内容: ${logMsg}`);
+    // log.debug(`(BiliLive Service) Message content: ${logMsg}`);
 
     // 记录完整消息到文件（方便调试）
     if (process.env.NODE_ENV === "development") {
@@ -1083,92 +621,118 @@ function processSingleMessage(msgObj) {
       );
     }
   } catch (err) {
-    log.error(`(BiliLive Service) 记录消息内容出错:`, err);
+    log.error(`(BiliLive Service) Error recording message content:`, err);
   }
 
-  sendToRenderer("bililive-raw-message", msgObj); // 发送原始消息给渲染层（用于调试或高级处理）
+  // ALWAYS send all raw messages to renderer for debugging
+  sendToRenderer("bililive-raw-message", msgObj);
+
+  // For danmaku messages specifically, send to both raw and danmaku channels to ensure they get through
+  if (cmd === "DANMU_MSG") {
+    try {
+      // Try to extract danmaku data and send directly
+      const danmakuData = extractDanmakuData(msgObj);
+      if (danmakuData) {
+        // log.info(
+        //   `(BiliLive Service) Sending extracted danmaku data: ${JSON.stringify(
+        //     danmakuData
+        //   )}`
+        // );
+        sendToRenderer("bililive-danmaku", danmakuData);
+      }
+    } catch (err) {
+      log.error(`(BiliLive Service) Error extracting danmaku data:`, err);
+    }
+  }
 
   switch (cmd) {
     case "DANMU_MSG": // 弹幕消息
-      log.info(`(BiliLive Service) 收到弹幕消息，开始处理`);
+      log.info(`(BiliLive Service) Received danmaku message, processing...`);
       handleDanmakuMessage(msgObj);
       break;
     case "SEND_GIFT": // 礼物消息
-      log.info(`(BiliLive Service) 收到礼物消息，开始处理`);
+      log.info(`(BiliLive Service) Received gift message, processing...`);
       handleGiftMessage(msgObj);
       break;
     case "LIKE_INFO_V3_CLICK": // 点赞消息 (普通点赞)
-      log.info(`(BiliLive Service) 收到点赞消息，开始处理`);
+      log.info(`(BiliLive Service) Received like message, processing...`);
       handleLikeMessage(msgObj.data);
       break;
     case "LIKE_INFO_V3_UPDATE": // 点赞计数更新
       log.debug(
-        `(BiliLive Service) 收到点赞计数更新: ${msgObj.data?.count || "未知"}`
+        `(BiliLive Service) Received like count update: ${
+          msgObj.data?.count || "Unknown"
+        }`
       );
       // 可以在这里更新总点赞数显示，但通常点赞消息会更频繁
       // sendToRenderer('bililive-like-update', msgObj.data.count);
       break;
     case "INTERACT_WORD": // 进入直播间消息
-      log.info(`(BiliLive Service) 收到进场消息，开始处理`);
+      log.info(`(BiliLive Service) Received enter message, processing...`);
       handleEnterMessage(msgObj.data);
       break;
     case "ENTRY_EFFECT": // 进入直播间特效 (高等级用户)
       log.debug(
-        `(BiliLive Service) 收到进场特效消息: ${
-          msgObj.data?.uname || "未知用户"
+        `(BiliLive Service) Received entry effect message: ${
+          msgObj.data?.uname || "Unknown user"
         }`
       );
       // 可以考虑添加单独处理
       break;
     case "WELCOME": // 欢迎高等级用户/舰长
       log.debug(
-        `(BiliLive Service) 收到高等级用户欢迎消息: ${
-          msgObj.data?.uname || "未知用户"
+        `(BiliLive Service) Received welcome message from high-level user: ${
+          msgObj.data?.uname || "Unknown user"
         }`
       );
       // msgObj.data.uname
       break;
     case "WELCOME_GUARD": // 欢迎舰长
       log.debug(
-        `(BiliLive Service) 收到舰长欢迎消息: ${
-          msgObj.data?.username || "未知用户"
+        `(BiliLive Service) Received welcome message from guard: ${
+          msgObj.data?.username || "Unknown user"
         }`
       );
       // msgObj.data.username
       break;
     case "SUPER_CHAT_MESSAGE": // SC 消息
-      log.info(`(BiliLive Service) 收到SC消息，开始处理`);
+      log.info(`(BiliLive Service) Received SC message, processing...`);
       handleSuperChatMessage(msgObj.data);
       break;
     case "GUARD_BUY": // 上舰消息
-      log.info(`(BiliLive Service) 收到上舰消息，开始处理`);
+      log.info(`(BiliLive Service) Received guard buy message, processing...`);
       handleGuardBuyMessage(msgObj.data);
       break;
     // --- 其他可能需要处理的消息 ---
     case "ROOM_REAL_TIME_MESSAGE_UPDATE": // 粉丝数等更新
-      log.debug(
-        `(BiliLive Service) 收到房间实时信息更新: 粉丝数=${
-          msgObj.data?.fans || "未知"
-        }`
-      );
+      // log.debug(
+      //   `(BiliLive Service) Received room real-time update: fans=${
+      //     msgObj.data?.fans || "Unknown"
+      //   }`
+      // );
       // msgObj.data.fans
       // sendToRenderer('bililive-room-update', { fans: msgObj.data.fans });
       break;
     case "STOP_LIVE_ROOM_LIST": // 停止直播的房间列表？（可能不需要）
-      log.debug(`(BiliLive Service) 收到停播房间列表`);
+      // log.debug(`(BiliLive Service) Received stop live room list`);
       break;
     case "WIDGET_BANNER": // 小部件横幅（例如高能榜）
-      log.debug(`(BiliLive Service) 收到小部件横幅消息`);
+      // log.debug(`(BiliLive Service) Received widget banner message`);
+      sendToRenderer("bililive-message", {
+        type: "notice",
+        content: msgObj.msg_self,
+      });
       break;
     case "ONLINE_RANK_COUNT": // 在线排名计数
       log.debug(
-        `(BiliLive Service) 收到在线排名计数: ${msgObj.data?.count || "未知"}`
+        `(BiliLive Service) Received online rank count: ${
+          msgObj.data?.count || "Unknown"
+        }`
       );
       // msgObj.data.count
-      // sendToRenderer('bililive-online-count', msgObj.data.count);
+      sendToRenderer("bililive-online-count", msgObj.data.count);
       break;
     case "NOTICE_MSG": // 通知消息 (各种系统通知)
-      log.info(`(BiliLive Service) 收到通知消息: ${msgObj.msg_self}`);
       sendToRenderer("bililive-message", {
         type: "notice",
         content: msgObj.msg_self,
@@ -1177,9 +741,32 @@ function processSingleMessage(msgObj) {
     // ... 根据需要添加更多 case ...
     default:
       // 针对未明确处理的消息类型记录日志
-      log.debug(`(BiliLive Service) 收到未处理的消息类型: ${cmd}`);
+      log.debug(`(BiliLive Service) Received unhandled message type: ${cmd}`);
       sendToRenderer("bililive-other-message", msgObj); // 发送其他未处理消息
       break;
+  }
+}
+
+/**
+ * Helper function to extract danmaku data for direct sending
+ * @param {object} msgObj DANMU_MSG object
+ * @returns {object|null} Extracted danmaku data or null if extraction fails
+ */
+function extractDanmakuData(msgObj) {
+  try {
+    if (!msgObj.info || !Array.isArray(msgObj.info) || msgObj.info.length < 3) {
+      return null;
+    }
+
+    return {
+      uid: msgObj.info[2][0] || 0,
+      uname: msgObj.info[2][1] || "unknown",
+      msg: msgObj.info[1] || "",
+      userLevel: msgObj.info[4]?.[0] || 0,
+    };
+  } catch (err) {
+    log.error(`(BiliLive Service) Error extracting danmaku data:`, err);
+    return null;
   }
 }
 
@@ -1189,19 +776,6 @@ function processSingleMessage(msgObj) {
  */
 function handleDanmakuMessage(msgObj) {
   try {
-    // msgObj.info example:
-    // [
-    //   [ 0, 1, 25, 16777215, 1674834631, -1101134182, 0, '...', 0, 0, 0, '', 0, '{}' ],
-    //   'Danmaku content', // msg
-    //   [ 10000, 'User Name', 0, 0, 0, 10000, 1, '' ], // [uid, uname, is_admin, vip, svip, medal_level, medal_name, title]
-    //   [ 12, 'Medal name', 'Anchor name', 27305483, 16777215, '', 0 ], // [level, medal_name, anchor_uname, room_id, medal_color, special_medal, guard_level]
-    //   [ 20, 0, 10000, 60 ], // [user_level, rank, ...]
-    //   [ '', '' ],
-    //   0, 0, null,
-    //   { ts: 1674834631, route: '...' },
-    //   0, 101, null, null, 0, 100
-    // ]
-
     // Check if msgObj.info is valid
     if (!msgObj.info || !Array.isArray(msgObj.info) || msgObj.info.length < 3) {
       log.error(
@@ -1212,9 +786,17 @@ function handleDanmakuMessage(msgObj) {
       return;
     }
 
+    // Extract data based on B站的弹幕消息格式
+    // info[0]: 弹幕综合信息
+    // info[1]: 弹幕内容
+    // info[2]: 发送者信息 [用户ID, 用户名, 是否房管, 是否VIP, 是否SVIP, ...]
+    // info[3]: 粉丝勋章信息 [勋章等级, 勋章名, 主播名, 主播房间号, ...]
+    // info[4]: 用户等级信息 [用户等级, 排名, ...]
+
     const msg = msgObj.info[1];
     const uid = msgObj.info[2][0];
     const uname = msgObj.info[2][1];
+    const isAdmin = msgObj.info[2][2] === 1;
     const userLevel = msgObj.info[4]?.[0] || 0;
     const guardLevel = msgObj.info[3]?.[6] || 0; // Guard level 3=Captain, 2=Commander, 1=Governor
     const medalInfo = msgObj.info[3]?.[1]
@@ -1224,8 +806,30 @@ function handleDanmakuMessage(msgObj) {
     log.info(
       `(BiliLive Service) Danmaku: [${uname}] ${msg} (Level:${userLevel}, ${medalInfo}, Guard:${guardLevel})`
     );
-    const danmakuData = { uid, uname, msg, userLevel };
+
+    // 构建弹幕数据
+    const danmakuData = {
+      uid,
+      uname,
+      msg,
+      userLevel,
+      isAdmin,
+      guardLevel,
+      medal: {
+        level: msgObj.info[3]?.[0] || 0,
+        name: msgObj.info[3]?.[1] || "",
+        anchor: msgObj.info[3]?.[2] || "",
+      },
+      timestamp: Date.now(),
+    };
+
+    // 发送弹幕消息到前端
     sendToRenderer("bililive-danmaku", danmakuData);
+    log.debug(
+      `(BiliLive Service) Sent danmaku to renderer: ${JSON.stringify(
+        danmakuData
+      )}`
+    );
 
     // Check blacklist users and keywords
     if (
@@ -1252,6 +856,9 @@ function handleDanmakuMessage(msgObj) {
     }
   } catch (err) {
     log.error(`(BiliLive Service) Error processing danmaku message:`, err);
+    log.error(
+      `(BiliLive Service) Message object: ${JSON.stringify(msgObj, null, 2)}`
+    );
   }
 }
 
@@ -1532,11 +1139,6 @@ let isSpeaking = false;
  * @param {string} text
  */
 function speechText(text) {
-  console.log("speechText called with:", text);
-  console.log("biliConfig:", biliConfig);
-  console.log("biliConfig.ttsEnabled:", biliConfig.ttsEnabled);
-  console.log("ttsConfig.mode:", ttsConfig.mode);
-
   // Check if biliConfig is loaded properly
   if (!biliConfig || typeof biliConfig !== "object") {
     log.error("(BiliLive Service) biliConfig is not properly initialized");
@@ -1598,40 +1200,40 @@ async function processSpeechQueue() {
     ttsMode = "azure";
   }
 
-  log.info(
-    `(BiliLive Service) Starting TTS playback (Engine: ${ttsMode}): "${text}"`
-  );
+  // log.info(
+  //   `(BiliLive Service) Starting TTS playback (Engine: ${ttsMode}): "${text}"`
+  // );
   sendToRenderer("bililive-tts-status", { speaking: true, text });
 
   try {
     const startTime = Date.now();
     switch (ttsMode) {
       case "azure":
-        log.debug(`(BiliLive Service) Using Azure TTS to speak: "${text}"`);
+        // log.debug(`(BiliLive Service) Using Azure TTS to speak: "${text}"`);
         await azureTTS(text);
         break;
       case "alibaba":
-        log.debug(`(BiliLive Service) Using Alibaba TTS to speak: "${text}"`);
+        // log.debug(`(BiliLive Service) Using Alibaba TTS to speak: "${text}"`);
         await alibabaTTS(text);
         break;
       case "sovits":
-        log.debug(`(BiliLive Service) Using SoVITS TTS to speak: "${text}"`);
+        // log.debug(`(BiliLive Service) Using SoVITS TTS to speak: "${text}"`);
         await sovitsTTS(text);
         break;
       case "local":
       default:
-        log.debug(
-          `(BiliLive Service) Using local TTS to speak: "${text}" (localVoice: ${
-            biliConfig.localVoice || "not set"
-          })`
-        );
+        // log.debug(
+        //   `(BiliLive Service) Using local TTS to speak: "${text}" (localVoice: ${
+        //     biliConfig.localVoice || "not set"
+        //   })`
+        // );
         await localTTS(text);
         break;
     }
     const elapsedTime = Date.now() - startTime;
-    log.info(
-      `(BiliLive Service) TTS playback completed, time taken: ${elapsedTime}ms, remaining queue: ${speechQueue.length}`
-    );
+    // log.info(
+    //   `(BiliLive Service) TTS playback completed, time taken: ${elapsedTime}ms, remaining queue: ${speechQueue.length}`
+    // );
   } catch (err) {
     log.error(`(BiliLive Service) TTS playback error (${ttsMode}):`, err);
     sendToRenderer("bililive-message", {
@@ -1641,7 +1243,7 @@ async function processSpeechQueue() {
   } finally {
     // Wait interval
     const interval = biliConfig.max_next_interval || 100;
-    log.debug(`(BiliLive Service) TTS wait interval: ${interval}ms`);
+    // log.debug(`(BiliLive Service) TTS wait interval: ${interval}ms`);
     setTimeout(() => {
       isSpeaking = false;
       sendToRenderer("bililive-tts-status", { speaking: false, text: null });
@@ -1761,14 +1363,14 @@ async function azureTTS(text) {
     }
   }
 
-  log.info(
-    `(BiliLive Service) Azure TTS: 使用Key=${config.azure_key.substring(
-      0,
-      4
-    )}..., Region=${config.azure_region}, Model=${
-      config.azure_model || "default"
-    }`
-  );
+  // log.info(
+  //   `(BiliLive Service) Azure TTS: 使用Key=${config.azure_key.substring(
+  //     0,
+  //     4
+  //   )}..., Region=${config.azure_region}, Model=${
+  //     config.azure_model || "default"
+  //   }`
+  // );
 
   // 创建语音配置
   const speechConfig = sdk.SpeechConfig.fromSubscription(
@@ -1941,7 +1543,7 @@ async function sovitsTTS(text) {
     }
   } catch (err) {
     log.error("(BiliLive Service) SoVITS TTS Error:", err);
-    throw new Error(`SoVITS TTS 调用失败: ${err.message}`);
+    throw new Error(`SoVITS TTS call failed: ${err.message}`);
   }
 }
 
