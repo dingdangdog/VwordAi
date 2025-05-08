@@ -17,7 +17,11 @@
       <div
         class="max-w-md w-full bg-gray-50 dark:bg-gray-700 rounded-lg p-4 mb-6"
       >
-        <h3 class="font-medium text-gray-900 dark:text-white mb-2 border-b text-center border-gray-200 dark:border-gray-600">软件信息</h3>
+        <h3
+          class="font-medium text-gray-900 dark:text-white mb-2 border-b text-center border-gray-200 dark:border-gray-600"
+        >
+          软件信息
+        </h3>
         <div class="space-y-2 text-sm">
           <div class="flex justify-between">
             <span class="text-gray-500 dark:text-gray-400">版本</span>
@@ -270,22 +274,22 @@ function handleUpdateMessage(data: { message: string; data: any }) {
       console.error("更新错误:", data.data);
       isCheckingUpdate.value = false;
       downloadState.value = "error";
-      
+
       // 简化错误信息显示
       let errorMessage = String(data.data || "");
-      
+
       // 提取网络错误代码
       if (errorMessage.includes("net::")) {
         const netErrorMatch = errorMessage.match(/net::(ERR_\w+)/);
         if (netErrorMatch) {
           errorMessage = netErrorMatch[1];
         }
-      } 
+      }
       // 如果是其他错误，只保留第一行或限制长度
       else if (errorMessage.length > 50) {
-        errorMessage = errorMessage.split('\n')[0].substring(0, 50) + "...";
+        errorMessage = errorMessage.split("\n")[0].substring(0, 50) + "...";
       }
-      
+
       toast.error(`更新错误: ${errorMessage}`);
       break;
   }
@@ -315,13 +319,7 @@ async function checkForUpdates(showMessage = true) {
     saveLastUpdateCheck();
 
     // 使用 electron-updater 检查更新
-    if (window.electron) {
-      await window.electron.checkForUpdates();
-    } else {
-      // 降级到基于HTTP的更新检查
-      const result = await UpdateService.checkForUpdates();
-      handleLegacyUpdateCheck(result);
-    }
+    await window.electron.checkForUpdates();
   } catch (error) {
     if (showMessage) {
       toast.error(
