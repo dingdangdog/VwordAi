@@ -630,7 +630,7 @@ export const useBiliLiveStore = defineStore("biliLive", () => {
     }
 
     // 如果没有在内存中找到，尝试从服务获取最新状态
-    console.log("TTS mode not found in memory config, fetching from service");
+    // console.log("TTS mode not found in memory config, fetching from service");
     return null;
   }
 

@@ -813,7 +813,7 @@ const tabs = [
   { id: "like", name: "点赞" },
   { id: "enter", name: "进场" },
   { id: "system", name: "系统" },
-  { id: "debug", name: "调试" },
+  // { id: "debug", name: "调试" },
 ];
 
 // 配置
@@ -949,19 +949,11 @@ async function loadConfig() {
     const response = await window.api.biliLive.getConfig();
     if (response.success && response.data) {
       if (response.data.room_ids) {
-        console.log(
-          "loadConfig - 原始房间ID列表:",
-          JSON.stringify(response.data.room_ids)
-        );
         // 将所有房间ID统一为字符串类型
         config.value.room_ids = response.data.room_ids.map((room) => ({
           id: String(room.id),
           name: room.name || `房间 ${room.id}`,
         }));
-        console.log(
-          "loadConfig - 处理后的房间ID列表:",
-          JSON.stringify(config.value.room_ids)
-        );
       }
       config.value.ttsEnabled = response.data.ttsEnabled ?? true;
       config.value.readDanmaku = response.data.readDanmaku ?? true;
