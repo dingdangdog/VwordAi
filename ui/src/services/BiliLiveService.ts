@@ -53,7 +53,7 @@ export interface SoVITSConfig {
 /**
  * B站直播服务实现
  */
-export const biliLiveService = {
+const biliLiveService = {
   /**
    * 加载配置
    * @returns {Promise<Result<BiliLiveConfig>>} 配置信息
@@ -152,3 +152,5 @@ export const biliLiveService = {
     return biliLiveApi.saveLocalConfig(voice);
   },
 };
+
+export default biliLiveService;
