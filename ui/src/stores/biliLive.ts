@@ -1,6 +1,6 @@
 import { defineStore } from "pinia";
 import { ref, computed } from "vue";
-import { biliLiveService } from "@/services/BiliLiveService";
+import { biliLiveService } from "@/services";
 import type {
   BiliLiveConfig,
   TTSConfig,
