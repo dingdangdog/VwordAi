@@ -3,7 +3,6 @@ import { ref, computed } from "vue";
 import { biliLiveService } from "@/services";
 import type {
   BiliLiveConfig,
-  TTSConfig,
   AzureConfig,
   AlibabaConfig,
   SoVITSConfig,
