@@ -54,7 +54,6 @@ const DEFAULT_BILIVE_CONFIG = {
   readGift: true, // 是否播报礼物
   readEnter: true, // 是否播报进场
   readLike: true, // 是否播报点赞
-  localVoice: "", // 本地TTS声音
 
   // TTS模式
   tts: {
@@ -1145,7 +1144,6 @@ function localTTS(text) {
     try {
       // 准备语音设置
       const settings = {
-        voice: biliveConfig.localVoice || "",
         speed: 1.0,
       };
 
@@ -1167,9 +1165,6 @@ function localTTS(text) {
   });
 }
 
-// 配置保存的单一键名
-const SETTINGS_KEY = "vwordai";
-
 /**
  * Azure TTS
  * @param {string} text
@@ -1181,7 +1176,7 @@ async function azureTTS(text) {
   // 检查配置是否完整
   if (!config.azure_key || !config.azure_region) {
     // 尝试使用系统全局配置
-    const systemSetting = storage.readConfig(SETTINGS_KEY, {});
+    const systemSetting = storage.readConfig("settings", {});
 
     if (systemSetting.azure.key && systemSetting.azure.region) {
       log.info("(BiliLive Service) Using system global Azure configuration");
@@ -1400,27 +1395,12 @@ function getAvailableVoices() {
 
 /**
  * Save local TTS configuration
- * @param {string} voice Voice name
  * @returns {Promise<object>}
  */
-async function saveLocalConfig(voice) {
+async function saveLocalConfig() {
   try {
-    // Update localVoice in biliveConfig
-    biliveConfig.localVoice = voice;
-
-    // Save to storage
-    storage.saveConfig(BILIVE_CONFIG_KEY, biliveConfig);
-
-    log.info(
-      `(BiliLive Service) Local TTS config saved with voice: ${
-        voice || "default"
-      }`
-    );
-
-    return success({
-      message: "Local TTS config saved",
-      voice,
-    });
+    log.info(`(BiliLive Service) Local TTS config saved`);
+    return success({ message: "Local TTS config saved" });
   } catch (err) {
     log.error("(BiliLive Service) Failed to save local TTS config:", err);
     return error("Failed to save local TTS config: " + err.message);
@@ -1435,17 +1415,16 @@ module.exports = {
   // 配置相关
   loadAllConfig,
   getConfig,
-  saveBiliveConfig, // 更新函数名
+  saveBiliveConfig,
   saveTTSMode,
   saveAzureConfig,
   saveAlibabaConfig,
   saveSovitsConfig,
-  getAvailableVoices,
   saveLocalConfig,
 
   // TTS相关
   speechText, // 手动播放文本（用于测试）
 
   // 常量
-  DEFAULT_BILIVE_CONFIG, // 更新常量名
+  DEFAULT_BILIVE_CONFIG,
 };

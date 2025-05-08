@@ -87,31 +87,38 @@
           <div class="bg-yellow-100 p-2 mb-4 text-yellow-800 rounded">
             <strong>调试模式</strong>: 显示所有原始消息，用于排查问题。
             <div class="flex mt-2">
-              <button 
-                @click="clearDebugMessages" 
+              <button
+                @click="clearDebugMessages"
                 class="px-2 py-1 bg-yellow-200 text-yellow-800 rounded hover:bg-yellow-300 mr-2"
               >
                 清空消息
               </button>
-              <button 
-                @click="testDirectDanmaku" 
+              <button
+                @click="testDirectDanmaku"
                 class="px-2 py-1 bg-blue-500 text-white rounded hover:bg-blue-600"
               >
                 测试发送弹幕
               </button>
             </div>
           </div>
-          
+
           <div
             v-for="(msg, index) in messages.debug"
             :key="index"
             class="border p-2 mb-2 rounded text-xs font-mono bg-gray-50 break-all"
           >
             <div class="flex justify-between mb-1">
-              <span class="font-bold text-purple-600">{{ msg.cmd || 'Unknown' }}</span>
-              <span class="text-gray-500">{{ new Date(msg.timestamp).toLocaleTimeString() }}</span>
+              <span class="font-bold text-purple-600">{{
+                msg.cmd || "Unknown"
+              }}</span>
+              <span class="text-gray-500">{{
+                new Date(msg.timestamp).toLocaleTimeString()
+              }}</span>
             </div>
-            <pre class="whitespace-pre-wrap overflow-auto max-h-40 bg-gray-200">{{ JSON.stringify(msg.data, null, 2) }}</pre>
+            <pre
+              class="whitespace-pre-wrap overflow-auto max-h-40 bg-gray-200"
+              >{{ JSON.stringify(msg.data, null, 2) }}</pre
+            >
           </div>
           <div
             v-if="messages.debug.length === 0"
@@ -349,7 +356,7 @@
                 type="checkbox"
                 v-model="config.ttsEnabled"
                 class="sr-only peer"
-                @change="saveConfig"
+                @change="saveConfig(false)"
               />
               <div
                 class="w-9 h-5 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600"
@@ -411,7 +418,7 @@
                     id="readDanmaku"
                     v-model="config.readDanmaku"
                     class="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
-                    @change="saveConfig"
+                    @change="saveConfig(false)"
                   />
                   <label
                     for="readDanmaku"
@@ -426,7 +433,7 @@
                     id="readGift"
                     v-model="config.readGift"
                     class="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
-                    @change="saveConfig"
+                    @change="saveConfig(false)"
                   />
                   <label
                     for="readGift"
@@ -441,7 +448,7 @@
                     id="readEnter"
                     v-model="config.readEnter"
                     class="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
-                    @change="saveConfig"
+                    @change="saveConfig(false)"
                   />
                   <label
                     for="readEnter"
@@ -456,7 +463,7 @@
                     id="readLike"
                     v-model="config.readLike"
                     class="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
-                    @change="saveConfig"
+                    @change="saveConfig(false)"
                   />
                   <label
                     for="readLike"
@@ -670,44 +677,6 @@
               <!-- Inside the advanced settings section -->
               <!-- After the section where different TTS engine configs are shown -->
               <div v-if="ttsMode === 'local'" class="space-y-3">
-                <div>
-                  <label class="block text-sm font-medium text-gray-700 mb-1"
-                    >系统声音</label
-                  >
-                  <div class="flex items-center">
-                    <button
-                      @click="refreshVoices"
-                      class="mr-2 px-2 py-1 bg-gray-200 rounded text-sm hover:bg-gray-300"
-                      :disabled="isLoadingVoices"
-                    >
-                      <span v-if="isLoadingVoices">加载中...</span>
-                      <span v-else>刷新声音列表</span>
-                    </button>
-                    <select
-                      v-model="localVoice"
-                      class="w-full border rounded px-3 py-2"
-                      :disabled="availableVoices.length === 0"
-                    >
-                      <option value="">系统默认</option>
-                      <option
-                        v-for="voice in availableVoices"
-                        :key="voice"
-                        :value="voice"
-                      >
-                        {{ voice }}
-                      </option>
-                    </select>
-                  </div>
-                  <p
-                    v-if="availableVoices.length === 0"
-                    class="mt-1 text-sm text-red-500"
-                  >
-                    未找到可用的声音，请确认系统已安装文本转语音引擎
-                  </p>
-                  <p v-else class="mt-1 text-sm text-gray-500">
-                    推荐选择中文声音（如微软讯飞/Huihui/Yaoyao等）
-                  </p>
-                </div>
                 <div class="pt-3">
                   <button
                     @click="saveLocalConfig"
@@ -724,7 +693,7 @@
         <!-- 保存设置按钮 -->
         <div class="mt-0 flex justify-end">
           <button
-            @click="saveConfig"
+            @click="saveConfig(true)"
             class="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 disabled:bg-gray-300"
             :disabled="isSaving"
           >
@@ -758,9 +727,6 @@ const showAdvancedSettings = ref(false);
 const testText = ref("这是一条测试语音，如果你能听到，说明配置正确。");
 const showSessdataHelp = ref(false);
 const isSaving = ref(false);
-const isLoadingVoices = ref(false);
-const localVoice = ref("");
-const availableVoices = ref([]);
 
 // 消息容器引用，用于自动滚动
 const messageContainer = ref(null);
@@ -916,13 +882,19 @@ async function loadConfig() {
     const response = await window.api.biliLive.getConfig();
     if (response.success && response.data) {
       if (response.data.room_ids) {
-        console.log("loadConfig - 原始房间ID列表:", JSON.stringify(response.data.room_ids));
+        console.log(
+          "loadConfig - 原始房间ID列表:",
+          JSON.stringify(response.data.room_ids)
+        );
         // 将所有房间ID统一为字符串类型
-        config.value.room_ids = response.data.room_ids.map(room => ({
-          id: String(room.id), 
-          name: room.name || `房间 ${room.id}`
+        config.value.room_ids = response.data.room_ids.map((room) => ({
+          id: String(room.id),
+          name: room.name || `房间 ${room.id}`,
         }));
-        console.log("loadConfig - 处理后的房间ID列表:", JSON.stringify(config.value.room_ids));
+        console.log(
+          "loadConfig - 处理后的房间ID列表:",
+          JSON.stringify(config.value.room_ids)
+        );
       }
       config.value.ttsEnabled = response.data.ttsEnabled ?? true;
       config.value.readDanmaku = response.data.readDanmaku ?? true;
@@ -930,12 +902,6 @@ async function loadConfig() {
       config.value.readEnter = response.data.readEnter ?? true;
       config.value.readLike = response.data.readLike ?? true;
       config.value.SESSDATA = response.data.SESSDATA ?? "";
-
-      // 加载本地TTS语音设置
-      if (response.data.localVoice) {
-        localVoice.value = response.data.localVoice;
-        console.log("Loaded local voice preference:", localVoice.value);
-      }
 
       // 加载阿里云和SoVITS配置（保持原样）
       if (response.data.alibaba) {
@@ -954,9 +920,6 @@ async function loadConfig() {
         sovitsConfig.value = { ...defaultResponse.data.sovits };
       }
     }
-
-    // 加载完成后，自动刷新声音列表
-    refreshVoices();
   } catch (err) {
     console.error("Failed to load config:", err);
     addSystemMessage("error", "加载配置失败: " + err.message);
@@ -965,8 +928,9 @@ async function loadConfig() {
 
 /**
  * 保存B站配置
+ * @param {boolean} showToast 是否显示保存成功的toast通知，默认为true
  */
-const saveConfig = async () => {
+const saveConfig = async (showToast = true) => {
   try {
     isSaving.value = true;
 
@@ -977,12 +941,17 @@ const saveConfig = async () => {
     console.log(`正在保存B站配置，SESSDATA长度: ${sessdataLength}`);
     console.log("config.value:", config.value);
     console.log("保存的房间ID列表:", JSON.stringify(config.value.room_ids));
-    
+
     const response = await biliLiveStore.saveBiliConfig(config.value);
 
     if (response.success) {
-      toast.success("配置保存成功");
-      console.log("配置保存成功，当前房间ID列表:", JSON.stringify(config.value.room_ids));
+      if (showToast) {
+        toast.success("配置保存成功");
+      }
+      console.log(
+        "配置保存成功，当前房间ID列表:",
+        JSON.stringify(config.value.room_ids)
+      );
     } else {
       toast.error(`保存失败: ${response.error}`);
     }
@@ -1082,8 +1051,6 @@ async function testTTS() {
     const response = await biliLiveStore.testTTS(testText.value);
     if (!response.success) {
       toast.error("测试TTS失败: " + response.error);
-    } else {
-      toast.info("正在播放测试语音...");
     }
   } catch (err) {
     console.error("Failed to test TTS:", err);
@@ -1107,8 +1074,6 @@ async function connectToRoom() {
     const response = await biliLiveStore.connect(roomIdInput.value);
     if (!response.success) {
       toast.error("连接失败: " + response.error);
-    } else {
-      toast.info("正在连接...");
     }
   } catch (err) {
     console.error("Connect failed:", err);
@@ -1122,8 +1087,6 @@ async function disconnect() {
     const response = await biliLiveStore.disconnect();
     if (!response.success) {
       toast.error("断开连接失败: " + response.error);
-    } else {
-      toast.info("已断开连接");
     }
   } catch (err) {
     console.error("Disconnect failed:", err);
@@ -1181,11 +1144,11 @@ function addEnterMessage(data) {
 function addDebugMessage(data) {
   // Add message to debug list
   messages.value.debug.unshift({
-    cmd: data.cmd || 'UNKNOWN',
+    cmd: data.cmd || "UNKNOWN",
     data: data,
-    timestamp: Date.now()
+    timestamp: Date.now(),
   });
-  
+
   // Limit debug messages to avoid performance issues
   if (messages.value.debug.length > 200) {
     messages.value.debug.pop();
@@ -1198,18 +1161,18 @@ function testDirectDanmaku() {
     uid: 12345678,
     uname: "测试用户",
     msg: "这是一条测试弹幕消息",
-    timestamp: Date.now()
+    timestamp: Date.now(),
   };
-  
+
   // Add to local danmaku display
   addDanmakuMessage(testDanmaku);
-  
+
   // Also show in debug
   addDebugMessage({
     cmd: "TEST_DANMAKU",
-    info: [0, testDanmaku.msg, [testDanmaku.uid, testDanmaku.uname, 0, 0, 0]]
+    info: [0, testDanmaku.msg, [testDanmaku.uid, testDanmaku.uname, 0, 0, 0]],
   });
-  
+
   toast.success("已添加测试弹幕消息");
 }
 
@@ -1221,20 +1184,22 @@ function setupListeners() {
     currentRoomId.value = data.roomId;
 
     if (data.connected) {
-      toast.success(`已连接到房间 ${data.roomId}`);
-
-      // 保存该房间ID到历史记录
+      // 只在连接成功添加新房间时显示通知
       const roomIdStr = String(data.roomId);
       const roomIndex = config.value.room_ids.findIndex(
         (r) => String(r.id) === roomIdStr
       );
 
-      console.log(`检查房间ID ${roomIdStr} 是否存在于历史记录:`, 
-        config.value.room_ids.map(r => String(r.id)),
+      console.log(
+        `检查房间ID ${roomIdStr} 是否存在于历史记录:`,
+        config.value.room_ids.map((r) => String(r.id)),
         `结果: ${roomIndex}`
       );
 
       if (roomIndex === -1) {
+        // 只有新房间才显示toast通知
+        toast.success(`已连接到新房间: ${data.roomId}`);
+
         console.log(`将房间ID ${roomIdStr} 添加到历史记录`);
         config.value.room_ids.unshift({
           id: roomIdStr,
@@ -1244,13 +1209,15 @@ function setupListeners() {
         if (config.value.room_ids.length > 10) {
           config.value.room_ids.pop();
         }
-        // 立即保存配置
-        saveConfig();
+        // 立即保存配置，但不显示额外的保存成功通知
+        saveConfig(false);
       } else {
+        // 只在控制台记录已知房间的连接
         console.log(`房间ID ${roomIdStr} 已存在于历史记录，位置: ${roomIndex}`);
       }
     } else {
-      toast.info("已断开连接");
+      // 不再显示额外的断开连接通知，避免重复
+      console.log("连接状态：已断开连接");
     }
   });
 
@@ -1282,25 +1249,42 @@ function setupListeners() {
 
   // 系统消息
   window.electron.listenToChannel("bililive-message", (data) => {
-    // 使用toast显示系统消息
-    switch (data.type) {
-      case "info":
-        toast.info(data.content);
-        break;
-      case "warning":
-        toast.warning(data.content);
-        break;
-      case "error":
-        toast.error(data.content);
-        break;
-      case "notice":
-        toast.info(data.content);
-        break;
-      default:
-        toast.info(data.content);
-    }
-    // 添加到系统消息列表用于历史显示
+    // 将所有系统消息添加到消息历史列表中
     addSystemMessage(data.type, data.content);
+
+    // 过滤掉一些会导致重复通知的消息类型
+    const shouldSkipToast = (content) => {
+      // 跳过已经在其它地方处理过的连接状态消息
+      if (
+        content.includes("Connection") ||
+        content.includes("连接") ||
+        content.includes("WebSocket") ||
+        content.includes("room")
+      ) {
+        return true;
+      }
+      return false;
+    };
+
+    // 根据消息类型选择性地显示toast通知
+    if (!shouldSkipToast(data.content)) {
+      switch (data.type) {
+        case "info":
+          toast.info(data.content);
+          break;
+        case "warning":
+          toast.warning(data.content);
+          break;
+        case "error":
+          toast.error(data.content);
+          break;
+        case "notice":
+          toast.info(data.content);
+          break;
+        default:
+          toast.info(data.content);
+      }
+    }
   });
 
   // TTS状态（正在播放）
@@ -1310,13 +1294,13 @@ function setupListeners() {
       console.log("Speaking:", data.text);
     }
   });
-  
+
   // 新增: 原始消息监听（用于调试）
   window.electron.listenToChannel("bililive-raw-message", (data) => {
     console.log("Received raw message:", data);
     addDebugMessage(data);
   });
-  
+
   // 新增: 调试消息监听
   window.electron.listenToChannel("bililive-debug-message", (data) => {
     console.log("Received debug message:", data);
@@ -1359,27 +1343,9 @@ onUnmounted(() => {
 });
 
 // Additional methods for local TTS
-async function refreshVoices() {
-  isLoadingVoices.value = true;
-  try {
-    const response = await biliLiveStore.refreshVoices();
-    if (response.success) {
-      availableVoices.value = response.data.voices;
-      toast.success("声音列表已刷新");
-    } else {
-      toast.error("刷新声音列表失败: " + response.error);
-    }
-  } catch (err) {
-    console.error("Failed to refresh voices:", err);
-    toast.error("刷新声音列表失败: " + err.message);
-  } finally {
-    isLoadingVoices.value = false;
-  }
-}
-
 async function saveLocalConfig() {
   try {
-    const response = await biliLiveStore.saveLocalConfig(localVoice.value);
+    const response = await biliLiveStore.saveLocalConfig();
     if (response.success) {
       toast.success("本地TTS配置已保存");
     } else {
