@@ -22,7 +22,7 @@
         </button>
       </div>
       <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
-        选择一个路径，用于保存生成的音频文件 (WAV格式)
+        选择一个路径，用于保存系统数据
       </p>
 
       <div class="flex justify-center mt-2">

@@ -7,7 +7,14 @@
       <div
         class="flex justify-between items-center px-4 py-2 border-b border-gray-50 dark:border-gray-300"
       >
-        <h1 class="text-xl font-bold dark:text-white">Bili 直播弹幕助手</h1>
+        <div class="flex items-center space-x-4">
+          <h1 class="text-xl font-bold dark:text-white">Bili 直播弹幕助手</h1>
+
+          <!-- 房间人气 -->
+          <div v-if="isConnected" class="p-2 text-sm dark:text-gray-200">
+            <span>人气值: {{ popularity }}</span>
+          </div>
+        </div>
         <div class="flex items-center space-x-4">
           <span v-if="isConnected" class="text-green-500 flex items-center">
             <span
@@ -16,28 +23,21 @@
             已连接到房间: {{ currentRoomId }}
           </span>
           <span v-else class="text-gray-500">未连接</span>
-          <button
+          <!-- <button
             v-if="!isConnected"
             @click="connectToRoom"
             class="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600"
           >
             连接
-          </button>
+          </button> -->
           <button
-            v-else
+            v-if="isConnected"
             @click="disconnect"
             class="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600"
           >
             断开
           </button>
         </div>
-      </div>
-      <!-- 房间人气 -->
-      <div
-        v-if="isConnected"
-        class="p-2 border-b border-gray-100 dark:border-gray-400 text-sm dark:text-gray-200"
-      >
-        <span>人气值: {{ popularity }}</span>
       </div>
 
       <!-- 选项卡标签 -->
@@ -50,7 +50,7 @@
           :class="[
             currentTab === tab.id
               ? 'border-b-2 border-blue-500 text-blue-500'
-              : 'hover:bg-gray-100 dark:text-white',
+              : 'hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-white',
           ]"
         >
           {{ tab.name }}
@@ -59,7 +59,7 @@
 
       <!-- 消息显示区域 -->
       <div
-        class="flex-1 overflow-auto p-4 max-h-[calc(100vh-13rem)] bg-gray-100/30"
+        class="flex-1 overflow-auto p-4 max-h-[calc(100vh-13rem)] bg-gray-100/10"
         ref="messageContainer"
       >
         <!-- 弹幕 -->
@@ -72,11 +72,11 @@
             <span class="text-blue-500 font-semibold mr-2"
               >{{ msg.uname }}:</span
             >
-            <span>{{ msg.msg }}</span>
+            <span class="text-gray-500 dark:text-gray-200">{{ msg.msg }}</span>
           </div>
           <div
             v-if="messages.danmaku.length === 0"
-            class="text-gray-500 text-center py-8"
+            class="text-gray-500 dark:text-gray-200 text-center py-8"
           >
             暂无弹幕消息
           </div>
@@ -84,20 +84,14 @@
 
         <!-- DEBUG - Raw Messages -->
         <div v-if="currentTab === 'debug'" class="space-y-2">
-          <div class="bg-yellow-100 p-2 mb-4 text-yellow-800 rounded">
+          <div class="bg-yellow-100/60 p-2 mb-4 text-yellow-800 rounded">
             <strong>调试模式</strong>: 显示所有原始消息，用于排查问题。
             <div class="flex mt-2">
               <button
                 @click="clearDebugMessages"
-                class="px-2 py-1 bg-yellow-200 text-yellow-800 rounded hover:bg-yellow-300 mr-2"
+                class="px-2 py-1 bg-yellow-200/50 text-yellow-800 rounded hover:bg-yellow-300 mr-2"
               >
                 清空消息
-              </button>
-              <button
-                @click="testDirectDanmaku"
-                class="px-2 py-1 bg-blue-500 text-white rounded hover:bg-blue-600"
-              >
-                测试发送弹幕
               </button>
             </div>
           </div>
@@ -140,7 +134,7 @@
           </div>
           <div
             v-if="messages.gift.length === 0"
-            class="text-gray-500 text-center py-8"
+            class="text-gray-500 dark:text-gray-200 text-center py-8"
           >
             暂无礼物消息
           </div>
@@ -160,7 +154,7 @@
           </div>
           <div
             v-if="messages.like.length === 0"
-            class="text-gray-500 text-center py-8"
+            class="text-gray-500 dark:text-gray-200 text-center py-8"
           >
             暂无点赞消息
           </div>
@@ -183,7 +177,7 @@
           </div>
           <div
             v-if="messages.enter.length === 0"
-            class="text-gray-500 text-center py-8"
+            class="text-gray-500 dark:text-gray-200 text-center py-8"
           >
             暂无进场消息
           </div>
@@ -230,7 +224,7 @@
           </div>
           <div
             v-if="messages.system.length === 0"
-            class="text-gray-500 text-center py-8"
+            class="text-gray-500 dark:text-gray-200 text-center py-8"
           >
             暂无系统消息
           </div>
@@ -376,10 +370,10 @@
                 @change="saveTTSMode"
                 class="w-full border rounded px-3 py-2"
               >
-                <option value="local">本地 TTS</option>
-                <option value="azure">Azure TTS</option>
-                <option value="alibaba">阿里云 TTS</option>
-                <option value="sovits">SoVITS</option>
+                <option value="local">本地默认语音</option>
+                <option value="azure">Azure语音服务</option>
+                <!-- <option value="alibaba">阿里云 TTS</option>
+                <option value="sovits">SoVITS</option> -->
               </select>
             </div>
 
@@ -490,7 +484,7 @@
               <!-- 根据选择的TTS类型显示不同的配置表单 -->
               <div v-if="ttsMode === 'azure'" class="space-y-3">
                 <div>
-                  <label class="block text-sm font-medium text-gray-700 mb-1"
+                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1"
                     >API Key</label
                   >
                   <input
@@ -500,7 +494,7 @@
                   />
                 </div>
                 <div>
-                  <label class="block text-sm font-medium text-gray-700 mb-1"
+                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1"
                     >区域</label
                   >
                   <input
@@ -511,7 +505,7 @@
                   />
                 </div>
                 <div>
-                  <label class="block text-sm font-medium text-gray-700 mb-1"
+                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1"
                     >语音模型</label
                   >
                   <input
@@ -521,8 +515,8 @@
                     placeholder="例如: zh-CN-XiaoxiaoNeural"
                   />
                 </div>
-                <div>
-                  <label class="block text-sm font-medium text-gray-700 mb-1">
+                <!-- <div>
+                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">
                     语速 ({{ azureConfig.speed }})
                   </label>
                   <input
@@ -535,7 +529,7 @@
                   />
                 </div>
                 <div>
-                  <label class="block text-sm font-medium text-gray-700 mb-1">
+                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">
                     音调 ({{ azureConfig.pitch || 0 }})
                   </label>
                   <input
@@ -546,7 +540,7 @@
                     step="1"
                     class="w-full"
                   />
-                </div>
+                </div> -->
                 <div class="pt-3">
                   <button
                     @click="saveAzureConfig"
@@ -724,7 +718,7 @@ const isConnected = ref(false);
 const currentRoomId = ref(null);
 const popularity = ref(0);
 const showAdvancedSettings = ref(false);
-const testText = ref("这是一条测试语音，如果你能听到，说明配置正确。");
+const testText = ref("如果你能听到，说明语音配置成功。");
 const showSessdataHelp = ref(false);
 const isSaving = ref(false);
 
@@ -1045,7 +1039,7 @@ async function saveSovitsConfig() {
 async function testTTS() {
   try {
     if (!testText.value) {
-      testText.value = "这是一条测试语音，如果你能听到，说明配置正确。";
+      testText.value = "如果你能听到，说明语音配置成功。";
     }
 
     const response = await biliLiveStore.testTTS(testText.value);
@@ -1153,27 +1147,6 @@ function addDebugMessage(data) {
   if (messages.value.debug.length > 200) {
     messages.value.debug.pop();
   }
-}
-
-// Test function to simulate a danmaku message directly
-function testDirectDanmaku() {
-  const testDanmaku = {
-    uid: 12345678,
-    uname: "测试用户",
-    msg: "这是一条测试弹幕消息",
-    timestamp: Date.now(),
-  };
-
-  // Add to local danmaku display
-  addDanmakuMessage(testDanmaku);
-
-  // Also show in debug
-  addDebugMessage({
-    cmd: "TEST_DANMAKU",
-    info: [0, testDanmaku.msg, [testDanmaku.uid, testDanmaku.uname, 0, 0, 0]],
-  });
-
-  toast.success("已添加测试弹幕消息");
 }
 
 // IPC 监听器
@@ -1330,7 +1303,7 @@ onMounted(async () => {
     // 设置监听器
     setupListeners();
 
-    toast.success("Bili直播弹幕助手已加载");
+    // toast.success("Bili直播弹幕助手已加载");
   } catch (err) {
     console.error("初始化失败:", err);
     toast.error("初始化失败: " + err.message);

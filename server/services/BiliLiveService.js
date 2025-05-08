@@ -103,7 +103,7 @@ async function loadAllConfig() {
   try {
     // 从配置目录加载B站配置
     const savedConfig = storage.readConfig(BILIVE_CONFIG_KEY, {});
-    console.log("Saved bilive config:", savedConfig);
+    // console.log("Saved bilive config:", savedConfig);
 
     // 确保正确合并默认配置和存储的配置
     biliveConfig = {
@@ -134,7 +134,7 @@ async function loadAllConfig() {
       };
     }
 
-    console.log("Merged biliveConfig:", biliveConfig);
+    // console.log("Merged biliveConfig:", biliveConfig);
     log.info(
       `(BiliLive Service) Bilive Config loaded, SESSDATA length: ${
         biliveConfig.SESSDATA ? String(biliveConfig.SESSDATA).length : 0
@@ -1087,24 +1087,16 @@ async function processSpeechQueue() {
     const startTime = Date.now();
     switch (ttsMode) {
       case "azure":
-        // log.debug(`(BiliLive Service) Using Azure TTS to speak: "${text}"`);
         await azureTTS(text);
         break;
       case "alibaba":
-        // log.debug(`(BiliLive Service) Using Alibaba TTS to speak: "${text}"`);
         await alibabaTTS(text);
         break;
       case "sovits":
-        // log.debug(`(BiliLive Service) Using SoVITS TTS to speak: "${text}"`);
         await sovitsTTS(text);
         break;
       case "local":
       default:
-        // log.debug(
-        //   `(BiliLive Service) Using local TTS to speak: "${text}" (localVoice: ${
-        //     biliveConfig.localVoice || "not set"
-        //   })`
-        // );
         await localTTS(text);
         break;
     }
@@ -1147,9 +1139,12 @@ function localTTS(text) {
         speed: 1.0,
       };
 
+      // 确保文本编码正确
+      const encodedText = Buffer.from(text, 'utf8').toString('utf8');
+
       // 直接调用local.js中的play方法
       const localProvider = require("../provider/local");
-      const result = await localProvider.play(text, settings);
+      const result = await localProvider.play(encodedText, settings);
 
       if (!result.success) {
         log.error("(BiliLive Service) Local TTS playback error:", result.error);

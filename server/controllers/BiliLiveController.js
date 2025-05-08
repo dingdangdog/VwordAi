@@ -2,8 +2,8 @@
  * BiliLive Controller
  * 处理与B站直播相关的请求
  */
-const BiliLiveService = require('../services/BiliLiveService');
-const { success, error } = require('../utils/result');
+const BiliLiveService = require("../services/BiliLiveService");
+const { success, error } = require("../utils/result");
 
 /**
  * 连接到B站直播间
@@ -13,7 +13,7 @@ async function connect(roomId) {
   try {
     return await BiliLiveService.connect(roomId);
   } catch (err) {
-    console.error('[BiliLiveController] Connect error:', err);
+    console.error("[BiliLiveController] Connect error:", err);
     return error(err.message);
   }
 }
@@ -24,9 +24,9 @@ async function connect(roomId) {
 async function disconnect() {
   try {
     BiliLiveService.closeClient();
-    return success({ message: '已断开连接' });
+    return success({ message: "已断开连接" });
   } catch (err) {
-    console.error('[BiliLiveController] Disconnect error:', err);
+    console.error("[BiliLiveController] Disconnect error:", err);
     return error(err.message);
   }
 }
@@ -40,8 +40,8 @@ async function getAllConfig() {
     const config = await BiliLiveService.getConfig();
     return success(config);
   } catch (err) {
-    console.error('[BiliLiveController] Get config error:', err);
-    return error('获取配置失败: ' + err.message);
+    console.error("[BiliLiveController] Get config error:", err);
+    return error("获取配置失败: " + err.message);
   }
 }
 
@@ -53,8 +53,8 @@ async function saveBiliConfig(configData) {
   try {
     return await BiliLiveService.saveBiliveConfig(configData);
   } catch (err) {
-    console.error('[BiliLiveController] Save Bili config error:', err);
-    return error('保存B站配置失败: ' + err.message);
+    console.error("[BiliLiveController] Save Bili config error:", err);
+    return error("保存B站配置失败: " + err.message);
   }
 }
 
@@ -66,8 +66,8 @@ async function saveTTSMode(mode) {
   try {
     return await BiliLiveService.saveTTSMode(mode);
   } catch (err) {
-    console.error('[BiliLiveController] Save TTS mode error:', err);
-    return error('保存TTS模式失败: ' + err.message);
+    console.error("[BiliLiveController] Save TTS mode error:", err);
+    return error("保存TTS模式失败: " + err.message);
   }
 }
 
@@ -79,8 +79,8 @@ async function saveAzureConfig(configData) {
   try {
     return await BiliLiveService.saveAzureConfig(configData);
   } catch (err) {
-    console.error('[BiliLiveController] Save Azure config error:', err);
-    return error('保存Azure TTS配置失败: ' + err.message);
+    console.error("[BiliLiveController] Save Azure config error:", err);
+    return error("保存Azure TTS配置失败: " + err.message);
   }
 }
 
@@ -92,8 +92,8 @@ async function saveAlibabaConfig(configData) {
   try {
     return await BiliLiveService.saveAlibabaConfig(configData);
   } catch (err) {
-    console.error('[BiliLiveController] Save Alibaba config error:', err);
-    return error('保存阿里云TTS配置失败: ' + err.message);
+    console.error("[BiliLiveController] Save Alibaba config error:", err);
+    return error("保存阿里云TTS配置失败: " + err.message);
   }
 }
 
@@ -105,8 +105,8 @@ async function saveSovitsConfig(configData) {
   try {
     return await BiliLiveService.saveSovitsConfig(configData);
   } catch (err) {
-    console.error('[BiliLiveController] Save SoVITS config error:', err);
-    return error('保存SoVITS TTS配置失败: ' + err.message);
+    console.error("[BiliLiveController] Save SoVITS config error:", err);
+    return error("保存SoVITS TTS配置失败: " + err.message);
   }
 }
 
@@ -119,12 +119,12 @@ async function getDefaultConfig() {
       bili: BiliLiveService.DEFAULT_BILIVE_CONFIG,
       azure: BiliLiveService.DEFAULT_BILIVE_CONFIG.tts.azure,
       alibaba: BiliLiveService.DEFAULT_BILIVE_CONFIG.tts.alibaba,
-      sovits: BiliLiveService.DEFAULT_BILIVE_CONFIG.tts.sovits
+      sovits: BiliLiveService.DEFAULT_BILIVE_CONFIG.tts.sovits,
     };
     return success(defaultConfig);
   } catch (err) {
-    console.error('[BiliLiveController] Get default config error:', err);
-    return error('获取默认配置失败: ' + err.message);
+    console.error("[BiliLiveController] Get default config error:", err);
+    return error("获取默认配置失败: " + err.message);
   }
 }
 
@@ -135,13 +135,13 @@ async function getDefaultConfig() {
 async function testTTS(text) {
   try {
     if (!text) {
-      text = '这是一条测试语音，如果你能听到，说明配置正确。';
+      text = "如果你能听到，说明语音配置成功。";
     }
     BiliLiveService.speechText(text);
-    return success({ message: '测试语音已发送' });
+    return success({ message: "测试语音已发送" });
   } catch (err) {
-    console.error('[BiliLiveController] Test TTS error:', err);
-    return error('测试TTS失败: ' + err.message);
+    console.error("[BiliLiveController] Test TTS error:", err);
+    return error("测试TTS失败: " + err.message);
   }
 }
 
@@ -151,11 +151,11 @@ async function testTTS(text) {
 async function getAvailableVoices() {
   try {
     const voices = await BiliLiveService.getAvailableVoices();
-    console.log('[BiliLiveController] Available voices:', voices);
+    console.log("[BiliLiveController] Available voices:", voices);
     return success({ voices: voices });
   } catch (err) {
-    console.error('[BiliLiveController] Get available voices error:', err);
-    return error('获取可用声音失败: ' + err.message);
+    console.error("[BiliLiveController] Get available voices error:", err);
+    return error("获取可用声音失败: " + err.message);
   }
 }
 
@@ -167,8 +167,8 @@ async function saveLocalConfig(voice) {
   try {
     return await BiliLiveService.saveLocalConfig(voice);
   } catch (err) {
-    console.error('[BiliLiveController] Save local TTS config error:', err);
-    return error('保存本地TTS配置失败: ' + err.message);
+    console.error("[BiliLiveController] Save local TTS config error:", err);
+    return error("保存本地TTS配置失败: " + err.message);
   }
 }
 
@@ -184,5 +184,5 @@ module.exports = {
   getDefaultConfig,
   testTTS,
   getAvailableVoices,
-  saveLocalConfig
-}; 
+  saveLocalConfig,
+};
