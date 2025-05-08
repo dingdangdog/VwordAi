@@ -130,7 +130,7 @@
             class="flex items-start text-pink-500"
           >
             <span class="font-semibold mr-2">{{ msg.uname }}</span>
-            <span>赠送了 {{ msg.num }} 个 {{ msg.giftName }}</span>
+            <span class="text-gray-500 dark:text-gray-200">赠送了 {{ msg.num }} 个 {{ msg.giftName }}</span>
           </div>
           <div
             v-if="messages.gift.length === 0"
@@ -170,7 +170,7 @@
             <span class="text-green-500 font-semibold mr-2">{{
               msg.uname
             }}</span>
-            <span>进入了直播间</span>
+            <span class="text-gray-500 dark:text-gray-200">进入了直播间</span>
             <span v-if="msg.medalLevel > 0" class="ml-2 text-sm text-gray-500">
               (粉丝牌等级: {{ msg.medalLevel }})
             </span>
@@ -484,7 +484,8 @@
               <!-- 根据选择的TTS类型显示不同的配置表单 -->
               <div v-if="ttsMode === 'azure'" class="space-y-3">
                 <div>
-                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1"
+                  <label
+                    class="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1"
                     >API Key</label
                   >
                   <input
@@ -494,7 +495,8 @@
                   />
                 </div>
                 <div>
-                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1"
+                  <label
+                    class="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1"
                     >区域</label
                   >
                   <input
@@ -505,7 +507,8 @@
                   />
                 </div>
                 <div>
-                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1"
+                  <label
+                    class="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1"
                     >语音模型</label
                   >
                   <input
@@ -684,6 +687,73 @@
           </div>
         </div>
 
+        <!-- 数据记录设置 -->
+        <div class="shadow-md rounded p-4 bg-gray-50 dark:bg-gray-600">
+          <div class="flex justify-between items-center mb-3">
+            <h2 class="text-lg font-semibold dark:text-white">数据记录</h2>
+          </div>
+
+          <div class="space-y-4">
+            <div>
+              <label
+                class="block text-sm font-medium text-gray-700 mb-2 dark:text-gray-200"
+                >记录类型</label
+              >
+              <div class="flex flex-wrap gap-3">
+                <div class="flex items-center">
+                  <input
+                    type="checkbox"
+                    id="recordDanmaku"
+                    v-model="config.recordDanmaku"
+                    class="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
+                    @change="saveConfig(false)"
+                  />
+                  <label
+                    for="recordDanmaku"
+                    class="ml-2 text-sm text-gray-700 dark:text-gray-200"
+                    >弹幕</label
+                  >
+                </div>
+
+                <div class="flex items-center">
+                  <input
+                    type="checkbox"
+                    id="recordGift"
+                    v-model="config.recordGift"
+                    class="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
+                    @change="saveConfig(false)"
+                  />
+                  <label
+                    for="recordGift"
+                    class="ml-2 text-sm text-gray-700 dark:text-gray-200"
+                    >礼物</label
+                  >
+                </div>
+
+                <div class="flex items-center">
+                  <input
+                    type="checkbox"
+                    id="recordVisitor"
+                    v-model="config.recordVisitor"
+                    class="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
+                    @change="saveConfig(false)"
+                  />
+                  <label
+                    for="recordVisitor"
+                    class="ml-2 text-sm text-gray-700 dark:text-gray-200"
+                    >访客</label
+                  >
+                </div>
+              </div>
+            </div>
+
+            <!-- <div class="bg-yellow-50 p-2 rounded text-xs text-yellow-800">
+              数据将保存在 storage/房间号/blive-日期时间/
+              目录下，方便后续分析和统计
+            </div> -->
+          </div>
+        </div>
+
         <!-- 保存设置按钮 -->
         <div class="mt-0 flex justify-end">
           <button
@@ -755,6 +825,9 @@ const config = ref({
   readEnter: true, // 是否播报进场
   readLike: true, // 是否播报点赞
   SESSDATA: "", // 新增SESSDATA字段
+  recordDanmaku: true, // 是否记录弹幕
+  recordGift: true, // 是否记录礼物
+  recordVisitor: true, // 是否记录访客
 });
 
 // 获取TTS模式（从settings store）
@@ -896,6 +969,11 @@ async function loadConfig() {
       config.value.readEnter = response.data.readEnter ?? true;
       config.value.readLike = response.data.readLike ?? true;
       config.value.SESSDATA = response.data.SESSDATA ?? "";
+
+      // 加载数据记录配置
+      config.value.recordDanmaku = response.data.recordDanmaku ?? true;
+      config.value.recordGift = response.data.recordGift ?? true;
+      config.value.recordVisitor = response.data.recordVisitor ?? true;
 
       // 加载阿里云和SoVITS配置（保持原样）
       if (response.data.alibaba) {

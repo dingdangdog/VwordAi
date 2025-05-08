@@ -30,6 +30,13 @@ let giftMergeMap = new Map();
 // 单一配置键
 const BILIVE_CONFIG_KEY = "bilive";
 
+// 数据存储相关
+let recordEnabled = false;
+let recordPath = null;
+let danmakuStream = null;
+let giftStream = null;
+let visitorStream = null;
+
 const DEFAULT_BILIVE_CONFIG = {
   // 基础配置
   platform: "win",
@@ -54,6 +61,11 @@ const DEFAULT_BILIVE_CONFIG = {
   readGift: true, // 是否播报礼物
   readEnter: true, // 是否播报进场
   readLike: true, // 是否播报点赞
+
+  // 数据记录配置
+  recordDanmaku: true, // 是否记录弹幕
+  recordGift: true, // 是否记录礼物
+  recordVisitor: true, // 是否记录访客
 
   // TTS模式
   tts: {
@@ -328,6 +340,15 @@ async function connect(roomIdValue) {
 
     currentRoomId = parseInt(roomIdValue);
 
+    // 初始化数据记录
+    if (
+      biliveConfig.recordDanmaku ||
+      biliveConfig.recordGift ||
+      biliveConfig.recordVisitor
+    ) {
+      initDataRecording(currentRoomId);
+    }
+
     // Create BLiveClient instance
     client = new BLiveClient(
       {
@@ -355,6 +376,8 @@ async function connect(roomIdValue) {
         content: "WebSocket connection closed",
       });
       sendToRenderer("bililive-status-text", `Connection closed`);
+      // 关闭记录文件
+      closeDataRecording();
     };
 
     client.onError = (err) => {
@@ -378,6 +401,7 @@ async function connect(roomIdValue) {
     if (!result) {
       isConnecting = false;
       sendConnectionStatus(false, currentRoomId);
+      closeDataRecording();
       return error("Failed to connect to room");
     }
 
@@ -395,6 +419,7 @@ async function connect(roomIdValue) {
     });
     sendToRenderer("bililive-status-text", `Connection failed: ${err.message}`);
     closeClient();
+    closeDataRecording();
     return error("Connection failed: " + err.message);
   }
 }
@@ -424,6 +449,9 @@ function closeClient() {
 
   giftMergeMap.clear(); // Clear gift merge map
   isClosing = false; // Reset flag after closing attempt
+
+  // 关闭数据记录
+  closeDataRecording();
 }
 
 /**
@@ -707,6 +735,11 @@ function handleDanmakuMessage(msgObj) {
       )}`
     );
 
+    // 记录弹幕数据到文件
+    if (biliveConfig.recordDanmaku && danmakuStream) {
+      recordDanmaku(danmakuData);
+    }
+
     // Check blacklist users and keywords
     if (
       biliveConfig.black_user?.includes(uname) ||
@@ -771,8 +804,23 @@ function handleGiftMessage(msgObj) {
     log.info(
       `(BiliLive Service) Gift: [${uname}] sent ${num} ${giftName} (Value:${totalCoin} battery, Type:${coinType} coin, ${medalInfo})`
     );
-    const giftData = { uid, uname, giftName, giftId, num, price, totalCoin };
+    const giftData = {
+      uid,
+      uname,
+      giftName,
+      giftId,
+      num,
+      price,
+      totalCoin,
+      timestamp: Date.now(),
+      coinType,
+    };
     sendToRenderer("bililive-gift", giftData);
+
+    // 记录礼物数据到文件
+    if (biliveConfig.recordGift && giftStream) {
+      recordGift(giftData);
+    }
 
     // Record gift merge status
     const giftKey = `${uid}-${giftId}-${batchComboId}`; // Merge Key
@@ -915,13 +963,22 @@ function handleEnterMessage(data) {
     log.info(
       `(BiliLive Service) Enter: [${uname}] (${medalInfo}, ${guardInfo})`
     );
-    sendToRenderer("bililive-enter", {
+
+    const visitorData = {
       uid,
       uname,
       medalLevel,
       medalName,
       guardLevel,
-    });
+      timestamp: Date.now(),
+    };
+
+    sendToRenderer("bililive-enter", visitorData);
+
+    // 记录访客数据到文件
+    if (biliveConfig.recordVisitor && visitorStream) {
+      recordVisitor(visitorData);
+    }
 
     // Check blacklist
     if (biliveConfig.black_user?.includes(uname)) {
@@ -1140,7 +1197,7 @@ function localTTS(text) {
       };
 
       // 确保文本编码正确
-      const encodedText = Buffer.from(text, 'utf8').toString('utf8');
+      const encodedText = Buffer.from(text, "utf8").toString("utf8");
 
       // 直接调用local.js中的play方法
       const localProvider = require("../provider/local");
@@ -1399,6 +1456,159 @@ async function saveLocalConfig() {
   } catch (err) {
     log.error("(BiliLive Service) Failed to save local TTS config:", err);
     return error("Failed to save local TTS config: " + err.message);
+  }
+}
+
+/**
+ * 初始化数据记录
+ * @param {number} roomId 房间ID
+ */
+function initDataRecording(roomId) {
+  try {
+    // 关闭之前的文件流（如果有）
+    closeDataRecording();
+
+    // 获取存储路径
+    const storagePath = storage.getStoragePath();
+
+    // 创建房间目录
+    const roomDir = path.join(storagePath, String(roomId));
+    fs.ensureDirSync(roomDir);
+
+    // 创建本次直播数据目录 (blive-{年月日时分秒})
+    const now = new Date();
+    const dateStr = now
+      .toISOString()
+      .replace(/[T:.-]/g, "")
+      .slice(0, 14); // 格式化为年月日时分秒
+    const sessionDir = path.join(roomDir, `blive-${dateStr}`);
+    fs.ensureDirSync(sessionDir);
+
+    log.info(`(BiliLive Service) Data recording path: ${sessionDir}`);
+    recordPath = sessionDir;
+    recordEnabled = true;
+
+    // 初始化文件流
+    if (biliveConfig.recordDanmaku) {
+      const danmakuFile = path.join(sessionDir, "danmaku.jsonl");
+      danmakuStream = fs.createWriteStream(danmakuFile, { flags: "a" });
+      log.info(`(BiliLive Service) Danmaku recording enabled: ${danmakuFile}`);
+    }
+
+    if (biliveConfig.recordGift) {
+      const giftFile = path.join(sessionDir, "gift.jsonl");
+      giftStream = fs.createWriteStream(giftFile, { flags: "a" });
+      log.info(`(BiliLive Service) Gift recording enabled: ${giftFile}`);
+    }
+
+    if (biliveConfig.recordVisitor) {
+      const visitorFile = path.join(sessionDir, "visitor.jsonl");
+      visitorStream = fs.createWriteStream(visitorFile, { flags: "a" });
+      log.info(`(BiliLive Service) Visitor recording enabled: ${visitorFile}`);
+    }
+
+    // 创建session.json记录会话信息
+    const sessionInfo = {
+      roomId,
+      startTime: now.toISOString(),
+      config: {
+        recordDanmaku: biliveConfig.recordDanmaku,
+        recordGift: biliveConfig.recordGift,
+        recordVisitor: biliveConfig.recordVisitor,
+      },
+    };
+
+    fs.writeFileSync(
+      path.join(sessionDir, "session.json"),
+      JSON.stringify(sessionInfo, null, 2)
+    );
+  } catch (err) {
+    log.error(`(BiliLive Service) Failed to initialize data recording:`, err);
+    recordEnabled = false;
+  }
+}
+
+/**
+ * 关闭数据记录文件
+ */
+function closeDataRecording() {
+  try {
+    if (danmakuStream) {
+      danmakuStream.end();
+      danmakuStream = null;
+    }
+
+    if (giftStream) {
+      giftStream.end();
+      giftStream = null;
+    }
+
+    if (visitorStream) {
+      visitorStream.end();
+      visitorStream = null;
+    }
+
+    // 更新session.json的结束时间（如果存在）
+    if (recordPath && fs.existsSync(recordPath)) {
+      const sessionFile = path.join(recordPath, "session.json");
+      if (fs.existsSync(sessionFile)) {
+        try {
+          const sessionInfo = JSON.parse(fs.readFileSync(sessionFile, "utf8"));
+          sessionInfo.endTime = new Date().toISOString();
+          fs.writeFileSync(sessionFile, JSON.stringify(sessionInfo, null, 2));
+        } catch (e) {
+          log.error(`(BiliLive Service) Failed to update session info:`, e);
+        }
+      }
+    }
+
+    recordEnabled = false;
+    recordPath = null;
+    log.info(`(BiliLive Service) Data recording stopped`);
+  } catch (err) {
+    log.error(`(BiliLive Service) Error closing data recording:`, err);
+  }
+}
+
+/**
+ * 记录弹幕数据
+ * @param {object} data 弹幕数据
+ */
+function recordDanmaku(data) {
+  if (!danmakuStream || !recordEnabled) return;
+
+  try {
+    danmakuStream.write(JSON.stringify(data) + "\n");
+  } catch (err) {
+    log.error(`(BiliLive Service) Failed to record danmaku:`, err);
+  }
+}
+
+/**
+ * 记录礼物数据
+ * @param {object} data 礼物数据
+ */
+function recordGift(data) {
+  if (!giftStream || !recordEnabled) return;
+
+  try {
+    giftStream.write(JSON.stringify(data) + "\n");
+  } catch (err) {
+    log.error(`(BiliLive Service) Failed to record gift:`, err);
+  }
+}
+
+/**
+ * 记录访客数据
+ * @param {object} data 访客数据
+ */
+function recordVisitor(data) {
+  if (!visitorStream || !recordEnabled) return;
+
+  try {
+    visitorStream.write(JSON.stringify(data) + "\n");
+  } catch (err) {
+    log.error(`(BiliLive Service) Failed to record visitor:`, err);
   }
 }
 

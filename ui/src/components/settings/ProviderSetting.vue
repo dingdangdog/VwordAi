@@ -240,7 +240,7 @@ async function testCurrentProvider(providerConfig = null) {
     let result;
     if (selectedProviderType.value === "azure") {
       // 使用统一的接口测试，测试结果会同步更新状态
-      result = await window.api.settings.testProviderConnection("azure");
+      result = await settingsStore.testServiceProviderConnection("azure");
     } else {
       // 其他服务商的测试逻辑
       result = await settingsStore.testServiceProviderConnection(
@@ -264,7 +264,7 @@ async function testCurrentProvider(providerConfig = null) {
       }
       
       // 处理音频播放 (仅适用于Azure)
-      if (result.data && result.data.audioData) {
+      if (result?.data?.audioData) {
         // 创建音频元素并播放
         const audioBlob = new Blob(
           [new Uint8Array(result.data.audioData).buffer],
@@ -280,7 +280,7 @@ async function testCurrentProvider(providerConfig = null) {
       }
     } else {
       // 测试失败
-      toast.error(result.error || result.message || "连接测试失败");
+      toast.error(result?.error || result?.message || "连接测试失败");
       
       // 重新加载设置以获取最新状态
       await settingsStore.loadSettings();

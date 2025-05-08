@@ -208,8 +208,13 @@ class Settings {
       
       // 如果配置有变更，将状态设置为 untested
       if (JSON.stringify(currentProviderSettings) !== JSON.stringify(updatedProviderSettings)) {
-        // 只有在配置完整时才设置为 untested，否则设置为 untested
-        updatedProviderSettings.status = isConfigComplete ? "untested" : "untested";
+        // 只有在配置变更时才改变状态，且仅当没有显式传入状态时
+        if (!providerData.status) {
+          // 仅当配置完整且之前状态不是success或failure时才设置为untested
+          if (isConfigComplete && currentProviderSettings.status !== "success" && currentProviderSettings.status !== "failure") {
+            updatedProviderSettings.status = "untested";
+          }
+        }
       }
       
       // 更新设置中的服务商配置

@@ -61,6 +61,8 @@ export type ServiceProviderType =
 export interface ConnectionTestResult {
   success: boolean;
   message: string;
+  data?: any;
+  error?: string;
 }
 
 // 设置类型
