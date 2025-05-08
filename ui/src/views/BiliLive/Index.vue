@@ -1,8 +1,8 @@
 <template>
   <!-- 主体内容：消息显示区域和配置区域 -->
-  <div class="flex h-full overflow-hidden">
+  <div class="flex h-full space-x-2 overflow-hidden">
     <!-- 左侧：消息显示区域 -->
-    <div class="w-2/3 flex flex-col overflow-hidden">
+    <div class="flex-1 flex flex-col overflow-hidden">
       <!-- 标题区域 -->
       <div
         class="flex justify-between items-center px-4 py-2 border-b border-gray-50 dark:border-gray-300"
@@ -233,7 +233,7 @@
     </div>
 
     <!-- 右侧：配置表单区域 -->
-    <div class="w-1/3 p-2 overflow-auto">
+    <div class="w-1/3 max-w-[30rem] p-2 h-full max-h-[calc(100vh-5rem)] rounded-sm bg-gray-50/30 dark:bg-gray-600/20 overflow-auto">
       <div class="space-y-4">
         <!-- 连接配置 -->
         <div class="shadow-md rounded p-4 bg-gray-50 dark:bg-gray-600">
@@ -270,10 +270,10 @@
                 <input
                   v-model="config.SESSDATA"
                   type="password"
-                  class="flex-1 border rounded px-3 py-2"
+                  class="flex-1 border rounded px-3 py-2 pr-8"
                   placeholder="B站cookie中的SESSDATA值"
                 />
-                <div class="absolute inset-y-0 right-0 flex items-center pr-3">
+                <div class="absolute inset-y-0 right-0 flex items-center pr-2">
                   <button
                     @click="showSessdataHelp = !showSessdataHelp"
                     class="text-gray-400 hover:text-gray-600"
@@ -305,11 +305,11 @@
                   <li>登录B站网页版</li>
                   <li>按F12打开开发者工具</li>
                   <li>找到"应用"或"Application"选项卡</li>
-                  <li>左侧选择"Cookies" > "https://www.bilibili.com"</li>
+                  <li>左侧选择"Cookies" > "https://live.bilibili.com"</li>
                   <li>在右侧找到名为"SESSDATA"的Cookie，复制其值</li>
                 </ol>
                 <p class="mt-1">
-                  不填也可以连接，但弹幕用户名会打码，UID会变成0
+                  不填也可以连接，但无法获取完整用户名称
                 </p>
               </div>
             </div>
