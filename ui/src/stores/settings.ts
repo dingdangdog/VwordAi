@@ -15,7 +15,7 @@ export type SettingsTab = "provider" | "storage" | "system" | "about";
 // 支持的服务商
 export const SUPPORTED_PROVIDERS = [
   { id: "azure", name: "Azure", type: "azure" as ServiceProviderType },
-  // { id: "aliyun", name: "阿里云", type: "aliyun" as ServiceProviderType },
+  { id: "aliyun", name: "阿里云", type: "aliyun" as ServiceProviderType },
   // { id: "tencent", name: "腾讯云", type: "tencent" as ServiceProviderType },
   // { id: "baidu", name: "百度云", type: "baidu" as ServiceProviderType },
   // { id: "openai", name: "OpenAI", type: "openai" as ServiceProviderType },
@@ -188,7 +188,23 @@ export const useSettingsStore = defineStore("settings", () => {
         };
       }
 
-      const response = await settingsApi.testProviderConnection(type);
+      let response;
+
+      // Use specific test endpoints for different providers
+      if (type === "azure") {
+        response = await window.electron.invoke(
+          "settings:test-azure-connection",
+          config
+        );
+      } else if (type === "aliyun") {
+        response = await window.electron.invoke(
+          "settings:test-aliyun-connection",
+          config
+        );
+      } else {
+        // For other providers
+        response = await settingsApi.testProviderConnection(type);
+      }
 
       if (response.success && response.data) {
         // 更新本地状态
@@ -200,6 +216,7 @@ export const useSettingsStore = defineStore("settings", () => {
         return {
           success: true,
           message: response.data.message || "Connection successful",
+          data: response.data,
         };
       } else {
         // 更新本地状态
@@ -209,7 +226,7 @@ export const useSettingsStore = defineStore("settings", () => {
 
         return {
           success: false,
-          message: response.error || "Connection failed",
+          message: response.error || response.message || "Connection failed",
         };
       }
     } catch (error) {

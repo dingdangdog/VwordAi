@@ -130,7 +130,9 @@
             class="flex items-start text-pink-500"
           >
             <span class="font-semibold mr-2">{{ msg.uname }}</span>
-            <span class="text-gray-500 dark:text-gray-200">赠送了 {{ msg.num }} 个 {{ msg.giftName }}</span>
+            <span class="text-gray-500 dark:text-gray-200"
+              >赠送了 {{ msg.num }} 个 {{ msg.giftName }}</span
+            >
           </div>
           <div
             v-if="messages.gift.length === 0"
@@ -233,7 +235,9 @@
     </div>
 
     <!-- 右侧：配置表单区域 -->
-    <div class="w-1/3 max-w-[30rem] p-2 h-full max-h-[calc(100vh-5rem)] rounded-sm bg-gray-50/30 dark:bg-gray-600/20 overflow-auto">
+    <div
+      class="w-1/3 max-w-[30rem] p-2 h-full max-h-[calc(100vh-5rem)] rounded-sm bg-gray-50/30 dark:bg-gray-600/20 overflow-auto"
+    >
       <div class="space-y-4">
         <!-- 连接配置 -->
         <div class="shadow-md rounded p-4 bg-gray-50 dark:bg-gray-600">
@@ -308,9 +312,7 @@
                   <li>左侧选择"Cookies" > "https://live.bilibili.com"</li>
                   <li>在右侧找到名为"SESSDATA"的Cookie，复制其值</li>
                 </ol>
-                <p class="mt-1">
-                  不填也可以连接，但无法获取完整用户名称
-                </p>
+                <p class="mt-1">不填也可以连接，但无法获取完整用户名称</p>
               </div>
             </div>
 
@@ -371,7 +373,8 @@
                 class="w-full border rounded px-3 py-2"
               >
                 <option value="local">本地默认语音</option>
-                <option value="azure">Azure语音服务</option>
+                <option value="azure">微软Azure</option>
+                <option value="alibaba">阿里云Aliyun</option>
                 <!-- <option value="alibaba">阿里云 TTS</option>
                 <option value="sovits">SoVITS</option> -->
               </select>
@@ -518,32 +521,6 @@
                     placeholder="例如: zh-CN-XiaoxiaoNeural"
                   />
                 </div>
-                <!-- <div>
-                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">
-                    语速 ({{ azureConfig.speed }})
-                  </label>
-                  <input
-                    v-model.number="azureConfig.speed"
-                    type="range"
-                    min="0.5"
-                    max="2"
-                    step="0.1"
-                    class="w-full"
-                  />
-                </div>
-                <div>
-                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">
-                    音调 ({{ azureConfig.pitch || 0 }})
-                  </label>
-                  <input
-                    v-model.number="azureConfig.pitch"
-                    type="range"
-                    min="-50"
-                    max="50"
-                    step="1"
-                    class="w-full"
-                  />
-                </div> -->
                 <div class="pt-3">
                   <button
                     @click="saveAzureConfig"
@@ -588,19 +565,6 @@
                     <option value="ruoxi">若希</option>
                     <option value="siqi">思琪</option>
                   </select>
-                </div>
-                <div>
-                  <label class="block text-sm font-medium text-gray-700 mb-1">
-                    语速 ({{ alibabaConfig.speed }})
-                  </label>
-                  <input
-                    v-model.number="alibabaConfig.speed"
-                    type="range"
-                    min="50"
-                    max="200"
-                    step="1"
-                    class="w-full"
-                  />
                 </div>
                 <div class="pt-3">
                   <button
@@ -674,14 +638,9 @@
               <!-- Inside the advanced settings section -->
               <!-- After the section where different TTS engine configs are shown -->
               <div v-if="ttsMode === 'local'" class="space-y-3">
-                <div class="pt-3">
-                  <button
-                    @click="saveLocalConfig"
-                    class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-                  >
-                    保存本地TTS配置
-                  </button>
-                </div>
+                <p class="text-sm text-gray-500 dark:text-gray-400">
+                  本地语音无需配置
+                </p>
               </div>
             </div>
           </div>

@@ -167,6 +167,11 @@ async function synthesizeWithProvider(
       `[TTS] Using ${providerType} to synthesize ${chunk.length} characters to ${outputPath}`
     );
 
+    // For Aliyun provider, ensure the voice parameter is set correctly
+    if (providerType === "aliyun" && settings.model && !settings.voice) {
+      settings.voice = settings.model;
+    }
+
     // Call the corresponding provider's synthesize method
     const result = await provider.synthesize(
       chunk,

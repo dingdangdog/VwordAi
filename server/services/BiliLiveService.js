@@ -86,7 +86,7 @@ const DEFAULT_BILIVE_CONFIG = {
       alibaba_appkey: "",
       alibaba_token: "",
       alibaba_model: "xiaoyun",
-      alibaba_endpoint: "nls-gateway-cn-shanghai.aliyuncs.com",
+      alibaba_endpoint: "https://nls-gateway-cn-shanghai.aliyuncs.com",
       speed: 100, // 0-200
     },
 
@@ -1328,33 +1328,52 @@ async function alibabaTTS(text) {
     const aliyunConfig = {
       appkey: config.alibaba_appkey,
       token: config.alibaba_token,
-      endpoint:
-        config.alibaba_endpoint || "nls-gateway-cn-shanghai.aliyuncs.com",
+      endpoint: config.alibaba_endpoint || "wss://nls-gateway-cn-shanghai.aliyuncs.com/ws/v1",
     };
 
     // 准备语音设置
     const settings = {
-      model: config.alibaba_model || "xiaoyun",
-      speed: config.speed || 100, // 0-200
+      voice: config.alibaba_model || "xiaoyun",
+      speed: parseInt(config.speed || 0), // 语速，-500 到 500
       volume: 100, // 默认音量
       pitch: 0, // 默认音调
     };
 
-    // 直接调用aliyun.js中的play方法
-    const aliyunProvider = require("../provider/aliyun");
-    const result = await aliyunProvider.play(text, settings, aliyunConfig);
+    // 创建临时文件路径
+    const tempFile = path.join(os.tmpdir(), `alibaba_tts_${Date.now()}.wav`);
 
-    if (!result.success) {
-      throw new Error(result.message || "Alibaba TTS playback failed");
+    // 使用 aliyun.js 的 synthesize 方法
+    try {
+      const aliyunProvider = require("../provider/aliyun");
+      const result = await aliyunProvider.synthesize(text, tempFile, settings, aliyunConfig);
+
+      if (result.success && fs.existsSync(tempFile)) {
+        log.debug(`(BiliLive Service) Alibaba TTS synthesis successful, playing audio from ${tempFile}`);
+        
+        // 使用sound-play播放音频文件
+        const sound = require("sound-play");
+        await sound.play(tempFile);
+        
+        // 播放完成后删除临时文件
+        try {
+          fs.unlinkSync(tempFile);
+        } catch (err) {
+          log.error("(BiliLive Service) Failed to delete temp file:", err);
+        }
+        
+        return Promise.resolve();
+      } else {
+        throw new Error("Failed to synthesize speech with Alibaba TTS: " + (result.message || "Unknown error"));
+      }
+    } catch (err) {
+      log.error("(BiliLive Service) Error using Alibaba TTS provider:", err);
+      throw err;
     }
-
-    log.debug("(BiliLive Service) Alibaba TTS playback finished.");
-    return Promise.resolve();
   } catch (err) {
     log.error("(BiliLive Service) Alibaba TTS Error:", err);
     // 如果失败，使用本地TTS作为备选方案
     log.warn("(BiliLive Service) Falling back to local TTS");
-    await localTTS(`Alibaba says: ${text}`);
+    await localTTS(`阿里云语音合成失败，使用本地TTS播放: ${text}`);
     return Promise.resolve();
   }
 }
