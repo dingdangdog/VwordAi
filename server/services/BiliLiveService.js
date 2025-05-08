@@ -17,6 +17,7 @@ const sdk = require("microsoft-cognitiveservices-speech-sdk");
 const storage = require("../utils/storage");
 const { success, error } = require("../utils/result");
 const { BLiveClient } = require("../blive/client");
+const os = require("os");
 
 let client = null;
 let win = null;
@@ -520,24 +521,6 @@ function processSingleMessage(msgObj) {
 
   // ALWAYS send all raw messages to renderer for debugging
   sendToRenderer("bililive-raw-message", msgObj);
-
-  // For danmaku messages specifically, send to both raw and danmaku channels to ensure they get through
-  if (cmd === "DANMU_MSG") {
-    try {
-      // Try to extract danmaku data and send directly
-      const danmakuData = extractDanmakuData(msgObj);
-      if (danmakuData) {
-        // log.info(
-        //   `(BiliLive Service) Sending extracted danmaku data: ${JSON.stringify(
-        //     danmakuData
-        //   )}`
-        // );
-        sendToRenderer("bililive-danmaku", danmakuData);
-      }
-    } catch (err) {
-      log.error(`(BiliLive Service) Error extracting danmaku data:`, err);
-    }
-  }
 
   switch (cmd) {
     case "DANMU_MSG": // 弹幕消息
@@ -1247,6 +1230,28 @@ async function azureTTS(text) {
 
     if (!result.success) {
       throw new Error(result.message || "Azure TTS playback failed");
+    }
+
+    // 重要修复：添加以下代码，手动播放返回的音频数据
+    if (result.data && result.data.audioData) {
+      log.debug("(BiliLive Service) Playing Azure TTS audio data...");
+
+      // 创建临时文件
+      const tempFile = path.join(os.tmpdir(), `azure_tts_${Date.now()}.wav`);
+      fs.writeFileSync(tempFile, result.data.audioData);
+
+      // 使用electron-sound包播放音频文件
+      const sound = require("sound-play");
+      await sound.play(tempFile);
+
+      // 播放完成后删除临时文件
+      try {
+        fs.unlinkSync(tempFile);
+      } catch (err) {
+        log.error("(BiliLive Service) Failed to delete temp file:", err);
+      }
+    } else {
+      log.error("(BiliLive Service) No audio data returned from Azure TTS");
     }
 
     log.debug("(BiliLive Service) Azure TTS playback finished.");
