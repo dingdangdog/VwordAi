@@ -7,6 +7,9 @@ const os = require("os");
 const storage = require("../utils/storage");
 const { success, error } = require("../utils/result");
 
+// 配置保存的单一键名
+const SETTINGS_KEY = "vwordai";
+
 // 默认设置
 const DEFAULT_SETTINGS = {
   theme: "light",
@@ -59,20 +62,11 @@ class Settings {
    */
   static getAllSettings() {
     console.log("Reading all settings...");
-    // 直接获取所有配置项并逐个合并
-    const settings = {};
-    
-    // 将每个默认设置键值获取对应的存储值
-    Object.keys(DEFAULT_SETTINGS).forEach(key => {
-      const storedValue = storage.readConfig(key, undefined);
-      if (storedValue !== undefined) {
-        settings[key] = storedValue;
-      }
-    });
+    // 使用单一键从存储中读取所有设置
+    const settings = storage.readConfig(SETTINGS_KEY, DEFAULT_SETTINGS);
     
     console.log("Read settings Successfully");
-    const mergedSettings = { ...DEFAULT_SETTINGS, ...settings };
-    return mergedSettings;
+    return settings;
   }
 
   /**
@@ -81,8 +75,9 @@ class Settings {
    * @returns {any} 设置值
    */
   static getSetting(key) {
-    // 直接从存储中读取指定键的值
-    const value = storage.readConfig(key, DEFAULT_SETTINGS[key]);
+    // 从存储的所有设置中获取指定键的值
+    const allSettings = this.getAllSettings();
+    const value = allSettings[key];
 
     return success({
       key,
@@ -99,17 +94,18 @@ class Settings {
     try {
       console.log("Update Settings:", JSON.stringify(settingsData, null, 2));
       
-      // 分别保存每个设置项
-      Object.entries(settingsData).forEach(([key, value]) => {
-        storage.saveConfig(key, value);
-      });
+      // 获取当前所有设置
+      const currentSettings = this.getAllSettings();
+      
+      // 合并新设置
+      const updatedSettings = { ...currentSettings, ...settingsData };
+      
+      // 保存所有设置到单一键
+      storage.saveConfig(SETTINGS_KEY, updatedSettings);
       
       console.log("Settings saved");
       
-      // 获取更新后的所有设置
-      const allSettings = this.getAllSettings();
-
-      return success(allSettings);
+      return success(updatedSettings);
     } catch (err) {
       console.error("Update settings failed:", err);
       return error(err.message);
@@ -122,10 +118,8 @@ class Settings {
    */
   static resetToDefaults() {
     try {
-      // 分别保存每个默认设置
-      Object.entries(DEFAULT_SETTINGS).forEach(([key, value]) => {
-        storage.saveConfig(key, value);
-      });
+      // 保存默认设置到单一键
+      storage.saveConfig(SETTINGS_KEY, DEFAULT_SETTINGS);
       
       return success(DEFAULT_SETTINGS);
     } catch (err) {
@@ -139,7 +133,8 @@ class Settings {
    * @returns {Object} 包含导出路径的结果对象
    */
   static getDefaultExportPath() {
-    const exportPath = storage.readConfig("defaultExportPath", DEFAULT_SETTINGS.defaultExportPath);
+    const allSettings = this.getAllSettings();
+    const exportPath = allSettings.defaultExportPath;
     return success({ path: exportPath });
   }
 
@@ -150,7 +145,9 @@ class Settings {
    */
   static setDefaultExportPath(path) {
     try {
-      storage.saveConfig("defaultExportPath", path);
+      const allSettings = this.getAllSettings();
+      allSettings.defaultExportPath = path;
+      storage.saveConfig(SETTINGS_KEY, allSettings);
       return success({ path });
     } catch (err) {
       console.error("Set export path failed:", err);
@@ -166,7 +163,8 @@ class Settings {
   static getProviderSettings(provider) {
     try {
       console.log(`Get provider ${provider} settings`);
-      const providerSettings = storage.readConfig(provider, DEFAULT_SETTINGS[provider] || {});
+      const allSettings = this.getAllSettings();
+      const providerSettings = allSettings[provider];
       
       console.log(
         `Provider ${provider} settings:`,
@@ -196,32 +194,38 @@ class Settings {
         JSON.stringify(providerData, null, 2)
       );
       
+      // 获取所有设置
+      const allSettings = this.getAllSettings();
+      
       // 获取当前的服务商设置
-      const currentProviderSettings = storage.readConfig(provider, DEFAULT_SETTINGS[provider] || {});
+      const currentProviderSettings = allSettings[provider] || {};
       
       // 合并新的设置
-      const updatedSettings = { ...currentProviderSettings, ...providerData };
+      const updatedProviderSettings = { ...currentProviderSettings, ...providerData };
       
       // 检测配置是否已完整填写
-      const isConfigComplete = this.isProviderConfigComplete(provider, updatedSettings);
+      const isConfigComplete = this.isProviderConfigComplete(provider, updatedProviderSettings);
       
       // 如果配置有变更，将状态设置为 untested
-      if (JSON.stringify(currentProviderSettings) !== JSON.stringify(updatedSettings)) {
+      if (JSON.stringify(currentProviderSettings) !== JSON.stringify(updatedProviderSettings)) {
         // 只有在配置完整时才设置为 untested，否则设置为 untested
-        updatedSettings.status = isConfigComplete ? "untested" : "untested";
+        updatedProviderSettings.status = isConfigComplete ? "untested" : "untested";
       }
       
-      // 保存更新后的设置
-      storage.saveConfig(provider, updatedSettings);
+      // 更新设置中的服务商配置
+      allSettings[provider] = updatedProviderSettings;
+      
+      // 保存所有设置
+      storage.saveConfig(SETTINGS_KEY, allSettings);
       
       console.log(
         `Save provider ${provider} settings:`,
-        JSON.stringify(updatedSettings, null, 2)
+        JSON.stringify(updatedProviderSettings, null, 2)
       );
 
       return success({
         provider,
-        settings: updatedSettings,
+        settings: updatedProviderSettings,
       });
     } catch (err) {
       console.error(`Update ${provider} settings failed:`, err);
@@ -271,7 +275,8 @@ class Settings {
       console.log(`Test provider ${provider} connection`);
 
       // 读取设置
-      const providerSettings = storage.readConfig(provider, null);
+      const allSettings = this.getAllSettings();
+      const providerSettings = allSettings[provider];
 
       if (!providerSettings) {
         console.error(`Provider ${provider} not found`);
@@ -325,7 +330,10 @@ class Settings {
         
         // 更新状态为 untested
         providerSettings.status = "untested";
-        storage.saveConfig(provider, providerSettings);
+        
+        // 更新设置
+        allSettings[provider] = providerSettings;
+        storage.saveConfig(SETTINGS_KEY, allSettings);
         
         return error(`服务商配置不完整，缺少: ${missingFields.join(", ")}`);
       }
@@ -335,7 +343,10 @@ class Settings {
       
       // 更新状态为 success
       providerSettings.status = "success";
-      storage.saveConfig(provider, providerSettings);
+      
+      // 更新设置
+      allSettings[provider] = providerSettings;
+      storage.saveConfig(SETTINGS_KEY, allSettings);
       
       return success({
         message: `${provider} 配置有效`,
@@ -345,10 +356,13 @@ class Settings {
       console.error(`Test ${provider} connection failed:`, err);
       
       // 读取并更新状态为 failure
-      const providerSettings = storage.readConfig(provider, null);
+      const allSettings = this.getAllSettings();
+      const providerSettings = allSettings[provider];
+      
       if (providerSettings) {
         providerSettings.status = "failure";
-        storage.saveConfig(provider, providerSettings);
+        allSettings[provider] = providerSettings;
+        storage.saveConfig(SETTINGS_KEY, allSettings);
       }
       
       return error(err.message);
@@ -365,8 +379,12 @@ class Settings {
       if (!config || !config.key || !config.region) {
         // 更新状态为 untested
         if (config) {
+          const allSettings = this.getAllSettings();
+          
           config.status = "untested";
-          storage.saveConfig("azure", config);
+          allSettings.azure = config;
+          
+          storage.saveConfig(SETTINGS_KEY, allSettings);
         }
         return error("Azure配置不完整");
       }
@@ -387,13 +405,19 @@ class Settings {
         // 添加日志
         console.log("测试成功，更新Azure状态为: success");
         
-        // 确保保存完整的配置对象
+        // 获取所有设置
+        const allSettings = this.getAllSettings();
+        
+        // 更新Azure配置
         const updatedConfig = {...config, status: "success"};
-        storage.saveConfig("azure", updatedConfig);
+        allSettings.azure = updatedConfig;
+        
+        // 保存所有设置
+        storage.saveConfig(SETTINGS_KEY, allSettings);
         
         // 验证保存是否成功
-        const savedConfig = storage.readConfig("azure");
-        console.log("保存后的Azure配置状态:", savedConfig.status);
+        const savedSettings = this.getAllSettings();
+        console.log("保存后的Azure配置状态:", savedSettings.azure.status);
         
         return success({
           ...result.data,
@@ -402,8 +426,16 @@ class Settings {
       } else {
         // 更新状态为 failure
         console.log("测试失败，更新Azure状态为: failure");
+        
+        // 获取所有设置
+        const allSettings = this.getAllSettings();
+        
+        // 更新Azure配置
         config.status = "failure";
-        storage.saveConfig("azure", config);
+        allSettings.azure = config;
+        
+        // 保存所有设置
+        storage.saveConfig(SETTINGS_KEY, allSettings);
         
         return result;
       }
@@ -412,8 +444,15 @@ class Settings {
       
       // 更新状态为 failure
       if (config) {
+        // 获取所有设置
+        const allSettings = this.getAllSettings();
+        
+        // 更新Azure配置
         config.status = "failure";
-        storage.saveConfig("azure", config);
+        allSettings.azure = config;
+        
+        // 保存所有设置
+        storage.saveConfig(SETTINGS_KEY, allSettings);
       }
       
       return {

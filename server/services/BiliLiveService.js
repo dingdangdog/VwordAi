@@ -1,6 +1,12 @@
 /**
  * BiliLive Service
  * Core logic for interacting with Bilibili Live
+ *
+ * 重要说明：
+ * 1. 本服务使用单一配置文件存储所有B站相关配置
+ * 2. 所有B站相关配置统一使用以下键存储:
+ *    - BILIVE_CONFIG_KEY (bilive): 包含所有B站相关配置
+ * 3. 配置文件保存在config目录下，数据文件保存在storage目录下
  */
 const fs = require("fs-extra");
 const path = require("path");
@@ -15,24 +21,16 @@ const { BLiveClient } = require("../blive/client");
 let client = null;
 let win = null;
 let currentRoomId = null;
-let biliConfig = {};
-let ttsConfig = {
-  mode: "local",
-  azure: {},
-  alibaba: {},
-  sovits: {},
-};
+let biliveConfig = {};
 let isConnecting = false;
 let isClosing = false;
 let giftMergeMap = new Map();
 
-// Config keys for storage
-const BILI_CONFIG_KEY = "bili"; // Changed from "bili_config" to match what's used in loadAllConfig
-const BILI_AZURE_CONFIG_KEY = "bili_azureConfig";
-const BILI_ALIBABA_CONFIG_KEY = "bili_alibabaConfig";
-const BILI_SOVITS_CONFIG_KEY = "bili_sovitsConfig";
+// 单一配置键
+const BILIVE_CONFIG_KEY = "bilive";
 
-const DEFAULT_BILI_CONFIG = {
+const DEFAULT_BILIVE_CONFIG = {
+  // 基础配置
   platform: "win",
   room_ids: [], // {id, name}
   SESSDATA: "", // B站cookies中的SESSDATA字段值，登录后才有
@@ -56,110 +54,102 @@ const DEFAULT_BILI_CONFIG = {
   readEnter: true, // 是否播报进场
   readLike: true, // 是否播报点赞
   localVoice: "", // 本地TTS声音
-};
 
-const DEFAULT_AZURE_CONFIG = {
-  azure_key: "",
-  azure_model: "",
-  azure_region: "",
-  azure_endpoint: "",
-  speed: 1.0,
-  pitch: 0,
-};
+  // TTS模式
+  tts: {
+    mode: "local", // 'local', 'azure', 'alibaba', 'sovits'
 
-const DEFAULT_ALIBABA_CONFIG = {
-  alibaba_appkey: "",
-  alibaba_token: "",
-  alibaba_model: "xiaoyun",
-  alibaba_endpoint: "nls-gateway-cn-shanghai.aliyuncs.com",
-  speed: 100, // 0-200
-};
+    // Azure TTS配置
+    azure: {
+      azure_key: "",
+      azure_model: "",
+      azure_region: "",
+      azure_endpoint: "",
+      speed: 1.0,
+      pitch: 0,
+    },
 
-const DEFAULT_SOVITS_CONFIG = {
-  sovits_host: "http://127.0.0.1:5000/tts",
-  sovits_model: "",
-  sovits_language: "auto",
-  sovits_emotion: "",
-  sovits_top_k: "",
-  sovits_top_p: "",
-  sovits_temperature: "",
-  sovits_batch_size: "",
-  sovits_speed: "1.0",
-  sovits_save_temp: "false",
-  sovits_stream: "false",
-  sovits_format: "wav",
+    // 阿里云 TTS配置
+    alibaba: {
+      alibaba_appkey: "",
+      alibaba_token: "",
+      alibaba_model: "xiaoyun",
+      alibaba_endpoint: "nls-gateway-cn-shanghai.aliyuncs.com",
+      speed: 100, // 0-200
+    },
+
+    // SoVITS 配置
+    sovits: {
+      sovits_host: "http://127.0.0.1:5000/tts",
+      sovits_model: "",
+      sovits_language: "auto",
+      sovits_emotion: "",
+      sovits_top_k: "",
+      sovits_top_p: "",
+      sovits_temperature: "",
+      sovits_batch_size: "",
+      sovits_speed: "1.0",
+      sovits_save_temp: "false",
+      sovits_stream: "false",
+      sovits_format: "wav",
+    },
+  },
 };
 
 /**
- * Load all related configurations
+ * Load bilive configuration
  */
 async function loadAllConfig() {
   try {
-    // 加载B站配置
-    const biliData = storage.read("bili", DEFAULT_BILI_CONFIG);
-    console.log("biliData", biliData);
-    console.log("DEFAULT_BILI_CONFIG", DEFAULT_BILI_CONFIG);
+    // 从配置目录加载B站配置
+    const savedConfig = storage.readConfig(BILIVE_CONFIG_KEY, {});
+    console.log("Saved bilive config:", savedConfig);
 
     // 确保正确合并默认配置和存储的配置
-    biliConfig = {
-      ...DEFAULT_BILI_CONFIG,
-      ...(biliData || {}),
+    biliveConfig = {
+      ...DEFAULT_BILIVE_CONFIG,
+      ...(savedConfig || {}),
     };
 
-    console.log("Merged biliConfig:", biliConfig);
-    console.log("ttsEnabled value:", biliConfig.ttsEnabled);
+    // 确保配置结构完整
+    if (!biliveConfig.tts) {
+      biliveConfig.tts = DEFAULT_BILIVE_CONFIG.tts;
+    } else {
+      // 确保TTS子配置结构完整
+      biliveConfig.tts = {
+        ...DEFAULT_BILIVE_CONFIG.tts,
+        ...biliveConfig.tts,
+        azure: {
+          ...DEFAULT_BILIVE_CONFIG.tts.azure,
+          ...(biliveConfig.tts.azure || {}),
+        },
+        alibaba: {
+          ...DEFAULT_BILIVE_CONFIG.tts.alibaba,
+          ...(biliveConfig.tts.alibaba || {}),
+        },
+        sovits: {
+          ...DEFAULT_BILIVE_CONFIG.tts.sovits,
+          ...(biliveConfig.tts.sovits || {}),
+        },
+      };
+    }
 
+    console.log("Merged biliveConfig:", biliveConfig);
     log.info(
-      `(BiliLive Service) Blive Config loaded, SESSDATA length: ${
-        biliConfig.SESSDATA ? String(biliConfig.SESSDATA).length : 0
+      `(BiliLive Service) Bilive Config loaded, SESSDATA length: ${
+        biliveConfig.SESSDATA ? String(biliveConfig.SESSDATA).length : 0
       }`
     );
 
-    // Check and fix structure if needed
-    if (biliConfig.ttsEnabled === undefined) {
+    // Check and fix optional fields
+    if (biliveConfig.ttsEnabled === undefined) {
       log.warn(
         "(BiliLive Service) ttsEnabled is undefined, setting to default true"
       );
-      biliConfig.ttsEnabled = true;
+      biliveConfig.ttsEnabled = true;
     }
 
-    // 从统一的设置存储中加载TTS配置
-    const settings = storage.readConfig("settings", {});
-
-    // 检查Azure是否启用
-    const azureProvider = settings.azure || {};
-    ttsConfig.mode = azureProvider.enabled ? "azure" : "local";
-    log.info(`(BiliLive Service) TTS config loaded, mode: ${ttsConfig.mode}`);
-
-    // 加载Azure TTS配置（从settings统一配置中）
-    if (azureProvider) {
-      ttsConfig.azure = {
-        azure_key: azureProvider.key || DEFAULT_AZURE_CONFIG.azure_key,
-        azure_region: azureProvider.region || DEFAULT_AZURE_CONFIG.azure_region,
-        azure_model:
-          azureProvider.voiceName || DEFAULT_AZURE_CONFIG.azure_model,
-        speed: azureProvider.speed || DEFAULT_AZURE_CONFIG.speed,
-        pitch: azureProvider.pitch || DEFAULT_AZURE_CONFIG.pitch,
-      };
-      log.info("(BiliLive Service) Azure config loaded from settings");
-    } else {
-      // 加载旧配置（向后兼容）
-      const azureData = storage.read("azure", DEFAULT_AZURE_CONFIG);
-      ttsConfig.azure = { ...DEFAULT_AZURE_CONFIG, ...azureData };
-      log.info("(BiliLive Service) Azure config loaded from old config");
-    }
-
-    // 加载阿里云 TTS配置
-    const alibabaData = storage.read("alibaba", DEFAULT_ALIBABA_CONFIG);
-    ttsConfig.alibaba = { ...DEFAULT_ALIBABA_CONFIG, ...alibabaData };
-    log.info("(BiliLive Service) Alibaba config loaded");
-
-    // 加载SoVITS配置
-    const sovitsData = storage.read("sovits", DEFAULT_SOVITS_CONFIG);
-    ttsConfig.sovits = { ...DEFAULT_SOVITS_CONFIG, ...sovitsData };
-    log.info("(BiliLive Service) SoVITS config loaded");
-
-    return success({ message: "All configs loaded" });
+    return success({ message: "Bilive config loaded" });
   } catch (err) {
     log.error("(BiliLive Service) Failed to load configs:", err);
     return error("Failed to load configs: " + err.message);
@@ -170,51 +160,30 @@ async function loadAllConfig() {
  * Save Bilibili configuration
  * @param {object} configData
  */
-async function saveBiliConfig(configData) {
+async function saveBiliveConfig(configData) {
   try {
-    console.log("saveBiliConfig - received data:", configData);
-    console.log("saveBiliConfig - current biliConfig:", biliConfig);
-
-    // 检查是否有房间ID数据
-    if (configData.room_ids) {
-      console.log(
-        "saveBiliConfig - received room_ids:",
-        JSON.stringify(configData.room_ids)
-      );
-    } else {
-      console.log("saveBiliConfig - no room_ids in received data");
-    }
-
     // 合并新配置，保留其他未修改的字段
-    biliConfig = {
-      ...biliConfig,
+    biliveConfig = {
+      ...biliveConfig,
       ...configData,
     };
 
-    console.log("saveBiliConfig - merged biliConfig:", biliConfig);
-    console.log("saveBiliConfig - ttsEnabled value:", biliConfig.ttsEnabled);
-    console.log(
-      "saveBiliConfig - merged room_ids:",
-      JSON.stringify(biliConfig.room_ids || [])
-    );
-
-    // 保存到文件
-    storage.save(BILI_CONFIG_KEY, biliConfig);
+    // 保存到配置文件
+    storage.saveConfig(BILIVE_CONFIG_KEY, biliveConfig);
 
     // 记录保存的配置信息（不记录SESSDATA的具体内容）
-    const logConfig = { ...biliConfig };
+    const logConfig = { ...biliveConfig };
     if (logConfig.SESSDATA) {
       logConfig.SESSDATA = `${String(logConfig.SESSDATA).substring(
         0,
         5
       )}...（长度: ${logConfig.SESSDATA.length}）`;
     }
-    log.info("(BiliLive Service) Bili config saved:", logConfig);
 
-    return success({ message: "Bili config saved", config: biliConfig });
+    return success({ message: "Bilive config saved", config: biliveConfig });
   } catch (err) {
-    log.error("(BiliLive Service) Failed to save Bili config:", err);
-    return error("Failed to save Bili config: " + err.message);
+    log.error("(BiliLive Service) Failed to save Bilive config:", err);
+    return error("Failed to save Bilive config: " + err.message);
   }
 }
 
@@ -224,25 +193,13 @@ async function saveBiliConfig(configData) {
  */
 async function saveTTSMode(mode) {
   try {
-    // 保存到BiliLive专用存储
-    storage.save("bili_ttsMode", mode);
-    ttsConfig.mode = mode;
+    // 更新配置中的TTS模式
+    biliveConfig.tts.mode = mode;
 
-    // 同步到settings共享存储
-    const settings = storage.readConfig("settings", {});
-    if (mode === "azure" && settings.azure) {
-      // 启用Azure TTS
-      settings.azure.enabled = true;
-      storage.saveConfig("settings", settings);
-      log.info("(BiliLive Service) Azure service enabled in settings");
-    } else if (mode === "local" && settings.azure) {
-      // 禁用Azure TTS（但保留配置）
-      settings.azure.enabled = false;
-      storage.saveConfig("settings", settings);
-      log.info("(BiliLive Service) Azure service disabled in settings");
-    }
+    // 保存完整配置
+    storage.saveConfig(BILIVE_CONFIG_KEY, biliveConfig);
 
-    log.info(`(BiliLive Service) TTS mode saved: ${mode}`);
+    log.info(`(BiliLive Service) Bili TTS mode saved: ${mode}`);
     return success(mode);
   } catch (err) {
     log.error("(BiliLive Service) Failed to save TTS mode:", err);
@@ -256,32 +213,16 @@ async function saveTTSMode(mode) {
  */
 async function saveAzureConfig(configData) {
   try {
-    // 保存到BiliLive专用存储
-    storage.save(BILI_AZURE_CONFIG_KEY, configData);
-    ttsConfig.azure = configData; // Update config in memory
+    // 更新配置中的Azure设置
+    biliveConfig.tts.azure = {
+      ...biliveConfig.tts.azure,
+      ...configData,
+    };
 
-    // 同步到settings共享存储
-    const settings = storage.readConfig("settings", {});
-    if (!settings.azure) {
-      settings.azure = {};
-    }
+    // 保存完整配置
+    storage.saveConfig(BILIVE_CONFIG_KEY, biliveConfig);
 
-    // 将BiliLive格式的配置转换为settings格式
-    settings.azure.key = configData.azure_key;
-    settings.azure.region = configData.azure_region;
-    settings.azure.voiceName = configData.azure_model;
-    settings.azure.speed = configData.speed || 1.0;
-    settings.azure.pitch = configData.pitch || 0;
-
-    // 保留启用状态
-    settings.azure.enabled = ttsConfig.mode === "azure";
-
-    // 保存更新后的settings
-    storage.saveConfig("settings", settings);
-
-    log.info(
-      "(BiliLive Service) Azure TTS config saved and synced to settings."
-    );
+    log.info("(BiliLive Service) Azure TTS配置已保存");
     return success(configData);
   } catch (err) {
     log.error("(BiliLive Service) Failed to save Azure TTS config:", err);
@@ -295,9 +236,16 @@ async function saveAzureConfig(configData) {
  */
 async function saveAlibabaConfig(configData) {
   try {
-    storage.save(BILI_ALIBABA_CONFIG_KEY, configData);
-    ttsConfig.alibaba = configData; // Update config in memory
-    log.info("(BiliLive Service) Alibaba TTS config saved.");
+    // 更新配置中的阿里云设置
+    biliveConfig.tts.alibaba = {
+      ...biliveConfig.tts.alibaba,
+      ...configData,
+    };
+
+    // 保存完整配置
+    storage.saveConfig(BILIVE_CONFIG_KEY, biliveConfig);
+
+    log.info("(BiliLive Service) Alibaba TTS配置已保存");
     return success(configData);
   } catch (err) {
     log.error("(BiliLive Service) Failed to save Alibaba TTS config:", err);
@@ -311,9 +259,16 @@ async function saveAlibabaConfig(configData) {
  */
 async function saveSovitsConfig(configData) {
   try {
-    storage.save(BILI_SOVITS_CONFIG_KEY, configData);
-    ttsConfig.sovits = configData; // Update config in memory
-    log.info("(BiliLive Service) SoVITS TTS config saved.");
+    // 更新配置中的SoVITS设置
+    biliveConfig.tts.sovits = {
+      ...biliveConfig.tts.sovits,
+      ...configData,
+    };
+
+    // 保存完整配置
+    storage.saveConfig(BILIVE_CONFIG_KEY, biliveConfig);
+
+    log.info("(BiliLive Service) SoVITS TTS配置已保存");
     return success(configData);
   } catch (err) {
     log.error("(BiliLive Service) Failed to save SoVITS TTS config:", err);
@@ -325,75 +280,14 @@ async function saveSovitsConfig(configData) {
 async function getConfig() {
   try {
     // Load latest config from storage
-    const biliData = storage.read("bili", DEFAULT_BILI_CONFIG);
-    console.log("getConfig - biliData:", biliData);
+    await loadAllConfig();
 
-    // Properly merge with default config to ensure all fields exist
-    const mergedBiliConfig = {
-      ...DEFAULT_BILI_CONFIG,
-      ...(biliData || {}),
-    };
-
-    // Ensure ttsEnabled is set
-    if (mergedBiliConfig.ttsEnabled === undefined) {
-      mergedBiliConfig.ttsEnabled = true;
-      log.warn(
-        "(BiliLive Service) getConfig: ttsEnabled is undefined, setting to default true"
-      );
-    }
-
-    // Update the global biliConfig
-    biliConfig = mergedBiliConfig;
-
-    // Get TTS-related configs
-    const settingsConfig = storage.readConfig("settings", {});
-    const azureProvider = settingsConfig.azure || {};
-
-    // Update ttsConfig from settings
-    ttsConfig.mode = azureProvider.enabled ? "azure" : "local";
-    ttsConfig.azure = {
-      azure_key: azureProvider.key || "",
-      azure_region: azureProvider.region || "",
-      azure_model: azureProvider.voiceName || "",
-      speed: azureProvider.speed || 1.0,
-      pitch: azureProvider.pitch || 0,
-    };
-
-    // Fallback to separate config files if settings doesn't have the info
-    if (!azureProvider.key) {
-      ttsConfig.azure = storage.read(
-        BILI_AZURE_CONFIG_KEY,
-        DEFAULT_AZURE_CONFIG
-      );
-    }
-
-    ttsConfig.alibaba = storage.read(
-      BILI_ALIBABA_CONFIG_KEY,
-      DEFAULT_ALIBABA_CONFIG
-    );
-    ttsConfig.sovits = storage.read(
-      BILI_SOVITS_CONFIG_KEY,
-      DEFAULT_SOVITS_CONFIG
-    );
-
-    // Return merged config for API
-    return {
-      ...biliConfig,
-      mode: ttsConfig.mode,
-      azure: ttsConfig.azure,
-      alibaba: ttsConfig.alibaba,
-      sovits: ttsConfig.sovits,
-    };
+    // Return the complete config object
+    return biliveConfig;
   } catch (err) {
     log.error("(BiliLive Service) Error in getConfig:", err);
     // Return at least default config if error
-    return {
-      ...DEFAULT_BILI_CONFIG,
-      mode: "local",
-      azure: DEFAULT_AZURE_CONFIG,
-      alibaba: DEFAULT_ALIBABA_CONFIG,
-      sovits: DEFAULT_SOVITS_CONFIG,
-    };
+    return DEFAULT_BILIVE_CONFIG;
   }
 }
 
@@ -437,7 +331,7 @@ async function connect(roomIdValue) {
     // Create BLiveClient instance
     client = new BLiveClient(
       {
-        SESSDATA: biliConfig.SESSDATA,
+        SESSDATA: biliveConfig.SESSDATA,
         heartbeatInterval: 30000, // 30 seconds
       },
       handleLiveMessage
@@ -833,8 +727,8 @@ function handleDanmakuMessage(msgObj) {
 
     // Check blacklist users and keywords
     if (
-      biliConfig.black_user?.includes(uname) ||
-      biliConfig.black_text?.some((keyword) => msg.includes(keyword))
+      biliveConfig.black_user?.includes(uname) ||
+      biliveConfig.black_text?.some((keyword) => msg.includes(keyword))
     ) {
       log.info(
         `(BiliLive Service) Blocked danmaku from blacklisted user ${uname}`
@@ -843,11 +737,11 @@ function handleDanmakuMessage(msgObj) {
     }
 
     // Check if TTS is enabled
-    if (biliConfig.ttsEnabled && biliConfig.readDanmaku) {
+    if (biliveConfig.ttsEnabled && biliveConfig.readDanmaku) {
       log.debug(
         `(BiliLive Service) Danmaku TTS enabled, preparing to speak: [${uname}] ${msg}`
       );
-      const text = biliConfig.voice_text?.danmaku
+      const text = biliveConfig.voice_text?.danmaku
         .replace("{uname}", uname)
         .replace("{msg}", msg);
       speechText(text);
@@ -902,16 +796,16 @@ function handleGiftMessage(msgObj) {
     const giftKey = `${uid}-${giftId}-${batchComboId}`; // Merge Key
     log.debug(
       `(BiliLive Service) Gift Key: ${giftKey}, Merge window: ${
-        biliConfig.continuous_gift_interval || 1
+        biliveConfig.continuous_gift_interval || 1
       } seconds`
     );
 
-    if (!biliConfig.ttsEnabled || !biliConfig.readGift) {
+    if (!biliveConfig.ttsEnabled || !biliveConfig.readGift) {
       log.debug(`(BiliLive Service) Gift TTS disabled, skipping speech`);
       return;
     }
 
-    const interval = (biliConfig.continuous_gift_interval || 1) * 1000; // Merge window (ms)
+    const interval = (biliveConfig.continuous_gift_interval || 1) * 1000; // Merge window (ms)
 
     if (giftMergeMap.has(giftKey)) {
       // Update existing gift info
@@ -928,7 +822,7 @@ function handleGiftMessage(msgObj) {
         log.info(
           `(BiliLive Service) Speaking merged gift: [${uname}] ${existingGift.num} ${giftName}`
         );
-        const text = biliConfig.voice_text?.gift
+        const text = biliveConfig.voice_text?.gift
           .replace("{uname}", uname)
           .replace("{num}", existingGift.num)
           .replace("{gift_name}", giftName);
@@ -949,7 +843,7 @@ function handleGiftMessage(msgObj) {
           log.info(
             `(BiliLive Service) Speaking gift: [${uname}] ${num} ${giftName}`
           );
-          const text = biliConfig.voice_text?.gift
+          const text = biliveConfig.voice_text?.gift
             .replace("{uname}", uname)
             .replace("{num}", newGift.num) // Use merged count
             .replace("{gift_name}", giftName);
@@ -991,11 +885,11 @@ function handleLikeMessage(data) {
     log.info(`(BiliLive Service) Like: [${uname}] ${likeText} (${userInfo})`);
     sendToRenderer("bililive-like", { uid, uname, text: likeText });
 
-    if (biliConfig.ttsEnabled && biliConfig.readLike) {
+    if (biliveConfig.ttsEnabled && biliveConfig.readLike) {
       log.debug(
         `(BiliLive Service) Like TTS enabled, preparing to speak: [${uname}] ${likeText}`
       );
-      const text = biliConfig.voice_text?.like
+      const text = biliveConfig.voice_text?.like
         .replace("{uname}", uname)
         .replace("{like_text}", likeText);
       speechText(text);
@@ -1048,7 +942,7 @@ function handleEnterMessage(data) {
     });
 
     // Check blacklist
-    if (biliConfig.black_user?.includes(uname)) {
+    if (biliveConfig.black_user?.includes(uname)) {
       log.info(
         `(BiliLive Service) Blocked enter message from blacklisted user ${uname}`
       );
@@ -1056,16 +950,16 @@ function handleEnterMessage(data) {
     }
 
     // Welcome level filter
-    const welcomeLevel = biliConfig.welcome_level || 0;
+    const welcomeLevel = biliveConfig.welcome_level || 0;
     if (
       medalLevel >= welcomeLevel &&
-      biliConfig.ttsEnabled &&
-      biliConfig.readEnter
+      biliveConfig.ttsEnabled &&
+      biliveConfig.readEnter
     ) {
       log.debug(
         `(BiliLive Service) Enter TTS enabled, preparing to speak: [${uname}] Fan medal level[${medalLevel}] >= Set level[${welcomeLevel}]`
       );
-      const text = biliConfig.voice_text?.enter.replace("{uname}", uname);
+      const text = biliveConfig.voice_text?.enter.replace("{uname}", uname);
       speechText(text);
     } else {
       if (medalLevel < welcomeLevel) {
@@ -1098,7 +992,7 @@ function handleSuperChatMessage(data) {
   );
   sendToRenderer("bililive-superchat", { id, uname, price, message });
 
-  if (biliConfig.ttsEnabled) {
+  if (biliveConfig.ttsEnabled) {
     // SC default speech
     const text = `Thank you ${uname} for ${price} CNY Super Chat: ${message}`;
     speechText(text);
@@ -1122,7 +1016,7 @@ function handleGuardBuyMessage(data) {
   );
   sendToRenderer("bililive-guard", { uid, uname, level, giftName, num });
 
-  if (biliConfig.ttsEnabled) {
+  if (biliveConfig.ttsEnabled) {
     // Captain subscription default speech
     const text = `Thank you ${uname} for subscribing as ${giftName}! You're so generous!`;
     speechText(text);
@@ -1139,9 +1033,9 @@ let isSpeaking = false;
  * @param {string} text
  */
 function speechText(text) {
-  // Check if biliConfig is loaded properly
-  if (!biliConfig || typeof biliConfig !== "object") {
-    log.error("(BiliLive Service) biliConfig is not properly initialized");
+  // Check if biliveConfig is loaded properly
+  if (!biliveConfig || typeof biliveConfig !== "object") {
+    log.error("(BiliLive Service) biliveConfig is not properly initialized");
     // Load config if it's not initialized
     loadAllConfig().then(() => {
       log.info(
@@ -1153,23 +1047,23 @@ function speechText(text) {
   }
 
   // Ensure ttsEnabled is set, defaulting to true
-  if (biliConfig.ttsEnabled === undefined) {
+  if (biliveConfig.ttsEnabled === undefined) {
     log.warn(
       "(BiliLive Service) ttsEnabled is undefined, setting to default true"
     );
-    biliConfig.ttsEnabled = true;
+    biliveConfig.ttsEnabled = true;
     // Save this change to storage
-    storage.save("bili", biliConfig);
+    storage.saveConfig(BILIVE_CONFIG_KEY, biliveConfig);
   }
 
-  if (!text || !biliConfig.ttsEnabled) {
+  if (!text || !biliveConfig.ttsEnabled) {
     log.debug(
       `(BiliLive Service) TTS skipped: ${!text ? "Empty text" : "TTS disabled"}`
     );
     return;
   }
 
-  log.debug(`(BiliLive Service) Added to TTS queue: "${text}"`);
+  // log.debug(`(BiliLive Service) Added to TTS queue: "${text}"`);
   speechQueue.push(text);
   processSpeechQueue();
 }
@@ -1189,13 +1083,15 @@ async function processSpeechQueue() {
   isSpeaking = true;
   const text = speechQueue.shift();
 
+  // 获取TTS模式
+  let ttsMode = biliveConfig.tts?.mode || "local";
+
   // 检查是否使用settings中的配置
   const settings = storage.readConfig("settings", {});
   const useAzure =
     settings.azure && settings.azure.enabled && settings.azure.key;
 
   // 优先使用settings中的设置决定TTS模式
-  let ttsMode = ttsConfig.mode;
   if (useAzure) {
     ttsMode = "azure";
   }
@@ -1224,7 +1120,7 @@ async function processSpeechQueue() {
       default:
         // log.debug(
         //   `(BiliLive Service) Using local TTS to speak: "${text}" (localVoice: ${
-        //     biliConfig.localVoice || "not set"
+        //     biliveConfig.localVoice || "not set"
         //   })`
         // );
         await localTTS(text);
@@ -1242,7 +1138,7 @@ async function processSpeechQueue() {
     });
   } finally {
     // Wait interval
-    const interval = biliConfig.max_next_interval || 100;
+    const interval = biliveConfig.max_next_interval || 100;
     // log.debug(`(BiliLive Service) TTS wait interval: ${interval}ms`);
     setTimeout(() => {
       isSpeaking = false;
@@ -1264,66 +1160,23 @@ function localTTS(text) {
     log.info(`(BiliLive Service) Starting local TTS playback: "${text}"`);
 
     try {
-      // Get available voices
-      const availableVoices = await getAvailableVoices();
-      log.debug(
-        `(BiliLive Service) Available voices: ${JSON.stringify(
-          availableVoices
-        )}`
-      );
+      // 准备语音设置
+      const settings = {
+        voice: biliveConfig.localVoice || "",
+        speed: 1.0,
+      };
 
-      // Check user preference first
-      let selectedVoice = null;
-      if (
-        biliConfig.localVoice &&
-        availableVoices.includes(biliConfig.localVoice)
-      ) {
-        selectedVoice = biliConfig.localVoice;
-        log.info(
-          `(BiliLive Service) Using user-preferred voice: ${selectedVoice}`
-        );
-      }
-      // If no preference or preferred voice not available, try to find a Chinese voice
-      else if (availableVoices.includes("Microsoft Huihui Desktop")) {
-        selectedVoice = "Microsoft Huihui Desktop";
-        log.info(`(BiliLive Service) Using Chinese voice: ${selectedVoice}`);
-      }
-      // Try other known Chinese voices
-      else if (availableVoices.includes("Microsoft Yaoyao Desktop")) {
-        selectedVoice = "Microsoft Yaoyao Desktop";
-        log.info(`(BiliLive Service) Using Chinese voice: ${selectedVoice}`);
-      } else if (availableVoices.includes("Microsoft Kangkang Desktop")) {
-        selectedVoice = "Microsoft Kangkang Desktop";
-        log.info(`(BiliLive Service) Using Chinese voice: ${selectedVoice}`);
-      }
-      // Fallback to any available voice
-      else if (availableVoices.length > 0) {
-        selectedVoice = availableVoices[0];
-        log.info(`(BiliLive Service) Using fallback voice: ${selectedVoice}`);
-      }
+      // 直接调用local.js中的play方法
+      const localProvider = require("../provider/local");
+      const result = await localProvider.play(text, settings);
 
-      // Windows can have encoding issues with Chinese characters, ensure proper encoding
-      // 对于Windows系统，确保中文字符能被正确处理
-      const isWindows = process.platform === "win32";
-      if (isWindows) {
-        log.debug(`(BiliLive Service) Using Windows-specific handling for TTS`);
+      if (!result.success) {
+        log.error("(BiliLive Service) Local TTS playback error:", result.error);
+        reject(new Error(result.error || "Local TTS playback failed"));
+      } else {
+        log.debug("(BiliLive Service) Local TTS playback completed");
+        resolve();
       }
-
-      // Use say.js to speak the text
-      log.debug(
-        `(BiliLive Service) Speaking with voice: ${selectedVoice || "default"}`
-      );
-
-      // 确保文本被正确传递给TTS引擎
-      say.speak(text, selectedVoice, 1.0, (err) => {
-        if (err) {
-          log.error("(BiliLive Service) Local TTS playback error:", err);
-          reject(err);
-        } else {
-          log.debug("(BiliLive Service) Local TTS playback completed");
-          resolve();
-        }
-      });
     } catch (err) {
       log.error("(BiliLive Service) Error in localTTS:", err);
       reject(err);
@@ -1331,142 +1184,127 @@ function localTTS(text) {
   });
 }
 
+// 配置保存的单一键名
+const SETTINGS_KEY = "vwordai";
+
 /**
  * Azure TTS
  * @param {string} text
  */
 async function azureTTS(text) {
-  // 先初始化config对象以防未定义
-  const config = ttsConfig.azure || {};
+  // 获取Azure配置
+  const config = biliveConfig.tts?.azure || {};
 
-  // 检查Azure配置，如果本地没有则尝试从settings加载
+  // 检查配置是否完整
   if (!config.azure_key || !config.azure_region) {
-    // 尝试从settings加载
-    const azure = storage.read("azure", {});
-    // console.log("settings:", azure);
-    if (azure && azure.key && azure.region) {
-      // 使用settings中的Azure配置
-      log.info("(BiliLive Service) 使用settings中的Azure配置");
-      config.azure_key = azure.key;
-      config.azure_region = azure.region;
-      config.azure_model = azure.voiceName || "zh-CN-XiaoxiaoNeural";
-      config.speed = azure.speed || 1.0;
-      config.pitch = azure.pitch || 0;
+    // 尝试使用系统全局配置
+    const systemSetting = storage.readConfig(SETTINGS_KEY, {});
 
-      // 更新内存中的配置
-      if (!ttsConfig.azure) ttsConfig.azure = {};
-      Object.assign(ttsConfig.azure, config);
+    if (systemSetting.azure.key && systemSetting.azure.region) {
+      log.info("(BiliLive Service) Using system global Azure configuration");
+
+      // 使用系统全局配置
+      config.azure_key = systemSetting.azure.key;
+      config.azure_region = systemSetting.azure.region;
     } else {
       throw new Error(
-        "Azure TTS configuration incomplete (Key and Region required)"
+        "Azure TTS configuration incomplete: Missing Key and Region in both Bilive-specific and system configurations"
       );
     }
   }
 
-  // log.info(
-  //   `(BiliLive Service) Azure TTS: 使用Key=${config.azure_key.substring(
-  //     0,
-  //     4
-  //   )}..., Region=${config.azure_region}, Model=${
-  //     config.azure_model || "default"
-  //   }`
-  // );
-
-  // 创建语音配置
-  const speechConfig = sdk.SpeechConfig.fromSubscription(
-    config.azure_key,
-    config.azure_region
-  );
-
-  // 设置语音合成语言和声音名称
-  if (config.azure_model) {
-    speechConfig.speechSynthesisVoiceName = config.azure_model;
-  } else {
-    speechConfig.speechSynthesisVoiceName = "zh-CN-XiaoxiaoNeural"; // Default
+  // 确保voice model存在，如果不存在使用默认值
+  if (!config.azure_model) {
+    log.warn("(BiliLive Service) Azure voice model not set, using default");
+    config.azure_model = "zh-CN-XiaoxiaoMultilingualNeural";
   }
 
-  // 设置输出格式为音频流
-  speechConfig.speechSynthesisOutputFormat =
-    sdk.SpeechSynthesisOutputFormat.Audio16Khz32KBitRateMonoMp3; // 或其他格式
+  // 确保speed和pitch有值
+  if (!config.speed) config.speed = 1.0;
+  if (!config.pitch) config.pitch = 0;
 
-  // 创建音频配置，使用默认扬声器输出
-  const audioConfig = sdk.AudioConfig.fromDefaultSpeakerOutput();
+  // 准备Azure配置
+  const azureConfig = {
+    key: config.azure_key,
+    region: config.azure_region,
+  };
 
-  // 创建语音合成器
-  const synthesizer = new sdk.SpeechSynthesizer(speechConfig, audioConfig);
-
-  // 设置语速
-  if (config.speed && config.speed !== 1.0) {
-    speechConfig.setProperty(
-      "SpeechServiceConnection_SynthesisRate",
-      config.speed.toString()
-    );
-    log.debug(
-      `(BiliLive Service) Azure TTS set speech rate to: ${config.speed}`
-    );
-  }
-
-  // 设置音调
-  if (config.pitch && config.pitch !== 0) {
-    speechConfig.setProperty(
-      "SpeechServiceConnection_SynthesisPitch",
-      config.pitch.toString()
-    );
-    log.debug(`(BiliLive Service) Azure TTS set pitch to: ${config.pitch}`);
-  }
+  // 准备语音设置
+  const settings = {
+    voice: config.azure_model,
+    speed: config.speed,
+    pitch: config.pitch,
+  };
 
   log.debug(
-    `(BiliLive Service) Azure TTS using model: ${speechConfig.speechSynthesisVoiceName}, text: "${text}"`
+    `(BiliLive Service) Azure TTS using model: ${settings.voice}, text: "${text}"`
   );
 
-  return new Promise((resolve, reject) => {
-    // 使用普通文本合成而非SSML
-    synthesizer.speakTextAsync(
-      text,
-      (result) => {
-        if (result.reason === sdk.ResultReason.SynthesizingAudioCompleted) {
-          log.debug("(BiliLive Service) Azure TTS playback finished.");
-          resolve();
-        } else {
-          log.error(
-            `(BiliLive Service) Azure TTS Error: ${result.errorDetails}`
-          );
-          reject(new Error(result.errorDetails));
-        }
-        synthesizer.close();
-      },
-      (err) => {
-        log.error("(BiliLive Service) Azure TTS speakTextAsync Error:", err);
-        reject(err);
-        synthesizer.close();
-      }
-    );
-  });
+  try {
+    // 直接调用azure.js中的play方法
+    const azureProvider = require("../provider/azure");
+    const result = await azureProvider.play(text, settings, azureConfig);
+
+    if (!result.success) {
+      throw new Error(result.message || "Azure TTS playback failed");
+    }
+
+    log.debug("(BiliLive Service) Azure TTS playback finished.");
+    return Promise.resolve();
+  } catch (err) {
+    log.error("(BiliLive Service) Azure TTS Error:", err);
+    throw err;
+  }
 }
 
 /**
- * Alibaba TTS (NUI) - Note: Requires Alibaba Cloud account and NUI SDK configuration
- * Implementation is complex, needs to import official Alibaba SDK (@alicloud/nui-sdk)
- * This is just a placeholder, actual implementation needs to refer to Alibaba docs
+ * Alibaba TTS (NUI)
  * @param {string} text
  */
 async function alibabaTTS(text) {
-  const config = ttsConfig.alibaba;
+  const config = biliveConfig.tts?.alibaba || {};
   if (!config || !config.alibaba_appkey || !config.alibaba_token) {
     throw new Error(
       "Alibaba TTS configuration incomplete (AppKey and Token required)"
     );
   }
-  log.warn("(BiliLive Service) Alibaba TTS not fully implemented yet.");
-  // Need to use @alicloud/nui-sdk to implement
-  // General flow: Create NlsClient -> Create SpeechSynthesizerRequest -> Set parameters -> start -> Listen to events -> Process audio stream -> stop
-  // Example code needs to refer to official docs
-  // const NlsClient = require('@alicloud/nls-node-sdk'); // Assuming SDK is installed
 
-  // Simple playback placeholder
-  await localTTS(`Alibaba says: ${text}`);
+  try {
+    log.debug(`(BiliLive Service) Using Alibaba TTS to speak: "${text}"`);
 
-  return Promise.resolve();
+    // 准备阿里云配置
+    const aliyunConfig = {
+      appkey: config.alibaba_appkey,
+      token: config.alibaba_token,
+      endpoint:
+        config.alibaba_endpoint || "nls-gateway-cn-shanghai.aliyuncs.com",
+    };
+
+    // 准备语音设置
+    const settings = {
+      model: config.alibaba_model || "xiaoyun",
+      speed: config.speed || 100, // 0-200
+      volume: 100, // 默认音量
+      pitch: 0, // 默认音调
+    };
+
+    // 直接调用aliyun.js中的play方法
+    const aliyunProvider = require("../provider/aliyun");
+    const result = await aliyunProvider.play(text, settings, aliyunConfig);
+
+    if (!result.success) {
+      throw new Error(result.message || "Alibaba TTS playback failed");
+    }
+
+    log.debug("(BiliLive Service) Alibaba TTS playback finished.");
+    return Promise.resolve();
+  } catch (err) {
+    log.error("(BiliLive Service) Alibaba TTS Error:", err);
+    // 如果失败，使用本地TTS作为备选方案
+    log.warn("(BiliLive Service) Falling back to local TTS");
+    await localTTS(`Alibaba says: ${text}`);
+    return Promise.resolve();
+  }
 }
 
 /**
@@ -1474,7 +1312,7 @@ async function alibabaTTS(text) {
  * @param {string} text
  */
 async function sovitsTTS(text) {
-  const config = ttsConfig.sovits;
+  const config = biliveConfig.tts?.sovits || {};
   if (!config || !config.sovits_host) {
     throw new Error(
       "SoVITS TTS configuration incomplete (Host address required)"
@@ -1482,68 +1320,41 @@ async function sovitsTTS(text) {
   }
 
   try {
-    const params = {
-      text: text,
-      text_language: config.sovits_language || "auto",
-      // Pass other parameters according to SoVITS API docs
-      speaker: config.sovits_model, // 'speaker' or 'sovits_model' depends on API
-      sdp_ratio: 0.2, // Example parameter
-      noise: 0.2, // Example parameter
-      noise_w: 0.9, // Example parameter
-      length: 1.0, // Example parameter
-      // ... other parameters from config ...
+    log.debug(`(BiliLive Service) Using SoVITS TTS to speak: "${text}"`);
+
+    // 准备SoVITS配置
+    const sovitsConfig = {
+      sovits_host: config.sovits_host,
+      format: config.sovits_format || "wav",
+    };
+
+    // 准备语音设置
+    const settings = {
+      model: config.sovits_model,
+      language: config.sovits_language || "auto",
       speed: config.sovits_speed || 1.0,
-      top_k: config.sovits_top_k,
-      top_p: config.sovits_top_p,
+      emotion: config.sovits_emotion,
+      topK: config.sovits_top_k,
+      topP: config.sovits_top_p,
       temperature: config.sovits_temperature,
     };
 
-    // Clean up undefined or empty string parameters
-    Object.keys(params).forEach(
-      (key) =>
-        (params[key] === undefined || params[key] === "") && delete params[key]
-    );
+    // 直接调用sovits.js中的play方法
+    const sovitsProvider = require("../provider/sovits");
+    const result = await sovitsProvider.play(text, settings, sovitsConfig);
 
-    log.debug("(BiliLive Service) SoVITS Request Params:", params);
-
-    const response = await axios.get(config.sovits_host, {
-      params: params,
-      responseType: "arraybuffer", // Get audio stream
-      timeout: 15000, // Set timeout
-    });
-
-    if (response.status === 200 && response.data) {
-      // Play ArrayBuffer audio (needs temp file or audio library)
-      // Option 1: Save as temp file then play
-      // 播放 ArrayBuffer 音频 (需要临时文件或音频库)
-      // 方案1：保存为临时文件再播放
-      const tempDir = storage.getStoragePath(); // 使用应用的存储目录
-      const tempFilePath = path.join(tempDir, `sovits_temp_${Date.now()}.wav`); // 假设是wav
-      await fs.writeFile(tempFilePath, response.data);
-      log.debug(`(BiliLive Service) SoVITS audio saved to: ${tempFilePath}`);
-
-      // 使用本地 say 播放临时文件 (如果 say 支持文件播放) - say.js似乎不支持直接播放文件
-      // 替代方案：使用其他库播放，或者如果SoVITS支持直接输出到设备
-      // 简单的本地播放占位
-      await localTTS(`播放 SoVITS 合成语音`); // 仅作提示
-      await fs.remove(tempFilePath); // 播放后删除临时文件
-      log.debug(`(BiliLive Service) SoVITS playback finished (placeholder).`);
-      return Promise.resolve();
-
-      // 方案2：使用能直接播放 buffer 的库（例如 speaker，但需要额外依赖和配置）
-      // const Speaker = require('speaker'); // 需要 npm install speaker
-      // const speaker = new Speaker({ channels: 1, bitDepth: 16, sampleRate: 44100 }); // 参数需根据SoVITS输出调整
-      // speaker.write(response.data);
-      // speaker.end();
-      // return new Promise(resolve => speaker.on('close', resolve));
-    } else {
-      throw new Error(
-        `SoVITS API request failed with status ${response.status}`
-      );
+    if (!result.success) {
+      throw new Error(result.message || "SoVITS TTS playback failed");
     }
+
+    log.debug("(BiliLive Service) SoVITS TTS playback finished.");
+    return Promise.resolve();
   } catch (err) {
     log.error("(BiliLive Service) SoVITS TTS Error:", err);
-    throw new Error(`SoVITS TTS call failed: ${err.message}`);
+    // 如果SoVITS调用失败，使用本地TTS作为备选方案
+    log.warn("(BiliLive Service) Falling back to local TTS");
+    await localTTS(`播放 SoVITS 合成语音`); // 仅作提示
+    return Promise.resolve();
   }
 }
 
@@ -1555,23 +1366,30 @@ function getAvailableVoices() {
   return new Promise((resolve) => {
     log.debug("(BiliLive Service) Getting installed voices...");
 
-    say.getInstalledVoices((err, voices) => {
-      if (err) {
-        log.error("(BiliLive Service) Error getting installed voices:", err);
-        // Return empty array on error instead of rejecting
-        resolve([]);
-      } else {
-        if (!voices || !Array.isArray(voices)) {
-          log.warn("(BiliLive Service) No voices returned or invalid format");
+    try {
+      // 直接调用local.js中的方法
+      const localProvider = require("../provider/local");
+      localProvider
+        .getAvailableVoices()
+        .then((voices) => {
+          if (!voices || !Array.isArray(voices)) {
+            log.warn("(BiliLive Service) No voices returned or invalid format");
+            resolve([]);
+          } else {
+            log.debug(
+              `(BiliLive Service) Available voices: ${voices.join(", ")}`
+            );
+            resolve(voices);
+          }
+        })
+        .catch((err) => {
+          log.error("(BiliLive Service) Error getting installed voices:", err);
           resolve([]);
-        } else {
-          log.debug(
-            `(BiliLive Service) Available voices: ${voices.join(", ")}`
-          );
-          resolve(voices);
-        }
-      }
-    });
+        });
+    } catch (err) {
+      log.error("(BiliLive Service) Error accessing local provider:", err);
+      resolve([]);
+    }
   });
 }
 
@@ -1582,11 +1400,11 @@ function getAvailableVoices() {
  */
 async function saveLocalConfig(voice) {
   try {
-    // Update localVoice in biliConfig
-    biliConfig.localVoice = voice;
+    // Update localVoice in biliveConfig
+    biliveConfig.localVoice = voice;
 
     // Save to storage
-    storage.save(BILI_CONFIG_KEY, biliConfig);
+    storage.saveConfig(BILIVE_CONFIG_KEY, biliveConfig);
 
     log.info(
       `(BiliLive Service) Local TTS config saved with voice: ${
@@ -1605,13 +1423,6 @@ async function saveLocalConfig(voice) {
 }
 
 module.exports = {
-  connect,
-  closeClient,
-  // ... 导出其他需要被 Controller 调用的函数 ...
-};
-
-// 替换为：
-module.exports = {
   // 连接功能
   connect,
   closeClient,
@@ -1619,7 +1430,7 @@ module.exports = {
   // 配置相关
   loadAllConfig,
   getConfig,
-  saveBiliConfig,
+  saveBiliveConfig, // 更新函数名
   saveTTSMode,
   saveAzureConfig,
   saveAlibabaConfig,
@@ -1631,8 +1442,5 @@ module.exports = {
   speechText, // 手动播放文本（用于测试）
 
   // 常量
-  DEFAULT_BILI_CONFIG,
-  DEFAULT_AZURE_CONFIG,
-  DEFAULT_ALIBABA_CONFIG,
-  DEFAULT_SOVITS_CONFIG,
+  DEFAULT_BILIVE_CONFIG, // 更新常量名
 };

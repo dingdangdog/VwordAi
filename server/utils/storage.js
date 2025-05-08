@@ -3,9 +3,8 @@
  */
 const fs = require("fs-extra");
 const path = require("path");
-const electron = require('electron');
-const app = electron.app || (electron.remote && electron.remote.app);
-const log = require('electron-log');
+const electron = require("electron");
+const log = require("electron-log");
 
 // 基础目录
 let baseDir = "";
@@ -55,24 +54,21 @@ function setBaseDir(dir) {
  * @returns {string} 存储路径
  */
 function getStoragePath() {
-  let userDataPath;
-  try {
-    userDataPath = (app || electron.remote.app).getPath('userData');
-    log.info(`(Storage) User data path: ${userDataPath}`);
-  } catch (err) {
-    log.error(`(Storage) Failed to get user data path:`, err);
-    userDataPath = path.join(process.cwd(), 'storage');
-    log.info(`(Storage) Using fallback storage path: ${userDataPath}`);
+  // 使用已经设置好的baseDir和storagePath
+  if (!storagePath) {
+    log.error(
+      `(Storage) Storage path not set. Make sure setBaseDir() is called first.`
+    );
+    // 如果没有设置，返回一个默认路径，但这不应该发生
+    return path.join(process.cwd(), "storage");
   }
-  
-  const storagePath = path.join(userDataPath, 'storage');
-  
-  // Ensure storage directory exists
+
+  // 确保存储目录存在
   if (!fs.existsSync(storagePath)) {
     fs.mkdirSync(storagePath, { recursive: true });
     log.info(`(Storage) Created storage directory: ${storagePath}`);
   }
-  
+
   return storagePath;
 }
 
@@ -81,6 +77,20 @@ function getStoragePath() {
  * @returns {string} 配置目录路径
  */
 function getConfigPath() {
+  if (!configPath) {
+    log.error(
+      `(Storage) Config path not set. Make sure setBaseDir() is called first.`
+    );
+    // 如果没有设置，返回一个默认路径，但这不应该发生
+    return path.join(process.cwd(), "config");
+  }
+
+  // 确保配置目录存在
+  if (!fs.existsSync(configPath)) {
+    fs.mkdirSync(configPath, { recursive: true });
+    log.info(`(Storage) Created config directory: ${configPath}`);
+  }
+
   return configPath;
 }
 
@@ -135,12 +145,11 @@ function readData(filename, defaultValue = []) {
  */
 function saveConfig(key, value) {
   try {
-    const storagePath = getStoragePath();
-    console.log(`(Storage) Storage path: ${storagePath}`);
-    const filePath = path.join(storagePath, `${key}.json`);
-    
-    log.debug(`(Storage) Saving config ${key}:`, value);
-    fs.writeFileSync(filePath, JSON.stringify(value, null, 2), 'utf8');
+    const configDir = getConfigPath();
+    const filePath = path.join(configDir, `${key}.json`);
+
+    // log.debug(`(Storage) Saving config ${key}:`, value);
+    fs.writeFileSync(filePath, JSON.stringify(value, null, 2), "utf8");
     return true;
   } catch (err) {
     log.error(`(Storage) Failed to save config ${key}:`, err);
@@ -156,11 +165,11 @@ function saveConfig(key, value) {
  */
 function readConfig(key, defaultValue = {}) {
   try {
-    const storagePath = getStoragePath();
-    const filePath = path.join(storagePath, `${key}.json`);
-    
+    const configDir = getConfigPath();
+    const filePath = path.join(configDir, `${key}.json`);
+
     if (fs.existsSync(filePath)) {
-      const data = fs.readFileSync(filePath, 'utf8');
+      const data = fs.readFileSync(filePath, "utf8");
       const config = JSON.parse(data);
       log.debug(`(Storage) Successfully read config ${key}`);
       return config;

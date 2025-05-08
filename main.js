@@ -393,13 +393,13 @@ function setupDebugHandlers() {
   });
 
   // 添加IPC通道监听器
-  ipcMain.handle('listen-to-channel', (event, channel, callback) => {
+  ipcMain.handle("listen-to-channel", (event, channel, callback) => {
     // 允许渲染进程监听特定的IPC通道
     return true; // 实际处理在preload.js的listenToChannel函数中
   });
 
   // 移除IPC通道监听器
-  ipcMain.handle('remove-listener', (event, channel) => {
+  ipcMain.handle("remove-listener", (event, channel) => {
     // 允许渲染进程移除特定IPC通道的监听器
     return true; // 实际处理在preload.js的removeListener函数中
   });
@@ -461,7 +461,7 @@ function setupBiliLiveHandlers() {
   ipcMain.handle("bililive:get-available-voices", async () => {
     return await handler.getBiliLiveAvailableVoices();
   });
-  
+
   // 保存本地TTS配置
   ipcMain.handle("bililive:save-local-config", async (event, voice) => {
     return await handler.saveBiliLiveLocalConfig(voice);

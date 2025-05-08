@@ -51,7 +51,7 @@ async function getAllConfig() {
  */
 async function saveBiliConfig(configData) {
   try {
-    return await BiliLiveService.saveBiliConfig(configData);
+    return await BiliLiveService.saveBiliveConfig(configData);
   } catch (err) {
     console.error('[BiliLiveController] Save Bili config error:', err);
     return error('保存B站配置失败: ' + err.message);
@@ -116,10 +116,10 @@ async function saveSovitsConfig(configData) {
 async function getDefaultConfig() {
   try {
     const defaultConfig = {
-      bili: BiliLiveService.DEFAULT_BILI_CONFIG,
-      azure: BiliLiveService.DEFAULT_AZURE_CONFIG,
-      alibaba: BiliLiveService.DEFAULT_ALIBABA_CONFIG,
-      sovits: BiliLiveService.DEFAULT_SOVITS_CONFIG
+      bili: BiliLiveService.DEFAULT_BILIVE_CONFIG,
+      azure: BiliLiveService.DEFAULT_BILIVE_CONFIG.tts.azure,
+      alibaba: BiliLiveService.DEFAULT_BILIVE_CONFIG.tts.alibaba,
+      sovits: BiliLiveService.DEFAULT_BILIVE_CONFIG.tts.sovits
     };
     return success(defaultConfig);
   } catch (err) {
