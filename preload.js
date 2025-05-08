@@ -51,6 +51,16 @@ contextBridge.exposeInMainWorld("electron", {
     ipcRenderer.removeAllListeners("update-message");
   },
 
+  // 监听自定义事件
+  listenToChannel: (channel, callback) => {
+    ipcRenderer.on(channel, (event, ...args) => callback(...args));
+  },
+
+  // 移除特定通道的所有监听器
+  removeListener: (channel) => {
+    ipcRenderer.removeAllListeners(channel);
+  },
+
   // 调试相关API
   getAppInfo: async () => {
     return await ipcRenderer.invoke("get-app-info");
@@ -116,6 +126,7 @@ contextBridge.exposeInMainWorld("api", {
       ipcRenderer.invoke("tts:get-emotions", providerId),
     testProviderConnection: (type) =>
       ipcRenderer.invoke("tts:test-provider-connection", type),
+    // 注意: Azure TTS测试功能已移至 settings.testProviderConnection
     testAzureTTS: (data) => ipcRenderer.invoke("test-azure-tts", data),
   },
 
@@ -134,5 +145,21 @@ contextBridge.exposeInMainWorld("api", {
       ipcRenderer.invoke("update-provider-settings", provider, data),
     testProviderConnection: (type) =>
       ipcRenderer.invoke("test-provider-connection", type),
+  },
+
+  // BiliLive 相关 API
+  biliLive: {
+    connect: (roomId) => ipcRenderer.invoke("bililive:connect", roomId),
+    disconnect: () => ipcRenderer.invoke("bililive:disconnect"),
+    getConfig: () => ipcRenderer.invoke("bililive:get-config"),
+    getDefaultConfig: () => ipcRenderer.invoke("bililive:get-default-config"),
+    saveBiliConfig: (data) => ipcRenderer.invoke("bililive:save-bili-config", data),
+    saveTTSMode: (mode) => ipcRenderer.invoke("bililive:save-tts-mode", mode),
+    saveAzureConfig: (data) => ipcRenderer.invoke("bililive:save-azure-config", data),
+    saveAlibabaConfig: (data) => ipcRenderer.invoke("bililive:save-alibaba-config", data),
+    saveSovitsConfig: (data) => ipcRenderer.invoke("bililive:save-sovits-config", data),
+    testTTS: (text) => ipcRenderer.invoke("bililive:test-tts", text),
+    getAvailableVoices: () => ipcRenderer.invoke("bililive:get-available-voices"),
+    saveLocalConfig: (voice) => ipcRenderer.invoke("bililive:save-local-config", voice),
   },
 });

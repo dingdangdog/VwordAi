@@ -7,6 +7,7 @@ const path = require("path");
 const fs = require("fs-extra");
 const { success, error } = require("../utils/result");
 const TTSService = require("../services/TTSService");
+const os = require("os");
 
 // 语音模型文件路径
 const MODELS_JSON_PATH = path.join(__dirname, "../assets/models.json");
@@ -21,8 +22,7 @@ function init() {
   // 模型相关事件处理
   registerModelHandlers();
 
-  // Azure TTS测试处理
-  registerAzureTestHandlers();
+  // 注意：Azure TTS测试功能已移至 SettingsController.js
 }
 
 /**
@@ -48,6 +48,89 @@ function registerTTSHandlers() {
   ipcMain.handle("tts:get-emotions", async (event, providerId) => {
     return await TTSService.getEmotions(providerId);
   });
+
+  // 注册Aliyun TTS测试处理程序
+  registerAliyunTTSTestHandler();
+}
+
+/**
+ * 注册Aliyun TTS测试处理程序
+ */
+function registerAliyunTTSTestHandler() {
+  // 测试阿里云语音服务连接
+  ipcMain.handle("settings:test-aliyun-connection", async (event, config) => {
+    try {
+      if (!config || !config.appkey || !config.token) {
+        return { success: false, message: "阿里云配置不完整，请检查配置信息" };
+      }
+
+      // 加载阿里云语音模块
+      const aliyunProvider = require("../provider/aliyun");
+
+      // 创建临时文件路径
+      const tempFilePath = path.join(
+        os.tmpdir(),
+        `aliyun_test_${Date.now()}.wav`
+      );
+
+      // 合成测试语音
+      const settings = {
+        voice: "xiaoyun", // 默认使用小云声音
+        volume: 50,
+        speed: 0,
+        pitch: 0,
+      };
+
+      // 测试文本
+      const testText =
+        "这是一个阿里云语音合成测试，如果您能听到这段话，说明配置正确。";
+
+      const result = await aliyunProvider.synthesize(
+        testText,
+        tempFilePath,
+        settings,
+        config
+      );
+
+      if (!result.success) {
+        return {
+          success: false,
+          message: result.message || "阿里云语音合成测试失败",
+        };
+      }
+
+      // 读取生成的音频文件，以便在前端播放
+      if (fs.existsSync(tempFilePath)) {
+        const audioData = fs.readFileSync(tempFilePath);
+
+        // 完成后清理临时文件
+        try {
+          fs.unlinkSync(tempFilePath);
+        } catch (err) {
+          console.log("删除测试音频文件失败", err);
+        }
+
+        return {
+          success: true,
+          message: "阿里云语音合成测试成功",
+          data: {
+            audioData,
+          },
+        };
+      } else {
+        return {
+          success: false,
+          message: "阿里云测试音频文件未生成",
+        };
+      }
+    } catch (err) {
+      console.error("阿里云语音服务测试失败:", err);
+      return {
+        success: false,
+        message: `阿里云语音服务测试失败: ${err.message}`,
+      };
+    }
+  });
 }
 
 /**
@@ -64,41 +147,6 @@ function registerModelHandlers() {
     } catch (err) {
       console.error("读取语音模型文件失败:", err);
       return error(`读取语音模型失败: ${err.message}`);
-    }
-  });
-}
-
-/**
- * 注册Azure TTS测试相关的IPC事件处理程序
- */
-function registerAzureTestHandlers() {
-  // 测试Azure TTS服务
-  ipcMain.handle("test-azure-tts", async (event, data) => {
-    try {
-      const { config } = data;
-      if (!config || !config.key || !config.region) {
-        return { success: false, error: "Azure配置不完整" };
-      }
-
-      const text = "azure配置成功";
-      // 设置测试参数
-      const settings = {
-        voice: "zh-CN-XiaoxiaoMultilingualNeural",
-        speed: 1.0,
-        emotion: "general",
-      };
-
-      // 使用Azure Provider调用play方法（直接播放不保存）
-      const azureProvider = require("../provider/azure");
-      const result = await azureProvider.play(text, settings, config);
-
-      return result;
-    } catch (error) {
-      console.error("测试Azure TTS出错:", error);
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : "测试时发生未知错误",
-      };
     }
   });
 }

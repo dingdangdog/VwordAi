@@ -13,9 +13,13 @@ const ChapterController = require("./server/controllers/ChapterController");
 const SettingsController = require("./server/controllers/SettingsController");
 const TTSController = require("./server/controllers/TTSController");
 const TTSService = require("./server/services/TTSService");
+const BiliLiveController = require("./server/controllers/BiliLiveController");
 
 // 设置基础目录
 let baseDir = "";
+
+// 注意: Azure TTS测试功能现通过 SettingsController 和 Settings 模型处理，
+// TTS测试整合到了设置模块，保持接口一致性
 
 /**
  * 设置基础目录
@@ -196,6 +200,57 @@ const resetSettings = async () => {
   }
 };
 
+// BiliLive 相关处理函数
+const connectBiliLive = async (roomId) => {
+  return await BiliLiveController.connect(roomId);
+};
+
+const disconnectBiliLive = async () => {
+  return await BiliLiveController.disconnect();
+};
+
+const getBiliLiveConfig = async () => {
+  return await BiliLiveController.getAllConfig();
+};
+
+const getDefaultBiliLiveConfig = async () => {
+  return await BiliLiveController.getDefaultConfig();
+};
+
+const saveBiliLiveConfig = async (configData) => {
+  return await BiliLiveController.saveBiliConfig(configData);
+};
+
+const saveBiliLiveTTSMode = async (mode) => {
+  return await BiliLiveController.saveTTSMode(mode);
+};
+
+const saveBiliLiveAzureConfig = async (configData) => {
+  return await BiliLiveController.saveAzureConfig(configData);
+};
+
+const saveBiliLiveAlibabaConfig = async (configData) => {
+  return await BiliLiveController.saveAlibabaConfig(configData);
+};
+
+const saveBiliLiveSovitsConfig = async (configData) => {
+  return await BiliLiveController.saveSovitsConfig(configData);
+};
+
+const testBiliLiveTTS = async (text) => {
+  return await BiliLiveController.testTTS(text);
+};
+
+// 获取可用的TTS声音列表
+const getBiliLiveAvailableVoices = async () => {
+  return await BiliLiveController.getAvailableVoices();
+};
+
+// 保存本地TTS配置
+const saveBiliLiveLocalConfig = async (voice) => {
+  return await BiliLiveController.saveLocalConfig(voice);
+};
+
 // 初始化
 init();
 
@@ -220,4 +275,17 @@ module.exports = {
   getSettings,
   updateSettings,
   resetSettings,
+  // BiliLive API
+  connectBiliLive,
+  disconnectBiliLive,
+  getBiliLiveConfig,
+  getDefaultBiliLiveConfig,
+  saveBiliLiveConfig,
+  saveBiliLiveTTSMode,
+  saveBiliLiveAzureConfig,
+  saveBiliLiveAlibabaConfig,
+  saveBiliLiveSovitsConfig,
+  testBiliLiveTTS,
+  getBiliLiveAvailableVoices,
+  saveBiliLiveLocalConfig,
 };

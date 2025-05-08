@@ -35,6 +35,11 @@ const router = createRouter({
       path: '/settings',
       name: 'settings',
       component: () => import('@/views/settings/SettingsView.vue')
+    },
+    {
+      path: '/bililive',
+      name: 'bililive',
+      component: () => import('@/views/BiliLive/Index.vue')
     }
   ]
 })

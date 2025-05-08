@@ -3,9 +3,29 @@
     <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
       Azure TTS 配置
     </h3>
-    <p class="text-gray-600 dark:text-gray-300 mb-6">
+    <p class="text-gray-600 dark:text-gray-300 mb-2">
       配置你的 Azure 语音服务相关信息。
     </p>
+
+    <!-- 状态显示 -->
+    <div v-if="providerStatus" class="mb-4 text-center">
+      <div v-if="providerStatus === 'unconfigured'" 
+           class="p-2 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-md">
+        <span class="text-sm">未配置</span>
+      </div>
+      <div v-else-if="providerStatus === 'untested'" 
+           class="p-2 bg-yellow-100 dark:bg-yellow-900 text-yellow-600 dark:text-yellow-300 rounded-md">
+        <span class="text-sm">已配置但未测试，请测试配置确保能正常工作</span>
+      </div>
+      <div v-else-if="providerStatus === 'success'" 
+           class="p-2 bg-green-100 dark:bg-green-900 text-green-600 dark:text-green-300 rounded-md">
+        <span class="text-sm">配置测试成功</span>
+      </div>
+      <div v-else-if="providerStatus === 'failure'" 
+           class="p-2 bg-red-100 dark:bg-red-900 text-red-600 dark:text-red-300 rounded-md">
+        <span class="text-sm">配置测试失败，请检查您的配置</span>
+      </div>
+    </div>
 
     <form @submit.prevent="saveForm" class="space-y-4">
       <div class="flex items-center space-x-2">
@@ -67,7 +87,7 @@
       <div class="flex justify-center space-x-2 mt-6">
         <button
           type="button"
-          class="btn btn-secondary"
+          class="btn bg-green-500 text-white hover:bg-green-600"
           @click="testConnection"
           :disabled="isTesting"
         >
@@ -82,8 +102,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, watchEffect, onMounted } from "vue";
+import { ref, reactive, watchEffect, onMounted, computed } from "vue";
 import { useToast } from "vue-toastification";
+import { useSettingsStore } from "@/stores/settings";
+import type { ServiceProviderStatus } from "@/types";
 
 const props = defineProps({
   provider: {
@@ -95,6 +117,7 @@ const props = defineProps({
 const emit = defineEmits(["update", "save", "test", "cancel"]);
 
 const toast = useToast();
+const settingsStore = useSettingsStore();
 const isSaving = ref(false);
 const isTesting = ref(false);
 
@@ -103,6 +126,11 @@ const form = reactive({
   key: "",
   region: "",
   endpoint: "",
+});
+
+// 计算当前配置状态
+const providerStatus = computed<ServiceProviderStatus>(() => {
+  return props.provider?.status || "unconfigured";
 });
 
 // 监听属性变化，更新表单数据
@@ -131,6 +159,17 @@ async function saveForm() {
     return;
   }
 
+  // 检查配置是否有变化
+  if (
+    props.provider &&
+    props.provider.key === form.key &&
+    props.provider.region === form.region &&
+    props.provider.endpoint === form.endpoint
+  ) {
+    toast.info("配置未发生变化，无需保存");
+    return;
+  }
+
   isSaving.value = true;
 
   try {
@@ -140,10 +179,13 @@ async function saveForm() {
       endpoint: form.endpoint,
     };
 
-    console.log("Saving Azure provider data:", JSON.stringify(data, null, 2));
-
     // 通知父组件更新
-    emit("save", data);
+    await emit("save", data);
+
+    // 提示用户测试配置
+    if (settingsStore.isProviderConfiguredButUntested("azure")) {
+      toast.info("配置已保存。建议您测试配置以确保它可以正常工作。");
+    }
 
     // 检查并输出表单状态日志，帮助调试
     setTimeout(() => {
@@ -175,8 +217,11 @@ async function testConnection() {
   isTesting.value = true;
 
   try {
-    // 通知父组件执行测试，不再等待返回值
-    emit("test", {
+    // 保存当前配置再测试
+    // await saveForm();
+    
+    // 通知父组件执行测试
+    const result = await emit("test", {
       key: form.key,
       region: form.region,
       endpoint: form.endpoint,

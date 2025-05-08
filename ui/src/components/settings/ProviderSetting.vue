@@ -5,7 +5,7 @@
       <div class="w-full md:w-64 flex-shrink-0">
         <div class="card p-4">
           <ul class="space-y-2">
-            <li v-for="provider in SUPPORTED_PROVIDERS" :key="provider.id">
+            <li v-for="provider in providers" :key="provider.id">
               <button
                 class="w-full flex items-center px-3 py-2 rounded-md transition-colors text-left"
                 :class="
@@ -24,6 +24,13 @@
                   "
                 />
                 <span>{{ provider.name }}</span>
+                <!-- 状态指示器 -->
+                <span class="ml-auto">
+                  <span v-if="provider.status === 'success'" class="w-3 h-3 rounded-full bg-green-500 inline-block"></span>
+                  <span v-else-if="provider.status === 'failure'" class="w-3 h-3 rounded-full bg-red-500 inline-block"></span>
+                  <span v-else-if="provider.status === 'untested'" class="w-3 h-3 rounded-full bg-yellow-500 inline-block"></span>
+                  <span v-else class="w-3 h-3 rounded-full bg-gray-300 dark:bg-gray-600 inline-block"></span>
+                </span>
               </button>
             </li>
           </ul>
@@ -87,11 +94,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from "vue";
+import { ref, onMounted, computed } from "vue";
 import { useToast } from "vue-toastification";
 import { SUPPORTED_PROVIDERS, useSettingsStore } from "@/stores/settings";
 import { ServerIcon, CloudIcon } from "@heroicons/vue/24/outline";
-import type { ServiceProviderType } from "@/types";
+import type { ServiceProviderType, ServiceProviderStatus } from "@/types";
 import AzureProviderForm from "./providers/AzureProviderForm.vue";
 import AliyunProviderForm from "./providers/AliyunProviderForm.vue";
 import BaiduProviderForm from "./providers/BaiduProviderForm.vue";
@@ -104,6 +111,19 @@ const providerData = ref<any>({});
 const toast = useToast();
 const settingsStore = useSettingsStore();
 const isLoading = ref(false);
+
+// 带状态的服务商列表
+const providers = computed(() => {
+  return SUPPORTED_PROVIDERS.map(provider => {
+    const config = settingsStore.getServiceProviderConfig(provider.type);
+    const status = settingsStore.getServiceProviderStatus(provider.type);
+    return {
+      ...provider,
+      status,
+      config
+    };
+  });
+});
 
 // 初始化
 onMounted(async () => {
@@ -133,6 +153,7 @@ function selectProvider(type: ServiceProviderType) {
     providerData.value = {
       // 不同服务商可能有不同的默认字段
       // 这里提供通用空配置
+      status: "unconfigured" as ServiceProviderStatus
     };
   }
 }
@@ -167,26 +188,19 @@ async function saveCurrentProvider(data?: Record<string, any>) {
     );
 
     if (success) {
+      // 重新加载设置以获取最新状态
+      await settingsStore.loadSettings();
+      
       // 更新本地状态以反映保存的配置
-      providerData.value = { ...providerConfig };
+      const updatedConfig = settingsStore.getServiceProviderConfig(type);
+      providerData.value = { ...updatedConfig };
+      
       toast.success("服务商配置保存成功");
 
-      console.log(`Provider ${type} config saved successfully`);
-      console.log(
-        `Current provider data:`,
-        JSON.stringify(providerData.value, null, 2)
-      );
-
-      // 为了确保数据被正确保存，重新加载一次设置
-      setTimeout(async () => {
-        await settingsStore.loadSettings();
-        // 检查是否正确保存
-        const savedConfig = settingsStore.getServiceProviderConfig(type);
-        console.log(
-          `Reloaded provider ${type} config:`,
-          JSON.stringify(savedConfig, null, 2)
-        );
-      }, 1000);
+      // 如果配置已完成但未测试，提示用户测试
+      if (settingsStore.isProviderConfiguredButUntested(type)) {
+        toast.info("建议您测试配置以确保能正常工作");
+      }
     } else {
       console.error(`Failed to save provider ${type} config`);
       toast.error("保存失败: 未知错误");
@@ -217,47 +231,74 @@ async function testCurrentProvider(providerConfig = null) {
 
   isLoading.value = true;
   try {
+    // 确保最新配置已保存
+    if (providerConfig) {
+      await saveCurrentProvider(providerConfig);
+    }
+    
     // 直接通过API调用测试
     let result;
     if (selectedProviderType.value === "azure") {
-      // 使用 play 函数直接播放
-      result = await window.api.tts.testAzureTTS({
-        config: configToTest,
-      });
+      // 使用统一的接口测试，测试结果会同步更新状态
+      result = await settingsStore.testServiceProviderConnection("azure");
     } else {
       // 其他服务商的测试逻辑
-      // 先保存配置
-      await settingsStore.updateServiceProvider(
-        selectedProviderType.value,
-        configToTest
-      );
       result = await settingsStore.testServiceProviderConnection(
         selectedProviderType.value
       );
     }
+    
+    console.log("Test result:", result);
+    
+    // 处理测试结果
+    if (result.success) {
+      toast.success("连接测试成功");
+      
+      // 重新加载设置以获取最新状态
+      await settingsStore.loadSettings();
+      
+      // 更新本地配置以反映测试结果
+      const updatedConfig = settingsStore.getServiceProviderConfig(selectedProviderType.value);
+      if (updatedConfig) {
+        providerData.value = { ...updatedConfig };
+      }
+      
+      // 处理音频播放 (仅适用于Azure)
+      if (result?.data?.audioData) {
+        // 创建音频元素并播放
+        const audioBlob = new Blob(
+          [new Uint8Array(result.data.audioData).buffer],
+          { type: "audio/wav" }
+        );
+        const audioUrl = URL.createObjectURL(audioBlob);
 
-    // 处理音频播放
-    if (result.success && result.data && result.data.audioData) {
-      // 创建音频元素并播放
-      const audioBlob = new Blob(
-        [new Uint8Array(result.data.audioData).buffer],
-        { type: "audio/wav" }
-      );
-      const audioUrl = URL.createObjectURL(audioBlob);
-
-      const audio = new Audio(audioUrl);
-      audio.onended = () => URL.revokeObjectURL(audioUrl);
-      audio.play();
-
-      toast.success("测试成功！正在播放测试音频...");
+        const audio = new Audio(audioUrl);
+        audio.onended = () => URL.revokeObjectURL(audioUrl);
+        audio.play();
+        
+        toast.info("正在播放测试音频...");
+      }
     } else {
-      toast.error(`测试失败: ${result.error || "未知错误"}`);
+      // 测试失败
+      toast.error(result?.error || result?.message || "连接测试失败");
+      
+      // 重新加载设置以获取最新状态
+      await settingsStore.loadSettings();
+      
+      // 更新本地配置以反映测试结果
+      const updatedConfig = settingsStore.getServiceProviderConfig(selectedProviderType.value);
+      if (updatedConfig) {
+        providerData.value = { ...updatedConfig };
+      }
     }
   } catch (error) {
-    console.error("测试失败:", error);
+    console.error("Test provider connection error:", error);
     toast.error(
       `测试失败: ${error instanceof Error ? error.message : "未知错误"}`
     );
+    
+    // 重新加载设置以获取最新状态
+    await settingsStore.loadSettings();
   } finally {
     isLoading.value = false;
   }

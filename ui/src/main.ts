@@ -14,6 +14,7 @@ app.use(Toast, {
   transition: "Vue-Toastification__bounce",
   maxToasts: 5,
   newestOnTop: true,
+  position: "bottom-left",
 });
 
 app.mount("#app");

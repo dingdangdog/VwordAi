@@ -167,6 +167,11 @@ async function synthesizeWithProvider(
       `[TTS] Using ${providerType} to synthesize ${chunk.length} characters to ${outputPath}`
     );
 
+    // For Aliyun provider, ensure the voice parameter is set correctly
+    if (providerType === "aliyun" && settings.model && !settings.voice) {
+      settings.voice = settings.model;
+    }
+
     // Call the corresponding provider's synthesize method
     const result = await provider.synthesize(
       chunk,
@@ -534,15 +539,15 @@ async function synthesizeChapter(chapterId) {
   } finally {
     // Cleanup code is commented out in the original
     console.log(`[TTS] Cleaning up temporary files`);
-    // tempAudioFiles.forEach((fp) => {
-    //   if (fp && fs.existsSync(fp)) {
-    //     try {
-    //       fs.removeSync(fp);
-    //     } catch (e) {
-    //       console.error(`[TTS] Failed to delete temporary file ${fp}:`, e);
-    //     }
-    //   }
-    // });
+    tempAudioFiles.forEach((fp) => {
+      if (fp && fs.existsSync(fp)) {
+        try {
+          fs.removeSync(fp);
+        } catch (e) {
+          console.error(`[TTS] Failed to delete temporary file ${fp}:`, e);
+        }
+      }
+    });
   }
 }
 

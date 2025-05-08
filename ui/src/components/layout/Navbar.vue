@@ -48,6 +48,18 @@
             >
               设置
             </a>
+            <a
+              href="#/bililive"
+              class="px-3 py-2 text-sm font-semibold"
+              :class="[
+                $route.path === '/bililive'
+                  ? 'bg-gradient-to-b from-blue-100/10 via-blue-500 to-blue-100/10 text-white'
+                  : 'text-gray-700 hover:bg-gradient-to-b hover:from-gray-100 hover:via-gray-200 hover:to-gray-100 dark:text-gray-300 dark:hover:from-gray-800 dark:hover:via-gray-700 dark:hover:to-gray-800',
+              ]"
+              @click.prevent="navigateTo('/bililive')"
+            >
+              Bili 直播
+            </a>
           </div>
         </div>
         <div class="flex items-center no-drag">

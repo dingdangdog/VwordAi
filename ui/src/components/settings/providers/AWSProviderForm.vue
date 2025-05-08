@@ -125,7 +125,7 @@
 <script setup lang="ts">
 import { ref, reactive, watchEffect } from "vue";
 import { useToast } from "vue-toastification";
-import { serviceProviderApi } from "@/utils/api";
+import { serviceProviderApi } from "@/api";
 import { useSettingsStore } from "@/stores/settings";
 
 const props = defineProps({

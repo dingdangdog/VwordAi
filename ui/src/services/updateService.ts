@@ -94,13 +94,29 @@ export function shouldCheckForUpdates(): boolean {
 
 /**
  * 更新服务
- * 提供检查更新和下载更新的功能
+ * 提供检查更新和下载更新功能
  */
 export class UpdateService {
+  private static instance: UpdateService;
+
+  private constructor() {
+    console.log("UpdateService 实例已创建");
+  }
+
+  /**
+   * 获取实例（单例模式）
+   */
+  public static getInstance(): UpdateService {
+    if (!UpdateService.instance) {
+      UpdateService.instance = new UpdateService();
+    }
+    return UpdateService.instance;
+  }
+
   /**
    * 检查更新
    */
-  static async checkForUpdates(): Promise<CheckResult> {
+  public async checkForUpdates(): Promise<CheckResult> {
     try {
       // 电子应用优先使用 electron-updater
       if (window.electron) {
@@ -137,7 +153,7 @@ export class UpdateService {
       }
 
       // 比较版本
-      const comparison = compareVersions(latestVersion, appConfig.version);
+      const comparison = this.compareVersions(latestVersion, appConfig.version);
       console.log(`版本比较: ${latestVersion} vs ${appConfig.version} = ${comparison}`);
 
       if (comparison > 0) {
@@ -146,8 +162,8 @@ export class UpdateService {
         let downloadUrl = "";
         if (data.assets && data.assets.length > 0) {
           // 查找针对当前平台的安装包
-          const platform = getOSPlatform();
-          const platformExtensions = getPlatformExtensions(platform);
+          const platform = this.getOSPlatform();
+          const platformExtensions = this.getPlatformExtensions(platform);
           
           const asset = data.assets.find(asset => 
             platformExtensions.some(ext => asset.name.toLowerCase().endsWith(ext))
@@ -185,7 +201,7 @@ export class UpdateService {
    * 下载更新
    * 注意：此方法仅在没有electron时作为备用方案
    */
-  static async downloadUpdate(updateInfo: UpdateInfo): Promise<boolean> {
+  public async downloadUpdate(updateInfo: UpdateInfo): Promise<boolean> {
     try {
       if (window.electron) {
         // 使用electron-updater下载
@@ -205,56 +221,60 @@ export class UpdateService {
       return false;
     }
   }
-}
 
-/**
- * 比较版本号
- * @param version1 第一个版本
- * @param version2 第二个版本
- * @returns 如果version1 > version2，返回1；如果version1 < version2，返回-1；相等返回0
- */
-function compareVersions(version1: string, version2: string): number {
-  const parts1 = version1.split(".").map(Number);
-  const parts2 = version2.split(".").map(Number);
+  /**
+   * 比较版本号
+   * @param version1 第一个版本
+   * @param version2 第二个版本
+   * @returns 如果version1 > version2，返回1；如果version1 < version2，返回-1；相等返回0
+   */
+  private compareVersions(version1: string, version2: string): number {
+    const parts1 = version1.split(".").map(Number);
+    const parts2 = version2.split(".").map(Number);
 
-  const maxLength = Math.max(parts1.length, parts2.length);
+    const maxLength = Math.max(parts1.length, parts2.length);
 
-  for (let i = 0; i < maxLength; i++) {
-    const part1 = i < parts1.length ? parts1[i] : 0;
-    const part2 = i < parts2.length ? parts2[i] : 0;
+    for (let i = 0; i < maxLength; i++) {
+      const part1 = i < parts1.length ? parts1[i] : 0;
+      const part2 = i < parts2.length ? parts2[i] : 0;
 
-    if (part1 > part2) return 1;
-    if (part1 < part2) return -1;
+      if (part1 > part2) return 1;
+      if (part1 < part2) return -1;
+    }
+
+    return 0;
   }
 
-  return 0;
-}
+  /**
+   * 获取当前操作系统平台
+   */
+  private getOSPlatform(): string {
+    const userAgent = navigator.userAgent.toLowerCase();
 
-/**
- * 获取当前操作系统平台
- */
-function getOSPlatform(): string {
-  const userAgent = navigator.userAgent.toLowerCase();
+    if (userAgent.includes("win")) return "windows";
+    if (userAgent.includes("mac")) return "macos";
+    if (userAgent.includes("linux")) return "linux";
 
-  if (userAgent.includes("win")) return "windows";
-  if (userAgent.includes("mac")) return "macos";
-  if (userAgent.includes("linux")) return "linux";
+    return "unknown";
+  }
 
-  return "unknown";
-}
-
-/**
- * 获取平台对应的安装包扩展名
- */
-function getPlatformExtensions(platform: string): string[] {
-  switch (platform) {
-    case "windows":
-      return ['.exe', '.msi', '.zip', '-win.zip'];
-    case "macos":
-      return ['.dmg', '.pkg', '.zip', '-mac.zip'];
-    case "linux":
-      return ['.deb', '.rpm', '.AppImage', '.tar.gz', '-linux.zip'];
-    default:
-      return ['.zip', '.exe', '.dmg', '.deb', '.AppImage'];
+  /**
+   * 获取平台对应的安装包扩展名
+   */
+  private getPlatformExtensions(platform: string): string[] {
+    switch (platform) {
+      case "windows":
+        return [".exe", ".msi", ".appx"];
+      case "macos":
+        return [".dmg", ".pkg", ".zip"];
+      case "linux":
+        return [".AppImage", ".deb", ".rpm", ".snap", ".tar.gz"];
+      default:
+        return [".zip", ".exe", ".dmg", ".deb"];
+    }
   }
 }
+
+// 创建单例实例
+const updateService = UpdateService.getInstance();
+export default updateService;

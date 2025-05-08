@@ -7,7 +7,7 @@ export const appConfig = {
   // 基本信息
   name: "文声AI",
   nameEn: "VwordAi",
-  version: "0.0.11",
+  version: "0.1.0",
   releaseDate: "2025年4月17日",
   copyright: "©2025 VwordAi.com 保留所有权利。",
   

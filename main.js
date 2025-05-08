@@ -138,6 +138,7 @@ app.whenReady().then(async () => {
   createWindow();
   setupAutoUpdater();
   setupDebugHandlers(); // 设置调试相关的IPC处理器
+  setupBiliLiveHandlers(); // 设置BiliLive相关的IPC处理器
 
   // 在开发环境下不检查更新
   if (process.env.NODE_ENV !== "development") {
@@ -389,5 +390,80 @@ function setupDebugHandlers() {
       uptime: Math.round(os.uptime() / 3600) + "小时",
       loadAvg: os.loadavg(),
     };
+  });
+
+  // 添加IPC通道监听器
+  ipcMain.handle("listen-to-channel", (event, channel, callback) => {
+    // 允许渲染进程监听特定的IPC通道
+    return true; // 实际处理在preload.js的listenToChannel函数中
+  });
+
+  // 移除IPC通道监听器
+  ipcMain.handle("remove-listener", (event, channel) => {
+    // 允许渲染进程移除特定IPC通道的监听器
+    return true; // 实际处理在preload.js的removeListener函数中
+  });
+}
+
+// 设置BiliLive相关的IPC处理器
+function setupBiliLiveHandlers() {
+  // BiliLive连接
+  ipcMain.handle("bililive:connect", async (event, roomId) => {
+    return await handler.connectBiliLive(roomId);
+  });
+
+  // BiliLive断开连接
+  ipcMain.handle("bililive:disconnect", async () => {
+    return await handler.disconnectBiliLive();
+  });
+
+  // 获取BiliLive配置
+  ipcMain.handle("bililive:get-config", async () => {
+    return await handler.getBiliLiveConfig();
+  });
+
+  // 获取默认BiliLive配置
+  ipcMain.handle("bililive:get-default-config", async () => {
+    return await handler.getDefaultBiliLiveConfig();
+  });
+
+  // 保存B站配置
+  ipcMain.handle("bililive:save-bili-config", async (event, data) => {
+    return await handler.saveBiliLiveConfig(data);
+  });
+
+  // 保存TTS模式
+  ipcMain.handle("bililive:save-tts-mode", async (event, mode) => {
+    return await handler.saveBiliLiveTTSMode(mode);
+  });
+
+  // 保存Azure配置
+  ipcMain.handle("bililive:save-azure-config", async (event, data) => {
+    return await handler.saveBiliLiveAzureConfig(data);
+  });
+
+  // 保存阿里云配置
+  ipcMain.handle("bililive:save-alibaba-config", async (event, data) => {
+    return await handler.saveBiliLiveAlibabaConfig(data);
+  });
+
+  // 保存SoVITS配置
+  ipcMain.handle("bililive:save-sovits-config", async (event, data) => {
+    return await handler.saveBiliLiveSovitsConfig(data);
+  });
+
+  // 测试TTS
+  ipcMain.handle("bililive:test-tts", async (event, text) => {
+    return await handler.testBiliLiveTTS(text);
+  });
+
+  // 获取可用的TTS声音列表
+  ipcMain.handle("bililive:get-available-voices", async () => {
+    return await handler.getBiliLiveAvailableVoices();
+  });
+
+  // 保存本地TTS配置
+  ipcMain.handle("bililive:save-local-config", async (event, voice) => {
+    return await handler.saveBiliLiveLocalConfig(voice);
   });
 }

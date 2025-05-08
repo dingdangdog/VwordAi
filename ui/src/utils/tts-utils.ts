@@ -1,7 +1,7 @@
 /**
  * TTS (Text-to-Speech) 工具函数
  */
-import { ttsApi } from "@/utils/api";
+import { ttsApi } from "@/api";
 
 /**
  * 将文本分割成适合TTS合成的片段
