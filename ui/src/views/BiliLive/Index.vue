@@ -729,11 +729,65 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ref, onMounted, onUnmounted, watch, nextTick, computed } from "vue";
 import { useToast } from "vue-toastification";
 import { useBiliLiveStore } from "@/stores/biliLive";
 import { useSettingsStore } from "@/stores/settings";
+import type {
+  BiliLiveConfig,
+  AzureConfig,
+  AlibabaConfig,
+  SoVITSConfig,
+} from "@/services/BiliLiveService";
+
+// 注意：由于Electron预加载脚本和TypeScript定义之间的差异，
+// 我们使用类型断言(as)来处理window.electron和window.api对象。
+// 为了确保类型安全，我们引入了必要的接口类型。
+
+// TypeScript interfaces
+interface Tab {
+  id: string;
+  name: string;
+}
+
+interface Room {
+  id: string | number;
+  name: string;
+}
+
+interface DanmakuMessage {
+  uname: string;
+  msg: string;
+}
+
+interface GiftMessage {
+  uname: string;
+  num: number;
+  giftName: string;
+}
+
+interface LikeMessage {
+  uname: string;
+  text: string;
+}
+
+interface EnterMessage {
+  uname: string;
+  medalLevel: number;
+}
+
+interface SystemMessage {
+  type: "info" | "warning" | "error" | "notice";
+  content: string;
+  timestamp: number;
+}
+
+interface DebugMessage {
+  cmd: string;
+  data: any;
+  timestamp: number;
+}
 
 // 获取toast通知实例
 const toast = useToast();
@@ -744,7 +798,7 @@ const settingsStore = useSettingsStore();
 // 状态变量
 const roomIdInput = ref("");
 const isConnected = ref(false);
-const currentRoomId = ref(null);
+const currentRoomId = ref<string | null>(null);
 const popularity = ref(0);
 const showAdvancedSettings = ref(false);
 const testText = ref("如果你能听到，说明语音配置成功。");
@@ -752,21 +806,21 @@ const showSessdataHelp = ref(false);
 const isSaving = ref(false);
 
 // 消息容器引用，用于自动滚动
-const messageContainer = ref(null);
+const messageContainer = ref<HTMLElement | null>(null);
 
 // 消息列表，按类型分类
 const messages = ref({
-  danmaku: [], // 弹幕
-  gift: [], // 礼物
-  like: [], // 点赞
-  enter: [], // 进场
-  system: [], // 系统消息
-  debug: [], // 调试消息
+  danmaku: [] as DanmakuMessage[],
+  gift: [] as GiftMessage[],
+  like: [] as LikeMessage[],
+  enter: [] as EnterMessage[],
+  system: [] as SystemMessage[],
+  debug: [] as DebugMessage[],
 });
 
 // 标签页设置
 const currentTab = ref("danmaku");
-const tabs = [
+const tabs: Tab[] = [
   { id: "danmaku", name: "弹幕" },
   { id: "gift", name: "礼物" },
   { id: "like", name: "点赞" },
@@ -776,7 +830,7 @@ const tabs = [
 ];
 
 // 配置
-const config = ref({
+const config = ref<BiliLiveConfig>({
   room_ids: [], // 历史房间ID
   ttsEnabled: true, // 是否启用TTS
   readDanmaku: true, // 是否播报弹幕
@@ -807,7 +861,7 @@ const ttsMode = computed({
     const provider = settingsStore.getServiceProviderConfig("azure");
     return provider && provider.enabled ? "azure" : "local";
   },
-  set: (value) => {
+  set: (value: string) => {
     // 确保值在允许的范围内
     if (!["local", "azure", "alibaba", "sovits"].includes(value)) {
       console.warn(`Invalid TTS mode: ${value}, defaulting to local`);
@@ -839,7 +893,7 @@ const ttsMode = computed({
       .then(() => {
         console.log(`TTS mode updated to: ${value}`);
       })
-      .catch((err) => {
+      .catch((err: Error) => {
         console.error("Failed to save TTS mode:", err);
       });
   },
@@ -861,14 +915,14 @@ const azureConfig = computed({
 });
 
 // 阿里云和SoVITS配置保持原样，但可以在将来也集成到settings中
-const alibabaConfig = ref({
+const alibabaConfig = ref<AlibabaConfig>({
   alibaba_appkey: "",
   alibaba_token: "",
   alibaba_model: "xiaoyun",
   speed: 100,
 });
 
-const sovitsConfig = ref({
+const sovitsConfig = ref<SoVITSConfig>({
   sovits_host: "http://127.0.0.1:5000/tts",
   sovits_model: "",
   sovits_language: "auto",
@@ -905,11 +959,12 @@ async function loadConfig() {
     await settingsStore.loadSettings();
 
     // 加载B站直播特有配置
-    const response = await window.api.biliLive.getConfig();
+    const api = window.api as any;
+    const response = await api.biliLive.getConfig();
     if (response.success && response.data) {
       if (response.data.room_ids) {
         // 将所有房间ID统一为字符串类型
-        config.value.room_ids = response.data.room_ids.map((room) => ({
+        config.value.room_ids = response.data.room_ids.map((room: any) => ({
           id: String(room.id),
           name: room.name || `房间 ${room.id}`,
         }));
@@ -936,16 +991,17 @@ async function loadConfig() {
       }
     } else {
       // 如果配置加载失败，使用默认配置
-      const defaultResponse = await window.api.biliLive.getDefaultConfig();
+      const defaultResponse = await api.biliLive.getDefaultConfig();
       if (defaultResponse.success && defaultResponse.data) {
         config.value = { ...defaultResponse.data.bili };
         alibabaConfig.value = { ...defaultResponse.data.alibaba };
         sovitsConfig.value = { ...defaultResponse.data.sovits };
       }
     }
-  } catch (err) {
-    console.error("Failed to load config:", err);
-    addSystemMessage("error", "加载配置失败: " + err.message);
+  } catch (err: unknown) {
+    const error = err as Error;
+    console.error("Failed to load config:", error);
+    addSystemMessage("error", "加载配置失败: " + error.message);
   }
 }
 
@@ -997,9 +1053,10 @@ async function saveTTSMode() {
     } else {
       toast.error("保存TTS模式失败: " + response.error);
     }
-  } catch (err) {
-    console.error("Failed to save TTS mode:", err);
-    toast.error("保存TTS模式失败: " + err.message);
+  } catch (err: unknown) {
+    const error = err as Error;
+    console.error("Failed to save TTS mode:", error);
+    toast.error("保存TTS模式失败: " + error.message);
   }
 }
 
@@ -1028,9 +1085,10 @@ async function saveAzureConfig() {
     } else {
       toast.error("保存Azure配置失败: " + response.error);
     }
-  } catch (err) {
-    console.error("Failed to save Azure config:", err);
-    toast.error("保存Azure配置失败: " + err.message);
+  } catch (err: unknown) {
+    const error = err as Error;
+    console.error("Failed to save Azure config:", error);
+    toast.error("保存Azure配置失败: " + error.message);
   }
 }
 
@@ -1043,9 +1101,10 @@ async function saveAlibabaConfig() {
     } else {
       toast.error("保存阿里云配置失败: " + response.error);
     }
-  } catch (err) {
-    console.error("Failed to save Alibaba config:", err);
-    toast.error("保存阿里云配置失败: " + err.message);
+  } catch (err: unknown) {
+    const error = err as Error;
+    console.error("Failed to save Alibaba config:", error);
+    toast.error("保存阿里云配置失败: " + error.message);
   }
 }
 
@@ -1058,9 +1117,10 @@ async function saveSovitsConfig() {
     } else {
       toast.error("保存SoVITS配置失败: " + response.error);
     }
-  } catch (err) {
-    console.error("Failed to save SoVITS config:", err);
-    toast.error("保存SoVITS配置失败: " + err.message);
+  } catch (err: unknown) {
+    const error = err as Error;
+    console.error("Failed to save SoVITS config:", error);
+    toast.error("保存SoVITS配置失败: " + error.message);
   }
 }
 
@@ -1075,14 +1135,15 @@ async function testTTS() {
     if (!response.success) {
       toast.error("测试TTS失败: " + response.error);
     }
-  } catch (err) {
-    console.error("Failed to test TTS:", err);
-    toast.error("测试TTS失败: " + err.message);
+  } catch (err: unknown) {
+    const error = err as Error;
+    console.error("Failed to test TTS:", error);
+    toast.error("测试TTS失败: " + error.message);
   }
 }
 
 // 选择历史房间
-function selectRoom(room) {
+function selectRoom(room: Room) {
   roomIdInput.value = room.id.toString();
 }
 
@@ -1098,9 +1159,10 @@ async function connectToRoom() {
     if (!response.success) {
       toast.error("连接失败: " + response.error);
     }
-  } catch (err) {
-    console.error("Connect failed:", err);
-    toast.error("连接失败: " + err.message);
+  } catch (err: unknown) {
+    const error = err as Error;
+    console.error("Connect failed:", error);
+    toast.error("连接失败: " + error.message);
   }
 }
 
@@ -1111,14 +1173,18 @@ async function disconnect() {
     if (!response.success) {
       toast.error("断开连接失败: " + response.error);
     }
-  } catch (err) {
-    console.error("Disconnect failed:", err);
-    toast.error("断开连接失败: " + err.message);
+  } catch (err: unknown) {
+    const error = err as Error;
+    console.error("Disconnect failed:", error);
+    toast.error("断开连接失败: " + error.message);
   }
 }
 
 // 添加系统消息
-function addSystemMessage(type, content) {
+function addSystemMessage(
+  type: "info" | "warning" | "error" | "notice",
+  content: string
+) {
   messages.value.system.unshift({
     type,
     content,
@@ -1132,7 +1198,7 @@ function addSystemMessage(type, content) {
 }
 
 // 添加弹幕消息
-function addDanmakuMessage(data) {
+function addDanmakuMessage(data: DanmakuMessage) {
   messages.value.danmaku.unshift(data);
   if (messages.value.danmaku.length > 100) {
     messages.value.danmaku.pop();
@@ -1140,7 +1206,7 @@ function addDanmakuMessage(data) {
 }
 
 // 添加礼物消息
-function addGiftMessage(data) {
+function addGiftMessage(data: GiftMessage) {
   messages.value.gift.unshift(data);
   if (messages.value.gift.length > 100) {
     messages.value.gift.pop();
@@ -1148,7 +1214,7 @@ function addGiftMessage(data) {
 }
 
 // 添加点赞消息
-function addLikeMessage(data) {
+function addLikeMessage(data: LikeMessage) {
   messages.value.like.unshift(data);
   if (messages.value.like.length > 100) {
     messages.value.like.pop();
@@ -1156,7 +1222,7 @@ function addLikeMessage(data) {
 }
 
 // 添加进场消息
-function addEnterMessage(data) {
+function addEnterMessage(data: EnterMessage) {
   messages.value.enter.unshift(data);
   if (messages.value.enter.length > 100) {
     messages.value.enter.pop();
@@ -1164,7 +1230,7 @@ function addEnterMessage(data) {
 }
 
 // Add debug message
-function addDebugMessage(data) {
+function addDebugMessage(data: any) {
   // Add message to debug list
   messages.value.debug.unshift({
     cmd: data.cmd || "UNKNOWN",
@@ -1180,8 +1246,14 @@ function addDebugMessage(data) {
 
 // IPC 监听器
 function setupListeners() {
+  // 使用类型断言处理 electron API
+  const electron = window.electron as unknown as {
+    listenToChannel: (channel: string, callback: (data: any) => void) => void;
+    removeListener: (channel: string) => void;
+  };
+
   // 连接状态
-  window.electron.listenToChannel("bililive-connection-status", (data) => {
+  electron.listenToChannel("bililive-connection-status", (data: any) => {
     isConnected.value = data.connected;
     currentRoomId.value = data.roomId;
 
@@ -1203,6 +1275,7 @@ function setupListeners() {
         toast.success(`已连接到新房间: ${data.roomId}`);
 
         console.log(`将房间ID ${roomIdStr} 添加到历史记录`);
+        // 确保id是字符串类型
         config.value.room_ids.unshift({
           id: roomIdStr,
           name: `房间 ${roomIdStr}`,
@@ -1224,87 +1297,96 @@ function setupListeners() {
   });
 
   // 人气值
-  window.electron.listenToChannel("bililive-popularity", (data) => {
+  electron.listenToChannel("bililive-popularity", (data: number) => {
     popularity.value = data;
   });
 
   // 弹幕
-  window.electron.listenToChannel("bililive-danmaku", (data) => {
+  electron.listenToChannel("bililive-danmaku", (data: DanmakuMessage) => {
     console.log("Received danmaku:", data);
     addDanmakuMessage(data);
   });
 
   // 礼物
-  window.electron.listenToChannel("bililive-gift", (data) => {
+  electron.listenToChannel("bililive-gift", (data: GiftMessage) => {
     addGiftMessage(data);
   });
 
   // 点赞
-  window.electron.listenToChannel("bililive-like", (data) => {
+  electron.listenToChannel("bililive-like", (data: LikeMessage) => {
     addLikeMessage(data);
   });
 
   // 进场
-  window.electron.listenToChannel("bililive-enter", (data) => {
+  electron.listenToChannel("bililive-enter", (data: EnterMessage) => {
     addEnterMessage(data);
   });
 
   // 系统消息
-  window.electron.listenToChannel("bililive-message", (data) => {
-    // 将所有系统消息添加到消息历史列表中
-    addSystemMessage(data.type, data.content);
+  electron.listenToChannel(
+    "bililive-message",
+    (data: {
+      type: "info" | "warning" | "error" | "notice";
+      content: string;
+    }) => {
+      // 将所有系统消息添加到消息历史列表中
+      addSystemMessage(data.type, data.content);
 
-    // 过滤掉一些会导致重复通知的消息类型
-    const shouldSkipToast = (content) => {
-      // 跳过已经在其它地方处理过的连接状态消息
-      if (
-        content.includes("Connection") ||
-        content.includes("连接") ||
-        content.includes("WebSocket") ||
-        content.includes("room")
-      ) {
-        return true;
-      }
-      return false;
-    };
+      // 过滤掉一些会导致重复通知的消息类型
+      const shouldSkipToast = (content: string) => {
+        // 跳过已经在其它地方处理过的连接状态消息
+        if (
+          content.includes("Connection") ||
+          content.includes("连接") ||
+          content.includes("WebSocket") ||
+          content.includes("room")
+        ) {
+          return true;
+        }
+        return false;
+      };
 
-    // 根据消息类型选择性地显示toast通知
-    if (!shouldSkipToast(data.content)) {
-      switch (data.type) {
-        case "info":
-          toast.info(data.content);
-          break;
-        case "warning":
-          toast.warning(data.content);
-          break;
-        case "error":
-          toast.error(data.content);
-          break;
-        case "notice":
-          toast.info(data.content);
-          break;
-        default:
-          toast.info(data.content);
+      // 根据消息类型选择性地显示toast通知
+      if (!shouldSkipToast(data.content)) {
+        switch (data.type) {
+          case "info":
+            toast.info(data.content);
+            break;
+          case "warning":
+            toast.warning(data.content);
+            break;
+          case "error":
+            toast.error(data.content);
+            break;
+          case "notice":
+            toast.info(data.content);
+            break;
+          default:
+            toast.info(data.content);
+        }
       }
     }
-  });
+  );
 
   // TTS状态（正在播放）
-  window.electron.listenToChannel("bililive-tts-status", (data) => {
-    // 可以显示当前正在播放的语音内容
-    if (data.speaking && data.text) {
-      console.log("Speaking:", data.text);
+  electron.listenToChannel(
+    "bililive-tts-status",
+    (data: { speaking: boolean; text: string }) => {
+      // 可以显示当前正在播放的语音内容
+      if (data.speaking && data.text) {
+        console.log("Speaking:", data.text);
+      }
     }
-  });
+  );
 
   // 新增: 原始消息监听（用于调试）
-  window.electron.listenToChannel("bililive-raw-message", (data) => {
+  electron.listenToChannel("bililive-raw-message", (data: any) => {
     console.log("Received raw message:", data);
     addDebugMessage(data);
   });
 
   // 新增: 调试消息监听
-  window.electron.listenToChannel("bililive-debug-message", (data) => {
+  electron.listenToChannel("bililive-debug-message", (data: any) => {
     console.log("Received debug message:", data);
     addDebugMessage(data);
   });
@@ -1312,16 +1394,22 @@ function setupListeners() {
 
 // 移除监听器
 function removeListeners() {
-  window.electron.removeListener("bililive-connection-status");
-  window.electron.removeListener("bililive-popularity");
-  window.electron.removeListener("bililive-danmaku");
-  window.electron.removeListener("bililive-gift");
-  window.electron.removeListener("bililive-like");
-  window.electron.removeListener("bililive-enter");
-  window.electron.removeListener("bililive-message");
-  window.electron.removeListener("bililive-tts-status");
-  window.electron.removeListener("bililive-raw-message");
-  window.electron.removeListener("bililive-debug-message");
+  // 使用类型断言处理 electron API
+  const electron = window.electron as unknown as {
+    listenToChannel: (channel: string, callback: (data: any) => void) => void;
+    removeListener: (channel: string) => void;
+  };
+
+  electron.removeListener("bililive-connection-status");
+  electron.removeListener("bililive-popularity");
+  electron.removeListener("bililive-danmaku");
+  electron.removeListener("bililive-gift");
+  electron.removeListener("bililive-like");
+  electron.removeListener("bililive-enter");
+  electron.removeListener("bililive-message");
+  electron.removeListener("bililive-tts-status");
+  electron.removeListener("bililive-raw-message");
+  electron.removeListener("bililive-debug-message");
 }
 
 onMounted(async () => {
@@ -1333,9 +1421,10 @@ onMounted(async () => {
     setupListeners();
 
     // toast.success("Bili直播弹幕助手已加载");
-  } catch (err) {
-    console.error("初始化失败:", err);
-    toast.error("初始化失败: " + err.message);
+  } catch (err: unknown) {
+    const error = err as Error;
+    console.error("初始化失败:", error);
+    toast.error("初始化失败: " + error.message);
   }
 });
 
@@ -1347,15 +1436,17 @@ onUnmounted(() => {
 // Additional methods for local TTS
 async function saveLocalConfig() {
   try {
-    const response = await biliLiveStore.saveLocalConfig();
+    // 这里传一个空字符串，因为方法需要的是string类型参数
+    const response = await biliLiveStore.saveLocalConfig("");
     if (response.success) {
       toast.success("本地TTS配置已保存");
     } else {
       toast.error("保存本地TTS配置失败: " + response.error);
     }
-  } catch (err) {
-    console.error("Failed to save local config:", err);
-    toast.error("保存本地TTS配置失败: " + err.message);
+  } catch (err: unknown) {
+    const error = err as Error;
+    console.error("Failed to save local config:", error);
+    toast.error("保存本地TTS配置失败: " + error.message);
   }
 }
 

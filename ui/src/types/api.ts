@@ -27,7 +27,7 @@ export interface VoiceModel {
   code: string;
   name: string;
   provider: string;
-  language: string;
+  lang: string;
   gender?: string;
   description?: string;
   emotions?: Array<{
