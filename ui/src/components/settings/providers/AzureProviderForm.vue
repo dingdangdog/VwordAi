@@ -9,20 +9,22 @@
 
     <!-- 状态显示 -->
     <div v-if="providerStatus" class="mb-4 text-center">
-      <div v-if="providerStatus === 'unconfigured'" 
-           class="p-2 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-md">
-        <span class="text-sm">未配置</span>
-      </div>
-      <div v-else-if="providerStatus === 'untested'" 
-           class="p-2 bg-yellow-100 dark:bg-yellow-900 text-yellow-600 dark:text-yellow-300 rounded-md">
+      <div
+        v-if="providerStatus === 'untested'"
+        class="p-2 bg-yellow-100 dark:bg-yellow-900 text-yellow-600 dark:text-yellow-300 rounded-md"
+      >
         <span class="text-sm">已配置但未测试，请测试配置确保能正常工作</span>
       </div>
-      <div v-else-if="providerStatus === 'success'" 
-           class="p-2 bg-green-100 dark:bg-green-900 text-green-600 dark:text-green-300 rounded-md">
+      <div
+        v-else-if="providerStatus === 'success'"
+        class="p-2 bg-green-100 dark:bg-green-900 text-green-600 dark:text-green-300 rounded-md"
+      >
         <span class="text-sm">配置测试成功</span>
       </div>
-      <div v-else-if="providerStatus === 'failure'" 
-           class="p-2 bg-red-100 dark:bg-red-900 text-red-600 dark:text-red-300 rounded-md">
+      <div
+        v-else-if="providerStatus === 'failure'"
+        class="p-2 bg-red-100 dark:bg-red-900 text-red-600 dark:text-red-300 rounded-md"
+      >
         <span class="text-sm">配置测试失败，请检查您的配置</span>
       </div>
     </div>
@@ -144,7 +146,7 @@ watchEffect(() => {
 
 // 组件挂载时记录当前配置
 onMounted(() => {
-  // console.log("AzureProviderForm mounted with provider:", props.provider);
+  console.log("AzureProviderForm mounted with provider:", props.provider);
 });
 
 // 保存表单
@@ -219,7 +221,7 @@ async function testConnection() {
   try {
     // 保存当前配置再测试
     // await saveForm();
-    
+
     // 通知父组件执行测试
     const result = await emit("test", {
       key: form.key,

@@ -105,6 +105,7 @@ export const useSettingsStore = defineStore("settings", () => {
 
     try {
       const response = await settingsApi.getAll();
+      console.log("loadSettings response:", response);
       if (response.success && response.data) {
         settings.value = response.data;
 
