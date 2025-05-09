@@ -69,7 +69,7 @@ const DEFAULT_BILIVE_CONFIG = {
 
   // TTS模式
   tts: {
-    mode: "local", // 'local', 'azure', 'alibaba', 'sovits'
+    mode: "local", // 'local', 'azure', 'aliyun', 'sovits'
 
     // Azure TTS配置
     azure: {
@@ -201,7 +201,7 @@ async function saveBiliveConfig(configData) {
 
 /**
  * Save TTS mode
- * @param {string} mode 'local' | 'azure' | 'alibaba' | 'sovits'
+ * @param {string} mode 'local' | 'azure' | 'aliyun' | 'sovits'
  */
 async function saveTTSMode(mode) {
   try {
@@ -1146,7 +1146,7 @@ async function processSpeechQueue() {
       case "azure":
         await azureTTS(text);
         break;
-      case "alibaba":
+      case "aliyun":
         await alibabaTTS(text);
         break;
       case "sovits":

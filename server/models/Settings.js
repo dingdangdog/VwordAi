@@ -92,7 +92,7 @@ class Settings {
    */
   static updateSettings(settingsData) {
     try {
-      console.log("Update Settings:", JSON.stringify(settingsData, null, 2));
+      // console.log("Update Settings:", JSON.stringify(settingsData, null, 2));
       
       // 获取当前所有设置
       const currentSettings = this.getAllSettings();

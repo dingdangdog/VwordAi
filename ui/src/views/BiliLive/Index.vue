@@ -374,8 +374,8 @@
               >
                 <option value="local">本地默认语音</option>
                 <option value="azure">微软Azure</option>
-                <option value="alibaba">阿里云Aliyun</option>
-                <!-- <option value="alibaba">阿里云 TTS</option>
+                <option value="aliyun">阿里云Aliyun</option>
+                <!-- <option value="aliyun">阿里云 TTS</option>
                 <option value="sovits">SoVITS</option> -->
               </select>
             </div>
@@ -531,7 +531,7 @@
                 </div>
               </div>
 
-              <div v-if="ttsMode === 'alibaba'" class="space-y-3">
+              <div v-if="ttsMode === 'aliyun'" class="space-y-3">
                 <div>
                   <label class="block text-sm font-medium text-gray-700 mb-1"
                     >AppKey</label
@@ -852,7 +852,7 @@ const ttsMode = computed({
     // 检查是否有有效值
     if (
       biliTTSMode &&
-      ["local", "azure", "alibaba", "sovits"].includes(biliTTSMode)
+      ["local", "azure", "aliyun", "sovits"].includes(biliTTSMode)
     ) {
       return biliTTSMode;
     }
@@ -863,7 +863,7 @@ const ttsMode = computed({
   },
   set: (value: string) => {
     // 确保值在允许的范围内
-    if (!["local", "azure", "alibaba", "sovits"].includes(value)) {
+    if (!["local", "azure", "aliyun", "sovits"].includes(value)) {
       console.warn(`Invalid TTS mode: ${value}, defaulting to local`);
       value = "local";
     }

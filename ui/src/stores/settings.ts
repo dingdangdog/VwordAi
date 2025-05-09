@@ -194,12 +194,12 @@ export const useSettingsStore = defineStore("settings", () => {
       if (type === "azure") {
         response = await window.electron.invoke(
           "settings:test-azure-connection",
-          config
+          { ...config }
         );
       } else if (type === "aliyun") {
         response = await window.electron.invoke(
           "settings:test-aliyun-connection",
-          config
+          { ...config }
         );
       } else {
         // For other providers

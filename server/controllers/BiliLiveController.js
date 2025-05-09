@@ -60,7 +60,7 @@ async function saveBiliConfig(configData) {
 
 /**
  * 保存TTS模式
- * @param {string} mode TTS模式 ('local'|'azure'|'alibaba'|'sovits')
+ * @param {string} mode TTS模式 ('local'|'azure'|'aliyun'|'sovits')
  */
 async function saveTTSMode(mode) {
   try {
