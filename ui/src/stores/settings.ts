@@ -179,7 +179,6 @@ export const useSettingsStore = defineStore("settings", () => {
       if (!settings.value) {
         await loadSettings();
       }
-
       const config = getServiceProviderConfig(type);
       if (!config) {
         return {
@@ -188,23 +187,11 @@ export const useSettingsStore = defineStore("settings", () => {
         };
       }
 
-      let response;
-
-      // Use specific test endpoints for different providers
-      if (type === "azure") {
-        response = await window.electron.invoke(
-          "settings:test-azure-connection",
-          { ...config }
-        );
-      } else if (type === "aliyun") {
-        response = await window.electron.invoke(
-          "settings:test-aliyun-connection",
-          { ...config }
-        );
-      } else {
-        // For other providers
-        response = await settingsApi.testProviderConnection(type);
-      }
+      let response = await window.electron.invoke(
+        "settings:test-provider-connection",
+        type,
+        { ...config }
+      );
 
       if (response.success && response.data) {
         // 更新本地状态
@@ -230,6 +217,7 @@ export const useSettingsStore = defineStore("settings", () => {
         };
       }
     } catch (error) {
+      console.error("Failed to test service provider connection:", error);
       // 更新本地状态
       if (settings.value && settings.value[type]) {
         settings.value[type].status = "failure";

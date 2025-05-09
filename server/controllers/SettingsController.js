@@ -95,35 +95,17 @@ function init() {
   );
 
   // 测试服务商连接
-  ipcMain.handle("test-provider-connection", async (event, provider) => {
-    try {
-      return Settings.testProviderConnection(provider);
-    } catch (err) {
-      console.error("测试服务商连接失败:", err);
-      return error(err.message);
+  ipcMain.handle(
+    "settings:test-provider-connection",
+    async (event, provider, config) => {
+      try {
+        return Settings.testProviderConnection(provider, config);
+      } catch (err) {
+        console.error("测试服务商连接失败:", err);
+        return error(err.message);
+      }
     }
-  });
-
-  // TTS服务测试配置 - 转发到设置控制器
-  ipcMain.handle("tts:test-provider-connection", async (event, provider) => {
-    try {
-      return Settings.testProviderConnection(provider);
-    } catch (err) {
-      console.error("TTS服务商连接测试失败:", err);
-      return error(err.message);
-    }
-  });
-
-  // 测试Azure TTS服务
-  ipcMain.handle("test-azure-tts", async (event, data) => {
-    try {
-      const { config } = data;
-      return await Settings.testAzureTTS(config);
-    } catch (err) {
-      console.error("测试Azure TTS出错:", err);
-      return error(err.message);
-    }
-  });
+  );
 }
 
 module.exports = {

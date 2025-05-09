@@ -144,7 +144,7 @@ watchEffect(() => {
 
 // 组件挂载时记录当前配置
 onMounted(() => {
-  console.log("AzureProviderForm mounted with provider:", props.provider);
+  // console.log("AzureProviderForm mounted with provider:", props.provider);
 });
 
 // 保存表单

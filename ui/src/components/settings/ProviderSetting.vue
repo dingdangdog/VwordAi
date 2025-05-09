@@ -26,10 +26,22 @@
                 <span>{{ provider.name }}</span>
                 <!-- 状态指示器 -->
                 <span class="ml-auto">
-                  <span v-if="provider.status === 'success'" class="w-3 h-3 rounded-full bg-green-500 inline-block"></span>
-                  <span v-else-if="provider.status === 'failure'" class="w-3 h-3 rounded-full bg-red-500 inline-block"></span>
-                  <span v-else-if="provider.status === 'untested'" class="w-3 h-3 rounded-full bg-yellow-500 inline-block"></span>
-                  <span v-else class="w-3 h-3 rounded-full bg-gray-300 dark:bg-gray-600 inline-block"></span>
+                  <span
+                    v-if="provider.status === 'success'"
+                    class="w-3 h-3 rounded-full bg-green-500 inline-block"
+                  ></span>
+                  <span
+                    v-else-if="provider.status === 'failure'"
+                    class="w-3 h-3 rounded-full bg-red-500 inline-block"
+                  ></span>
+                  <span
+                    v-else-if="provider.status === 'untested'"
+                    class="w-3 h-3 rounded-full bg-yellow-500 inline-block"
+                  ></span>
+                  <span
+                    v-else
+                    class="w-3 h-3 rounded-full bg-gray-300 dark:bg-gray-600 inline-block"
+                  ></span>
                 </span>
               </button>
             </li>
@@ -114,13 +126,13 @@ const isLoading = ref(false);
 
 // 带状态的服务商列表
 const providers = computed(() => {
-  return SUPPORTED_PROVIDERS.map(provider => {
+  return SUPPORTED_PROVIDERS.map((provider) => {
     const config = settingsStore.getServiceProviderConfig(provider.type);
     const status = settingsStore.getServiceProviderStatus(provider.type);
     return {
       ...provider,
       status,
-      config
+      config,
     };
   });
 });
@@ -153,7 +165,7 @@ function selectProvider(type: ServiceProviderType) {
     providerData.value = {
       // 不同服务商可能有不同的默认字段
       // 这里提供通用空配置
-      status: "unconfigured" as ServiceProviderStatus
+      status: "unconfigured" as ServiceProviderStatus,
     };
   }
 }
@@ -190,11 +202,11 @@ async function saveCurrentProvider(data?: Record<string, any>) {
     if (success) {
       // 重新加载设置以获取最新状态
       await settingsStore.loadSettings();
-      
+
       // 更新本地状态以反映保存的配置
       const updatedConfig = settingsStore.getServiceProviderConfig(type);
       providerData.value = { ...updatedConfig };
-      
+
       toast.success("服务商配置保存成功");
 
       // 如果配置已完成但未测试，提示用户测试
@@ -235,34 +247,29 @@ async function testCurrentProvider(providerConfig = null) {
     if (providerConfig) {
       await saveCurrentProvider(providerConfig);
     }
-    
+
     // 直接通过API调用测试
-    let result;
-    if (selectedProviderType.value === "azure") {
-      // 使用统一的接口测试，测试结果会同步更新状态
-      result = await settingsStore.testServiceProviderConnection("azure");
-    } else {
-      // 其他服务商的测试逻辑
-      result = await settingsStore.testServiceProviderConnection(
-        selectedProviderType.value
-      );
-    }
-    
-    console.log("Test result:", result);
-    
+    let result = await settingsStore.testServiceProviderConnection(
+      selectedProviderType.value
+    );
+
+    console.log("Test result:", result, selectedProviderType.value);
+
     // 处理测试结果
     if (result.success) {
       toast.success("连接测试成功");
-      
+
       // 重新加载设置以获取最新状态
       await settingsStore.loadSettings();
-      
+
       // 更新本地配置以反映测试结果
-      const updatedConfig = settingsStore.getServiceProviderConfig(selectedProviderType.value);
+      const updatedConfig = settingsStore.getServiceProviderConfig(
+        selectedProviderType.value
+      );
       if (updatedConfig) {
         providerData.value = { ...updatedConfig };
       }
-      
+
       // 处理音频播放 (仅适用于Azure)
       if (result?.data?.audioData) {
         // 创建音频元素并播放
@@ -275,18 +282,20 @@ async function testCurrentProvider(providerConfig = null) {
         const audio = new Audio(audioUrl);
         audio.onended = () => URL.revokeObjectURL(audioUrl);
         audio.play();
-        
-        toast.info("正在播放测试音频...");
+
+        // toast.info("正在播放测试音频...");
       }
     } else {
       // 测试失败
       toast.error(result?.error || result?.message || "连接测试失败");
-      
+
       // 重新加载设置以获取最新状态
       await settingsStore.loadSettings();
-      
+
       // 更新本地配置以反映测试结果
-      const updatedConfig = settingsStore.getServiceProviderConfig(selectedProviderType.value);
+      const updatedConfig = settingsStore.getServiceProviderConfig(
+        selectedProviderType.value
+      );
       if (updatedConfig) {
         providerData.value = { ...updatedConfig };
       }
@@ -296,7 +305,7 @@ async function testCurrentProvider(providerConfig = null) {
     toast.error(
       `测试失败: ${error instanceof Error ? error.message : "未知错误"}`
     );
-    
+
     // 重新加载设置以获取最新状态
     await settingsStore.loadSettings();
   } finally {
