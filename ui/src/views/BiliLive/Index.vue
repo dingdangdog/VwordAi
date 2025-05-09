@@ -1046,23 +1046,12 @@ async function loadConfig() {
         sovitsConfig.value = response.data.tts.sovits;
       }
     } else {
-      // 如果配置加载失败，使用默认配置
-      const defaultResponse = await api.biliLive.getDefaultConfig();
-      if (defaultResponse.success && defaultResponse.data) {
-        config.value = { ...defaultResponse.data.bili };
-        // 特殊处理：将默认tts配置添加到config.value中
-        if (defaultResponse.data.bili.tts) {
-          (config.value as any).tts = defaultResponse.data.bili.tts;
-        }
-
-        if (defaultResponse.data.alibaba) {
-          alibabaConfig.value = { ...defaultResponse.data.alibaba };
-        }
-
-        if (defaultResponse.data.sovits) {
-          sovitsConfig.value = { ...defaultResponse.data.sovits };
-        }
-      }
+      // 配置加载失败，显示错误
+      console.error("Failed to load config:", response.error);
+      addSystemMessage(
+        "error",
+        "加载配置失败: " + (response.error || "未知错误")
+      );
     }
   } catch (err: unknown) {
     const error = err as Error;

@@ -213,10 +213,6 @@ const getBiliLiveConfig = async () => {
   return await BiliLiveController.getAllConfig();
 };
 
-const getDefaultBiliLiveConfig = async () => {
-  return await BiliLiveController.getDefaultConfig();
-};
-
 const saveBiliLiveConfig = async (configData) => {
   return await BiliLiveController.saveBiliConfig(configData);
 };
@@ -279,7 +275,6 @@ module.exports = {
   connectBiliLive,
   disconnectBiliLive,
   getBiliLiveConfig,
-  getDefaultBiliLiveConfig,
   saveBiliLiveConfig,
   saveBiliLiveTTSMode,
   saveBiliLiveAzureConfig,

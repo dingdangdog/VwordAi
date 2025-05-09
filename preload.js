@@ -152,7 +152,6 @@ contextBridge.exposeInMainWorld("api", {
     connect: (roomId) => ipcRenderer.invoke("bililive:connect", roomId),
     disconnect: () => ipcRenderer.invoke("bililive:disconnect"),
     getConfig: () => ipcRenderer.invoke("bililive:get-config"),
-    getDefaultConfig: () => ipcRenderer.invoke("bililive:get-default-config"),
     saveBiliConfig: (data) => ipcRenderer.invoke("bililive:save-bili-config", data),
     saveTTSMode: (mode) => ipcRenderer.invoke("bililive:save-tts-mode", mode),
     saveAzureConfig: (data) => ipcRenderer.invoke("bililive:save-azure-config", data),

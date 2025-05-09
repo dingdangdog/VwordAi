@@ -422,11 +422,6 @@ function setupBiliLiveHandlers() {
     return await handler.getBiliLiveConfig();
   });
 
-  // 获取默认BiliLive配置
-  ipcMain.handle("bililive:get-default-config", async () => {
-    return await handler.getDefaultBiliLiveConfig();
-  });
-
   // 保存B站配置
   ipcMain.handle("bililive:save-bili-config", async (event, data) => {
     return await handler.saveBiliLiveConfig(data);

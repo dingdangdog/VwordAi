@@ -10,10 +10,7 @@
  */
 const fs = require("fs-extra");
 const path = require("path");
-const axios = require("axios");
 const log = require("electron-log");
-const say = require("say");
-const sdk = require("microsoft-cognitiveservices-speech-sdk");
 const storage = require("../utils/storage");
 const { success, error } = require("../utils/result");
 const { BLiveClient } = require("../blive/client");
@@ -291,14 +288,14 @@ async function saveSovitsConfig(configData) {
 // Function to read config from storage
 async function getConfig() {
   try {
-    // Load latest config from storage
+    // Load latest config from storage (this already merges with default config)
     await loadAllConfig();
 
-    // Return the complete config object
+    // Return the complete config object (which now contains merged defaults)
     return biliveConfig;
   } catch (err) {
     log.error("(BiliLive Service) Error in getConfig:", err);
-    // Return at least default config if error
+    // Return default config if error
     return DEFAULT_BILIVE_CONFIG;
   }
 }
@@ -1328,7 +1325,9 @@ async function alibabaTTS(text) {
     const aliyunConfig = {
       appkey: config.alibaba_appkey,
       token: config.alibaba_token,
-      endpoint: config.alibaba_endpoint || "wss://nls-gateway-cn-shanghai.aliyuncs.com/ws/v1",
+      endpoint:
+        config.alibaba_endpoint ||
+        "wss://nls-gateway-cn-shanghai.aliyuncs.com/ws/v1",
     };
 
     // 准备语音设置
@@ -1345,25 +1344,35 @@ async function alibabaTTS(text) {
     // 使用 aliyun.js 的 synthesize 方法
     try {
       const aliyunProvider = require("../provider/aliyun");
-      const result = await aliyunProvider.synthesize(text, tempFile, settings, aliyunConfig);
+      const result = await aliyunProvider.synthesize(
+        text,
+        tempFile,
+        settings,
+        aliyunConfig
+      );
 
       if (result.success && fs.existsSync(tempFile)) {
-        log.debug(`(BiliLive Service) Alibaba TTS synthesis successful, playing audio from ${tempFile}`);
-        
+        log.debug(
+          `(BiliLive Service) Alibaba TTS synthesis successful, playing audio from ${tempFile}`
+        );
+
         // 使用sound-play播放音频文件
         const sound = require("sound-play");
         await sound.play(tempFile);
-        
+
         // 播放完成后删除临时文件
         try {
           fs.unlinkSync(tempFile);
         } catch (err) {
           log.error("(BiliLive Service) Failed to delete temp file:", err);
         }
-        
+
         return Promise.resolve();
       } else {
-        throw new Error("Failed to synthesize speech with Alibaba TTS: " + (result.message || "Unknown error"));
+        throw new Error(
+          "Failed to synthesize speech with Alibaba TTS: " +
+            (result.message || "Unknown error")
+        );
       }
     } catch (err) {
       log.error("(BiliLive Service) Error using Alibaba TTS provider:", err);

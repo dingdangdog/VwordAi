@@ -77,23 +77,6 @@ export const biliLiveApi = {
   },
 
   /**
-   * 获取B站默认配置
-   * @returns {Promise<Result<any>>} 默认配置信息
-   */
-  getDefaultConfig: (): Promise<Result<BiliLiveConfig>> => {
-    try {
-      return invoke<Result<BiliLiveConfig>>("bililive:get-default-config");
-    } catch (error) {
-      console.error("获取B站默认配置失败:", error);
-      return Promise.resolve({
-        success: false,
-        error: error instanceof Error ? error.message : "获取默认配置失败",
-        data: null as any,
-      });
-    }
-  },
-
-  /**
    * 保存B站配置
    * @param {any} config 配置数据
    * @returns {Promise<Result<any>>} 保存结果
@@ -161,7 +144,10 @@ export const biliLiveApi = {
     try {
       // 使用安全克隆确保可序列化
       const safeConfig = safeClone(config);
-      return invoke<Result<boolean>>("bililive:save-alibaba-config", safeConfig);
+      return invoke<Result<boolean>>(
+        "bililive:save-alibaba-config",
+        safeConfig
+      );
     } catch (error) {
       console.error("保存阿里云配置失败:", error);
       return Promise.resolve({

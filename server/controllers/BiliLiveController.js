@@ -111,24 +111,6 @@ async function saveSovitsConfig(configData) {
 }
 
 /**
- * 获取默认配置（用于初始化客户端UI）
- */
-async function getDefaultConfig() {
-  try {
-    const defaultConfig = {
-      bili: BiliLiveService.DEFAULT_BILIVE_CONFIG,
-      azure: BiliLiveService.DEFAULT_BILIVE_CONFIG.tts.azure,
-      alibaba: BiliLiveService.DEFAULT_BILIVE_CONFIG.tts.alibaba,
-      sovits: BiliLiveService.DEFAULT_BILIVE_CONFIG.tts.sovits,
-    };
-    return success(defaultConfig);
-  } catch (err) {
-    console.error("[BiliLiveController] Get default config error:", err);
-    return error("获取默认配置失败: " + err.message);
-  }
-}
-
-/**
  * 测试TTS（发送测试文本）
  * @param {string} text 测试文本
  */
@@ -181,7 +163,6 @@ module.exports = {
   saveAzureConfig,
   saveAlibabaConfig,
   saveSovitsConfig,
-  getDefaultConfig,
   testTTS,
   getAvailableVoices,
   saveLocalConfig,
