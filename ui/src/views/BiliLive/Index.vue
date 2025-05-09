@@ -3,6 +3,31 @@
   <div class="flex h-full space-x-2 overflow-hidden">
     <!-- 左侧：消息显示区域 -->
     <div class="flex-1 flex flex-col overflow-hidden">
+      <!-- 连接状态横幅 -->
+      <div
+        v-if="isConnected"
+        class="bg-green-100 border-l-4 border-green-500 text-green-700 p-2 mb-2 flex justify-between items-center"
+      >
+        <div class="flex items-center">
+          <span
+            class="mr-2 h-2 w-2 rounded-full bg-green-500 animate-pulse"
+          ></span>
+          <span>已连接到直播间: {{ currentRoomId }}</span>
+        </div>
+        <button
+          @click="() => disconnect('用户手动断开')"
+          class="text-sm px-2 py-1 bg-green-200 hover:bg-green-300 rounded"
+        >
+          断开连接
+        </button>
+      </div>
+      <div
+        v-else-if="lastConnectionRoomId"
+        class="bg-red-100 border-l-4 border-red-500 text-red-700 p-2 mb-2"
+      >
+        已断开连接 (上次房间: {{ lastConnectionRoomId }})
+      </div>
+
       <!-- 标题区域 -->
       <div
         class="flex justify-between items-center px-4 py-2 border-b border-gray-50 dark:border-gray-300"
@@ -32,7 +57,7 @@
           </button> -->
           <button
             v-if="isConnected"
-            @click="disconnect"
+            @click="() => disconnect('用户手动断开')"
             class="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600"
           >
             断开
@@ -734,6 +759,7 @@ import { ref, onMounted, onUnmounted, watch, nextTick, computed } from "vue";
 import { useToast } from "vue-toastification";
 import { useBiliLiveStore } from "@/stores/biliLive";
 import { useSettingsStore } from "@/stores/settings";
+import { useRouter, onBeforeRouteLeave } from "vue-router";
 import type {
   BiliLiveConfig,
   AzureConfig,
@@ -808,6 +834,7 @@ const settingsStore = useSettingsStore();
 const roomIdInput = ref("");
 const isConnected = ref(false);
 const currentRoomId = ref<string | null>(null);
+const lastConnectionRoomId = ref<string | null>(null);
 const popularity = ref(0);
 const showAdvancedSettings = ref(false);
 const testText = ref("如果你能听到，说明语音配置成功。");
@@ -1057,7 +1084,7 @@ const saveConfig = async (showToast = true) => {
       ? config.value.SESSDATA.length
       : 0;
     console.log(`正在保存B站配置，SESSDATA长度: ${sessdataLength}`);
-    
+
     // 创建一个安全的配置副本
     const safeConfig = safeClone(config.value);
     console.log("保存的房间ID列表:", JSON.stringify(safeConfig.room_ids));
@@ -1137,7 +1164,7 @@ async function saveAlibabaConfig() {
   try {
     // 创建一个安全的配置副本
     const safeConfig = safeClone(alibabaConfig.value);
-    
+
     const response = await biliLiveStore.saveAlibabaConfig(safeConfig);
     if (response.success) {
       toast.success("阿里云 TTS配置已保存");
@@ -1156,7 +1183,7 @@ async function saveSovitsConfig() {
   try {
     // 创建一个安全的配置副本
     const safeConfig = safeClone(sovitsConfig.value);
-    
+
     const response = await biliLiveStore.saveSovitsConfig(safeConfig);
     if (response.success) {
       toast.success("SoVITS配置已保存");
@@ -1212,19 +1239,44 @@ async function connectToRoom() {
   }
 }
 
-// 断开连接
-async function disconnect() {
+/**
+ * 断开连接
+ * @param {string} reason 断开原因（可选）
+ */
+async function disconnect(reason = "用户手动断开") {
   try {
+    // Store the current room ID before disconnecting
+    if (currentRoomId.value) {
+      lastConnectionRoomId.value = currentRoomId.value;
+    }
+
+    // Add log message with reason
+    console.log(`正在断开直播间连接: ${reason}`);
+
+    // Add system message with disconnect reason
+    addSystemMessage("info", `正在断开直播间连接: ${reason}`);
+
     const response = await biliLiveStore.disconnect();
     if (!response.success) {
       toast.error("断开连接失败: " + response.error);
     }
-  } catch (err: unknown) {
+  } catch (err) {
     const error = err as Error;
     console.error("Disconnect failed:", error);
     toast.error("断开连接失败: " + error.message);
   }
 }
+
+// Watch connection status to update lastConnectionRoomId
+watch(
+  () => isConnected.value,
+  (newStatus, oldStatus) => {
+    if (oldStatus && !newStatus && currentRoomId.value) {
+      // If we just disconnected, save the last room ID
+      lastConnectionRoomId.value = currentRoomId.value;
+    }
+  }
+);
 
 // 添加系统消息
 function addSystemMessage(
@@ -1301,9 +1353,11 @@ function setupListeners() {
   // 连接状态
   electron.listenToChannel("bililive-connection-status", (data: any) => {
     isConnected.value = data.connected;
-    currentRoomId.value = data.roomId;
 
     if (data.connected) {
+      // Update current room ID if connected
+      currentRoomId.value = data.roomId;
+
       // 只在连接成功添加新房间时显示通知
       const roomIdStr = String(data.roomId);
       const roomIndex = config.value.room_ids.findIndex(
@@ -1337,6 +1391,12 @@ function setupListeners() {
         console.log(`房间ID ${roomIdStr} 已存在于历史记录，位置: ${roomIndex}`);
       }
     } else {
+      // 如果断开连接，更新最后连接的房间ID并清除当前房间ID
+      if (currentRoomId.value) {
+        lastConnectionRoomId.value = currentRoomId.value;
+      }
+      currentRoomId.value = null;
+
       // 不再显示额外的断开连接通知，避免重复
       console.log("连接状态：已断开连接");
     }
@@ -1475,7 +1535,13 @@ onMounted(async () => {
 });
 
 onUnmounted(() => {
-  // 移除监听器
+  // Check if connected and disconnect when navigating away
+  if (isConnected.value) {
+    // Use the reason parameter to indicate it's due to navigation
+    disconnect("页面导航");
+  }
+
+  // Remove all event listeners to prevent memory leaks
   removeListeners();
 });
 
@@ -1501,6 +1567,23 @@ function clearDebugMessages() {
   messages.value.debug = [];
   toast.success("调试消息已清空");
 }
+
+// Add route navigation guard
+onBeforeRouteLeave((to, from, next) => {
+  if (isConnected.value) {
+    const confirmLeave = window.confirm(
+      "你当前正在连接直播间，离开页面会自动断开连接。确定要离开吗？"
+    );
+
+    if (confirmLeave) {
+      next();
+    } else {
+      next(false);
+    }
+  } else {
+    next();
+  }
+});
 </script>
 
 <style scoped>
