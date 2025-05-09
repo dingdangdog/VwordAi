@@ -741,6 +741,15 @@ import type {
   SoVITSConfig,
 } from "@/services/BiliLiveService";
 
+/**
+ * 深度克隆对象并确保可序列化
+ * @param obj 要克隆的对象
+ * @returns 克隆后的对象
+ */
+function safeClone<T>(obj: T): T {
+  return JSON.parse(JSON.stringify(obj));
+}
+
 // 注意：由于Electron预加载脚本和TypeScript定义之间的差异，
 // 我们使用类型断言(as)来处理window.electron和window.api对象。
 // 为了确保类型安全，我们引入了必要的接口类型。
@@ -1048,10 +1057,12 @@ const saveConfig = async (showToast = true) => {
       ? config.value.SESSDATA.length
       : 0;
     console.log(`正在保存B站配置，SESSDATA长度: ${sessdataLength}`);
-    console.log("config.value:", config.value);
-    console.log("保存的房间ID列表:", JSON.stringify(config.value.room_ids));
+    
+    // 创建一个安全的配置副本
+    const safeConfig = safeClone(config.value);
+    console.log("保存的房间ID列表:", JSON.stringify(safeConfig.room_ids));
 
-    const response = await biliLiveStore.saveBiliConfig(config.value);
+    const response = await biliLiveStore.saveBiliConfig(safeConfig);
 
     if (response.success) {
       if (showToast) {
@@ -1100,16 +1111,15 @@ async function saveAzureConfig() {
       key: azureConfig.value.azure_key,
       region: azureConfig.value.azure_region,
       voiceName: azureConfig.value.azure_model,
-      speed: azureConfig.value.speed,
-      pitch: azureConfig.value.pitch,
       enabled: ttsMode.value === "azure",
     };
     console.log("updatedConfig:", updatedConfig);
 
-    await biliLiveStore.saveAzureConfig({ azure: updatedConfig });
+    // 创建一个安全的配置副本
+    const safeAzureConfig = safeClone(azureConfig.value);
 
     // 同时更新BiliLive服务
-    const response = await biliLiveStore.saveAzureConfig(azureConfig.value);
+    const response = await biliLiveStore.saveAzureConfig(safeAzureConfig);
     if (response.success) {
       toast.success("Azure TTS配置已保存");
     } else {
@@ -1125,7 +1135,10 @@ async function saveAzureConfig() {
 // 保存阿里云配置
 async function saveAlibabaConfig() {
   try {
-    const response = await biliLiveStore.saveAlibabaConfig(alibabaConfig.value);
+    // 创建一个安全的配置副本
+    const safeConfig = safeClone(alibabaConfig.value);
+    
+    const response = await biliLiveStore.saveAlibabaConfig(safeConfig);
     if (response.success) {
       toast.success("阿里云 TTS配置已保存");
     } else {
@@ -1141,7 +1154,10 @@ async function saveAlibabaConfig() {
 // 保存SoVITS配置
 async function saveSovitsConfig() {
   try {
-    const response = await biliLiveStore.saveSovitsConfig(sovitsConfig.value);
+    // 创建一个安全的配置副本
+    const safeConfig = safeClone(sovitsConfig.value);
+    
+    const response = await biliLiveStore.saveSovitsConfig(safeConfig);
     if (response.success) {
       toast.success("SoVITS配置已保存");
     } else {

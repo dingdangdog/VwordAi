@@ -234,7 +234,7 @@ async function saveAzureConfig(configData) {
     // 保存完整配置
     storage.saveConfig(BILIVE_CONFIG_KEY, biliveConfig);
 
-    log.info("(BiliLive Service) Azure TTS配置已保存");
+    log.info("(BiliLive Service) Azure TTS config saved");
     return success(configData);
   } catch (err) {
     log.error("(BiliLive Service) Failed to save Azure TTS config:", err);

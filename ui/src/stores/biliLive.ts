@@ -53,6 +53,15 @@ export interface SystemMessage {
 }
 
 /**
+ * 深度克隆对象并确保可序列化
+ * @param obj 要克隆的对象
+ * @returns 克隆后的对象
+ */
+function safeClone<T>(obj: T): T {
+  return JSON.parse(JSON.stringify(obj));
+}
+
+/**
  * B站直播状态管理
  */
 export const useBiliLiveStore = defineStore("biliLive", () => {
@@ -135,7 +144,8 @@ export const useBiliLiveStore = defineStore("biliLive", () => {
       const response = await biliLiveService.loadConfig();
 
       if (response.success && response.data) {
-        config.value = response.data;
+        // 使用安全克隆防止序列化问题
+        config.value = safeClone(response.data);
         console.log("B站直播配置加载成功");
 
         if (response.data.mode) {
@@ -143,21 +153,46 @@ export const useBiliLiveStore = defineStore("biliLive", () => {
         }
 
         if (response.data.azure) {
-          azureConfig.value = { ...azureConfig.value, ...response.data.azure };
+          // 创建新对象而不是直接修改引用
+          const newAzureConfig = { ...azureConfig.value };
+          for (const key in response.data.azure) {
+            if (
+              Object.prototype.hasOwnProperty.call(response.data.azure, key)
+            ) {
+              (newAzureConfig as any)[key] = (response.data.azure as any)[key];
+            }
+          }
+          azureConfig.value = newAzureConfig;
         }
 
         if (response.data.alibaba) {
-          alibabaConfig.value = {
-            ...alibabaConfig.value,
-            ...response.data.alibaba,
-          };
+          // 创建新对象而不是直接修改引用
+          const newAlibabaConfig = { ...alibabaConfig.value };
+          for (const key in response.data.alibaba) {
+            if (
+              Object.prototype.hasOwnProperty.call(response.data.alibaba, key)
+            ) {
+              (newAlibabaConfig as any)[key] = (response.data.alibaba as any)[
+                key
+              ];
+            }
+          }
+          alibabaConfig.value = newAlibabaConfig;
         }
 
         if (response.data.sovits) {
-          sovitsConfig.value = {
-            ...sovitsConfig.value,
-            ...response.data.sovits,
-          };
+          // 创建新对象而不是直接修改引用
+          const newSovitsConfig = { ...sovitsConfig.value };
+          for (const key in response.data.sovits) {
+            if (
+              Object.prototype.hasOwnProperty.call(response.data.sovits, key)
+            ) {
+              (newSovitsConfig as any)[key] = (response.data.sovits as any)[
+                key
+              ];
+            }
+          }
+          sovitsConfig.value = newSovitsConfig;
         }
       } else {
         console.warn("B站直播配置加载失败:", response.error);
@@ -183,7 +218,14 @@ export const useBiliLiveStore = defineStore("biliLive", () => {
 
     try {
       console.log("正在保存B站配置...");
-      const updatedConfig = { ...config.value, ...configData };
+      // 使用安全克隆创建新对象
+      const configCopy = config.value
+        ? safeClone(config.value)
+        : ({} as BiliLiveConfig);
+      const configDataCopy = safeClone(configData);
+
+      // 合并对象
+      const updatedConfig = { ...configCopy, ...configDataCopy };
 
       // 记录SESSDATA长度（不记录具体内容以避免敏感信息泄露）
       const sessdataLength = updatedConfig.SESSDATA
@@ -191,12 +233,10 @@ export const useBiliLiveStore = defineStore("biliLive", () => {
         : 0;
       console.log(`将要保存的SESSDATA长度: ${sessdataLength}`);
 
-      const response = await biliLiveService.saveBiliConfig(
-        updatedConfig as BiliLiveConfig
-      );
+      const response = await biliLiveService.saveBiliConfig(updatedConfig);
 
       if (response.success) {
-        config.value = updatedConfig as BiliLiveConfig;
+        config.value = updatedConfig;
         console.log("B站配置保存成功");
       } else {
         console.warn("B站配置保存失败:", response.error);
@@ -251,7 +291,12 @@ export const useBiliLiveStore = defineStore("biliLive", () => {
 
     try {
       console.log("正在保存Azure配置...");
-      const updatedConfig = { ...azureConfig.value, ...configData };
+      // 使用安全克隆创建新对象，避免引用和序列化问题
+      const azureConfigCopy = safeClone(azureConfig.value);
+      const configDataCopy = safeClone(configData);
+
+      // 合并对象
+      const updatedConfig = { ...azureConfigCopy, ...configDataCopy };
       const response = await biliLiveService.saveAzureConfig(updatedConfig);
 
       if (response.success) {
@@ -281,7 +326,12 @@ export const useBiliLiveStore = defineStore("biliLive", () => {
 
     try {
       console.log("正在保存阿里云配置...");
-      const updatedConfig = { ...alibabaConfig.value, ...configData };
+      // 使用安全克隆创建新对象，避免引用和序列化问题
+      const alibabaConfigCopy = safeClone(alibabaConfig.value);
+      const configDataCopy = safeClone(configData);
+
+      // 合并对象
+      const updatedConfig = { ...alibabaConfigCopy, ...configDataCopy };
       const response = await biliLiveService.saveAlibabaConfig(updatedConfig);
 
       if (response.success) {
@@ -311,7 +361,12 @@ export const useBiliLiveStore = defineStore("biliLive", () => {
 
     try {
       console.log("正在保存SoVITS配置...");
-      const updatedConfig = { ...sovitsConfig.value, ...configData };
+      // 使用安全克隆创建新对象，避免引用和序列化问题
+      const sovitsConfigCopy = safeClone(sovitsConfig.value);
+      const configDataCopy = safeClone(configData);
+
+      // 合并对象
+      const updatedConfig = { ...sovitsConfigCopy, ...configDataCopy };
       const response = await biliLiveService.saveSovitsConfig(updatedConfig);
 
       if (response.success) {
@@ -372,7 +427,11 @@ export const useBiliLiveStore = defineStore("biliLive", () => {
 
       if (response.success) {
         if (config.value) {
-          config.value.localVoice = voice;
+          // 创建新对象而不是直接修改引用
+          config.value = {
+            ...safeClone(config.value),
+            localVoice: voice,
+          };
         }
         console.log("本地TTS配置保存成功");
       } else {
@@ -480,7 +539,9 @@ export const useBiliLiveStore = defineStore("biliLive", () => {
       message.timestamp = Date.now();
     }
 
-    danmakuMessages.value.unshift(message);
+    // 使用安全克隆避免可能的引用问题
+    const messageCopy = safeClone(message);
+    danmakuMessages.value.unshift(messageCopy);
 
     // 控制消息列表大小
     if (danmakuMessages.value.length > 100) {
@@ -498,7 +559,9 @@ export const useBiliLiveStore = defineStore("biliLive", () => {
       message.timestamp = Date.now();
     }
 
-    giftMessages.value.unshift(message);
+    // 使用安全克隆避免可能的引用问题
+    const messageCopy = safeClone(message);
+    giftMessages.value.unshift(messageCopy);
 
     // 控制消息列表大小
     if (giftMessages.value.length > 100) {
@@ -516,7 +579,9 @@ export const useBiliLiveStore = defineStore("biliLive", () => {
       message.timestamp = Date.now();
     }
 
-    likeMessages.value.unshift(message);
+    // 使用安全克隆避免可能的引用问题
+    const messageCopy = safeClone(message);
+    likeMessages.value.unshift(messageCopy);
 
     // 控制消息列表大小
     if (likeMessages.value.length > 100) {
@@ -534,7 +599,9 @@ export const useBiliLiveStore = defineStore("biliLive", () => {
       message.timestamp = Date.now();
     }
 
-    enterMessages.value.unshift(message);
+    // 使用安全克隆避免可能的引用问题
+    const messageCopy = safeClone(message);
+    enterMessages.value.unshift(messageCopy);
 
     // 控制消息列表大小
     if (enterMessages.value.length > 100) {
@@ -557,7 +624,9 @@ export const useBiliLiveStore = defineStore("biliLive", () => {
       timestamp: Date.now(),
     };
 
-    systemMessages.value.unshift(message);
+    // 使用安全克隆避免可能的引用问题
+    const messageCopy = safeClone(message);
+    systemMessages.value.unshift(messageCopy);
 
     // 控制消息列表大小
     if (systemMessages.value.length > 100) {

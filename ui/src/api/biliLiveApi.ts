@@ -11,6 +11,15 @@ import type {
 } from "@/services/BiliLiveService";
 
 /**
+ * 深度克隆对象并确保可序列化
+ * @param obj 要克隆的对象
+ * @returns 克隆后的对象
+ */
+function safeClone<T>(obj: T): T {
+  return JSON.parse(JSON.stringify(obj));
+}
+
+/**
  * B站直播API
  */
 export const biliLiveApi = {
@@ -21,6 +30,7 @@ export const biliLiveApi = {
    */
   connect: (roomId: string | number): Promise<Result<boolean>> => {
     try {
+      // 简单类型直接传递
       return invoke<Result<boolean>>("bililive:connect", roomId);
     } catch (error) {
       console.error("连接B站直播间失败:", error);
@@ -90,10 +100,9 @@ export const biliLiveApi = {
    */
   saveBiliConfig: (config: BiliLiveConfig): Promise<Result<boolean>> => {
     try {
-      return invoke<Result<boolean>>(
-        "bililive:save-bili-config",
-        JSON.parse(JSON.stringify(config))
-      );
+      // 使用安全克隆确保可序列化
+      const safeConfig = safeClone(config);
+      return invoke<Result<boolean>>("bililive:save-bili-config", safeConfig);
     } catch (error) {
       console.error("保存B站配置失败:", error);
       return Promise.resolve({
@@ -111,6 +120,7 @@ export const biliLiveApi = {
    */
   saveTTSMode: (mode: string): Promise<Result<boolean>> => {
     try {
+      // 简单类型直接传递
       return invoke<Result<boolean>>("bililive:save-tts-mode", mode);
     } catch (error) {
       console.error("保存TTS模式失败:", error);
@@ -129,9 +139,9 @@ export const biliLiveApi = {
    */
   saveAzureConfig: (config: AzureConfig): Promise<Result<boolean>> => {
     try {
-      return invoke<Result<boolean>>("bililive:save-azure-config", {
-        ...config,
-      });
+      // 使用安全克隆确保可序列化
+      const safeConfig = safeClone(config);
+      return invoke<Result<boolean>>("bililive:save-azure-config", safeConfig);
     } catch (error) {
       console.error("保存Azure配置失败:", error);
       return Promise.resolve({
@@ -149,9 +159,9 @@ export const biliLiveApi = {
    */
   saveAlibabaConfig: (config: AlibabaConfig): Promise<Result<boolean>> => {
     try {
-      return invoke<Result<boolean>>("bililive:save-alibaba-config", {
-        ...config,
-      });
+      // 使用安全克隆确保可序列化
+      const safeConfig = safeClone(config);
+      return invoke<Result<boolean>>("bililive:save-alibaba-config", safeConfig);
     } catch (error) {
       console.error("保存阿里云配置失败:", error);
       return Promise.resolve({
@@ -169,9 +179,9 @@ export const biliLiveApi = {
    */
   saveSovitsConfig: (config: SoVITSConfig): Promise<Result<boolean>> => {
     try {
-      return invoke<Result<boolean>>("bililive:save-sovits-config", {
-        ...config,
-      });
+      // 使用安全克隆确保可序列化
+      const safeConfig = safeClone(config);
+      return invoke<Result<boolean>>("bililive:save-sovits-config", safeConfig);
     } catch (error) {
       console.error("保存SoVITS配置失败:", error);
       return Promise.resolve({
@@ -189,6 +199,7 @@ export const biliLiveApi = {
    */
   testTTS: (text: string): Promise<Result<{ audioUrl?: string }>> => {
     try {
+      // 简单类型直接传递
       return invoke<Result<{ audioUrl?: string }>>("bililive:test-tts", text);
     } catch (error) {
       console.error("测试TTS失败:", error);
@@ -226,6 +237,7 @@ export const biliLiveApi = {
    */
   saveLocalConfig: (voice: string): Promise<Result<boolean>> => {
     try {
+      // 简单类型直接传递
       return invoke<Result<boolean>>("bililive:save-local-config", voice);
     } catch (error) {
       console.error("保存本地TTS配置失败:", error);

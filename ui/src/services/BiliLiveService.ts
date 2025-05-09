@@ -58,6 +58,15 @@ export interface SoVITSConfig {
 }
 
 /**
+ * 深度克隆对象并确保可序列化
+ * @param obj 要克隆的对象
+ * @returns 克隆后的对象
+ */
+function safeClone<T>(obj: T): T {
+  return JSON.parse(JSON.stringify(obj));
+}
+
+/**
  * B站直播服务实现
  */
 const biliLiveService = {
@@ -75,7 +84,9 @@ const biliLiveService = {
    * @returns {Promise<Result<boolean>>} 保存结果
    */
   saveBiliConfig: async (config: BiliLiveConfig): Promise<Result<boolean>> => {
-    return biliLiveApi.saveBiliConfig(config);
+    // 确保数据可序列化
+    const safeConfig = safeClone(config);
+    return biliLiveApi.saveBiliConfig(safeConfig);
   },
 
   /**
@@ -93,7 +104,9 @@ const biliLiveService = {
    * @returns {Promise<Result<boolean>>} 保存结果
    */
   saveAzureConfig: async (config: AzureConfig): Promise<Result<boolean>> => {
-    return biliLiveApi.saveAzureConfig(config);
+    // 确保数据可序列化
+    const safeConfig = safeClone(config);
+    return biliLiveApi.saveAzureConfig(safeConfig);
   },
 
   /**
@@ -104,7 +117,9 @@ const biliLiveService = {
   saveAlibabaConfig: async (
     config: AlibabaConfig
   ): Promise<Result<boolean>> => {
-    return biliLiveApi.saveAlibabaConfig(config);
+    // 确保数据可序列化
+    const safeConfig = safeClone(config);
+    return biliLiveApi.saveAlibabaConfig(safeConfig);
   },
 
   /**
@@ -113,7 +128,9 @@ const biliLiveService = {
    * @returns {Promise<Result<boolean>>} 保存结果
    */
   saveSovitsConfig: async (config: SoVITSConfig): Promise<Result<boolean>> => {
-    return biliLiveApi.saveSovitsConfig(config);
+    // 确保数据可序列化
+    const safeConfig = safeClone(config);
+    return biliLiveApi.saveSovitsConfig(safeConfig);
   },
 
   /**
