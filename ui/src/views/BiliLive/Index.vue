@@ -902,6 +902,18 @@ const ttsMode = computed({
 // 使用settings store中的配置
 const azureConfig = computed({
   get: () => {
+    // 首先尝试从本地配置中获取 tts.azure 设置
+    if (config.value && config.value.tts && config.value.tts.azure) {
+      return {
+        azure_key: config.value.tts.azure.azure_key || "",
+        azure_region: config.value.tts.azure.azure_region || "",
+        azure_model: config.value.tts.azure.azure_model || "",
+        speed: config.value.tts.azure.speed || 1.0,
+        pitch: config.value.tts.azure.pitch || 0,
+      };
+    }
+
+    // 后备方案：从设置存储中获取
     const provider = settingsStore.getServiceProviderConfig("azure") || {};
     return {
       azure_key: provider.key || "",
@@ -969,6 +981,8 @@ async function loadConfig() {
           name: room.name || `房间 ${room.id}`,
         }));
       }
+
+      // 设置基本配置项
       config.value.ttsEnabled = response.data.ttsEnabled ?? true;
       config.value.readDanmaku = response.data.readDanmaku ?? true;
       config.value.readGift = response.data.readGift ?? true;
@@ -981,21 +995,37 @@ async function loadConfig() {
       config.value.recordGift = response.data.recordGift ?? true;
       config.value.recordVisitor = response.data.recordVisitor ?? true;
 
-      // 加载阿里云和SoVITS配置（保持原样）
-      if (response.data.alibaba) {
-        alibabaConfig.value = response.data.alibaba;
+      // 特殊处理：将tts配置添加到config.value中
+      if (response.data.tts) {
+        (config.value as any).tts = response.data.tts;
+        console.log("Loaded TTS config:", response.data.tts);
       }
 
-      if (response.data.sovits) {
-        sovitsConfig.value = response.data.sovits;
+      // 加载阿里云和SoVITS配置（保持原样）
+      if (response.data.tts && response.data.tts.alibaba) {
+        alibabaConfig.value = response.data.tts.alibaba;
+      }
+
+      if (response.data.tts && response.data.tts.sovits) {
+        sovitsConfig.value = response.data.tts.sovits;
       }
     } else {
       // 如果配置加载失败，使用默认配置
       const defaultResponse = await api.biliLive.getDefaultConfig();
       if (defaultResponse.success && defaultResponse.data) {
         config.value = { ...defaultResponse.data.bili };
-        alibabaConfig.value = { ...defaultResponse.data.alibaba };
-        sovitsConfig.value = { ...defaultResponse.data.sovits };
+        // 特殊处理：将默认tts配置添加到config.value中
+        if (defaultResponse.data.bili.tts) {
+          (config.value as any).tts = defaultResponse.data.bili.tts;
+        }
+
+        if (defaultResponse.data.alibaba) {
+          alibabaConfig.value = { ...defaultResponse.data.alibaba };
+        }
+
+        if (defaultResponse.data.sovits) {
+          sovitsConfig.value = { ...defaultResponse.data.sovits };
+        }
       }
     }
   } catch (err: unknown) {

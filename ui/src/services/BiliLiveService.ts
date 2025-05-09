@@ -10,9 +10,16 @@ export interface BiliLiveConfig {
   readGift: boolean;
   readEnter: boolean;
   readLike: boolean;
+  recordDanmaku: boolean;
+  recordGift: boolean;
+  recordVisitor: boolean;
   localVoice?: string;
-  mode?: string;
-  ttsMode?: string;
+  tts?: {
+    mode: string;
+    azure?: AzureConfig;
+    alibaba?: AlibabaConfig;
+    sovits?: SoVITSConfig;
+  };
   [key: string]: any;
 }
 

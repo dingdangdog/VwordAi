@@ -624,8 +624,8 @@ export const useBiliLiveStore = defineStore("biliLive", () => {
    * @returns 当前TTS模式
    */
   function getTTSMode(): string | null {
-    if (config.value && config.value.ttsMode) {
-      return config.value.ttsMode;
+    if (config.value && config.value.tts && config.value.tts.mode) {
+      return config.value.tts.mode;
     }
 
     // 如果没有在内存中找到，尝试从服务获取最新状态
