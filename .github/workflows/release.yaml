@@ -66,8 +66,10 @@ jobs:
       # 前端打包
       - name: Install UI dependencies
         run: cd ui && npm ci --no-interactive
-      - name: Build UI
-        run: cd ui && npm run build-only
+        
+      # - name: Build UI
+      #   run: cd ui && npm run build-only
+
       - name: Install Main dependencies
         run: npm ci --no-interactive
 

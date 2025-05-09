@@ -8,15 +8,7 @@ const WebSocket = require("ws");
 const axios = require("axios");
 const log = require("electron-log");
 const zlib = require("zlib");
-let brotli;
-
-try {
-  brotli = require("brotli");
-} catch (err) {
-  log.warn(
-    "(BLiveClient) Brotli module not loaded, will attempt to load when needed"
-  );
-}
+const brotli = require("brotli");
 
 /**
  * Operation codes for packets
@@ -620,41 +612,6 @@ class BLiveClient {
             `(BLiveClient) Processing Brotli compressed data, size: ${body.length} bytes`
           );
           try {
-            if (!brotli) {
-              // Try to load brotli module
-              try {
-                brotli = require("brotli");
-                log.debug(`(BLiveClient) Brotli module loaded successfully`);
-              } catch (loadErr) {
-                log.error(
-                  `(BLiveClient) Failed to load brotli module:`,
-                  loadErr
-                );
-
-                // Try to install brotli automatically
-                log.info(
-                  `(BLiveClient) Attempting to install brotli module...`
-                );
-                try {
-                  const { execSync } = require("child_process");
-                  execSync("npm install brotli", { stdio: "inherit" });
-                  log.info(
-                    `(BLiveClient) Brotli module installed successfully, reloading`
-                  );
-                  brotli = require("brotli");
-                } catch (installErr) {
-                  log.error(
-                    `(BLiveClient) Failed to install brotli:`,
-                    installErr
-                  );
-                  throw new Error(
-                    "Failed to load brotli module. Please run: npm install brotli"
-                  );
-                }
-              }
-            }
-
-            // Decompress data
             const decompressed = Buffer.from(brotli.decompress(body));
             log.debug(
               `(BLiveClient) Brotli decompression successful, decompressed size: ${decompressed.length} bytes`
