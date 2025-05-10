@@ -217,59 +217,9 @@ const isSubmitting = ref(false);
 const showVoiceSettings = ref(true);
 const isNewChapter = ref(true);
 
-// Get voice roles from projects store
-const voiceRoles = computed(() => {
-  if (!form.settings.serviceProvider) return [];
-
-  const models = projectsStore.getVoiceModelsByProvider(
-    form.settings.serviceProvider
-  );
-  return models.map((model) => ({
-    id: model.code,
-    name: model.name,
-    gender: model.gender === "0" ? "female" : "male",
-    language: model.lang.includes("中文") ? "zh-CN" : "en-US",
-  }));
-});
-
-// Get emotions from projects store
-const emotions = computed(() => {
-  if (!form.settings.serviceProvider || !form.settings.voice) return [];
-
-  // First try to get emotions from the selected voice model
-  const selectedModel = projectsStore.getVoiceModelByCode(form.settings.voice);
-
-  if (
-    selectedModel &&
-    selectedModel.emotions &&
-    selectedModel.emotions.length > 0
-  ) {
-    return selectedModel.emotions.map((emotion) => ({
-      id: emotion.code,
-      name: emotion.name,
-    }));
-  }
-
-  // If not found, try to find emotions from any model with same provider
-  const providerModels = projectsStore.getVoiceModelsByProvider(
-    form.settings.serviceProvider
-  );
-  for (const model of providerModels) {
-    if (model.emotions && model.emotions.length > 0) {
-      return model.emotions.map((emotion) => ({
-        id: emotion.code,
-        name: emotion.name,
-      }));
-    }
-  }
-
-  // Fallback to empty array
-  return [];
-});
-
-const errors = reactive({
-  name: "",
-});
+// Refs for voice models and emotions
+const voiceRoleModels = ref<any[]>([]);
+const emotionModels = ref<any[]>([]);
 
 // Initialize form
 const form = reactive({
@@ -283,6 +233,90 @@ const form = reactive({
     volume: 100,
     emotion: "",
   } as VoiceSettings,
+});
+
+// Watch for service provider changes to load voice roles
+watch(
+  () => form.settings.serviceProvider,
+  async (newProvider) => {
+    if (!newProvider) {
+      voiceRoleModels.value = [];
+      return;
+    }
+
+    isLoadingVoiceRoles.value = true;
+    try {
+      const models = await projectsStore.getVoiceModelsByProvider(newProvider);
+      voiceRoleModels.value = models.map((model) => ({
+        id: model.code,
+        name: model.name,
+        gender: model.gender === "0" ? "female" : "male",
+        language: model.lang.includes("中文") ? "zh-CN" : "en-US",
+      }));
+    } catch (error) {
+      console.error("Failed to load voice roles:", error);
+      voiceRoleModels.value = [];
+    } finally {
+      isLoadingVoiceRoles.value = false;
+    }
+  },
+  { immediate: true }
+);
+
+// Watch for voice changes to load emotions
+watch(
+  [() => form.settings.serviceProvider, () => form.settings.voice],
+  async ([newProvider, newVoice]) => {
+    if (!newProvider || !newVoice) {
+      emotionModels.value = [];
+      return;
+    }
+
+    try {
+      // First try to get emotions from the selected voice model
+      const selectedModel = await projectsStore.getVoiceModelByCode(newVoice);
+
+      if (
+        selectedModel &&
+        selectedModel.emotions &&
+        selectedModel.emotions.length > 0
+      ) {
+        emotionModels.value = selectedModel.emotions.map((emotion) => ({
+          id: emotion.code,
+          name: emotion.name,
+        }));
+        return;
+      }
+
+      // If not found, try to find emotions from any model with same provider
+      const providerModels =
+        await projectsStore.getVoiceModelsByProvider(newProvider);
+      for (const model of providerModels) {
+        if (model.emotions && model.emotions.length > 0) {
+          emotionModels.value = model.emotions.map((emotion) => ({
+            id: emotion.code,
+            name: emotion.name,
+          }));
+          return;
+        }
+      }
+
+      // Fallback to empty array
+      emotionModels.value = [];
+    } catch (error) {
+      console.error("Failed to load emotions:", error);
+      emotionModels.value = [];
+    }
+  },
+  { immediate: true }
+);
+
+// Use the refs in our component
+const voiceRoles = computed(() => voiceRoleModels.value);
+const emotions = computed(() => emotionModels.value);
+
+const errors = reactive({
+  name: "",
 });
 
 const projectId = computed(() => route.params.projectId as string);
@@ -345,7 +379,7 @@ onMounted(async () => {
 });
 
 // Watch for changes in the service provider
-watchEffect(() => {
+watchEffect(async () => {
   if (form.settings.serviceProvider) {
     // Reset voice and emotion when service provider changes
     const currentProvider = form.settings.serviceProvider;
@@ -353,44 +387,68 @@ watchEffect(() => {
 
     // Check if current voice belongs to this provider
     if (currentVoice) {
-      const models = projectsStore.getVoiceModelsByProvider(currentProvider);
-      const voiceExists = models.some((model) => model.code === currentVoice);
+      try {
+        const models =
+          await projectsStore.getVoiceModelsByProvider(currentProvider);
+        const voiceExists = models.some((model) => model.code === currentVoice);
 
-      if (!voiceExists) {
-        form.settings.voice = "";
-        form.settings.emotion = "";
+        if (!voiceExists) {
+          form.settings.voice = "";
+          form.settings.emotion = "";
+        }
+      } catch (error) {
+        console.error("Error checking voice compatibility:", error);
       }
     }
   }
 });
 
 // 监听语音角色变化，更新情感选项
-watch(() => form.settings.voice, (newVoice, oldVoice) => {
-  if (newVoice && newVoice !== oldVoice) {
-    console.log(`Voice changed from ${oldVoice} to ${newVoice}, updating emotions`);
-    
-    // 检查当前情感是否对该声音有效
-    const currentEmotion = form.settings.emotion;
-    if (currentEmotion) {
-      const model = projectsStore.getVoiceModelByCode(newVoice);
-      
-      // 检查这个模型是否有情感选项
-      if (model && model.emotions && model.emotions.length > 0) {
-        const emotionExists = model.emotions.some(e => e.code === currentEmotion);
-        
-        if (!emotionExists) {
-          console.log(`Emotion ${currentEmotion} is not valid for voice ${newVoice}, resetting`);
-          form.settings.emotion = ""; // 重置情感设置
-        } else {
-          console.log(`Emotion ${currentEmotion} is valid for voice ${newVoice}, keeping it`);
+watch(
+  () => form.settings.voice,
+  async (newVoice, oldVoice) => {
+    if (newVoice && newVoice !== oldVoice) {
+      console.log(
+        `Voice changed from ${oldVoice} to ${newVoice}, updating emotions`
+      );
+
+      // 检查当前情感是否对该声音有效
+      const currentEmotion = form.settings.emotion;
+      if (currentEmotion) {
+        try {
+          const model = await projectsStore.getVoiceModelByCode(newVoice);
+
+          // 检查这个模型是否有情感选项
+          if (model && model.emotions && model.emotions.length > 0) {
+            const emotionExists = model.emotions.some(
+              (e) => e.code === currentEmotion
+            );
+
+            if (!emotionExists) {
+              console.log(
+                `Emotion ${currentEmotion} is not valid for voice ${newVoice}, resetting`
+              );
+              form.settings.emotion = ""; // 重置情感设置
+            } else {
+              console.log(
+                `Emotion ${currentEmotion} is valid for voice ${newVoice}, keeping it`
+              );
+            }
+          } else {
+            console.log(
+              `Voice ${newVoice} has no emotions, resetting emotion setting`
+            );
+            form.settings.emotion = ""; // 如果新声音没有情感设置，重置情感
+          }
+        } catch (error) {
+          console.error("Error checking emotion compatibility:", error);
+          form.settings.emotion = ""; // 如果出错，重置情感设置
         }
-      } else {
-        console.log(`Voice ${newVoice} has no emotions, resetting emotion setting`);
-        form.settings.emotion = ""; // 如果新声音没有情感设置，重置情感
       }
     }
-  }
-}, { immediate: true });
+  },
+  { immediate: true }
+);
 
 function validateForm() {
   errors.name = "";

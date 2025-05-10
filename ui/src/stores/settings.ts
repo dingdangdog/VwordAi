@@ -10,7 +10,7 @@ import type {
 } from "@/types";
 
 // 设置选项卡类型
-export type SettingsTab = "provider" | "storage" | "system" | "about";
+export type SettingsTab = "provider" | "storage" | "system" | "about" | "voice";
 
 // 支持的服务商
 export const SUPPORTED_PROVIDERS = [

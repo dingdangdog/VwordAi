@@ -230,7 +230,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted, watchEffect, computed } from "vue";
+import { ref, reactive, onMounted, watchEffect, computed, watch } from "vue";
 import { XMarkIcon } from "@heroicons/vue/24/outline";
 import type { VoiceSettings } from "@/types";
 import { useProjectsStore } from "@/stores/projects";
@@ -247,39 +247,87 @@ if (projectsStore.voiceModels.length === 0) {
 const serviceProviders = computed(() => getTTSProviders());
 
 // Computed properties for filtered voice roles and emotions based on model data
-const filteredVoiceRoles = computed(() => {
-  if (!form.defaultVoiceSettings.serviceProvider) return [];
-  return projectsStore.getVoiceModelsByProvider(
-    form.defaultVoiceSettings.serviceProvider
-  );
+const voiceRoles = ref<any[]>([]);
+const emotions = ref<any[]>([]);
+
+// Initialize form with props or default values
+const form = reactive({
+  title: "",
+  description: "",
+  defaultVoiceSettings: {
+    serviceProvider: "",
+    voice: "",
+    speed: 1,
+    pitch: 0,
+    volume: 100,
+    emotion: "",
+  } as VoiceSettings,
 });
 
-const filteredEmotions = computed(() => {
-  if (!form.defaultVoiceSettings.voice) return [];
-
-  // Find selected voice model
-  const selectedModel = projectsStore.getVoiceModelByCode(
-    form.defaultVoiceSettings.voice
-  );
-
-  if (selectedModel && selectedModel.emotions) {
-    return selectedModel.emotions;
-  }
-
-  // If the selected model doesn't have emotions, try to find emotions from another model of the same provider
-  if (form.defaultVoiceSettings.serviceProvider) {
-    const providerModels = projectsStore.getVoiceModelsByProvider(
-      form.defaultVoiceSettings.serviceProvider
-    );
-    for (const model of providerModels) {
-      if (model.emotions && model.emotions.length > 0) {
-        return model.emotions;
-      }
+// Watch for changes to service provider to update voice roles
+watch(
+  () => form.defaultVoiceSettings.serviceProvider,
+  async (newProvider) => {
+    if (!newProvider) {
+      voiceRoles.value = [];
+      return;
     }
-  }
 
-  return [];
-});
+    try {
+      const models = await projectsStore.getVoiceModelsByProvider(newProvider);
+      voiceRoles.value = models;
+    } catch (error) {
+      console.error("Failed to load voice roles:", error);
+      voiceRoles.value = [];
+    }
+  },
+  { immediate: true }
+);
+
+// Watch for changes to selected voice to update emotions
+watch(
+  () => form.defaultVoiceSettings.voice,
+  async (newVoice) => {
+    if (!newVoice) {
+      emotions.value = [];
+      return;
+    }
+
+    try {
+      // Find selected voice model
+      const selectedModel = await projectsStore.getVoiceModelByCode(newVoice);
+
+      if (selectedModel && selectedModel.emotions) {
+        emotions.value = selectedModel.emotions;
+        return;
+      }
+
+      // If the selected model doesn't have emotions, try to find emotions from another model of the same provider
+      if (form.defaultVoiceSettings.serviceProvider) {
+        const providerModels = await projectsStore.getVoiceModelsByProvider(
+          form.defaultVoiceSettings.serviceProvider
+        );
+
+        for (const model of providerModels) {
+          if (model.emotions && model.emotions.length > 0) {
+            emotions.value = model.emotions;
+            return;
+          }
+        }
+      }
+
+      emotions.value = [];
+    } catch (error) {
+      console.error("Failed to load emotions:", error);
+      emotions.value = [];
+    }
+  },
+  { immediate: true }
+);
+
+// Replace the computed properties with the refs
+const filteredVoiceRoles = computed(() => voiceRoles.value);
+const filteredEmotions = computed(() => emotions.value);
 
 const props = defineProps({
   title: {
@@ -309,20 +357,6 @@ const emit = defineEmits(["close", "submit"]);
 const isSubmitting = ref(false);
 const errors = reactive({
   title: "",
-});
-
-// Initialize form with props or default values
-const form = reactive({
-  title: "",
-  description: "",
-  defaultVoiceSettings: {
-    serviceProvider: "",
-    voice: "",
-    speed: 1,
-    pitch: 0,
-    volume: 100,
-    emotion: "",
-  } as VoiceSettings,
 });
 
 // Watch for changes in initialData and update form

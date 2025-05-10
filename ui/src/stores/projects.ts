@@ -43,12 +43,26 @@ export const useProjectsStore = defineStore("projects", () => {
     return voiceModels.value;
   });
 
-  const getVoiceModelsByProvider = (providerType: string) => {
-    return voiceModels.value.filter((model) => model.provider === providerType);
+  const getVoiceModelsByProvider = async (providerType: string) => {
+    // For backward compatibility, still check the local models first
+    if (voiceModels.value.length > 0) {
+      return voiceModels.value.filter((model) => model.provider === providerType);
+    }
+    
+    // Import and use the utility function
+    const utils = await import('@/utils/voice-utils');
+    return utils.getVoiceModelsByProvider(providerType);
   };
 
-  const getVoiceModelByCode = (code: string) => {
-    return voiceModels.value.find((model) => model.code === code);
+  const getVoiceModelByCode = async (code: string) => {
+    // For backward compatibility, still check the local models first
+    if (voiceModels.value.length > 0) {
+      return voiceModels.value.find((model) => model.code === code);
+    }
+    
+    // Import and use the utility function
+    const utils = await import('@/utils/voice-utils');
+    return utils.getVoiceModelByCode(code);
   };
 
   // Project methods
@@ -164,13 +178,10 @@ export const useProjectsStore = defineStore("projects", () => {
   // Voice model methods
   async function loadVoiceModels() {
     try {
-      // Use TTS API to get models from backend
-      const response = await ttsApi.getVoiceModels();
-      if (response.success && response.data) {
-        voiceModels.value = response.data;
-      } else {
-        console.error("Failed to load voice models:", response.error);
-      }
+      // Instead of calling the API, use the getProcessedVoiceModels function
+      // from our voice-utils.ts file
+      const { getProcessedVoiceModels } = await import('@/utils/voice-utils');
+      voiceModels.value = getProcessedVoiceModels();
     } catch (error) {
       console.error("Failed to load voice models:", error);
     }

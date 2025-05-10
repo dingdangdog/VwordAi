@@ -25,6 +25,9 @@
       <!-- 服务商设置 -->
       <ProviderSetting v-if="activeTab === 'provider'" />
 
+      <!-- 语音模型预览 -->
+      <VoiceModelPreview v-else-if="activeTab === 'voice'" />
+
       <!-- 系统数据 -->
       <SystemDataSetting v-else-if="activeTab === 'system'" />
 
@@ -43,12 +46,14 @@ import {
   ServerIcon,
   InformationCircleIcon,
   ArrowPathIcon,
+  MicrophoneIcon,
 } from "@heroicons/vue/24/outline";
 
 // 导入设置组件
 import ProviderSetting from "@/components/settings/ProviderSetting.vue";
 import AboutSetting from "@/components/settings/AboutSetting.vue";
 import SystemDataSetting from "@/components/settings/SystemDataSetting.vue";
+import VoiceModelPreview from "@/components/settings/VoiceModelPreview.vue";
 
 const toast = useToast();
 const settingsStore = useSettingsStore();
@@ -56,6 +61,7 @@ const settingsStore = useSettingsStore();
 // 定义选项卡
 const tabs = [
   { id: "provider" as SettingsTab, name: "服务商配置", icon: ServerIcon },
+  { id: "voice" as SettingsTab, name: "语音模型", icon: MicrophoneIcon },
   { id: "system" as SettingsTab, name: "系统数据", icon: ArrowPathIcon },
   { id: "about" as SettingsTab, name: "关于", icon: InformationCircleIcon },
 ];

@@ -1,7 +1,7 @@
 /**
  * 语音合成API模块
  */
-import type { Result, TTSSynthesisResponse, VoiceModel, ServiceProviderType } from "@/types";
+import type { Result, TTSSynthesisResponse, ServiceProviderType } from "@/types";
 import { invoke, invokeHandler } from "@/utils/apiBase";
 
 /**
@@ -21,26 +21,6 @@ export const ttsApi = {
    */
   synthesizeMultiple: (chapterIds: string[]) =>
     invoke<Result<Record<string, TTSSynthesisResponse>>>("tts:synthesize-multiple", chapterIds),
-
-  /**
-   * 获取语音角色列表
-   * @param providerId 服务商ID
-   */
-  getVoiceRoles: (providerId: string) =>
-    invoke<Result<any[]>>("tts:get-voice-roles", providerId),
-
-  /**
-   * 获取情感列表
-   * @param providerId 服务商ID
-   */
-  getEmotions: (providerId: string) =>
-    invoke<Result<string[]>>("tts:get-emotions", providerId),
-
-  /**
-   * 获取所有语音模型
-   * 从models.json文件读取
-   */
-  getVoiceModels: () => invoke<Result<VoiceModel[]>>("get-voice-models"),
 
   /**
    * 测试服务商配置连接
@@ -105,13 +85,6 @@ export const serviceProviderApi = {
    */
   testConnection: (id: string) =>
     invoke<Result<{message: string}>>("service-provider:test-connection", id),
-
-  /**
-   * 获取服务商支持的声音角色
-   * @param id 服务商ID
-   */
-  getVoiceRoles: (id: string) =>
-    invoke<Result<any[]>>("service-provider:get-voice-roles", id),
 
   /**
    * 通过处理器获取所有服务商配置

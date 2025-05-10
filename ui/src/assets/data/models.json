@@ -1,0 +1,333 @@
+{
+  "azure": [
+    {
+      "id": "1",
+      "lang": "中文（普通话，简体）",
+      "gender": "0",
+      "name": "晓晓",
+      "code": "zh-CN-XiaoxiaoNeural",
+      "emotions": [1, 2, 3, 5, 7],
+      "roles": [1, 3, 5, 7]
+    },
+    {
+      "id": "2",
+      "lang": "中文（普通话，简体）",
+      "gender": "1",
+      "name": "云溪",
+      "code": "zh-CN-YunxiNeural",
+      "emotions": [1, 2, 3, 5, 7],
+      "roles": [2, 4, 6, 8]
+    },
+    {
+      "id": "3",
+      "lang": "中文（普通话，简体）",
+      "gender": "1",
+      "name": "云健",
+      "code": "zh-CN-YunjianNeural"
+    },
+    {
+      "id": "4",
+      "lang": "中文（普通话，简体）",
+      "gender": "0",
+      "name": "晓伊",
+      "code": "zh-CN-XiaoyiNeural"
+    },
+    {
+      "id": "5",
+      "lang": "中文（普通话，简体）",
+      "gender": "1",
+      "name": "云扬",
+      "code": "zh-CN-YunyangNeural"
+    },
+    {
+      "id": "6",
+      "lang": "中文（普通话，简体）",
+      "gender": "0",
+      "name": "晓辰",
+      "code": "zh-CN-XiaochenNeural"
+    },
+    {
+      "id": "7",
+      "lang": "中文（普通话，简体）",
+      "gender": "0",
+      "name": "晓辰多语言",
+      "code": "zh-CN-XiaochenMultilingualNeural",
+      "level": "4"
+    },
+    {
+      "id": "8",
+      "lang": "中文（普通话，简体）",
+      "gender": "0",
+      "name": "晓涵",
+      "code": "zh-CN-XiaohanNeural"
+    },
+    {
+      "id": "9",
+      "lang": "中文（普通话，简体）",
+      "gender": "0",
+      "name": "晓萌",
+      "code": "zh-CN-XiaomengNeural"
+    },
+    {
+      "id": "10",
+      "lang": "中文（普通话，简体）",
+      "gender": "0",
+      "name": "晓墨",
+      "code": "zh-CN-XiaomoNeural"
+    },
+    {
+      "id": "11",
+      "lang": "中文（普通话，简体）",
+      "gender": "0",
+      "name": "晓秋",
+      "code": "zh-CN-XiaoqiuNeural"
+    },
+    {
+      "id": "12",
+      "lang": "中文（普通话，简体）",
+      "gender": "0",
+      "name": "晓柔",
+      "code": "zh-CN-XiaorouNeural"
+    },
+    {
+      "id": "13",
+      "lang": "中文（普通话，简体）",
+      "gender": "0",
+      "name": "晓睿",
+      "code": "zh-CN-XiaoruiNeural"
+    },
+    {
+      "id": "14",
+      "lang": "中文（普通话，简体）",
+      "gender": "0",
+      "name": "晓霜",
+      "code": "zh-CN-XiaoshuangNeural",
+      "emotions": [8]
+    },
+    {
+      "id": "15",
+      "lang": "中文（普通话，简体）",
+      "gender": "0",
+      "name": "晓晓方言",
+      "code": "zh-CN-XiaoxiaoDialectsNeural"
+    },
+    {
+      "id": "16",
+      "lang": "中文（普通话，简体）",
+      "gender": "0",
+      "name": "晓晓多语言",
+      "code": "zh-CN-XiaoxiaoMultilingualNeural",
+      "level": "4"
+    },
+    {
+      "id": "17",
+      "lang": "中文（普通话，简体）",
+      "gender": "0",
+      "name": "晓燕",
+      "code": "zh-CN-XiaoyanNeural"
+    },
+    {
+      "id": "18",
+      "lang": "中文（普通话，简体）",
+      "gender": "0",
+      "name": "晓优",
+      "code": "zh-CN-XiaoyouNeural",
+      "emotions": [8]
+    },
+    {
+      "id": "19",
+      "lang": "中文（普通话，简体）",
+      "gender": "0",
+      "name": "晓瑜多语言",
+      "code": "zh-CN-XiaoyuMultilingualNeural",
+      "level": "4"
+    },
+    {
+      "id": "20",
+      "lang": "中文（普通话，简体）",
+      "gender": "0",
+      "name": "晓珍",
+      "code": "zh-CN-XiaozhenNeural"
+    },
+    {
+      "id": "21",
+      "lang": "中文（普通话，简体）",
+      "gender": "1",
+      "name": "云峰",
+      "code": "zh-CN-YunfengNeural"
+    },
+    {
+      "id": "22",
+      "lang": "中文（普通话，简体）",
+      "gender": "1",
+      "name": "云浩",
+      "code": "zh-CN-YunhaoNeural"
+    },
+    {
+      "id": "23",
+      "lang": "中文（普通话，简体）",
+      "gender": "1",
+      "name": "云杰",
+      "code": "zh-CN-YunjieNeural"
+    },
+    {
+      "id": "24",
+      "lang": "中文（普通话，简体）",
+      "gender": "1",
+      "name": "云霞",
+      "code": "zh-CN-YunxiaNeural"
+    },
+    {
+      "id": "25",
+      "lang": "中文（普通话，简体）",
+      "gender": "1",
+      "name": "云烨",
+      "code": "zh-CN-YunyeNeural"
+    },
+    {
+      "id": "26",
+      "lang": "中文（普通话，简体）",
+      "gender": "1",
+      "name": "云逸多语言",
+      "code": "zh-CN-YunyiMultilingualNeural",
+      "level": "4"
+    },
+    {
+      "id": "27",
+      "lang": "中文（普通话，简体）",
+      "gender": "1",
+      "name": "云泽",
+      "code": "zh-CN-YunzeNeural"
+    },
+    {
+      "id": "28",
+      "lang": "中文（广西口音普通话，简体）",
+      "gender": "1",
+      "name": "云启",
+      "code": "zh-CN-guangxi-YunqiNeural",
+      "level": "1,3"
+    },
+    {
+      "id": "29",
+      "lang": "中文（中原官话河南，简体）",
+      "gender": "1",
+      "name": "云登",
+      "code": "zh-CN-henan-YundengNeural",
+      "level": "3"
+    },
+    {
+      "id": "30",
+      "lang": "中文（东北官话，简体）",
+      "gender": "0",
+      "name": "晓贝",
+      "code": "zh-CN-liaoning-XiaobeiNeural",
+      "level": "1,3"
+    },
+    {
+      "id": "31",
+      "lang": "中文（东北官话，简体）",
+      "gender": "1",
+      "name": "云彪",
+      "code": "zh-CN-liaoning-YunbiaoNeural",
+      "level": "1,3"
+    },
+    {
+      "id": "32",
+      "lang": "中文（中原官话陕西，简体）",
+      "gender": "0",
+      "name": "晓妮",
+      "code": "zh-CN-shaanxi-XiaoniNeural",
+      "level": "1,3"
+    },
+    {
+      "id": "33",
+      "lang": "中文（冀鲁官话，简体）",
+      "gender": "1",
+      "name": "云翔",
+      "code": "zh-CN-shandong-YunxiangNeural",
+      "level": "3"
+    },
+    {
+      "id": "34",
+      "lang": "中文（西南普通话，简体）",
+      "gender": "1",
+      "name": "云熙",
+      "code": "zh-CN-sichuan-YunxiNeural",
+      "level": "1,3"
+    },
+    {
+      "id": "35",
+      "lang": "中文(粤语，繁体)",
+      "gender": "0",
+      "name": "晓雯",
+      "code": "zh-HK-HiuMaanNeural"
+    },
+    {
+      "id": "36",
+      "lang": "中文(粤语，繁体)",
+      "gender": "1",
+      "name": "雯龙",
+      "code": "zh-HK-WanLungNeural"
+    },
+    {
+      "id": "37",
+      "lang": "中文(粤语，繁体)",
+      "gender": "0",
+      "name": "晓佳",
+      "code": "zh-HK-HiuGaaiNeural"
+    },
+    {
+      "id": "38",
+      "lang": "中文（台湾普通话，繁体）",
+      "gender": "0",
+      "name": "晓辰",
+      "code": "zh-TW-HsiaoChenNeural"
+    },
+    {
+      "id": "39",
+      "lang": "中文（台湾普通话，繁体）",
+      "gender": "1",
+      "name": "云哲",
+      "code": "zh-TW-YunJheNeural"
+    },
+    {
+      "id": "40",
+      "lang": "中文（台湾普通话，繁体）",
+      "gender": "0",
+      "name": "晓瑜",
+      "code": "zh-TW-HsiaoYuNeural"
+    },
+    {
+      "id": "41",
+      "lang": "中文（吴语，简体）",
+      "gender": "0",
+      "name": "小彤",
+      "code": "wuu-CN-XiaotongNeural",
+      "level": "3"
+    },
+    {
+      "id": "42",
+      "lang": "中文（吴语，简体）",
+      "gender": "1",
+      "name": "云哲",
+      "code": "wuu-CN-YunzheNeural",
+      "level": "3"
+    },
+    {
+      "id": "43",
+      "lang": "中文（粤语，简体）",
+      "gender": "0",
+      "name": "晓敏",
+      "code": "yue-CN-XiaoMinNeural",
+      "level": "3"
+    },
+    {
+      "id": "44",
+      "lang": "中文（粤语，简体）",
+      "gender": "1",
+      "name": "云松",
+      "code": "yue-CN-YunSongNeural",
+      "level": "3"
+    }
+  ]
+}

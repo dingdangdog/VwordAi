@@ -81,7 +81,20 @@ export class TTSService {
         return { success: false, error: "服务商配置不存在", data: [] };
       }
 
-      return await ttsApi.getVoiceRoles(serviceProviderType);
+      // Use static data instead of API calls
+      const { getVoiceModelsByProvider } = await import('@/utils/voice-utils');
+      const models = getVoiceModelsByProvider(serviceProviderType);
+      
+      // Convert to the expected format for backwards compatibility
+      const roles = models.map(model => ({
+        id: model.code,
+        name: model.name,
+        language: model.lang.includes("中") ? "zh-CN" : model.lang.includes("英") ? "en-US" : model.lang,
+        gender: model.gender === "0" ? "female" : "male",
+        description: model.lang
+      }));
+
+      return { success: true, data: roles };
     } catch (error) {
       return {
         success: false,
@@ -94,7 +107,7 @@ export class TTSService {
   // 获取情感类型列表
   public async getEmotions(
     serviceProviderType: ServiceProviderType
-  ): Promise<Result<string[]>> {
+  ): Promise<Result<any[]>> {
     try {
       // 检查服务商配置是否存在
       const config = this.getProviderConfig(serviceProviderType);
@@ -102,7 +115,22 @@ export class TTSService {
         return { success: false, error: "服务商配置不存在", data: [] };
       }
 
-      return await ttsApi.getEmotions(serviceProviderType);
+      // Use static emotion data from JSON file
+      const emotionsData = await import('@/assets/data/emotions.json');
+      const emotions = emotionsData[serviceProviderType as keyof typeof emotionsData];
+      
+      if (!emotions || !Array.isArray(emotions)) {
+        return { success: true, data: [] };
+      }
+      
+      // Convert to the expected format
+      const formattedEmotions = emotions.map((emotion: { code: string; name: string; desc: string }) => ({
+        id: emotion.code,
+        name: emotion.name,
+        description: emotion.desc
+      }));
+
+      return { success: true, data: formattedEmotions };
     } catch (error) {
       return {
         success: false,

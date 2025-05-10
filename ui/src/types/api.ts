@@ -38,6 +38,10 @@ export interface VoiceModel {
     code: string;
     name: string;
   }>;
+  roles?: Array<{
+    code: string;
+    name: string;
+  }>;
 }
 
 // TTS合成响应

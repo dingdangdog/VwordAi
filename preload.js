@@ -111,8 +111,6 @@ contextBridge.exposeInMainWorld("api", {
     delete: (id) => ipcRenderer.invoke("service-provider:delete", id),
     testConnection: (id) =>
       ipcRenderer.invoke("service-provider:test-connection", id),
-    getVoiceRoles: (id) =>
-      ipcRenderer.invoke("service-provider:get-voice-roles", id),
   },
 
   // TTS相关API
@@ -120,10 +118,6 @@ contextBridge.exposeInMainWorld("api", {
     synthesize: (chapterId) => ipcRenderer.invoke("tts:synthesize", chapterId),
     synthesizeMultiple: (chapterIds) =>
       ipcRenderer.invoke("tts:synthesize-multiple", chapterIds),
-    getVoiceRoles: (providerId) =>
-      ipcRenderer.invoke("tts:get-voice-roles", providerId),
-    getEmotions: (providerId) =>
-      ipcRenderer.invoke("tts:get-emotions", providerId),
     testProviderConnection: (type) =>
       ipcRenderer.invoke("tts:test-provider-connection", type),
     // 注意: Azure TTS测试功能已移至 settings.testProviderConnection
