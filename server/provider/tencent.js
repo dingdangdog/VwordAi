@@ -14,7 +14,7 @@ const getConfig = () => {
   try {
     // 从settings获取配置
     const Settings = require("../models/Settings");
-    return Settings.getAllSettings();
+    return Settings.getSettings();
   } catch (err) {
     console.error("Failed to load Tencent Cloud config:", err);
     throw new Error("无法加载腾讯云配置");

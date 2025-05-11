@@ -13,7 +13,7 @@ function init() {
   // 获取所有设置
   ipcMain.handle("get-settings", async () => {
     try {
-      const settings = Settings.getAllSettings();
+      const settings = Settings.getSettings();
       return success(settings);
     } catch (err) {
       console.error("获取设置失败:", err);
@@ -24,7 +24,7 @@ function init() {
   // 获取单个设置项
   ipcMain.handle("get-setting", async (event, key) => {
     try {
-      return Settings.getSetting(key);
+      return success(Settings.getSetting(key));
     } catch (err) {
       console.error("获取设置项失败:", err);
       return error(err.message);
@@ -34,7 +34,7 @@ function init() {
   // 更新设置
   ipcMain.handle("update-settings", async (event, settingsData) => {
     try {
-      return Settings.updateSettings(settingsData);
+      return success(Settings.updateSettings(settingsData));
     } catch (err) {
       console.error("更新设置失败:", err);
       return error(err.message);
@@ -44,7 +44,7 @@ function init() {
   // 获取默认导出路径
   ipcMain.handle("get-default-export-path", async () => {
     try {
-      return Settings.getDefaultExportPath();
+      return success(Settings.getDefaultExportPath());
     } catch (err) {
       console.error("获取默认导出路径失败:", err);
       return error(err.message);
@@ -54,7 +54,8 @@ function init() {
   // 设置默认导出路径
   ipcMain.handle("set-default-export-path", async (event, path) => {
     try {
-      return Settings.setDefaultExportPath(path);
+      Settings.setDefaultExportPath(path);
+      return success({ path });
     } catch (err) {
       console.error("设置默认导出路径失败:", err);
       return error(err.message);
@@ -64,7 +65,7 @@ function init() {
   // 重置所有设置为默认值
   ipcMain.handle("reset-settings", async () => {
     try {
-      return Settings.resetToDefaults();
+      return success(Settings.resetToDefaults());
     } catch (err) {
       console.error("重置设置失败:", err);
       return error(err.message);
@@ -74,7 +75,7 @@ function init() {
   // 获取服务商配置
   ipcMain.handle("get-provider-settings", async (event, provider) => {
     try {
-      return Settings.getProviderSettings(provider);
+      return success(Settings.getProviderSettings(provider));
     } catch (err) {
       console.error("获取服务商配置失败:", err);
       return error(err.message);
@@ -86,7 +87,7 @@ function init() {
     "update-provider-settings",
     async (event, provider, providerData) => {
       try {
-        return Settings.updateProviderSettings(provider, providerData);
+        return success(Settings.updateProviderSettings(provider, providerData));
       } catch (err) {
         console.error("更新服务商配置失败:", err);
         return error(err.message);
@@ -99,7 +100,7 @@ function init() {
     "settings:test-provider-connection",
     async (event, provider, config) => {
       try {
-        return Settings.testProviderConnection(provider, config);
+        return success(Settings.testProviderConnection(provider, config));
       } catch (err) {
         console.error("测试服务商连接失败:", err);
         return error(err.message);

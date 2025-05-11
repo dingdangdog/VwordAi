@@ -175,7 +175,7 @@ const synthesizeMultipleChapters = async (chapterIds) => {
 // 设置相关处理函数
 const getSettings = async () => {
   try {
-    const settings = await SettingsController.getAllSettings();
+    const settings = await SettingsController.getSettings();
     return success(settings);
   } catch (err) {
     return error(err.message);

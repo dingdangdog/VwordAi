@@ -36,7 +36,6 @@ async function disconnect() {
  */
 async function getAllConfig() {
   try {
-    await BiliLiveService.loadAllConfig();
     const config = await BiliLiveService.getConfig();
     return success(config);
   } catch (err) {

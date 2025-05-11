@@ -11,7 +11,7 @@
 const fs = require("fs-extra");
 const path = require("path");
 const log = require("electron-log");
-const storage = require("../utils/storage");
+const Settings = require("../models/Settings");
 const { success, error } = require("../utils/result");
 const { BLiveClient } = require("../blive/client");
 const os = require("os");
@@ -24,9 +24,6 @@ let isConnecting = false;
 let isClosing = false;
 let giftMergeMap = new Map();
 
-// 单一配置键
-const BILIVE_CONFIG_KEY = "bilive";
-
 // 数据存储相关
 let recordEnabled = false;
 let recordPath = null;
@@ -34,114 +31,13 @@ let danmakuStream = null;
 let giftStream = null;
 let visitorStream = null;
 
-const DEFAULT_BILIVE_CONFIG = {
-  // 基础配置
-  platform: "win",
-  room_ids: [], // {id, name}
-  SESSDATA: "", // B站cookies中的SESSDATA字段值，登录后才有
-  bilibili_heart_print: 10,
-  continuous_gift_interval: 1, // 礼物合并时间间隔(秒)
-  welcome_level: 0, // 欢迎进场的最低粉丝牌等级
-  voice_text: {
-    enter: "欢迎 {uname} 进入直播间，记得常来玩哦！",
-    danmaku: "{uname}说：{msg}",
-    gift: "感谢 {uname} 赠送的 {num}个{gift_name}，谢谢老板，老板大气！",
-    like: "感谢 {uname} {like_text}",
-    like_total: "本次直播点赞数量超过 {limit_num} 次，达到 {click_count} 次",
-  },
-  like_nums: [66, 188, 300, 500, 666, 888, 999, 1666],
-  max_next_interval: 100, // 语音间隔 ms
-  black_user: [], // 黑名单用户
-  black_text: [], // 黑名单关键词
-  ttsEnabled: true, // 是否启用TTS
-  readDanmaku: true, // 是否播报弹幕
-  readGift: true, // 是否播报礼物
-  readEnter: true, // 是否播报进场
-  readLike: true, // 是否播报点赞
-
-  // 数据记录配置
-  recordDanmaku: true, // 是否记录弹幕
-  recordGift: true, // 是否记录礼物
-  recordVisitor: true, // 是否记录访客
-
-  // TTS模式
-  tts: {
-    mode: "local", // 'local', 'azure', 'aliyun', 'sovits'
-
-    // Azure TTS配置
-    azure: {
-      azure_key: "",
-      azure_model: "",
-      azure_region: "",
-      azure_endpoint: "",
-      speed: 1.0,
-      pitch: 0,
-    },
-
-    // 阿里云 TTS配置
-    alibaba: {
-      alibaba_appkey: "",
-      alibaba_token: "",
-      alibaba_model: "xiaoyun",
-      alibaba_endpoint: "https://nls-gateway-cn-shanghai.aliyuncs.com",
-      speed: 100, // 0-200
-    },
-
-    // SoVITS 配置
-    sovits: {
-      sovits_host: "http://127.0.0.1:5000/tts",
-      sovits_model: "",
-      sovits_language: "auto",
-      sovits_emotion: "",
-      sovits_top_k: "",
-      sovits_top_p: "",
-      sovits_temperature: "",
-      sovits_batch_size: "",
-      sovits_speed: "1.0",
-      sovits_save_temp: "false",
-      sovits_stream: "false",
-      sovits_format: "wav",
-    },
-  },
-};
-
 /**
  * Load bilive configuration
  */
 async function loadAllConfig() {
   try {
     // 从配置目录加载B站配置
-    const savedConfig = storage.readConfig(BILIVE_CONFIG_KEY, {});
-    // console.log("Saved bilive config:", savedConfig);
-
-    // 确保正确合并默认配置和存储的配置
-    biliveConfig = {
-      ...DEFAULT_BILIVE_CONFIG,
-      ...(savedConfig || {}),
-    };
-
-    // 确保配置结构完整
-    if (!biliveConfig.tts) {
-      biliveConfig.tts = DEFAULT_BILIVE_CONFIG.tts;
-    } else {
-      // 确保TTS子配置结构完整
-      biliveConfig.tts = {
-        ...DEFAULT_BILIVE_CONFIG.tts,
-        ...biliveConfig.tts,
-        azure: {
-          ...DEFAULT_BILIVE_CONFIG.tts.azure,
-          ...(biliveConfig.tts.azure || {}),
-        },
-        alibaba: {
-          ...DEFAULT_BILIVE_CONFIG.tts.alibaba,
-          ...(biliveConfig.tts.alibaba || {}),
-        },
-        sovits: {
-          ...DEFAULT_BILIVE_CONFIG.tts.sovits,
-          ...(biliveConfig.tts.sovits || {}),
-        },
-      };
-    }
+    const biliveConfig = Settings.getBliveSettings();
 
     // console.log("Merged biliveConfig:", biliveConfig);
     log.info(
@@ -149,14 +45,6 @@ async function loadAllConfig() {
         biliveConfig.SESSDATA ? String(biliveConfig.SESSDATA).length : 0
       }`
     );
-
-    // Check and fix optional fields
-    if (biliveConfig.ttsEnabled === undefined) {
-      log.warn(
-        "(BiliLive Service) ttsEnabled is undefined, setting to default true"
-      );
-      biliveConfig.ttsEnabled = true;
-    }
 
     return success({ message: "Bilive config loaded" });
   } catch (err) {
@@ -178,7 +66,7 @@ async function saveBiliveConfig(configData) {
     };
 
     // 保存到配置文件
-    storage.saveConfig(BILIVE_CONFIG_KEY, biliveConfig);
+    Settings.saveBiliveConfig(biliveConfig);
 
     // 记录保存的配置信息（不记录SESSDATA的具体内容）
     const logConfig = { ...biliveConfig };
@@ -206,7 +94,7 @@ async function saveTTSMode(mode) {
     biliveConfig.tts.mode = mode;
 
     // 保存完整配置
-    storage.saveConfig(BILIVE_CONFIG_KEY, biliveConfig);
+    Settings.saveBiliveConfig(biliveConfig);
 
     log.info(`(BiliLive Service) Bili TTS mode saved: ${mode}`);
     return success(mode);
@@ -229,7 +117,7 @@ async function saveAzureConfig(configData) {
     };
 
     // 保存完整配置
-    storage.saveConfig(BILIVE_CONFIG_KEY, biliveConfig);
+    Settings.saveBiliveConfig(biliveConfig);
 
     log.info("(BiliLive Service) Azure TTS config saved");
     return success(configData);
@@ -252,7 +140,7 @@ async function saveAlibabaConfig(configData) {
     };
 
     // 保存完整配置
-    storage.saveConfig(BILIVE_CONFIG_KEY, biliveConfig);
+    Settings.saveBiliveConfig(biliveConfig);
 
     log.info("(BiliLive Service) Alibaba TTS配置已保存");
     return success(configData);
@@ -275,7 +163,7 @@ async function saveSovitsConfig(configData) {
     };
 
     // 保存完整配置
-    storage.saveConfig(BILIVE_CONFIG_KEY, biliveConfig);
+    Settings.saveBiliveConfig(biliveConfig);
 
     log.info("(BiliLive Service) SoVITS TTS配置已保存");
     return success(configData);
@@ -1225,9 +1113,13 @@ async function azureTTS(text) {
   // 检查配置是否完整
   if (!config.azure_key || !config.azure_region) {
     // 尝试使用系统全局配置
-    const systemSetting = storage.readConfig("settings", {});
+    const systemSetting = storage.readConfig("tts", {});
 
-    if (systemSetting.azure.key && systemSetting.azure.region) {
+    if (
+      systemSetting.azure &&
+      systemSetting.azure.key &&
+      systemSetting.azure.region
+    ) {
       log.info("(BiliLive Service) Using system global Azure configuration");
 
       // 使用系统全局配置
@@ -1312,10 +1204,30 @@ async function azureTTS(text) {
  */
 async function alibabaTTS(text) {
   const config = biliveConfig.tts?.alibaba || {};
+
+  // 检查是否有配置信息，如果没有则尝试从全局配置获取
   if (!config || !config.alibaba_appkey || !config.alibaba_token) {
-    throw new Error(
-      "Alibaba TTS configuration incomplete (AppKey and Token required)"
-    );
+    // 尝试使用系统全局配置
+    const systemSetting = storage.readConfig("tts", {});
+
+    if (
+      systemSetting.aliyun &&
+      systemSetting.aliyun.appkey &&
+      systemSetting.aliyun.token
+    ) {
+      log.info("(BiliLive Service) Using system global Aliyun configuration");
+
+      // 从全局配置中获取
+      config.alibaba_appkey = systemSetting.aliyun.appkey;
+      config.alibaba_token = systemSetting.aliyun.token;
+      config.alibaba_endpoint =
+        systemSetting.aliyun.endpoint ||
+        "wss://nls-gateway-cn-shanghai.aliyuncs.com/ws/v1";
+    } else {
+      throw new Error(
+        "Alibaba TTS configuration incomplete (AppKey and Token required)"
+      );
+    }
   }
 
   try {
@@ -1325,9 +1237,7 @@ async function alibabaTTS(text) {
     const aliyunConfig = {
       appkey: config.alibaba_appkey,
       token: config.alibaba_token,
-      endpoint:
-        config.alibaba_endpoint ||
-        "wss://nls-gateway-cn-shanghai.aliyuncs.com/ws/v1",
+      endpoint: config.alibaba_endpoint,
     };
 
     // 准备语音设置

@@ -77,12 +77,13 @@
     "fs-extra": "^11.2.0",
     "iconv-lite": "^0.6.3",
     "microsoft-cognitiveservices-speech-sdk": "^1.41.0",
+    "openai": "^4.98.0",
     "say": "^0.16.0",
     "sound-play": "^1.1.0",
     "uuid": "^9.0.1"
   },
   "devDependencies": {
-    "dotenv": "^16.4.5",
+    "dotenv": "^16.5.0",
     "electron": "^35.3.0",
     "electron-builder": "^25.1.8"
   }

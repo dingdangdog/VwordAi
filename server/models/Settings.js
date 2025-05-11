@@ -5,16 +5,50 @@
 const path = require("path");
 const os = require("os");
 const storage = require("../utils/storage");
-const { success, error } = require("../utils/result");
 
 // 配置保存的单一键名
 const SETTINGS_KEY = "vwordai";
+const LLM_CONFIG_KEY = "llm";
+const TTS_CONFIG_KEY = "tts";
+const BLIVE_CONFIG_KEY = "blive";
 
 // 默认设置
 const DEFAULT_SETTINGS = {
   theme: "light",
   defaultExportPath: path.join(os.homedir(), "Documents", "vwordai"),
   language: "zh_CN",
+  autoSave: true,
+  autoSaveInterval: 5, // 分钟
+  maxConcurrentTasks: 2,
+  fileNamingRule: "chapter_title",
+  customNamingFormat: "{project}-{chapter}",
+  outputFormat: "mp3",
+};
+
+const DEFAULT_LLM_SETTINGS = {
+  volcengine: {
+    key: "",
+    endpoint: "https://ark.cn-beijing.volces.com/api/v3/",
+    model: "",
+  },
+  aliyun: {
+    key: "",
+    endpoint: "",
+    model: "",
+  },
+  openai: {
+    key: "",
+    endpoint: "",
+    model: "",
+  },
+  azure: {
+    key: "",
+    endpoint: "",
+    model: "",
+  },
+};
+
+const DEFAULT_TTS_SETTINGS = {
   azure: {
     key: "",
     region: "",
@@ -41,48 +75,154 @@ const DEFAULT_SETTINGS = {
   },
   openai: {
     apiKey: "",
-    endpoint: "https://api.openai.com/v1",
+    endpoint: "",
     status: "untested",
   },
-  autoSave: true,
-  autoSaveInterval: 5, // 分钟
-  maxConcurrentTasks: 2,
-  fileNamingRule: "chapter_title",
-  customNamingFormat: "{project}-{chapter}",
-  outputFormat: "mp3",
 };
 
+const DEFAULT_BLIVE_SETTINGS = {
+  // 基础配置
+  platform: "win",
+  room_ids: [], // {id, name}
+  SESSDATA: "", // B站cookies中的SESSDATA字段值，登录后才有
+  bilibili_heart_print: 10,
+  continuous_gift_interval: 1, // 礼物合并时间间隔(秒)
+  welcome_level: 0, // 欢迎进场的最低粉丝牌等级
+  voice_text: {
+    enter: "欢迎 {uname} 进入直播间，记得常来玩哦！",
+    danmaku: "{uname}说：{msg}",
+    gift: "感谢 {uname} 赠送的 {num}个{gift_name}，谢谢老板，老板大气！",
+    like: "感谢 {uname} {like_text}",
+    like_total: "本次直播点赞数量超过 {limit_num} 次，达到 {click_count} 次",
+  },
+  like_nums: [66, 188, 300, 500, 666, 888, 999, 1666],
+  max_next_interval: 100, // 语音间隔 ms
+  black_user: [], // 黑名单用户
+  black_text: [], // 黑名单关键词
+  ttsEnabled: true, // 是否启用TTS
+  readDanmaku: true, // 是否播报弹幕
+  readGift: true, // 是否播报礼物
+  readEnter: true, // 是否播报进场
+  readLike: true, // 是否播报点赞
+
+  // 数据记录配置
+  recordDanmaku: true, // 是否记录弹幕
+  recordGift: true, // 是否记录礼物
+  recordVisitor: true, // 是否记录访客
+
+  // TTS模式
+  tts: {
+    mode: "local", // 'local', 'azure', 'aliyun', 'sovits'
+
+    // Azure TTS配置
+    azure: {
+      azure_key: "",
+      azure_model: "",
+      azure_region: "",
+      azure_endpoint: "",
+      speed: 1.0,
+      pitch: 0,
+    },
+
+    // 阿里云 TTS配置
+    alibaba: {
+      alibaba_appkey: "",
+      alibaba_token: "",
+      alibaba_model: "xiaoyun",
+      alibaba_endpoint: "https://nls-gateway-cn-shanghai.aliyuncs.com",
+      speed: 100, // 0-200
+    },
+
+    // SoVITS 配置
+    sovits: {
+      sovits_host: "http://127.0.0.1:5000/tts",
+      sovits_model: "",
+      sovits_language: "auto",
+      sovits_emotion: "",
+      sovits_top_k: "",
+      sovits_top_p: "",
+      sovits_temperature: "",
+      sovits_batch_size: "",
+      sovits_speed: "1.0",
+      sovits_save_temp: "false",
+      sovits_stream: "false",
+      sovits_format: "wav",
+    },
+  },
+};
 /**
  * 设置类
  */
 class Settings {
   /**
-   * 获取所有设置
-   * @returns {Object} 所有设置
-   */
-  static getAllSettings() {
-    console.log("Reading all settings...");
-    // 使用单一键从存储中读取所有设置
-    const settings = storage.readConfig(SETTINGS_KEY, DEFAULT_SETTINGS);
-
-    console.log("Read settings Successfully");
-    return settings;
-  }
-
-  /**
    * 获取单个设置项
    * @param {string} key 设置键
    * @returns {any} 设置值
    */
-  static getSetting(key) {
+  static getSetting(key, type = SETTINGS_KEY) {
+    let settings = null;
+    switch (type) {
+      case SETTINGS_KEY:
+        settings = this.getSettings();
+        break;
+      case LLM_CONFIG_KEY:
+        settings = this.getLLMSettings();
+        break;
+      case TTS_CONFIG_KEY:
+        settings = this.getTTSSettings();
+        break;
+      case BLIVE_CONFIG_KEY:
+        settings = this.getBliveSettings();
+        break;
+      default:
+        return null;
+    }
     // 从存储的所有设置中获取指定键的值
-    const allSettings = this.getAllSettings();
-    const value = allSettings[key];
+    return settings[key];
+  }
 
-    return success({
-      key,
-      value,
-    });
+  /**
+   * 获取所有设置
+   * @returns {Object} 所有设置
+   */
+  static getSettings() {
+    const settings = storage.readConfig(SETTINGS_KEY, DEFAULT_SETTINGS);
+    return settings;
+  }
+
+  static getLLMSettings() {
+    const settings = storage.readConfig(LLM_CONFIG_KEY, DEFAULT_LLM_SETTINGS);
+    return settings;
+  }
+
+  static getTTSSettings() {
+    const settings = storage.readConfig(TTS_CONFIG_KEY, DEFAULT_TTS_SETTINGS);
+    return settings;
+  }
+
+  static getBliveSettings() {
+    const settings = storage.readConfig(
+      BLIVE_CONFIG_KEY,
+      DEFAULT_BLIVE_SETTINGS
+    );
+    return settings;
+  }
+
+  // 保存设置
+  static saveSettings(config) {
+    storage.saveConfig(SETTINGS_KEY, config);
+  }
+
+  static saveLLMConfig(config) {
+    storage.saveConfig(LLM_CONFIG_KEY, config);
+  }
+
+  static saveTTSSettings(config) {
+    storage.saveConfig(TTS_CONFIG_KEY, config);
+  }
+
+  static saveBiliveConfig(config) {
+    storage.saveConfig(BLIVE_CONFIG_KEY, config);
   }
 
   /**
@@ -91,25 +231,18 @@ class Settings {
    * @returns {Object} 更新后的所有设置
    */
   static updateSettings(settingsData) {
-    try {
-      // console.log("Update Settings:", JSON.stringify(settingsData, null, 2));
+    // 获取当前所有设置
+    const currentSettings = this.getSettings();
 
-      // 获取当前所有设置
-      const currentSettings = this.getAllSettings();
+    // 合并新设置
+    const updatedSettings = { ...currentSettings, ...settingsData };
 
-      // 合并新设置
-      const updatedSettings = { ...currentSettings, ...settingsData };
+    // 保存所有设置到单一键
+    storage.saveConfig(SETTINGS_KEY, updatedSettings);
 
-      // 保存所有设置到单一键
-      storage.saveConfig(SETTINGS_KEY, updatedSettings);
+    console.log("Settings saved");
 
-      console.log("Settings saved");
-
-      return success(updatedSettings);
-    } catch (err) {
-      console.error("Update settings failed:", err);
-      return error(err.message);
-    }
+    return updatedSettings;
   }
 
   /**
@@ -117,15 +250,8 @@ class Settings {
    * @returns {Object} 默认设置
    */
   static resetToDefaults() {
-    try {
-      // 保存默认设置到单一键
-      storage.saveConfig(SETTINGS_KEY, DEFAULT_SETTINGS);
-
-      return success(DEFAULT_SETTINGS);
-    } catch (err) {
-      console.error("Reset settings failed:", err);
-      return error(err.message);
-    }
+    storage.saveConfig(SETTINGS_KEY, DEFAULT_SETTINGS);
+    return DEFAULT_SETTINGS;
   }
 
   /**
@@ -133,9 +259,8 @@ class Settings {
    * @returns {Object} 包含导出路径的结果对象
    */
   static getDefaultExportPath() {
-    const allSettings = this.getAllSettings();
-    const exportPath = allSettings.defaultExportPath;
-    return success({ path: exportPath });
+    const allSettings = this.getSettings();
+    return allSettings.defaultExportPath;
   }
 
   /**
@@ -144,15 +269,9 @@ class Settings {
    * @returns {Object} 结果对象
    */
   static setDefaultExportPath(path) {
-    try {
-      const allSettings = this.getAllSettings();
-      allSettings.defaultExportPath = path;
-      storage.saveConfig(SETTINGS_KEY, allSettings);
-      return success({ path });
-    } catch (err) {
-      console.error("Set export path failed:", err);
-      return error(err.message);
-    }
+    const allSettings = this.getSettings();
+    allSettings.defaultExportPath = path;
+    storage.saveConfig(SETTINGS_KEY, allSettings);
   }
 
   /**
@@ -161,24 +280,18 @@ class Settings {
    * @returns {Object} 包含服务商配置的结果对象
    */
   static getProviderSettings(provider) {
-    try {
-      console.log(`Get provider ${provider} settings`);
-      const allSettings = this.getAllSettings();
-      const providerSettings = allSettings[provider];
+    const allSettings = this.getSettings();
+    const providerSettings = allSettings[provider];
 
-      console.log(
-        `Provider ${provider} settings:`,
-        JSON.stringify(providerSettings, null, 2)
-      );
+    console.log(
+      `Provider ${provider} settings:`,
+      JSON.stringify(providerSettings, null, 2)
+    );
 
-      return success({
-        provider,
-        settings: providerSettings,
-      });
-    } catch (err) {
-      console.error(`Get ${provider} settings failed:`, err);
-      return error(err.message);
-    }
+    return {
+      provider,
+      settings: providerSettings,
+    };
   }
 
   /**
@@ -188,67 +301,62 @@ class Settings {
    * @returns {Object} 包含更新后的服务商配置的结果对象
    */
   static updateProviderSettings(provider, providerData) {
-    try {
-      console.log(
-        `Update provider ${provider} settings:`,
-        JSON.stringify(providerData, null, 2)
-      );
+    console.log(
+      `Update provider ${provider} settings:`,
+      JSON.stringify(providerData, null, 2)
+    );
 
-      // 获取所有设置
-      const allSettings = this.getAllSettings();
+    // 获取所有设置
+    const allSettings = this.getSettings();
 
-      // 获取当前的服务商设置
-      const currentProviderSettings = allSettings[provider] || {};
+    // 获取当前的服务商设置
+    const currentProviderSettings = allSettings[provider] || {};
 
-      // 合并新的设置
-      const updatedProviderSettings = {
-        ...currentProviderSettings,
-        ...providerData,
-      };
+    // 合并新的设置
+    const updatedProviderSettings = {
+      ...currentProviderSettings,
+      ...providerData,
+    };
 
-      // 检测配置是否已完整填写
-      const isConfigComplete = this.isProviderConfigComplete(
-        provider,
-        updatedProviderSettings
-      );
+    // 检测配置是否已完整填写
+    const isConfigComplete = this.isProviderConfigComplete(
+      provider,
+      updatedProviderSettings
+    );
 
-      // 如果配置有变更，将状态设置为 untested
-      if (
-        JSON.stringify(currentProviderSettings) !==
-        JSON.stringify(updatedProviderSettings)
-      ) {
-        // 只有在配置变更时才改变状态，且仅当没有显式传入状态时
-        if (!providerData.status) {
-          // 仅当配置完整且之前状态不是success或failure时才设置为untested
-          if (
-            isConfigComplete &&
-            currentProviderSettings.status !== "success" &&
-            currentProviderSettings.status !== "failure"
-          ) {
-            updatedProviderSettings.status = "untested";
-          }
+    // 如果配置有变更，将状态设置为 untested
+    if (
+      JSON.stringify(currentProviderSettings) !==
+      JSON.stringify(updatedProviderSettings)
+    ) {
+      // 只有在配置变更时才改变状态，且仅当没有显式传入状态时
+      if (!providerData.status) {
+        // 仅当配置完整且之前状态不是success或failure时才设置为untested
+        if (
+          isConfigComplete &&
+          currentProviderSettings.status !== "success" &&
+          currentProviderSettings.status !== "failure"
+        ) {
+          updatedProviderSettings.status = "untested";
         }
       }
-
-      // 更新设置中的服务商配置
-      allSettings[provider] = updatedProviderSettings;
-
-      // 保存所有设置
-      storage.saveConfig(SETTINGS_KEY, allSettings);
-
-      console.log(
-        `Save provider ${provider} settings:`,
-        JSON.stringify(updatedProviderSettings, null, 2)
-      );
-
-      return success({
-        provider,
-        settings: updatedProviderSettings,
-      });
-    } catch (err) {
-      console.error(`Update ${provider} settings failed:`, err);
-      return error(err.message);
     }
+
+    // 更新设置中的服务商配置
+    allSettings[provider] = updatedProviderSettings;
+
+    // 保存所有设置
+    storage.saveConfig(SETTINGS_KEY, allSettings);
+
+    console.log(
+      `Save provider ${provider} settings:`,
+      JSON.stringify(updatedProviderSettings, null, 2)
+    );
+
+    return {
+      provider,
+      settings: updatedProviderSettings,
+    };
   }
 
   /**
@@ -297,7 +405,7 @@ class Settings {
     }
     if (result.success) {
       // 获取所有设置
-      const allSettings = this.getAllSettings();
+      const allSettings = this.getSettings();
       // 更新服务商配置
       const updatedConfig = { ...config, status: "success" };
       allSettings[provider] = updatedConfig;
@@ -313,34 +421,23 @@ class Settings {
    * @returns {Object} 测试结果
    */
   static async testAzureTTS(config) {
-    try {
-      if (!config || !config.key || !config.region) {
-        return error("Azure配置不完整");
-      }
+    const text = "azure配置成功";
+    const settings = {
+      voice: "zh-CN-XiaoxiaoMultilingualNeural",
+      speed: 1.0,
+      emotion: "general",
+    };
 
-      const text = "azure配置成功";
-      const settings = {
-        voice: "zh-CN-XiaoxiaoMultilingualNeural",
-        speed: 1.0,
-        emotion: "general",
-      };
+    const azureProvider = require("../provider/azure");
+    const result = await azureProvider.play(text, settings, config);
 
-      const azureProvider = require("../provider/azure");
-      const result = await azureProvider.play(text, settings, config);
-
-      if (result.success) {
-        return success({
-          ...result.data,
-          status: "success",
-        });
-      } else {
-        return result;
-      }
-    } catch (error) {
+    if (result.success) {
       return {
-        success: false,
-        error: error instanceof Error ? error.message : "测试时发生未知错误",
+        ...result.data,
+        status: "success",
       };
+    } else {
+      return result;
     }
   }
 }

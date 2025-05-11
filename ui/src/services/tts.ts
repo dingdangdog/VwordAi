@@ -63,7 +63,7 @@ export class TTSService {
   // 获取服务商配置
   public getProviderConfig(type: ServiceProviderType): any {
     const settingsStore = this.getSettingsStore();
-    const settings = settingsStore.getAllSettings();
+    const settings = settingsStore.getSettings();
     if (!settings) {
       return null;
     }

@@ -226,7 +226,8 @@ async function synthesizeChapter(chapterId) {
     }
 
     // 1. Determine Provider and Settings
-    const globalSettings = Settings.getAllSettings();
+    const globalSettings = Settings.getSettings();
+    const ttsSettings = Settings.getTTSSettings(); // 获取TTS专用配置
     const chapterSettings = chapter.settings || {};
 
     // If chapter has no service provider, check project settings
@@ -251,8 +252,8 @@ async function synthesizeChapter(chapterId) {
       );
     }
 
-    // 2. Get Provider Configuration
-    const providerConfig = globalSettings[providerType];
+    // 2. Get Provider Configuration - 从TTS配置中获取服务商设置
+    const providerConfig = ttsSettings[providerType];
     if (!isProviderConfigValid(providerType, providerConfig)) {
       throw new Error(
         `Provider '${providerType}' configuration is incomplete or invalid`
@@ -580,7 +581,7 @@ async function synthesizeMultipleChapters(chapterIds) {
 
   const results = [];
   const errors = [];
-  const globalSettings = Settings.getAllSettings();
+  const globalSettings = Settings.getSettings();
   const maxConcurrentTasks =
     globalSettings.maxConcurrentTasks > 0
       ? globalSettings.maxConcurrentTasks

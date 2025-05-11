@@ -10,7 +10,13 @@ import type {
 } from "@/types";
 
 // 设置选项卡类型
-export type SettingsTab = "provider" | "storage" | "system" | "about" | "voice";
+export type SettingsTab =
+  | "provider"
+  | "storage"
+  | "system"
+  | "about"
+  | "voice"
+  | "llm";
 
 // 支持的服务商
 export const SUPPORTED_PROVIDERS = [
@@ -19,6 +25,18 @@ export const SUPPORTED_PROVIDERS = [
   // { id: "tencent", name: "腾讯云", type: "tencent" as ServiceProviderType },
   // { id: "baidu", name: "百度云", type: "baidu" as ServiceProviderType },
   // { id: "openai", name: "OpenAI", type: "openai" as ServiceProviderType },
+];
+
+// 支持的LLM服务商
+export const SUPPORTED_LLM_PROVIDERS = [
+  {
+    id: "volcengine",
+    name: "火山引擎",
+    type: "volcengine" as ServiceProviderType,
+  },
+  { id: "aliyun", name: "阿里云", type: "aliyun" as ServiceProviderType },
+  { id: "openai", name: "OpenAI", type: "openai" as ServiceProviderType },
+  { id: "azure", name: "Azure", type: "azure" as ServiceProviderType },
 ];
 
 export const useSettingsStore = defineStore("settings", () => {
@@ -324,7 +342,7 @@ export const useSettingsStore = defineStore("settings", () => {
   }
 
   // Get all settings
-  function getAllSettings(): Settings | null {
+  function getSettings(): Settings | null {
     return settings.value;
   }
 
@@ -371,6 +389,70 @@ export const useSettingsStore = defineStore("settings", () => {
     return await loadSettings();
   }
 
+  // 加载TTS设置
+  async function loadTTSSettings() {
+    try {
+      const response = await window.electron.invoke("settings:get-tts");
+      if (response && response.success && response.data) {
+        return response.data;
+      }
+      return null;
+    } catch (error) {
+      console.error("Failed to load TTS settings:", error);
+      return null;
+    }
+  }
+
+  // 更新TTS服务提供商
+  async function updateTTSProvider(
+    type: ServiceProviderType,
+    config: Partial<ServiceProviderConfig>
+  ): Promise<boolean> {
+    try {
+      const response = await window.electron.invoke(
+        "settings:update-tts-provider",
+        type,
+        config
+      );
+      return response && response.success;
+    } catch (error) {
+      console.error(`Failed to update ${type} TTS config:`, error);
+      return false;
+    }
+  }
+
+  // 加载LLM设置
+  async function loadLLMSettings() {
+    try {
+      const response = await window.electron.invoke("settings:get-llm");
+      if (response && response.success && response.data) {
+        return response.data;
+      }
+      return null;
+    } catch (error) {
+      console.error("Failed to load LLM settings:", error);
+      return null;
+    }
+  }
+
+  // 更新LLM服务提供商
+  async function updateLLMProvider(
+    type: ServiceProviderType,
+    config: Partial<ServiceProviderConfig>
+  ): Promise<boolean> {
+    try {
+      const response = await window.electron.invoke(
+        "settings:update-llm-provider",
+        type,
+        config
+      );
+      return response && response.success;
+    } catch (error) {
+      console.error(`Failed to update ${type} LLM config:`, error);
+      return false;
+    }
+  }
+
   return {
     theme,
     defaultExportPath,
@@ -386,7 +468,7 @@ export const useSettingsStore = defineStore("settings", () => {
     setActiveTab,
     setActiveProvider,
     testServiceProviderConnection,
-    getAllSettings,
+    getSettings,
     updateSettings,
     loadSettings,
     getServiceProviders,
@@ -397,5 +479,9 @@ export const useSettingsStore = defineStore("settings", () => {
     isProviderConfiguredButUntested,
     isProviderConfigurationSuccess,
     isProviderConfigurationFailure,
+    loadTTSSettings,
+    updateTTSProvider,
+    loadLLMSettings,
+    updateLLMProvider,
   };
 });

@@ -174,6 +174,7 @@ function readConfig(key, defaultValue = {}) {
       log.debug(`(Storage) Successfully read config ${key}`);
       return config;
     } else {
+      saveConfig(key, defaultValue);
       log.debug(`(Storage) Config ${key} does not exist, using default value`);
       return defaultValue;
     }

@@ -226,7 +226,7 @@ async function exportSystemData() {
   try {
     // 收集所有系统数据
     const systemData = {
-      settings: await settingsStore.getAllSettings(),
+      settings: await settingsStore.getSettings(),
       projects: await getAllProjects(),
       chapters: await getAllChapters(),
       exportDate: new Date().toISOString(),
