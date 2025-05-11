@@ -64,14 +64,12 @@ interface ApiInterface {
     update: (id: string, data: any) => Promise<any>;
     delete: (id: string) => Promise<any>;
     testConnection: (id: string) => Promise<any>;
-    getVoiceRoles: (id: string) => Promise<any>;
   };
 
   // TTS相关API
   tts: {
     synthesize: (chapterId: string) => Promise<any>;
     synthesizeMultiple: (chapterIds: string[]) => Promise<any>;
-    getVoiceRoles: (providerId: string) => Promise<any>;
     getEmotions: (providerId: string) => Promise<any>;
     testProviderConnection: (type: string) => Promise<any>;
     testAzureTTS: (data: any) => Promise<any>;
