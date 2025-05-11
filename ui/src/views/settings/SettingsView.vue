@@ -46,6 +46,7 @@ import {
   InformationCircleIcon,
   ArrowPathIcon,
   MicrophoneIcon,
+  SpeakerWaveIcon,
 } from "@heroicons/vue/24/outline";
 
 // 导入设置组件
@@ -59,15 +60,15 @@ const settingsStore = useSettingsStore();
 
 // 定义选项卡
 const tabs = [
-  { id: "tts" as SettingsTab, name: "TTS配置", icon: ServerIcon },
-  { id: "llm" as SettingsTab, name: "LLM配置", icon: MicrophoneIcon },
+  { id: "tts" as SettingsTab, name: "TTS配置", icon: MicrophoneIcon },
+  { id: "llm" as SettingsTab, name: "LLM配置", icon: ArrowPathIcon },
   {
     id: "system" as SettingsTab,
     name: "系统设置",
-    icon: InformationCircleIcon,
+    icon: ServerIcon,
   },
-  { id: "voice" as SettingsTab, name: "语音模型", icon: ArrowPathIcon },
-  { id: "about" as SettingsTab, name: "关于", icon: ArrowPathIcon },
+  { id: "voice" as SettingsTab, name: "语音模型", icon: SpeakerWaveIcon },
+  { id: "about" as SettingsTab, name: "关于", icon: InformationCircleIcon },
 ];
 
 // 选项卡状态

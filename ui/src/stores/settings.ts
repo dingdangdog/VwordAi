@@ -293,7 +293,7 @@ export const useSettingsStore = defineStore("settings", () => {
   // Test TTS service provider connection
   async function testTTSProviderConnection(
     type: TTSProviderType,
-    config?: any
+    model?: any
   ): Promise<ConnectionTestResult> {
     try {
       // Make sure settings are loaded
@@ -301,18 +301,7 @@ export const useSettingsStore = defineStore("settings", () => {
         await loadTTSSettings();
       }
 
-      const providerConfig = config || getTTSProviderConfig(type);
-      if (!providerConfig) {
-        return {
-          success: false,
-          message: `No configuration found for ${type}`,
-        };
-      }
-
-      let response = await settingsApi.testTTSProviderConnection(
-        type,
-        providerConfig
-      );
+      let response = await settingsApi.testTTSProviderConnection(type, model);
 
       if (response.success && response.data) {
         // 更新本地状态

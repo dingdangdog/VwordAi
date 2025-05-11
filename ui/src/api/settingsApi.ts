@@ -45,28 +45,28 @@ export const settingsApi = {
    * @param data 设置数据
    */
   update: (data: Partial<Settings>) =>
-    invoke<Result<Settings>>("update-settings", data),
+    invoke<Result<Settings>>("update-settings", { ...data }),
 
   /**
    * 更新TTS设置
    * @param data TTS设置数据
    */
   updateTTSSettings: (data: any) =>
-    invoke<Result<any>>("update-tts-settings", data),
+    invoke<Result<any>>("update-tts-settings", { ...data }),
 
   /**
    * 更新LLM设置
    * @param data LLM设置数据
    */
   updateLLMSettings: (data: any) =>
-    invoke<Result<any>>("update-llm-settings", data),
+    invoke<Result<any>>("update-llm-settings", { ...data }),
 
   /**
    * 更新B站直播设置
    * @param data B站直播设置数据
    */
   updateBliveSettings: (data: any) =>
-    invoke<Result<any>>("update-blive-settings", data),
+    invoke<Result<any>>("update-blive-settings", { ...data }),
 
   /**
    * 获取默认导出路径
@@ -98,7 +98,7 @@ export const settingsApi = {
    * @param data 服务商配置数据
    */
   updateTTSProviderSettings: (provider: TTSProviderType, data: any) =>
-    invoke<Result<any>>("update-tts-provider-settings", provider, data),
+    invoke<Result<any>>("update-tts-provider-settings", provider, { ...data }),
 
   /**
    * 获取LLM服务商配置
@@ -119,18 +119,18 @@ export const settingsApi = {
     invoke<Result<any>>(
       "update-llm-provider-settings",
       provider as TTSProviderType,
-      data
+      { ...data }
     ),
 
   /**
    * 测试TTS服务商连接
    * @param type 服务商类型
    */
-  testTTSProviderConnection: (type: TTSProviderType, config?: any) =>
+  testTTSProviderConnection: (type: TTSProviderType, model?: any) =>
     invoke<Result<{ message: string; status: string }>>(
       "test-tts-provider-connection",
       type,
-      config
+      model
     ),
 
   /**

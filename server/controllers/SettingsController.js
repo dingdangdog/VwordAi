@@ -213,15 +213,17 @@ function init() {
   // 测试服务商连接（TTS）
   ipcMain.handle(
     "test-tts-provider-connection",
-    async (event, provider, config) => {
+    async (event, provider, test) => {
       try {
         // 更新配置
         const ttsSettings = Settings.getTTSSettings();
-        ttsSettings[provider] = { ...(ttsSettings[provider] || {}), ...config };
-        Settings.saveTTSSettings(ttsSettings);
 
         // 执行测试
-        const result = await Settings.testProviderConnection(provider, config);
+        const result = await Settings.testProviderConnection(
+          provider,
+          test,
+          ttsSettings[provider]
+        );
         if (result.success) {
           // 更新状态
           ttsSettings[provider].status = "success";

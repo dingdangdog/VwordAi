@@ -396,12 +396,10 @@ class Settings {
    * @param {string} provider 服务商名称 (azure, aliyun, tencent, baidu, openai)
    * @returns {Object} 测试结果
    */
-  static async testProviderConnection(provider, config) {
+  static async testProviderConnection(provider, test, config) {
     let result;
     if (provider === "azure") {
-      result = await this.testAzureTTS(config);
-    } else {
-      result = await this.testProviderConnection(provider, config);
+      result = await this.testAzureTTS(test, config);
     }
     if (result.success) {
       // 获取所有设置
@@ -420,10 +418,10 @@ class Settings {
    * @param {Object} config Azure配置
    * @returns {Object} 测试结果
    */
-  static async testAzureTTS(config) {
-    const text = "azure配置成功";
+  static async testAzureTTS(test, config) {
+    const text = test.text || "azure配置成功";
     const settings = {
-      voice: "zh-CN-XiaoxiaoMultilingualNeural",
+      voice: test.model || "zh-CN-XiaoxiaoMultilingualNeural",
       speed: 1.0,
       emotion: "general",
     };

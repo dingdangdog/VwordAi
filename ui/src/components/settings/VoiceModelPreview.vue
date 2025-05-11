@@ -18,7 +18,7 @@
                 "
                 @click="selectProvider(provider.id)"
               >
-                <MicrophoneIcon
+                <SpeakerWaveIcon
                   class="h-5 w-5 mr-2"
                   :class="
                     selectedProvider === provider.id
@@ -179,7 +179,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from "vue";
-import { MicrophoneIcon } from "@heroicons/vue/24/outline";
+import { SpeakerWaveIcon } from "@heroicons/vue/24/outline";
 import { useToast } from "vue-toastification";
 import { getTTSProviders } from "@/utils/voice-utils";
 import { getProcessedVoiceModels } from "@/utils/voice-utils";
@@ -255,12 +255,16 @@ async function playTest(model: VoiceModel) {
 
   try {
     // 构建测试文本 - 使用模型名称作为测试文本
-    const testText = `这是${model.name}的语音示例，谢谢您的聆听。`;
+    const testText = `你好，我是${model.name}。`;
 
     // 使用 Settings Store 的测试连接功能
     const settingsStore = useSettingsStore();
-    const result = await settingsStore.testServiceProviderConnection(
-      model.provider as TTSProviderType
+    const result = await settingsStore.testTTSProviderConnection(
+      model.provider as TTSProviderType,
+      {
+        text: testText,
+        model: model.code,
+      }
     );
 
     if (result.success && result.data?.audioData) {

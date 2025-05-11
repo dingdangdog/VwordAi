@@ -227,43 +227,6 @@ export class TTSService {
     }
   }
 
-  // 测试服务商配置是否有效
-  public async testServiceProvider(
-    type: TTSProviderType
-  ): Promise<Result<any>> {
-    try {
-      const settingsStore = this.getSettingsStore();
-      await settingsStore.loadSettings();
-
-      const config = this.getProviderConfig(type);
-      if (!config) {
-        return {
-          success: false,
-          error: `服务商 ${type} 配置不存在或不完整`,
-          data: null,
-        };
-      }
-
-      const connectionResult =
-        await settingsStore.testTTSProviderConnection(type);
-
-      // Transform ConnectionTestResult to Result<any>
-      return {
-        success: connectionResult.success,
-        error: connectionResult.success ? "" : connectionResult.message,
-        data: connectionResult.success
-          ? { message: connectionResult.message }
-          : null,
-      };
-    } catch (error) {
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : "API连接测试失败",
-        data: null,
-      };
-    }
-  }
-
   // 保存或更新系统设置
   public async saveSettings(
     settings: Partial<Settings>
