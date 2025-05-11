@@ -108,17 +108,17 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from "vue";
 import { useToast } from "vue-toastification";
-import { SUPPORTED_PROVIDERS, useSettingsStore } from "@/stores/settings";
+import { SUPPORTED_TTS_PROVIDERS, useSettingsStore } from "@/stores/settings";
 import { ServerIcon, CloudIcon } from "@heroicons/vue/24/outline";
-import type { ServiceProviderType, ServiceProviderStatus } from "@/types";
-import AzureProviderForm from "./providers/AzureProviderForm.vue";
-import AliyunProviderForm from "./providers/AliyunProviderForm.vue";
-import BaiduProviderForm from "./providers/BaiduProviderForm.vue";
-import TencentProviderForm from "./providers/TencentProviderForm.vue";
-import OpenaiProviderForm from "./providers/OpenaiProviderForm.vue";
+import type { TTSProviderType, ServiceProviderStatus } from "@/types";
+import AzureProviderForm from "./tts/AzureProviderForm.vue";
+import AliyunProviderForm from "./tts/AliyunProviderForm.vue";
+import BaiduProviderForm from "./tts/BaiduProviderForm.vue";
+import TencentProviderForm from "./tts/TencentProviderForm.vue";
+import OpenaiProviderForm from "./tts/OpenaiProviderForm.vue";
 
 // 当前选中的服务商类型
-const selectedProviderType = ref<ServiceProviderType | null>(null);
+const selectedProviderType = ref<TTSProviderType | null>(null);
 const providerData = ref<any>({});
 const toast = useToast();
 const settingsStore = useSettingsStore();
@@ -126,9 +126,9 @@ const isLoading = ref(false);
 
 // 带状态的服务商列表
 const providers = computed(() => {
-  return SUPPORTED_PROVIDERS.map((provider) => {
-    const config = settingsStore.getServiceProviderConfig(provider.type);
-    const status = settingsStore.getServiceProviderStatus(provider.type);
+  return SUPPORTED_TTS_PROVIDERS.map((provider) => {
+    const config = settingsStore.getTTSProviderConfig(provider.type);
+    const status = settingsStore.getTTSProviderStatus(provider.type);
     return {
       ...provider,
       status,
@@ -139,23 +139,23 @@ const providers = computed(() => {
 
 // 初始化
 onMounted(async () => {
-  // 加载设置
-  if (!settingsStore.settings) {
-    await settingsStore.loadSettings();
+  // 加载TTS设置
+  if (!settingsStore.ttsSettings) {
+    await settingsStore.loadTTSSettings();
   }
 
   // 默认选择第一个服务商
-  if (SUPPORTED_PROVIDERS.length > 0) {
-    selectProvider(SUPPORTED_PROVIDERS[0].type);
+  if (SUPPORTED_TTS_PROVIDERS.length > 0) {
+    selectProvider(SUPPORTED_TTS_PROVIDERS[0].type);
   }
 });
 
 // 选择服务商
-function selectProvider(type: ServiceProviderType) {
+function selectProvider(type: TTSProviderType) {
   selectedProviderType.value = type;
 
   // 从设置中获取服务商配置
-  const config = settingsStore.getServiceProviderConfig(type);
+  const config = settingsStore.getTTSProviderConfig(type);
 
   if (config) {
     // 使用已保存的配置
@@ -194,23 +194,20 @@ async function saveCurrentProvider(data?: Record<string, any>) {
     const providerConfig = data || { ...providerData.value };
 
     // 通过设置存储保存服务商配置
-    const success = await settingsStore.updateServiceProvider(
-      type,
-      providerConfig
-    );
+    const success = await settingsStore.updateTTSProvider(type, providerConfig);
 
     if (success) {
       // 重新加载设置以获取最新状态
-      await settingsStore.loadSettings();
+      await settingsStore.loadTTSSettings();
 
       // 更新本地状态以反映保存的配置
-      const updatedConfig = settingsStore.getServiceProviderConfig(type);
+      const updatedConfig = settingsStore.getTTSProviderConfig(type);
       providerData.value = { ...updatedConfig };
 
       toast.success("服务商配置保存成功");
 
       // 如果配置已完成但未测试，提示用户测试
-      if (settingsStore.isProviderConfiguredButUntested(type)) {
+      if (settingsStore.isTTSProviderConfiguredButUntested(type)) {
         toast.info("建议您测试配置以确保能正常工作");
       }
     } else {
@@ -249,8 +246,9 @@ async function testCurrentProvider(providerConfig = null) {
     }
 
     // 直接通过API调用测试
-    let result = await settingsStore.testServiceProviderConnection(
-      selectedProviderType.value
+    let result = await settingsStore.testTTSProviderConnection(
+      selectedProviderType.value,
+      configToTest
     );
 
     console.log("Test result:", result, selectedProviderType.value);
@@ -260,10 +258,10 @@ async function testCurrentProvider(providerConfig = null) {
       toast.success("连接测试成功");
 
       // 重新加载设置以获取最新状态
-      await settingsStore.loadSettings();
+      await settingsStore.loadTTSSettings();
 
       // 更新本地配置以反映测试结果
-      const updatedConfig = settingsStore.getServiceProviderConfig(
+      const updatedConfig = settingsStore.getTTSProviderConfig(
         selectedProviderType.value
       );
       if (updatedConfig) {
@@ -287,13 +285,13 @@ async function testCurrentProvider(providerConfig = null) {
       }
     } else {
       // 测试失败
-      toast.error(result?.error || result?.message || "连接测试失败");
+      toast.error(result?.message || "连接测试失败");
 
       // 重新加载设置以获取最新状态
-      await settingsStore.loadSettings();
+      await settingsStore.loadTTSSettings();
 
       // 更新本地配置以反映测试结果
-      const updatedConfig = settingsStore.getServiceProviderConfig(
+      const updatedConfig = settingsStore.getTTSProviderConfig(
         selectedProviderType.value
       );
       if (updatedConfig) {
@@ -307,7 +305,7 @@ async function testCurrentProvider(providerConfig = null) {
     );
 
     // 重新加载设置以获取最新状态
-    await settingsStore.loadSettings();
+    await settingsStore.loadTTSSettings();
   } finally {
     isLoading.value = false;
   }

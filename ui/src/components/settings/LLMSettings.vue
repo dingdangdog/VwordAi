@@ -80,15 +80,15 @@ import { ref, onMounted, computed } from "vue";
 import { useToast } from "vue-toastification";
 import { SUPPORTED_LLM_PROVIDERS, useSettingsStore } from "@/stores/settings";
 import { ServerIcon, CloudIcon } from "@heroicons/vue/24/outline";
-import type { ServiceProviderType } from "@/types";
+import type { LLMProviderType } from "@/types";
 // 注意：需要创建这些组件
-import VolcengineProviderForm from "./providers/VolcengineProviderForm.vue";
-import AliyunLLMProviderForm from "./providers/AliyunLLMProviderForm.vue";
-import AzureLLMProviderForm from "./providers/AzureLLMProviderForm.vue";
-import OpenaiLLMProviderForm from "./providers/OpenaiLLMProviderForm.vue";
+import VolcengineProviderForm from "./llm/VolcengineProviderForm.vue";
+import AliyunLLMProviderForm from "./llm/AliyunLLMProviderForm.vue";
+import AzureLLMProviderForm from "./llm/AzureLLMProviderForm.vue";
+import OpenaiLLMProviderForm from "./llm/OpenaiLLMProviderForm.vue";
 
 // 当前选中的服务商类型
-const selectedProviderType = ref<ServiceProviderType | null>(null);
+const selectedProviderType = ref<LLMProviderType | null>(null);
 const providerData = ref<any>({});
 const toast = useToast();
 const settingsStore = useSettingsStore();
@@ -104,7 +104,7 @@ const providers = computed(() => {
 onMounted(async () => {
   // 加载LLM设置
   llmSettings.value = await settingsStore.loadLLMSettings();
-  
+
   // 默认选择第一个服务商
   if (SUPPORTED_LLM_PROVIDERS.length > 0) {
     selectProvider(SUPPORTED_LLM_PROVIDERS[0].type);
@@ -112,7 +112,7 @@ onMounted(async () => {
 });
 
 // 选择服务商
-function selectProvider(type: ServiceProviderType) {
+function selectProvider(type: LLMProviderType) {
   selectedProviderType.value = type;
 
   // 从设置中获取服务商配置
@@ -149,10 +149,7 @@ async function saveCurrentProvider(data?: Record<string, any>) {
     const providerConfig = data || { ...providerData.value };
 
     // 通过设置存储保存服务商配置
-    const success = await settingsStore.updateLLMProvider(
-      type,
-      providerConfig
-    );
+    const success = await settingsStore.updateLLMProvider(type, providerConfig);
 
     if (success) {
       // 重新加载设置以获取最新状态
@@ -177,4 +174,4 @@ async function saveCurrentProvider(data?: Record<string, any>) {
     isLoading.value = false;
   }
 }
-</script> 
+</script>

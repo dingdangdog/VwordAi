@@ -2,15 +2,9 @@
  * TTS服务
  * 提供文本转语音功能
  */
-import type {
-  VoiceSettings,
-  Result,
-  ServiceProviderType,
-  Settings,
-} from "@/types";
-import { ttsApi, serviceProviderApi, chapterApi } from "@/api";
-import { useSettingsStore, SUPPORTED_PROVIDERS } from "@/stores/settings";
-import { createErrorHandler } from "@/utils/apiBase";
+import type { VoiceSettings, Result, TTSProviderType, Settings } from "@/types";
+import { ttsApi, chapterApi } from "@/api";
+import { useSettingsStore, SUPPORTED_TTS_PROVIDERS } from "@/stores/settings";
 
 // TTS 合成请求接口
 interface TTSSynthesisRequest {
@@ -57,11 +51,11 @@ export class TTSService {
 
   // 获取支持的服务商列表
   public getSupportedProviders(): { id: string; name: string; type: string }[] {
-    return SUPPORTED_PROVIDERS;
+    return SUPPORTED_TTS_PROVIDERS;
   }
 
   // 获取服务商配置
-  public getProviderConfig(type: ServiceProviderType): any {
+  public getProviderConfig(type: TTSProviderType): any {
     const settingsStore = this.getSettingsStore();
     const settings = settingsStore.getSettings();
     if (!settings) {
@@ -72,7 +66,7 @@ export class TTSService {
 
   // 获取特定服务商支持的语音角色
   public async getVoiceRoles(
-    serviceProviderType: ServiceProviderType
+    serviceProviderType: TTSProviderType
   ): Promise<Result<any[]>> {
     try {
       // 检查服务商配置是否存在
@@ -82,16 +76,20 @@ export class TTSService {
       }
 
       // Use static data instead of API calls
-      const { getVoiceModelsByProvider } = await import('@/utils/voice-utils');
+      const { getVoiceModelsByProvider } = await import("@/utils/voice-utils");
       const models = getVoiceModelsByProvider(serviceProviderType);
-      
+
       // Convert to the expected format for backwards compatibility
-      const roles = models.map(model => ({
+      const roles = models.map((model) => ({
         id: model.code,
         name: model.name,
-        language: model.lang.includes("中") ? "zh-CN" : model.lang.includes("英") ? "en-US" : model.lang,
+        language: model.lang.includes("中")
+          ? "zh-CN"
+          : model.lang.includes("英")
+            ? "en-US"
+            : model.lang,
         gender: model.gender === "0" ? "female" : "male",
-        description: model.lang
+        description: model.lang,
       }));
 
       return { success: true, data: roles };
@@ -106,7 +104,7 @@ export class TTSService {
 
   // 获取情感类型列表
   public async getEmotions(
-    serviceProviderType: ServiceProviderType
+    serviceProviderType: TTSProviderType
   ): Promise<Result<any[]>> {
     try {
       // 检查服务商配置是否存在
@@ -116,19 +114,22 @@ export class TTSService {
       }
 
       // Use static emotion data from JSON file
-      const emotionsData = await import('@/assets/data/emotions.json');
-      const emotions = emotionsData[serviceProviderType as keyof typeof emotionsData];
-      
+      const emotionsData = await import("@/assets/data/emotions.json");
+      const emotions =
+        emotionsData[serviceProviderType as keyof typeof emotionsData];
+
       if (!emotions || !Array.isArray(emotions)) {
         return { success: true, data: [] };
       }
-      
+
       // Convert to the expected format
-      const formattedEmotions = emotions.map((emotion: { code: string; name: string; desc: string }) => ({
-        id: emotion.code,
-        name: emotion.name,
-        description: emotion.desc
-      }));
+      const formattedEmotions = emotions.map(
+        (emotion: { code: string; name: string; desc: string }) => ({
+          id: emotion.code,
+          name: emotion.name,
+          description: emotion.desc,
+        })
+      );
 
       return { success: true, data: formattedEmotions };
     } catch (error) {
@@ -228,7 +229,7 @@ export class TTSService {
 
   // 测试服务商配置是否有效
   public async testServiceProvider(
-    type: ServiceProviderType
+    type: TTSProviderType
   ): Promise<Result<any>> {
     try {
       const settingsStore = this.getSettingsStore();
@@ -244,7 +245,7 @@ export class TTSService {
       }
 
       const connectionResult =
-        await settingsStore.testServiceProviderConnection(type);
+        await settingsStore.testTTSProviderConnection(type);
 
       // Transform ConnectionTestResult to Result<any>
       return {

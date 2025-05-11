@@ -43,19 +43,21 @@ export interface AppConfig {
 }
 
 // 服务商配置类型
-export interface ServiceProviderConfig {
+export interface TTSProviderConfig {
   status?: ServiceProviderStatus;
   [key: string]: any;
 }
 
 // 服务商类型
-export type ServiceProviderType =
+export type TTSProviderType =
   | "azure"
   | "aliyun"
   | "tencent"
   | "baidu"
   | "openai"
   | "blive";
+
+export type LLMProviderType = "volcengine" | "aliyun" | "openai" | "azure";
 
 // 连接测试结果
 export interface ConnectionTestResult {
@@ -70,11 +72,11 @@ export interface Settings {
   theme: "light" | "dark";
   defaultExportPath: string;
   language: string;
-  azure: ServiceProviderConfig;
-  aliyun: ServiceProviderConfig;
-  tencent: ServiceProviderConfig;
-  baidu: ServiceProviderConfig;
-  openai: ServiceProviderConfig;
+  azure: TTSProviderConfig;
+  aliyun: TTSProviderConfig;
+  tencent: TTSProviderConfig;
+  baidu: TTSProviderConfig;
+  openai: TTSProviderConfig;
   autoSave: boolean;
   autoSaveInterval: number;
   maxConcurrentTasks: number;

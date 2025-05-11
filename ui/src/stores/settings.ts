@@ -1,30 +1,25 @@
 import { defineStore } from "pinia";
-import { ref, computed } from "vue";
+import { ref } from "vue";
 import { settingsApi } from "@/api";
 import type {
   Settings,
   ConnectionTestResult,
-  ServiceProviderType,
+  TTSProviderType,
+  LLMProviderType,
   ServiceProviderStatus,
-  ServiceProviderConfig,
+  TTSProviderConfig,
 } from "@/types";
 
 // 设置选项卡类型
-export type SettingsTab =
-  | "provider"
-  | "storage"
-  | "system"
-  | "about"
-  | "voice"
-  | "llm";
+export type SettingsTab = "tts" | "llm" | "voice" | "system" | "about";
 
-// 支持的服务商
-export const SUPPORTED_PROVIDERS = [
-  { id: "azure", name: "Azure", type: "azure" as ServiceProviderType },
-  { id: "aliyun", name: "阿里云", type: "aliyun" as ServiceProviderType },
-  // { id: "tencent", name: "腾讯云", type: "tencent" as ServiceProviderType },
-  // { id: "baidu", name: "百度云", type: "baidu" as ServiceProviderType },
-  // { id: "openai", name: "OpenAI", type: "openai" as ServiceProviderType },
+// 支持的TTS服务商
+export const SUPPORTED_TTS_PROVIDERS = [
+  { id: "azure", name: "Azure", type: "azure" as TTSProviderType },
+  { id: "aliyun", name: "阿里云", type: "aliyun" as TTSProviderType },
+  { id: "tencent", name: "腾讯云", type: "tencent" as TTSProviderType },
+  { id: "baidu", name: "百度云", type: "baidu" as TTSProviderType },
+  { id: "openai", name: "OpenAI", type: "openai" as TTSProviderType },
 ];
 
 // 支持的LLM服务商
@@ -32,19 +27,23 @@ export const SUPPORTED_LLM_PROVIDERS = [
   {
     id: "volcengine",
     name: "火山引擎",
-    type: "volcengine" as ServiceProviderType,
+    type: "volcengine" as LLMProviderType,
   },
-  { id: "aliyun", name: "阿里云", type: "aliyun" as ServiceProviderType },
-  { id: "openai", name: "OpenAI", type: "openai" as ServiceProviderType },
-  { id: "azure", name: "Azure", type: "azure" as ServiceProviderType },
+  { id: "aliyun", name: "阿里云", type: "aliyun" as LLMProviderType },
+  { id: "openai", name: "OpenAI", type: "openai" as LLMProviderType },
+  // { id: "azure", name: "Azure", type: "azure" as LLMProviderType },
 ];
 
 export const useSettingsStore = defineStore("settings", () => {
   const theme = ref<"light" | "dark">("light");
   const defaultExportPath = ref<string>("");
-  const activeTab = ref<SettingsTab>("provider");
-  const activeProviderType = ref<ServiceProviderType | null>(null);
+  const activeTab = ref<SettingsTab>("tts");
+  const activeTTSProviderType = ref<TTSProviderType | null>(null);
+  const activeLLMProviderType = ref<LLMProviderType | null>(null);
   const settings = ref<Settings | null>(null);
+  const ttsSettings = ref<any | null>(null);
+  const llmSettings = ref<any | null>(null);
+  const bliveSettings = ref<any | null>(null);
   const isLoading = ref(false);
 
   // Initialize theme based on localStorage or system preference
@@ -111,9 +110,14 @@ export const useSettingsStore = defineStore("settings", () => {
     activeTab.value = tab;
   }
 
-  // Set active provider
-  function setActiveProvider(providerType: ServiceProviderType | null) {
-    activeProviderType.value = providerType;
+  // Set active TTS provider
+  function setActiveTTSProvider(providerType: TTSProviderType | null) {
+    activeTTSProviderType.value = providerType;
+  }
+
+  // Set active LLM provider
+  function setActiveLLMProvider(providerType: LLMProviderType | null) {
+    activeLLMProviderType.value = providerType;
   }
 
   // Load all settings
@@ -150,72 +154,170 @@ export const useSettingsStore = defineStore("settings", () => {
     }
   }
 
-  // Get service provider config
-  function getServiceProviderConfig(type: ServiceProviderType) {
-    if (!settings.value) return null;
-    return settings.value[type];
+  // Load TTS settings
+  async function loadTTSSettings() {
+    try {
+      const response = await settingsApi.getTTSSettings();
+      console.log("loadTTSSettings response:", response);
+      if (response.success && response.data) {
+        ttsSettings.value = response.data;
+        return ttsSettings.value;
+      } else {
+        console.error("Failed to load TTS settings:", response.error);
+        return null;
+      }
+    } catch (error) {
+      console.error("Failed to load TTS settings:", error);
+      return null;
+    }
   }
 
-  // Get all service providers config
-  function getServiceProviders() {
-    if (!settings.value) return [];
+  // Load LLM settings
+  async function loadLLMSettings() {
+    try {
+      const response = await settingsApi.getLLMSettings();
+      console.log("loadLLMSettings response:", response);
+      if (response.success && response.data) {
+        llmSettings.value = response.data;
+        return llmSettings.value;
+      } else {
+        console.error("Failed to load LLM settings:", response.error);
+        return null;
+      }
+    } catch (error) {
+      console.error("Failed to load LLM settings:", error);
+      return null;
+    }
+  }
 
-    return SUPPORTED_PROVIDERS.map((provider) => ({
+  // Load Blive settings
+  async function loadBliveSettings() {
+    try {
+      const response = await settingsApi.getBliveSettings();
+      console.log("loadBliveSettings response:", response);
+      if (response.success && response.data) {
+        bliveSettings.value = response.data;
+        return bliveSettings.value;
+      } else {
+        console.error("Failed to load Blive settings:", response.error);
+        return null;
+      }
+    } catch (error) {
+      console.error("Failed to load Blive settings:", error);
+      return null;
+    }
+  }
+
+  // Get TTS service provider config
+  function getTTSProviderConfig(type: TTSProviderType) {
+    if (!ttsSettings.value) return null;
+    return ttsSettings.value[type];
+  }
+
+  // Get LLM service provider config
+  function getLLMProviderConfig(type: LLMProviderType) {
+    if (!llmSettings.value) return null;
+    return llmSettings.value[type];
+  }
+
+  // Get all TTS service providers config
+  function getTTSProviders() {
+    if (!ttsSettings.value) return [];
+
+    return SUPPORTED_TTS_PROVIDERS.map((provider) => ({
       ...provider,
-      config: settings.value ? settings.value[provider.type] : null,
+      config: ttsSettings.value ? ttsSettings.value[provider.type] : null,
+      status:
+        ttsSettings.value && ttsSettings.value[provider.type]
+          ? ttsSettings.value[provider.type].status
+          : "unconfigured",
     }));
   }
 
-  // 获取服务商状态
-  function getServiceProviderStatus(
-    type: ServiceProviderType
-  ): ServiceProviderStatus {
-    const config = getServiceProviderConfig(type);
+  // Get all LLM service providers config
+  function getLLMProviders() {
+    if (!llmSettings.value) return [];
+
+    return SUPPORTED_LLM_PROVIDERS.map((provider) => ({
+      ...provider,
+      config: llmSettings.value ? llmSettings.value[provider.type] : null,
+      status:
+        llmSettings.value && llmSettings.value[provider.type]
+          ? llmSettings.value[provider.type].status
+          : "unconfigured",
+    }));
+  }
+
+  // 获取TTS服务商状态
+  function getTTSProviderStatus(type: TTSProviderType): ServiceProviderStatus {
+    const config = getTTSProviderConfig(type);
     return config?.status || "unconfigured";
   }
 
-  // 检查服务商是否已配置但未测试
-  function isProviderConfiguredButUntested(type: ServiceProviderType): boolean {
-    return getServiceProviderStatus(type) === "untested";
+  // 获取LLM服务商状态
+  function getLLMProviderStatus(type: LLMProviderType): ServiceProviderStatus {
+    const config = getLLMProviderConfig(type);
+    return config?.status || "unconfigured";
   }
 
-  // 检查服务商是否配置成功
-  function isProviderConfigurationSuccess(type: ServiceProviderType): boolean {
-    return getServiceProviderStatus(type) === "success";
+  // 检查TTS服务商是否已配置但未测试
+  function isTTSProviderConfiguredButUntested(type: TTSProviderType): boolean {
+    return getTTSProviderStatus(type) === "untested";
   }
 
-  // 检查服务商是否配置失败
-  function isProviderConfigurationFailure(type: ServiceProviderType): boolean {
-    return getServiceProviderStatus(type) === "failure";
+  // 检查LLM服务商是否已配置但未测试
+  function isLLMProviderConfiguredButUntested(type: LLMProviderType): boolean {
+    return getLLMProviderStatus(type) === "untested";
   }
 
-  // Test service provider connection
-  async function testServiceProviderConnection(
-    type: ServiceProviderType
+  // 检查TTS服务商是否配置成功
+  function isTTSProviderConfigurationSuccess(type: TTSProviderType): boolean {
+    return getTTSProviderStatus(type) === "success";
+  }
+
+  // 检查LLM服务商是否配置成功
+  function isLLMProviderConfigurationSuccess(type: LLMProviderType): boolean {
+    return getLLMProviderStatus(type) === "success";
+  }
+
+  // 检查TTS服务商是否配置失败
+  function isTTSProviderConfigurationFailure(type: TTSProviderType): boolean {
+    return getTTSProviderStatus(type) === "failure";
+  }
+
+  // 检查LLM服务商是否配置失败
+  function isLLMProviderConfigurationFailure(type: LLMProviderType): boolean {
+    return getLLMProviderStatus(type) === "failure";
+  }
+
+  // Test TTS service provider connection
+  async function testTTSProviderConnection(
+    type: TTSProviderType,
+    config?: any
   ): Promise<ConnectionTestResult> {
     try {
       // Make sure settings are loaded
-      if (!settings.value) {
-        await loadSettings();
+      if (!ttsSettings.value) {
+        await loadTTSSettings();
       }
-      const config = getServiceProviderConfig(type);
-      if (!config) {
+
+      const providerConfig = config || getTTSProviderConfig(type);
+      if (!providerConfig) {
         return {
           success: false,
           message: `No configuration found for ${type}`,
         };
       }
 
-      let response = await window.electron.invoke(
-        "settings:test-provider-connection",
+      let response = await settingsApi.testTTSProviderConnection(
         type,
-        { ...config }
+        providerConfig
       );
 
       if (response.success && response.data) {
         // 更新本地状态
-        if (settings.value && settings.value[type]) {
-          settings.value[type].status =
+        if (ttsSettings.value && ttsSettings.value[type]) {
+          ttsSettings.value[type].status =
             (response.data.status as ServiceProviderStatus) || "success";
         }
 
@@ -226,20 +328,20 @@ export const useSettingsStore = defineStore("settings", () => {
         };
       } else {
         // 更新本地状态
-        if (settings.value && settings.value[type]) {
-          settings.value[type].status = "failure";
+        if (ttsSettings.value && ttsSettings.value[type]) {
+          ttsSettings.value[type].status = "failure";
         }
 
         return {
           success: false,
-          message: response.error || response.message || "Connection failed",
+          message: response.error || "Connection failed",
         };
       }
     } catch (error) {
-      console.error("Failed to test service provider connection:", error);
+      console.error("Failed to test TTS service provider connection:", error);
       // 更新本地状态
-      if (settings.value && settings.value[type]) {
-        settings.value[type].status = "failure";
+      if (ttsSettings.value && ttsSettings.value[type]) {
+        ttsSettings.value[type].status = "failure";
       }
 
       return {
@@ -250,17 +352,17 @@ export const useSettingsStore = defineStore("settings", () => {
     }
   }
 
-  // Update service provider config
-  async function updateServiceProvider(
-    type: ServiceProviderType,
-    config: Partial<ServiceProviderConfig>
+  // Update TTS service provider config
+  async function updateTTSProvider(
+    type: TTSProviderType,
+    config: Partial<TTSProviderConfig>
   ): Promise<boolean> {
     try {
       // 检查是否有实际配置的变化（忽略status字段）
       let hasConfigChanges = false;
 
-      if (settings.value && settings.value[type]) {
-        const currentConfig = { ...settings.value[type] };
+      if (ttsSettings.value && ttsSettings.value[type]) {
+        const currentConfig = { ...ttsSettings.value[type] };
         delete currentConfig.status;
 
         const newConfigWithoutStatus = { ...config };
@@ -273,56 +375,101 @@ export const useSettingsStore = defineStore("settings", () => {
       }
 
       // Update local settings first
-      if (settings.value) {
-        if (!settings.value[type]) {
-          settings.value[type] = {} as any;
+      if (ttsSettings.value) {
+        if (!ttsSettings.value[type]) {
+          ttsSettings.value[type] = {} as any;
         }
 
         // 合并配置
-        settings.value[type] = { ...settings.value[type], ...config };
+        ttsSettings.value[type] = { ...ttsSettings.value[type], ...config };
 
         // 如果配置有变化，更新状态
         if (hasConfigChanges) {
           // 检查配置是否完整
-          const isConfigComplete = checkProviderConfigComplete(
+          const isConfigComplete = checkTTSProviderConfigComplete(
             type,
-            settings.value[type]
+            ttsSettings.value[type]
           );
-          settings.value[type].status = isConfigComplete
+
+          if (!config.status) {
+            ttsSettings.value[type].status = isConfigComplete
+              ? "untested"
+              : "unconfigured";
+          }
+        }
+      }
+
+      // Update on backend
+      const response = await settingsApi.updateTTSProviderSettings(
+        type,
+        config
+      );
+      return response.success;
+    } catch (error) {
+      console.error(`Failed to update ${type} TTS config:`, error);
+      return false;
+    }
+  }
+
+  // Update LLM service provider config
+  async function updateLLMProvider(
+    type: LLMProviderType,
+    config: Partial<TTSProviderConfig>
+  ): Promise<boolean> {
+    try {
+      // 检查是否有实际配置的变化（忽略status字段）
+      let hasConfigChanges = false;
+
+      if (llmSettings.value && llmSettings.value[type]) {
+        const currentConfig = { ...llmSettings.value[type] };
+        delete currentConfig.status;
+
+        const newConfigWithoutStatus = { ...config };
+        delete newConfigWithoutStatus.status;
+
+        // 检查是否有变化
+        const currentStr = JSON.stringify(currentConfig);
+        const newStr = JSON.stringify(newConfigWithoutStatus);
+        hasConfigChanges = currentStr !== newStr;
+      }
+
+      // Update local settings first
+      if (llmSettings.value) {
+        if (!llmSettings.value[type]) {
+          llmSettings.value[type] = {} as any;
+        }
+
+        // 合并配置
+        llmSettings.value[type] = { ...llmSettings.value[type], ...config };
+
+        // 如果配置有变化，更新状态
+        if (hasConfigChanges && !config.status) {
+          // 检查配置是否完整
+          const isConfigComplete = checkLLMProviderConfigComplete(
+            type,
+            llmSettings.value[type]
+          );
+          llmSettings.value[type].status = isConfigComplete
             ? "untested"
             : "unconfigured";
         }
       }
 
       // Update on backend
-      const partialSettings: Partial<Settings> = {};
-      partialSettings[type] = config;
-      const response = await settingsApi.update(partialSettings);
+      const response = await settingsApi.updateLLMProviderSettings(
+        type as LLMProviderType,
+        config
+      );
       return response.success;
     } catch (error) {
-      console.error(`Failed to update ${type} config:`, error);
+      console.error(`Failed to update ${type} LLM config:`, error);
       return false;
     }
   }
 
-  // async function saveBiliConfig(key: string, config: any): Promise<boolean> {
-  //   try {
-  //     // Update locally first for immediate UI response
-  //     if (settings.value && settings.value.blive) {
-  //       settings.value.blive[key] = config;
-  //     }
-  //     const bliveConfig = settings.value?.blive || {};
-  //     const response = await updateServiceProvider("blive", bliveConfig);
-  //     return response;
-  //   } catch (error) {
-  //     console.error("Failed to save bili config:", error);
-  //     return false;
-  //   }
-  // }
-
-  // 检查服务商配置是否完整
-  function checkProviderConfigComplete(
-    type: ServiceProviderType,
+  // 检查TTS服务商配置是否完整
+  function checkTTSProviderConfigComplete(
+    type: TTSProviderType,
     config: any
   ): boolean {
     switch (type) {
@@ -336,6 +483,25 @@ export const useSettingsStore = defineStore("settings", () => {
         return Boolean(config.apiKey && config.secretKey);
       case "openai":
         return Boolean(config.apiKey);
+      default:
+        return false;
+    }
+  }
+
+  // 检查LLM服务商配置是否完整
+  function checkLLMProviderConfigComplete(
+    type: LLMProviderType,
+    config: any
+  ): boolean {
+    switch (type) {
+      case "volcengine":
+        return Boolean(config.key && config.endpoint && config.model);
+      case "aliyun":
+        return Boolean(config.key && config.endpoint && config.model);
+      case "openai":
+        return Boolean(config.key && config.endpoint && config.model);
+      case "azure":
+        return Boolean(config.key && config.endpoint && config.model);
       default:
         return false;
     }
@@ -384,72 +550,72 @@ export const useSettingsStore = defineStore("settings", () => {
     }
   }
 
-  // Load service providers (now integrated in loadSettings)
-  async function loadServiceProviders() {
-    return await loadSettings();
-  }
-
-  // 加载TTS设置
-  async function loadTTSSettings() {
+  // Update TTS settings
+  async function updateTTSSettings(data: any): Promise<any | null> {
     try {
-      const response = await window.electron.invoke("settings:get-tts");
-      if (response && response.success && response.data) {
-        return response.data;
+      if (ttsSettings.value) {
+        ttsSettings.value = { ...ttsSettings.value, ...data };
+      } else {
+        ttsSettings.value = data;
       }
-      return null;
-    } catch (error) {
-      console.error("Failed to load TTS settings:", error);
-      return null;
-    }
-  }
 
-  // 更新TTS服务提供商
-  async function updateTTSProvider(
-    type: ServiceProviderType,
-    config: Partial<ServiceProviderConfig>
-  ): Promise<boolean> {
-    try {
-      const response = await window.electron.invoke(
-        "settings:update-tts-provider",
-        type,
-        config
-      );
-      return response && response.success;
-    } catch (error) {
-      console.error(`Failed to update ${type} TTS config:`, error);
-      return false;
-    }
-  }
-
-  // 加载LLM设置
-  async function loadLLMSettings() {
-    try {
-      const response = await window.electron.invoke("settings:get-llm");
-      if (response && response.success && response.data) {
+      const response = await settingsApi.updateTTSSettings(data);
+      if (response.success && response.data) {
+        ttsSettings.value = response.data;
         return response.data;
+      } else {
+        console.error("Failed to update TTS settings:", response.error);
+        return null;
       }
-      return null;
     } catch (error) {
-      console.error("Failed to load LLM settings:", error);
+      console.error("Failed to update TTS settings:", error);
       return null;
     }
   }
 
-  // 更新LLM服务提供商
-  async function updateLLMProvider(
-    type: ServiceProviderType,
-    config: Partial<ServiceProviderConfig>
-  ): Promise<boolean> {
+  // Update LLM settings
+  async function updateLLMSettings(data: any): Promise<any | null> {
     try {
-      const response = await window.electron.invoke(
-        "settings:update-llm-provider",
-        type,
-        config
-      );
-      return response && response.success;
+      if (llmSettings.value) {
+        llmSettings.value = { ...llmSettings.value, ...data };
+      } else {
+        llmSettings.value = data;
+      }
+
+      const response = await settingsApi.updateLLMSettings(data);
+      if (response.success && response.data) {
+        llmSettings.value = response.data;
+        return response.data;
+      } else {
+        console.error("Failed to update LLM settings:", response.error);
+        return null;
+      }
     } catch (error) {
-      console.error(`Failed to update ${type} LLM config:`, error);
-      return false;
+      console.error("Failed to update LLM settings:", error);
+      return null;
+    }
+  }
+
+  // Update Blive settings
+  async function updateBliveSettings(data: any): Promise<any | null> {
+    try {
+      if (bliveSettings.value) {
+        bliveSettings.value = { ...bliveSettings.value, ...data };
+      } else {
+        bliveSettings.value = data;
+      }
+
+      const response = await settingsApi.updateBliveSettings(data);
+      if (response.success && response.data) {
+        bliveSettings.value = response.data;
+        return response.data;
+      } else {
+        console.error("Failed to update Blive settings:", response.error);
+        return null;
+      }
+    } catch (error) {
+      console.error("Failed to update Blive settings:", error);
+      return null;
     }
   }
 
@@ -457,8 +623,12 @@ export const useSettingsStore = defineStore("settings", () => {
     theme,
     defaultExportPath,
     activeTab,
-    activeProviderType,
+    activeTTSProviderType,
+    activeLLMProviderType,
     settings,
+    ttsSettings,
+    llmSettings,
+    bliveSettings,
     isLoading,
     initTheme,
     toggleTheme,
@@ -466,22 +636,31 @@ export const useSettingsStore = defineStore("settings", () => {
     setDefaultExportPath,
     loadDefaultExportPath,
     setActiveTab,
-    setActiveProvider,
-    testServiceProviderConnection,
+    setActiveTTSProvider,
+    setActiveLLMProvider,
+    testTTSProviderConnection,
     getSettings,
     updateSettings,
     loadSettings,
-    getServiceProviders,
-    getServiceProviderConfig,
-    updateServiceProvider,
-    loadServiceProviders,
-    getServiceProviderStatus,
-    isProviderConfiguredButUntested,
-    isProviderConfigurationSuccess,
-    isProviderConfigurationFailure,
     loadTTSSettings,
-    updateTTSProvider,
     loadLLMSettings,
+    loadBliveSettings,
+    getTTSProviders,
+    getLLMProviders,
+    getTTSProviderConfig,
+    getLLMProviderConfig,
+    updateTTSProvider,
     updateLLMProvider,
+    getTTSProviderStatus,
+    getLLMProviderStatus,
+    isTTSProviderConfiguredButUntested,
+    isLLMProviderConfiguredButUntested,
+    isTTSProviderConfigurationSuccess,
+    isLLMProviderConfigurationSuccess,
+    isTTSProviderConfigurationFailure,
+    isLLMProviderConfigurationFailure,
+    updateTTSSettings,
+    updateLLMSettings,
+    updateBliveSettings,
   };
 });

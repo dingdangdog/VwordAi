@@ -1,16 +1,22 @@
 <template>
   <div class="provider-form">
     <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-      Azure TTS 配置
+      阿里云语音服务配置
     </h3>
     <p class="text-gray-600 dark:text-gray-300 mb-2">
-      配置你的 Azure 语音服务相关信息。
+      配置你的阿里云智能语音服务相关信息。
     </p>
 
     <!-- 状态显示 -->
     <div v-if="providerStatus" class="mb-4 text-center">
       <div
-        v-if="providerStatus === 'untested'"
+        v-if="providerStatus === 'unconfigured'"
+        class="p-2 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-md"
+      >
+        <span class="text-sm">未配置</span>
+      </div>
+      <div
+        v-else-if="providerStatus === 'untested'"
         class="p-2 bg-yellow-100 dark:bg-yellow-900 text-yellow-600 dark:text-yellow-300 rounded-md"
       >
         <span class="text-sm">已配置但未测试，请测试配置确保能正常工作</span>
@@ -32,59 +38,58 @@
     <form @submit.prevent="saveForm" class="space-y-4">
       <div class="flex items-center space-x-2">
         <label
-          for="key"
+          for="appkey"
           class="block text-sm font-medium text-gray-700 dark:text-gray-300 w-20"
         >
-          key<span class="text-red-500">*</span>
+          AppKey<span class="text-red-500">*</span>
         </label>
         <input
-          type="password"
-          id="key"
-          v-model="form.key"
+          type="text"
+          id="appkey"
+          v-model="form.appkey"
           class="input w-full"
-          placeholder="输入您的 Azure 订阅密钥"
+          placeholder="输入您的阿里云 AppKey"
           required
         />
-        <!-- <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
-          您的 Azure 认知服务订阅密钥。
-        </p> -->
       </div>
 
       <div class="flex items-center space-x-2">
         <label
-          for="region"
+          for="token"
           class="block text-sm font-medium text-gray-700 dark:text-gray-300 w-20"
         >
-          region <span class="text-red-500">*</span>
+          Token<span class="text-red-500">*</span>
         </label>
         <input
-          type="text"
-          id="region"
-          v-model="form.region"
+          type="password"
+          id="token"
+          v-model="form.token"
           class="input w-full"
-          placeholder="例如：eastus"
+          placeholder="输入您的阿里云访问Token"
           required
         />
-        <!-- <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
-          您的服务部署的 Azure 区域（例如：eastus，westeurope）。
-        </p> -->
       </div>
 
-      <!-- <div class="flex items-center space-x-2">
+      <div class="flex items-center space-x-2">
         <label
           for="endpoint"
           class="block text-sm font-medium text-gray-700 dark:text-gray-300 w-20"
         >
-          endpoint(optional)
+          Endpoint
         </label>
-        <input
-          type="text"
-          id="endpoint"
-          v-model="form.endpoint"
-          class="input w-full"
-          placeholder="例如：https://your-resource.cognitiveservices.azure.com/"
-        />
-      </div> -->
+        <div class="w-full">
+          <input
+            type="text"
+            id="endpoint"
+            v-model="form.endpoint"
+            class="input w-full"
+            placeholder="例如：wss://nls-gateway-cn-shanghai.aliyuncs.com/ws/v1"
+          />
+          <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+            可选，默认使用上海区域服务地址
+          </p>
+        </div>
+      </div>
 
       <div class="flex justify-center space-x-2 mt-6">
         <button
@@ -125,8 +130,8 @@ const isTesting = ref(false);
 
 // 表单数据
 const form = reactive({
-  key: "",
-  region: "",
+  appkey: "",
+  token: "",
   endpoint: "",
 });
 
@@ -138,34 +143,34 @@ const providerStatus = computed<ServiceProviderStatus>(() => {
 // 监听属性变化，更新表单数据
 watchEffect(() => {
   if (props.provider) {
-    form.key = props.provider.key || "";
-    form.region = props.provider.region || "";
+    form.appkey = props.provider.appkey || "";
+    form.token = props.provider.token || "";
     form.endpoint = props.provider.endpoint || "";
   }
 });
 
 // 组件挂载时记录当前配置
 onMounted(() => {
-  console.log("AzureProviderForm mounted with provider:", props.provider);
+  console.log("AliyunProviderForm mounted with provider:", props.provider);
 });
 
 // 保存表单
 async function saveForm() {
-  if (!form.key) {
-    toast.error("请提供您的 Azure 订阅密钥");
+  if (!form.appkey) {
+    toast.error("请提供您的阿里云 AppKey");
     return;
   }
 
-  if (!form.region) {
-    toast.error("请提供您的 Azure 区域");
+  if (!form.token) {
+    toast.error("请提供您的阿里云 Token");
     return;
   }
 
   // 检查配置是否有变化
   if (
     props.provider &&
-    props.provider.key === form.key &&
-    props.provider.region === form.region &&
+    props.provider.appkey === form.appkey &&
+    props.provider.token === form.token &&
     props.provider.endpoint === form.endpoint
   ) {
     toast.info("配置未发生变化，无需保存");
@@ -176,16 +181,17 @@ async function saveForm() {
 
   try {
     const data = {
-      key: form.key,
-      region: form.region,
-      endpoint: form.endpoint,
+      appkey: form.appkey,
+      token: form.token,
+      endpoint:
+        form.endpoint || "https://nls-gateway-cn-shanghai.aliyuncs.com/",
     };
 
     // 通知父组件更新
     await emit("save", data);
 
     // 提示用户测试配置
-    if (settingsStore.isProviderConfiguredButUntested("azure")) {
+    if (settingsStore.isTTSProviderConfiguredButUntested("aliyun")) {
       toast.info("配置已保存。建议您测试配置以确保它可以正常工作。");
     }
 
@@ -195,7 +201,7 @@ async function saveForm() {
       console.log("Props after save:", JSON.stringify(props.provider, null, 2));
     }, 1000);
   } catch (error) {
-    console.error("保存 Azure 配置失败:", error);
+    console.error("保存阿里云配置失败:", error);
     toast.error(
       "保存失败: " + (error instanceof Error ? error.message : String(error))
     );
@@ -206,27 +212,25 @@ async function saveForm() {
 
 // 测试配置
 async function testConnection() {
-  if (!form.key) {
-    toast.error("请提供您的 Azure 订阅密钥");
+  if (!form.appkey) {
+    toast.error("请提供您的阿里云 AppKey");
     return;
   }
 
-  if (!form.region) {
-    toast.error("请提供您的 Azure 区域");
+  if (!form.token) {
+    toast.error("请提供您的阿里云 Token");
     return;
   }
 
   isTesting.value = true;
 
   try {
-    // 保存当前配置再测试
-    // await saveForm();
-
     // 通知父组件执行测试
     const result = await emit("test", {
-      key: form.key,
-      region: form.region,
-      endpoint: form.endpoint,
+      appkey: form.appkey,
+      token: form.token,
+      endpoint:
+        form.endpoint || "wss://nls-gateway-cn-shanghai.aliyuncs.com/ws/v1",
     });
 
     // 测试开始的消息

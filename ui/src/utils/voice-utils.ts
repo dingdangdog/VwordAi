@@ -1,5 +1,5 @@
-import { SUPPORTED_PROVIDERS } from "@/stores/settings";
-import type { ServiceProviderType, VoiceModel } from "@/types";
+import { SUPPORTED_TTS_PROVIDERS } from "@/stores/settings";
+import type { TTSProviderType, VoiceModel } from "@/types";
 import { useProjectsStore } from "@/stores/projects";
 import modelsData from '@/assets/data/models.json';
 import rolesData from '@/assets/data/roles.json';
@@ -24,7 +24,7 @@ export function getProviderName(id: string): string {
  * @returns Provider object or undefined
  */
 export function getProviderById(id: string) {
-  return SUPPORTED_PROVIDERS.find(p => p.id === id);
+  return SUPPORTED_TTS_PROVIDERS.find(p => p.id === id);
 }
 
 /**
@@ -32,7 +32,7 @@ export function getProviderById(id: string) {
  * @returns Array of providers (excluding OpenAI)
  */
 export function getTTSProviders() {
-  return SUPPORTED_PROVIDERS.filter(provider => provider.id !== 'openai');
+  return SUPPORTED_TTS_PROVIDERS.filter(provider => provider.id !== 'openai');
 }
 
 /**

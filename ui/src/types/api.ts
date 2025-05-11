@@ -53,7 +53,7 @@ export interface TTSSynthesisResponse {
 }
 
 // 服务商类型
-export type ServiceProviderType =
+export type TTSProviderType =
   | "azure"
   | "aliyun"
   | "tencent"

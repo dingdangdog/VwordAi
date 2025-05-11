@@ -184,7 +184,7 @@ import { useToast } from "vue-toastification";
 import { getTTSProviders } from "@/utils/voice-utils";
 import { getProcessedVoiceModels } from "@/utils/voice-utils";
 import type { VoiceModel } from "@/types";
-import type { ServiceProviderType } from "@/types";
+import type { TTSProviderType } from "@/types";
 import { useSettingsStore } from "@/stores/settings";
 
 const toast = useToast();
@@ -260,7 +260,7 @@ async function playTest(model: VoiceModel) {
     // 使用 Settings Store 的测试连接功能
     const settingsStore = useSettingsStore();
     const result = await settingsStore.testServiceProviderConnection(
-      model.provider as ServiceProviderType
+      model.provider as TTSProviderType
     );
 
     if (result.success && result.data?.audioData) {

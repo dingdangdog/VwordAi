@@ -133,17 +133,8 @@ import { ref, onMounted } from "vue";
 import { useToast } from "vue-toastification";
 import { useProjectsStore } from "@/stores/projects";
 import { useSettingsStore } from "@/stores/settings";
-import {
-  ArrowDownTrayIcon,
-  ArrowUpTrayIcon,
-  ExclamationTriangleIcon,
-} from "@heroicons/vue/24/outline";
-import {
-  settingsApi,
-  projectApi,
-  chapterApi,
-  serviceProviderApi,
-} from "@/api";
+import { ArrowDownTrayIcon, ArrowUpTrayIcon } from "@heroicons/vue/24/outline";
+import { settingsApi, projectApi, chapterApi } from "@/api";
 
 const toast = useToast();
 const projectsStore = useProjectsStore();
@@ -227,6 +218,9 @@ async function exportSystemData() {
     // 收集所有系统数据
     const systemData = {
       settings: await settingsStore.getSettings(),
+      ttsSettings: await settingsStore.loadTTSSettings(),
+      llmSettings: await settingsStore.loadLLMSettings(),
+      bliveSettings: await settingsStore.loadBliveSettings(),
       projects: await getAllProjects(),
       chapters: await getAllChapters(),
       exportDate: new Date().toISOString(),
@@ -350,11 +344,29 @@ function readFile(file: File): Promise<string> {
 
 // 导入系统数据
 async function importSystemData(systemData: any) {
-  // 导入设置
+  // 导入主设置
   if (systemData.settings) {
     await settingsApi.update(systemData.settings);
     // 重新加载设置到 store
     await settingsStore.loadSettings();
+  }
+
+  // 导入TTS设置
+  if (systemData.ttsSettings) {
+    await settingsApi.updateTTSSettings(systemData.ttsSettings);
+    await settingsStore.loadTTSSettings();
+  }
+
+  // 导入LLM设置
+  if (systemData.llmSettings) {
+    await settingsApi.updateLLMSettings(systemData.llmSettings);
+    await settingsStore.loadLLMSettings();
+  }
+
+  // 导入Blive设置
+  if (systemData.bliveSettings) {
+    await settingsApi.updateBliveSettings(systemData.bliveSettings);
+    await settingsStore.loadBliveSettings();
   }
 
   // 导入项目和章节

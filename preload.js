@@ -127,7 +127,7 @@ contextBridge.exposeInMainWorld("api", {
   // 设置相关API
   settings: {
     getAll: () => ipcRenderer.invoke("get-settings"),
-    get: (key) => ipcRenderer.invoke("get-setting", key),
+    get: (key, type) => ipcRenderer.invoke("get-setting", key, type),
     update: (data) => ipcRenderer.invoke("update-settings", data),
     getDefaultExportPath: () => ipcRenderer.invoke("get-default-export-path"),
     setDefaultExportPath: (path) =>
@@ -146,13 +146,19 @@ contextBridge.exposeInMainWorld("api", {
     connect: (roomId) => ipcRenderer.invoke("bililive:connect", roomId),
     disconnect: () => ipcRenderer.invoke("bililive:disconnect"),
     getConfig: () => ipcRenderer.invoke("bililive:get-config"),
-    saveBiliConfig: (data) => ipcRenderer.invoke("bililive:save-bili-config", data),
+    saveBiliConfig: (data) =>
+      ipcRenderer.invoke("bililive:save-bili-config", data),
     saveTTSMode: (mode) => ipcRenderer.invoke("bililive:save-tts-mode", mode),
-    saveAzureConfig: (data) => ipcRenderer.invoke("bililive:save-azure-config", data),
-    saveAlibabaConfig: (data) => ipcRenderer.invoke("bililive:save-alibaba-config", data),
-    saveSovitsConfig: (data) => ipcRenderer.invoke("bililive:save-sovits-config", data),
+    saveAzureConfig: (data) =>
+      ipcRenderer.invoke("bililive:save-azure-config", data),
+    saveAlibabaConfig: (data) =>
+      ipcRenderer.invoke("bililive:save-alibaba-config", data),
+    saveSovitsConfig: (data) =>
+      ipcRenderer.invoke("bililive:save-sovits-config", data),
     testTTS: (text) => ipcRenderer.invoke("bililive:test-tts", text),
-    getAvailableVoices: () => ipcRenderer.invoke("bililive:get-available-voices"),
-    saveLocalConfig: (voice) => ipcRenderer.invoke("bililive:save-local-config", voice),
+    getAvailableVoices: () =>
+      ipcRenderer.invoke("bililive:get-available-voices"),
+    saveLocalConfig: (voice) =>
+      ipcRenderer.invoke("bililive:save-local-config", voice),
   },
 });

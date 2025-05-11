@@ -1,7 +1,7 @@
 /**
  * 语音合成API模块
  */
-import type { Result, TTSSynthesisResponse, ServiceProviderType } from "@/types";
+import type { Result, TTSSynthesisResponse, TTSProviderType } from "@/types";
 import { invoke, invokeHandler } from "@/utils/apiBase";
 
 /**

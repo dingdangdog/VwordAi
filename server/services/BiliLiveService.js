@@ -175,17 +175,11 @@ async function saveSovitsConfig(configData) {
 
 // Function to read config from storage
 async function getConfig() {
-  try {
-    // Load latest config from storage (this already merges with default config)
-    await loadAllConfig();
+  // Load latest config from storage (this already merges with default config)
+  await loadAllConfig();
 
-    // Return the complete config object (which now contains merged defaults)
-    return biliveConfig;
-  } catch (err) {
-    log.error("(BiliLive Service) Error in getConfig:", err);
-    // Return default config if error
-    return DEFAULT_BILIVE_CONFIG;
-  }
+  // Return the complete config object (which now contains merged defaults)
+  return biliveConfig;
 }
 
 /**
@@ -1567,7 +1561,4 @@ module.exports = {
 
   // TTS相关
   speechText, // 手动播放文本（用于测试）
-
-  // 常量
-  DEFAULT_BILIVE_CONFIG,
 };

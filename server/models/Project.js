@@ -1,11 +1,10 @@
 /**
  * 项目模型
  */
-const { v4: uuidv4 } = require('uuid');
-const storage = require('../utils/storage');
-const path = require('path');
+const { v4: uuidv4 } = require("uuid");
+const storage = require("../utils/storage");
 
-const PROJECT_STORAGE_KEY = 'projects';
+const PROJECT_STORAGE_KEY = "projects";
 
 /**
  * 项目类模型
@@ -26,7 +25,7 @@ class Project {
    */
   static getProjectById(id) {
     const projects = this.getAllProjects();
-    return projects.find(project => project.id === id) || null;
+    return projects.find((project) => project.id === id) || null;
   }
 
   /**
@@ -36,12 +35,12 @@ class Project {
    */
   static createProject(projectData) {
     const projects = this.getAllProjects();
-    
+
     const newProject = {
       id: uuidv4(),
-      title: projectData.title || '未命名项目',
-      description: projectData.description || '',
-      author: projectData.author || '',
+      title: projectData.title || "未命名项目",
+      description: projectData.description || "",
+      author: projectData.author || "",
       createAt: new Date().toISOString(),
       updateAt: new Date().toISOString(),
       coverImage: projectData.coverImage || null,
@@ -49,18 +48,18 @@ class Project {
       wordCount: 0,
       chapterCount: 0,
       defaultVoiceSettings: projectData.defaultVoiceSettings || {
-        serviceProvider: '',
-        voice: '',
+        serviceProvider: "",
+        voice: "",
         speed: 1,
         pitch: 0,
         volume: 100,
-        emotion: ''
-      }
+        emotion: "",
+      },
     };
-    
+
     projects.push(newProject);
     storage.save(PROJECT_STORAGE_KEY, projects);
-    
+
     return newProject;
   }
 
@@ -72,21 +71,21 @@ class Project {
    */
   static updateProject(id, projectData) {
     const projects = this.getAllProjects();
-    const index = projects.findIndex(project => project.id === id);
-    
+    const index = projects.findIndex((project) => project.id === id);
+
     if (index === -1) {
-      throw new Error('项目不存在');
+      throw new Error("项目不存在");
     }
-    
+
     const updatedProject = {
       ...projects[index],
       ...projectData,
-      updateAt: new Date().toISOString()
+      updateAt: new Date().toISOString(),
     };
-    
+
     projects[index] = updatedProject;
     storage.save(PROJECT_STORAGE_KEY, projects);
-    
+
     return updatedProject;
   }
 
@@ -97,12 +96,12 @@ class Project {
    */
   static deleteProject(id) {
     const projects = this.getAllProjects();
-    const filteredProjects = projects.filter(project => project.id !== id);
-    
+    const filteredProjects = projects.filter((project) => project.id !== id);
+
     if (filteredProjects.length === projects.length) {
-      throw new Error('项目不存在');
+      throw new Error("项目不存在");
     }
-    
+
     storage.save(PROJECT_STORAGE_KEY, filteredProjects);
     return true;
   }
@@ -128,4 +127,4 @@ class Project {
   }
 }
 
-module.exports = Project; 
+module.exports = Project;

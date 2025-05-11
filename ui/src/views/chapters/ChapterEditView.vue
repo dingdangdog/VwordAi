@@ -200,7 +200,7 @@ import { useRoute, useRouter } from "vue-router";
 import { useProjectsStore } from "@/stores/projects";
 import { useToast } from "vue-toastification";
 import type { VoiceSettings } from "@/types";
-import { SUPPORTED_PROVIDERS } from "@/stores/settings";
+import { SUPPORTED_TTS_PROVIDERS } from "@/stores/settings";
 
 const route = useRoute();
 const router = useRouter();
@@ -208,7 +208,7 @@ const toast = useToast();
 const projectsStore = useProjectsStore();
 
 // Get service providers from the settings
-const serviceProviders = ref(SUPPORTED_PROVIDERS);
+const serviceProviders = ref(SUPPORTED_TTS_PROVIDERS);
 const isLoadingVoiceRoles = ref(false);
 
 // Component state

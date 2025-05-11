@@ -22,15 +22,15 @@
 
     <!-- 设置内容 -->
     <div class="tab-content">
-      <!-- 服务商设置 -->
-      <ProviderSetting v-if="activeTab === 'provider'" />
+      <!-- TTS设置 -->
+      <TTSSettings v-if="activeTab === 'tts'" />
+      <!-- LLM设置 -->
+      <LLMSettings v-if="activeTab === 'llm'" />
+      <!-- 系统数据 -->
+      <SystemSettings v-else-if="activeTab === 'system'" />
 
       <!-- 语音模型预览 -->
       <VoiceModelPreview v-else-if="activeTab === 'voice'" />
-
-      <!-- 系统数据 -->
-      <SystemDataSetting v-else-if="activeTab === 'system'" />
-
       <!-- 关于信息 -->
       <AboutSetting v-else-if="activeTab === 'about'" />
     </div>
@@ -38,8 +38,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from "vue";
-import { useToast } from "vue-toastification";
+import { computed, onMounted } from "vue";
 import { useSettingsStore } from "@/stores/settings";
 import type { SettingsTab } from "@/stores/settings";
 import {
@@ -50,20 +49,25 @@ import {
 } from "@heroicons/vue/24/outline";
 
 // 导入设置组件
-import ProviderSetting from "@/components/settings/ProviderSetting.vue";
-import AboutSetting from "@/components/settings/AboutSetting.vue";
-import SystemDataSetting from "@/components/settings/SystemDataSetting.vue";
+import TTSSettings from "@/components/settings/TTSSettings.vue";
+import LLMSettings from "@/components/settings/LLMSettings.vue";
+import SystemSettings from "@/components/settings/SystemSettings.vue";
 import VoiceModelPreview from "@/components/settings/VoiceModelPreview.vue";
+import AboutSetting from "@/components/settings/AboutSetting.vue";
 
-const toast = useToast();
 const settingsStore = useSettingsStore();
 
 // 定义选项卡
 const tabs = [
-  { id: "provider" as SettingsTab, name: "服务商配置", icon: ServerIcon },
-  { id: "voice" as SettingsTab, name: "语音模型", icon: MicrophoneIcon },
-  { id: "system" as SettingsTab, name: "系统数据", icon: ArrowPathIcon },
-  { id: "about" as SettingsTab, name: "关于", icon: InformationCircleIcon },
+  { id: "tts" as SettingsTab, name: "TTS配置", icon: ServerIcon },
+  { id: "llm" as SettingsTab, name: "LLM配置", icon: MicrophoneIcon },
+  {
+    id: "system" as SettingsTab,
+    name: "系统设置",
+    icon: InformationCircleIcon,
+  },
+  { id: "voice" as SettingsTab, name: "语音模型", icon: ArrowPathIcon },
+  { id: "about" as SettingsTab, name: "关于", icon: ArrowPathIcon },
 ];
 
 // 选项卡状态
