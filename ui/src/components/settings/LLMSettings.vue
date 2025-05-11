@@ -82,10 +82,10 @@ import { SUPPORTED_LLM_PROVIDERS, useSettingsStore } from "@/stores/settings";
 import { ServerIcon, CloudIcon } from "@heroicons/vue/24/outline";
 import type { LLMProviderType } from "@/types";
 // 注意：需要创建这些组件
+import AliyunLLMProviderForm from "./llm/AliyunProviderForm.vue";
+import AzureLLMProviderForm from "./llm/AzureProviderForm.vue";
+import OpenaiLLMProviderForm from "./llm/OpenaiProviderForm.vue";
 import VolcengineProviderForm from "./llm/VolcengineProviderForm.vue";
-import AliyunLLMProviderForm from "./llm/AliyunLLMProviderForm.vue";
-import AzureLLMProviderForm from "./llm/AzureLLMProviderForm.vue";
-import OpenaiLLMProviderForm from "./llm/OpenaiLLMProviderForm.vue";
 
 // 当前选中的服务商类型
 const selectedProviderType = ref<LLMProviderType | null>(null);

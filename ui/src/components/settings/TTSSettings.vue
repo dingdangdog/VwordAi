@@ -53,35 +53,28 @@
       <div class="flex-1">
         <div class="card p-6">
           <!-- 各服务商配置表单 -->
-          <AzureProviderForm
+          <AzureTTSProviderForm
             v-if="selectedProviderType === 'azure'"
             :provider="providerData"
             @update="updateProviderField"
             @save="saveCurrentProvider"
             @test="testCurrentProvider"
           />
-          <AliyunProviderForm
+          <AliyunTTSProviderForm
             v-else-if="selectedProviderType === 'aliyun'"
             :provider="providerData"
             @update="updateProviderField"
             @save="saveCurrentProvider"
             @test="testCurrentProvider"
           />
-          <BaiduProviderForm
-            v-else-if="selectedProviderType === 'baidu'"
-            :provider="providerData"
-            @update="updateProviderField"
-            @save="saveCurrentProvider"
-            @test="testCurrentProvider"
-          />
-          <TencentProviderForm
+          <TencentTTSProviderForm
             v-else-if="selectedProviderType === 'tencent'"
             :provider="providerData"
             @update="updateProviderField"
             @save="saveCurrentProvider"
             @test="testCurrentProvider"
           />
-          <OpenaiProviderForm
+          <OpenaiTTSProviderForm
             v-else-if="selectedProviderType === 'openai'"
             :provider="providerData"
             @update="updateProviderField"
@@ -111,11 +104,10 @@ import { useToast } from "vue-toastification";
 import { SUPPORTED_TTS_PROVIDERS, useSettingsStore } from "@/stores/settings";
 import { ServerIcon, CloudIcon } from "@heroicons/vue/24/outline";
 import type { TTSProviderType, ServiceProviderStatus } from "@/types";
-import AzureProviderForm from "./tts/AzureProviderForm.vue";
-import AliyunProviderForm from "./tts/AliyunProviderForm.vue";
-import BaiduProviderForm from "./tts/BaiduProviderForm.vue";
-import TencentProviderForm from "./tts/TencentProviderForm.vue";
-import OpenaiProviderForm from "./tts/OpenaiProviderForm.vue";
+import AliyunTTSProviderForm from "./tts/AliyunProviderForm.vue";
+import AzureTTSProviderForm from "./tts/AzureProviderForm.vue";
+import OpenaiTTSProviderForm from "./tts/OpenaiProviderForm.vue";
+import TencentTTSProviderForm from "./tts/TencentProviderForm.vue";
 
 // 当前选中的服务商类型
 const selectedProviderType = ref<TTSProviderType | null>(null);
