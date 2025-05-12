@@ -24,7 +24,7 @@
             >
               首页
             </a>
-            <a
+            <!-- <a
               href="#/projects"
               class="px-3 py-2 text-sm font-semibold"
               :class="[
@@ -35,7 +35,7 @@
               @click.prevent="navigateTo('/projects')"
             >
               项目管理
-            </a>
+            </a> -->
             <a
               href="#/settings"
               class="px-3 py-2 text-sm font-semibold"
@@ -48,7 +48,7 @@
             >
               设置
             </a>
-            <a
+            <!-- <a
               href="#/bililive"
               class="px-3 py-2 text-sm font-semibold"
               :class="[
@@ -59,7 +59,7 @@
               @click.prevent="navigateTo('/bililive')"
             >
               Bili 直播
-            </a>
+            </a> -->
           </div>
         </div>
         <div class="flex items-center no-drag">
