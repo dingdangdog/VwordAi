@@ -38,9 +38,10 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted } from "vue";
+import { computed, onMounted, watch } from "vue";
 import { useSettingsStore } from "@/stores/settings";
 import type { SettingsTab } from "@/stores/settings";
+import { useRoute } from "vue-router";
 import {
   ServerIcon,
   InformationCircleIcon,
@@ -57,6 +58,7 @@ import VoiceModelPreview from "@/components/settings/VoiceModelPreview.vue";
 import AboutSetting from "@/components/settings/AboutSetting.vue";
 
 const settingsStore = useSettingsStore();
+const route = useRoute();
 
 // 定义选项卡
 const tabs = [
@@ -74,10 +76,34 @@ const tabs = [
 // 选项卡状态
 const activeTab = computed(() => settingsStore.activeTab);
 
+// 监听路由变化，更新选项卡
+watch(
+  () => route.query.tab,
+  (newTab) => {
+    if (newTab && typeof newTab === 'string') {
+      // 验证tab是否有效
+      const validTab = tabs.find(tab => tab.id === newTab);
+      if (validTab) {
+        settingsStore.setActiveTab(newTab as SettingsTab);
+      }
+    }
+  },
+  { immediate: true }
+);
+
 // 初始化
 onMounted(async () => {
   // 加载所有设置（包含服务商配置、存储路径等）
   await settingsStore.loadSettings();
+  
+  // 从URL获取tab参数
+  const tabParam = route.query.tab;
+  if (tabParam && typeof tabParam === 'string') {
+    const validTab = tabs.find(tab => tab.id === tabParam);
+    if (validTab) {
+      settingsStore.setActiveTab(tabParam as SettingsTab);
+    }
+  }
 });
 
 // 切换选项卡

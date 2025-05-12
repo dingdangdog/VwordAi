@@ -42,17 +42,35 @@
             设置
           </h2>
           <div class="menu-blocks-grid">
-            <router-link to="/settings" class="menu-block">
-              <KeyIcon class="menu-icon" />
-              <span>TTS设置</span>
+            <router-link to="/settings?tab=tts" class="menu-block">
+              <MicrophoneIcon class="menu-icon" />
+              <span>TTS配置</span>
             </router-link>
-            <router-link to="/settings" class="menu-block">
-              <KeyIcon class="menu-icon" />
-              <span>LLM设置</span>
+            <router-link to="/settings?tab=llm" class="menu-block">
+              <ArrowPathIcon class="menu-icon" />
+              <span>LLM配置</span>
             </router-link>
-            <router-link to="/settings/app" class="menu-block">
-              <ComputerDesktopIcon class="menu-icon" />
-              <span>应用设置</span>
+            <router-link to="/settings?tab=system" class="menu-block">
+              <ServerIcon class="menu-icon" />
+              <span>系统设置</span>
+            </router-link>
+          </div>
+        </div>
+
+        <!-- 关于 -->
+        <div class="menu-category">
+          <h2 class="menu-category-title">
+            <InformationCircleIcon class="h-6 w-6 mr-2" />
+            系统
+          </h2>
+          <div class="menu-blocks-grid">
+            <router-link to="/settings?tab=voice" class="menu-block">
+              <SpeakerWaveIcon class="menu-icon" />
+              <span>语音模型</span>
+            </router-link>
+            <router-link to="/settings?tab=about" class="menu-block">
+              <InformationCircleIcon class="menu-icon" />
+              <span>关于信息</span>
             </router-link>
           </div>
         </div>
@@ -74,6 +92,10 @@ import {
   Cog6ToothIcon,
   KeyIcon,
   ComputerDesktopIcon,
+  ServerIcon,
+  ArrowPathIcon,
+  MicrophoneIcon,
+  InformationCircleIcon,
 } from "@heroicons/vue/24/outline";
 
 const projectsStore = useProjectsStore();
