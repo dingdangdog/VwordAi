@@ -12,14 +12,14 @@ const { success, error } = require("../utils/result");
 const Project = require("../models/Project");
 
 // Load voice service provider modules
-const azureProvider = require("../provider/azure");
+const azureProvider = require("../tts/azure");
 // Load other providers based on actual project situation
 let aliyunProvider;
 let tencentProvider;
 let baiduProvider;
 
 try {
-  aliyunProvider = require("../provider/aliyun");
+  aliyunProvider = require("../tts/aliyun");
 } catch (e) {
   console.warn(
     "Aliyun voice service module not found or failed to load",
@@ -28,7 +28,7 @@ try {
 }
 
 try {
-  tencentProvider = require("../provider/tencent");
+  tencentProvider = require("../tts/tencent");
 } catch (e) {
   console.warn(
     "Tencent voice service module not found or failed to load",
@@ -37,7 +37,7 @@ try {
 }
 
 try {
-  baiduProvider = require("../provider/baidu");
+  baiduProvider = require("../tts/baidu");
 } catch (e) {
   console.warn(
     "Baidu voice service module not found or failed to load",

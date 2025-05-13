@@ -426,7 +426,7 @@ class Settings {
       emotion: "general",
     };
 
-    const azureProvider = require("../provider/azure");
+    const azureProvider = require("../tts/azure");
     const result = await azureProvider.play(text, settings, config);
 
     if (result.success) {

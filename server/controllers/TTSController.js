@@ -49,7 +49,7 @@ function registerAliyunTTSTestHandler() {
       }
 
       // 加载阿里云语音模块
-      const aliyunProvider = require("../provider/aliyun");
+      const aliyunProvider = require("../tts/aliyun");
 
       // 创建临时文件路径
       const tempFilePath = path.join(

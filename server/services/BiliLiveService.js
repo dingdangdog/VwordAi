@@ -1079,7 +1079,7 @@ function localTTS(text) {
       const encodedText = Buffer.from(text, "utf8").toString("utf8");
 
       // 直接调用local.js中的play方法
-      const localProvider = require("../provider/local");
+      const localProvider = require("../tts/local");
       const result = await localProvider.play(encodedText, settings);
 
       if (!result.success) {
@@ -1155,7 +1155,7 @@ async function azureTTS(text) {
 
   try {
     // 直接调用azure.js中的play方法
-    const azureProvider = require("../provider/azure");
+    const azureProvider = require("../tts/azure");
     const result = await azureProvider.play(text, settings, azureConfig);
 
     if (!result.success) {
@@ -1247,7 +1247,7 @@ async function alibabaTTS(text) {
 
     // 使用 aliyun.js 的 synthesize 方法
     try {
-      const aliyunProvider = require("../provider/aliyun");
+      const aliyunProvider = require("../tts/aliyun");
       const result = await aliyunProvider.synthesize(
         text,
         tempFile,
@@ -1324,7 +1324,7 @@ async function sovitsTTS(text) {
     };
 
     // 直接调用sovits.js中的play方法
-    const sovitsProvider = require("../provider/sovits");
+    const sovitsProvider = require("../tts/sovits");
     const result = await sovitsProvider.play(text, settings, sovitsConfig);
 
     if (!result.success) {
@@ -1352,7 +1352,7 @@ function getAvailableVoices() {
 
     try {
       // 直接调用local.js中的方法
-      const localProvider = require("../provider/local");
+      const localProvider = require("../tts/local");
       localProvider
         .getAvailableVoices()
         .then((voices) => {
