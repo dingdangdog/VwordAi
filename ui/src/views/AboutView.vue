@@ -1,5 +1,5 @@
 <template>
-  <div class="about-setting card p-2 m-2">
+  <div class="about-setting h-full card p-2 m-2">
     <div class="flex flex-col items-center justify-center py-4">
       <div
         class="w-24 h-24 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center mb-4"
@@ -10,12 +10,12 @@
       <h1 class="text-2xl font-bold text-gray-900 dark:text-white">
         {{ appConfig.name }}
       </h1>
-      <p class="text-gray-500 dark:text-gray-400 mb-6">
-        {{ appConfig.nameEn }} v{{ appConfig.version }}
+      <p class="text-gray-500 dark:text-gray-400 mb-12">
+        {{ appConfig.nameEn }} {{ appConfig.version }}
       </p>
 
       <div
-        class="max-w-md w-full bg-gray-50 dark:bg-gray-700 rounded-lg p-4 mb-6"
+        class="max-w-md w-full bg-gray-50 dark:bg-gray-700 rounded-lg p-4 mb-12"
       >
         <h3
           class="font-medium text-gray-900 dark:text-white mb-2 border-b text-center border-gray-200 dark:border-gray-600"
@@ -42,7 +42,7 @@
         </div>
       </div>
 
-      <div class="max-w-md w-full mb-6">
+      <div class="max-w-md w-full mb-12">
         <p class="text-center text-gray-600 dark:text-gray-300">
           {{ appConfig.description }}
         </p>
@@ -72,7 +72,7 @@
       </div>
     </div>
 
-    <div class="mt-6 text-center">
+    <div class="mt-12 text-center">
       <p class="text-sm text-gray-500 dark:text-gray-400">
         {{ appConfig.copyright }}
       </p>
@@ -170,18 +170,17 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, computed } from "vue";
+import { ref, onMounted, onUnmounted } from "vue";
 import { useToast } from "vue-toastification";
 import GithubIcon from "@/components/icon/github.vue";
 import { appConfig } from "@/stores/appConfig";
 import {
-  UpdateService,
   VersionCompareResult,
   saveLastUpdateCheck,
   shouldCheckForUpdates,
   type UpdateInfo,
 } from "@/services/updateService";
-import UpdateDialog from "./UpdateDialog.vue";
+import UpdateDialog from "@/components/layout/UpdateDialog.vue";
 
 const toast = useToast();
 

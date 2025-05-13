@@ -17,9 +17,8 @@ export type SettingsTab = "tts" | "llm" | "voice" | "system" | "about";
 export const SUPPORTED_TTS_PROVIDERS = [
   { id: "azure", name: "Azure", type: "azure" as TTSProviderType },
   { id: "aliyun", name: "阿里云", type: "aliyun" as TTSProviderType },
-  { id: "tencent", name: "腾讯云", type: "tencent" as TTSProviderType },
-  { id: "baidu", name: "百度云", type: "baidu" as TTSProviderType },
-  { id: "openai", name: "OpenAI", type: "openai" as TTSProviderType },
+  // { id: "tencent", name: "腾讯云", type: "tencent" as TTSProviderType },
+  // { id: "openai", name: "OpenAI", type: "openai" as TTSProviderType },
 ];
 
 // 支持的LLM服务商
@@ -29,7 +28,7 @@ export const SUPPORTED_LLM_PROVIDERS = [
     name: "火山引擎",
     type: "volcengine" as LLMProviderType,
   },
-  { id: "aliyun", name: "阿里云", type: "aliyun" as LLMProviderType },
+  { id: "aliyun", name: "阿里云百炼", type: "aliyun" as LLMProviderType },
   { id: "openai", name: "OpenAI", type: "openai" as LLMProviderType },
   // { id: "azure", name: "Azure", type: "azure" as LLMProviderType },
 ];

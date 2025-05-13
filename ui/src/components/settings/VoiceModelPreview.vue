@@ -132,28 +132,6 @@
                   {{ model.lang }}
                 </p>
 
-                <!-- 情感和角色标签 -->
-                <div class="mt-2">
-                  <div
-                    v-if="model.emotions && model.emotions.length > 0"
-                    class="flex flex-wrap gap-1 mt-1"
-                  >
-                    <span
-                      v-for="emotion in model.emotions.slice(0, 3)"
-                      :key="emotion.code"
-                      class="bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 text-xs px-2 py-0.5 rounded"
-                    >
-                      {{ emotion.name }}
-                    </span>
-                    <span
-                      v-if="model.emotions.length > 3"
-                      class="text-xs text-gray-500 dark:text-gray-400"
-                    >
-                      +{{ model.emotions.length - 3 }}
-                    </span>
-                  </div>
-                </div>
-
                 <!-- 操作按钮 -->
                 <div class="mt-3 flex justify-between items-center">
                   <div class="text-xs text-gray-500 dark:text-gray-400">
@@ -167,6 +145,26 @@
                     <span v-if="isTestingModel[model.code]">测试中...</span>
                     <span v-else>试听</span>
                   </button>
+                </div>
+
+                <!-- 情感和角色标签 -->
+                <div
+                  v-if="model.emotions && model.emotions.length > 0"
+                  class="flex flex-wrap gap-1 mt-1"
+                >
+                  <span
+                    v-for="emotion in model.emotions.slice(0, 3)"
+                    :key="emotion.code"
+                    class="bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 text-xs px-2 py-0.5 rounded"
+                  >
+                    {{ emotion.name }}
+                  </span>
+                  <span
+                    v-if="model.emotions.length > 3"
+                    class="text-xs text-gray-500 dark:text-gray-400"
+                  >
+                    +{{ model.emotions.length - 3 }}
+                  </span>
                 </div>
               </div>
             </div>

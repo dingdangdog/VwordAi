@@ -63,7 +63,7 @@
             <SpeakerWaveIcon class="menu-icon" />
             <span>语音模型</span>
           </router-link>
-          <router-link to="/settings?tab=about" class="menu-block">
+          <router-link to="/about" class="menu-block">
             <InformationCircleIcon class="menu-icon" />
             <span>关于</span>
           </router-link>
@@ -98,7 +98,7 @@ onMounted(() => {
 
 <style scoped>
 .menu-category {
-  @apply bg-white/50 dark:bg-gray-800/50 rounded-lg p-4 shadow-sm;
+  @apply bg-white/50 dark:bg-blue-800/20 rounded-lg p-4 shadow-sm;
 }
 
 .menu-category-title {
@@ -110,7 +110,7 @@ onMounted(() => {
 }
 
 .menu-block {
-  @apply flex flex-col items-center justify-center p-4 w-28 h-24 rounded-lg bg-gray-50 dark:bg-gray-700 hover:bg-blue-50 dark:hover:bg-gray-600 transition-colors duration-200 text-center;
+  @apply flex flex-col items-center justify-center p-4 w-28 h-24 rounded-lg bg-gray-50 dark:bg-blue-800/30 hover:bg-blue-50 dark:hover:bg-gray-600 transition-colors duration-200 text-center;
 }
 
 .menu-icon {

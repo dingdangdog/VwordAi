@@ -31,8 +31,6 @@
 
       <!-- 语音模型预览 -->
       <VoiceModelPreview v-else-if="activeTab === 'voice'" />
-      <!-- 关于信息 -->
-      <AboutSetting v-else-if="activeTab === 'about'" />
     </div>
   </div>
 </template>
@@ -44,7 +42,6 @@ import type { SettingsTab } from "@/stores/settings";
 import { useRoute } from "vue-router";
 import {
   ServerIcon,
-  InformationCircleIcon,
   ArrowPathIcon,
   MicrophoneIcon,
   SpeakerWaveIcon,
@@ -55,7 +52,6 @@ import TTSSettings from "@/components/settings/TTSSettings.vue";
 import LLMSettings from "@/components/settings/LLMSettings.vue";
 import SystemSettings from "@/components/settings/SystemSettings.vue";
 import VoiceModelPreview from "@/components/settings/VoiceModelPreview.vue";
-import AboutSetting from "@/components/settings/AboutSetting.vue";
 
 const settingsStore = useSettingsStore();
 const route = useRoute();
@@ -70,7 +66,7 @@ const tabs = [
     icon: ServerIcon,
   },
   { id: "voice" as SettingsTab, name: "语音模型", icon: SpeakerWaveIcon },
-  { id: "about" as SettingsTab, name: "关于", icon: InformationCircleIcon },
+  // { id: "about" as SettingsTab, name: "关于", icon: InformationCircleIcon },
 ];
 
 // 选项卡状态
@@ -80,9 +76,9 @@ const activeTab = computed(() => settingsStore.activeTab);
 watch(
   () => route.query.tab,
   (newTab) => {
-    if (newTab && typeof newTab === 'string') {
+    if (newTab && typeof newTab === "string") {
       // 验证tab是否有效
-      const validTab = tabs.find(tab => tab.id === newTab);
+      const validTab = tabs.find((tab) => tab.id === newTab);
       if (validTab) {
         settingsStore.setActiveTab(newTab as SettingsTab);
       }
@@ -95,11 +91,11 @@ watch(
 onMounted(async () => {
   // 加载所有设置（包含服务商配置、存储路径等）
   await settingsStore.loadSettings();
-  
+
   // 从URL获取tab参数
   const tabParam = route.query.tab;
-  if (tabParam && typeof tabParam === 'string') {
-    const validTab = tabs.find(tab => tab.id === tabParam);
+  if (tabParam && typeof tabParam === "string") {
+    const validTab = tabs.find((tab) => tab.id === tabParam);
     if (validTab) {
       settingsStore.setActiveTab(tabParam as SettingsTab);
     }
