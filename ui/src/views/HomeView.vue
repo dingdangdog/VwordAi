@@ -1,78 +1,72 @@
 <template>
-  <div class="py-8 px-4">
-    <div class="max-w-6xl mx-auto">
-      <!-- 分类菜单 -->
-      <div class="flex flex-col space-y-4">
-        <!-- TTS类别 -->
-        <div class="menu-category">
-          <h2 class="menu-category-title">
-            <SpeakerWaveIcon class="h-6 w-6 mr-2" />
-            TTS
-          </h2>
-          <div class="menu-blocks-grid">
-            <router-link to="/projects" class="menu-block">
-              <DocumentTextIcon class="menu-icon" />
-              <span>项目管理</span>
-            </router-link>
-            <!-- <router-link to="/projects" class="menu-block">
-              <SpeakerWaveIcon class="menu-icon" />
-              <span>语音合成</span>
-            </router-link> -->
-          </div>
+  <div class="max-w-6xl mx-auto">
+    <!-- 分类菜单 -->
+    <div class="flex flex-col space-y-4">
+      <!-- TTS类别 -->
+      <div class="menu-category">
+        <h2 class="menu-category-title">
+          <SpeakerWaveIcon class="h-6 w-6 mr-2" />
+          TTS
+        </h2>
+        <div class="menu-blocks-grid">
+          <router-link to="/projects" class="menu-block">
+            <DocumentTextIcon class="menu-icon" />
+            <span>项目管理</span>
+          </router-link>
         </div>
+      </div>
 
-        <!-- 直播类别 -->
-        <div class="menu-category">
-          <h2 class="menu-category-title">
-            <VideoCameraIcon class="h-6 w-6 mr-2" />
-            直播
-          </h2>
-          <div class="menu-blocks-grid">
-            <router-link to="/bililive" class="menu-block">
-              <BilibiliIcon class="menu-icon" />
-              <!-- <span>Blive</span> -->
-            </router-link>
-          </div>
+      <!-- 直播类别 -->
+      <div class="menu-category">
+        <h2 class="menu-category-title">
+          <VideoCameraIcon class="h-6 w-6 mr-2" />
+          直播
+        </h2>
+        <div class="menu-blocks-grid">
+          <router-link to="/bililive" class="menu-block">
+            <BilibiliIcon class="menu-icon" />
+            <!-- <span>Blive</span> -->
+          </router-link>
         </div>
+      </div>
 
-        <!-- 设置类别 -->
-        <div class="menu-category">
-          <h2 class="menu-category-title">
-            <AdjustmentsHorizontalIcon class="h-6 w-6 mr-2" />
-            设置
-          </h2>
-          <div class="menu-blocks-grid">
-            <router-link to="/settings?tab=tts" class="menu-block">
-              <MicrophoneIcon class="menu-icon" />
-              <span>TTS配置</span>
-            </router-link>
-            <router-link to="/settings?tab=llm" class="menu-block">
-              <ArrowPathIcon class="menu-icon" />
-              <span>LLM配置</span>
-            </router-link>
-            <router-link to="/settings?tab=system" class="menu-block">
-              <ServerIcon class="menu-icon" />
-              <span>系统设置</span>
-            </router-link>
-          </div>
+      <!-- 设置类别 -->
+      <div class="menu-category">
+        <h2 class="menu-category-title">
+          <AdjustmentsHorizontalIcon class="h-6 w-6 mr-2" />
+          设置
+        </h2>
+        <div class="menu-blocks-grid">
+          <router-link to="/settings?tab=tts" class="menu-block">
+            <MicrophoneIcon class="menu-icon" />
+            <span>TTS</span>
+          </router-link>
+          <router-link to="/settings?tab=llm" class="menu-block">
+            <CubeTransparentIcon class="menu-icon" />
+            <span>LLM</span>
+          </router-link>
+          <router-link to="/settings?tab=system" class="menu-block">
+            <ServerIcon class="menu-icon" />
+            <span>系统</span>
+          </router-link>
         </div>
+      </div>
 
-        <!-- 关于 -->
-        <div class="menu-category">
-          <h2 class="menu-category-title">
-            <InformationCircleIcon class="h-6 w-6 mr-2" />
-            系统
-          </h2>
-          <div class="menu-blocks-grid">
-            <router-link to="/settings?tab=voice" class="menu-block">
-              <SpeakerWaveIcon class="menu-icon" />
-              <span>语音模型</span>
-            </router-link>
-            <router-link to="/settings?tab=about" class="menu-block">
-              <InformationCircleIcon class="menu-icon" />
-              <span>关于信息</span>
-            </router-link>
-          </div>
+      <!-- 关于 -->
+      <div class="menu-category">
+        <h2 class="menu-category-title">
+          <PuzzlePieceIcon class="h-6 w-6 mr-2" />
+          系统
+        </h2>
+        <div class="menu-blocks-grid">
+          <router-link to="/settings?tab=voice" class="menu-block">
+            <SpeakerWaveIcon class="menu-icon" />
+            <span>语音模型</span>
+          </router-link>
+          <router-link to="/settings?tab=about" class="menu-block">
+            <InformationCircleIcon class="menu-icon" />
+            <span>关于</span>
+          </router-link>
         </div>
       </div>
     </div>
@@ -87,13 +81,10 @@ import {
   DocumentTextIcon,
   SpeakerWaveIcon,
   AdjustmentsHorizontalIcon,
+  CubeTransparentIcon,
   VideoCameraIcon,
-  RocketLaunchIcon,
-  Cog6ToothIcon,
-  KeyIcon,
-  ComputerDesktopIcon,
+  PuzzlePieceIcon,
   ServerIcon,
-  ArrowPathIcon,
   MicrophoneIcon,
   InformationCircleIcon,
 } from "@heroicons/vue/24/outline";
