@@ -13,6 +13,10 @@
             <DocumentTextIcon class="menu-icon" />
             <span>项目管理</span>
           </router-link>
+          <router-link to="/read-novels" class="menu-block">
+            <DocumentTextIcon class="menu-icon" />
+            <span>小说管理</span>
+          </router-link>
         </div>
       </div>
 

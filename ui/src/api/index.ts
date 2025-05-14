@@ -13,4 +13,7 @@ export { ttsApi, serviceProviderApi } from "./ttsApi";
 export { settingsApi } from "./settingsApi";
 
 // B站直播API
-export { biliLiveApi } from "./biliLiveApi"; 
+export { biliLiveApi } from "./biliLiveApi";
+
+// 小说API
+export { novelApi } from './novelApi'; 
