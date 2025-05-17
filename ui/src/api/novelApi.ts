@@ -8,6 +8,7 @@ const mockNovels: Novel[] = [
     title: '白雪公主',
     author: '安徒生',
     description: '一个关于白雪公主的童话故事',
+    characters: [],
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString()
   },
@@ -16,6 +17,7 @@ const mockNovels: Novel[] = [
     title: '三体',
     author: '刘慈欣',
     description: '科幻小说，描述了地球文明与三体文明的交流、冲突、战争的故事',
+    characters: [],
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString()
   }
@@ -82,13 +84,11 @@ const mockParsedChapters: ParsedChapter[] = [
     id: '1',
     chapterId: '1',
     title: '第一章：美丽的公主',
-    narration: [
+    segments: [
       {
         text: '从前有一个美丽的公主，名叫白雪公主。她有一个邪恶的后母，后母嫉妒她的美貌。',
         voice: 'narrator-1'
-      }
-    ],
-    dialogues: [
+      },
       {
         text: '魔镜魔镜，谁是世界上最美的女人？',
         character: '王后',
@@ -375,15 +375,15 @@ export const novelApi = {
       id: uuidv4(),
       chapterId: chapter.id,
       title: chapter.title,
-      narration: [
-        {
-          text: chapter.content.split('\n')[0],
-          voice: 'narrator-1'
-        }
-      ],
-      dialogues: [],
+      segments: [],
       processedAt: new Date().toISOString()
     };
+    
+    // Add first line as narration
+    parsedChapter.segments.push({
+      text: chapter.content.split('\n')[0],
+      voice: 'narrator-1'
+    });
     
     // Simple parsing logic for dialogues - find lines with quotes
     const lines = chapter.content.split('\n');
@@ -398,11 +398,11 @@ export const novelApi = {
             character = line.split('说道')[0].split('"').pop() || 'Unknown';
           }
           
-          parsedChapter.dialogues.push({
+          parsedChapter.segments.push({
             text: parts[1],
             character: character,
             tone: Math.random() > 0.5 ? '平静' : '激动',
-            voice: character === '王后' ? 'female-2' : 'undefined'
+            voice: character === '王后' ? 'female-2' : undefined
           });
         }
       }
@@ -468,6 +468,21 @@ export const novelApi = {
     return {
       success: true,
       data: [ttsResult]
+    };
+  },
+
+  // Get a chapter by ID
+  getChapter: async (id: string): Promise<ApiResponse<Chapter>> => {
+    const chapter = mockChapters.find(c => c.id === id);
+    if (chapter) {
+      return {
+        success: true,
+        data: chapter
+      };
+    }
+    return {
+      success: false,
+      message: 'Chapter not found'
     };
   }
 }; 

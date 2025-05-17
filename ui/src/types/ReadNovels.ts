@@ -42,11 +42,12 @@ export interface ParsedChapter {
   id: string;
   chapterId: string;
   title: string;
-  narration: Array<{
+  segments: Array<{
     text: string;
+    character?: string;
+    tone?: string;
     voice?: string;
   }>;
-  dialogues: ParsedDialogue[];
   processedAt: string;
 }
 

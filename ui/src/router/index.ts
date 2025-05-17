@@ -51,6 +51,11 @@ const router = createRouter({
       name: "about",
       component: () => import("@/views/AboutView.vue"),
     },
+    {
+      path: "/chapters/:chapterId",
+      name: "ChapterEditor",
+      component: () => import("@/views/ChapterEditor.vue"),
+    },
   ],
 });
 

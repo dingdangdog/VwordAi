@@ -10,7 +10,7 @@
       <div
         v-for="chapter in sortedChapters"
         :key="chapter.id"
-        @click="$emit('select-chapter', chapter.id)"
+        @click="navigateToChapter(chapter.id)"
         class="p-2 border border-gray-200 dark:border-gray-700 rounded-md cursor-pointer transition-colors duration-200"
         :class="
           chapter.id === selectedChapterId
@@ -50,21 +50,25 @@
 
 <script setup lang="ts">
 import { computed } from "vue";
+import { useRouter } from "vue-router";
 import type { Chapter } from "@/types/ReadNovels";
+
+const router = useRouter();
 
 const props = defineProps<{
   chapters: Chapter[];
   selectedChapterId?: string;
 }>();
 
-defineEmits<{
-  (e: "select-chapter", chapterId: string): void;
-}>();
-
 // 按章节顺序排序
 const sortedChapters = computed(() => {
   return [...props.chapters].sort((a, b) => a.order - b.order);
 });
+
+// 导航到章节编辑页面
+function navigateToChapter(chapterId: string) {
+  router.push(`/chapters/${chapterId}`);
+}
 
 // 格式化日期
 function formatDate(dateString: string) {
