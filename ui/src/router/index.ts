@@ -53,8 +53,8 @@ const router = createRouter({
     },
     {
       path: "/chapters/:chapterId",
-      name: "ChapterEditor",
-      component: () => import("@/views/ChapterEditor.vue"),
+      name: "ReadNovelsChapter",
+      component: () => import("@/views/ReadNovelsChapter.vue"),
     },
   ],
 });
