@@ -340,6 +340,57 @@ export const useSettingsStore = defineStore("settings", () => {
     }
   }
 
+  // Test LLM service provider connection
+  async function testLLMProviderConnection(
+    type: LLMProviderType,
+    data?: any
+  ): Promise<ConnectionTestResult> {
+    try {
+      // Make sure settings are loaded
+      if (!llmSettings.value) {
+        await loadLLMSettings();
+      }
+
+      let response = await settingsApi.testLLMProviderConnection(type, data);
+
+      if (response.success && response.data) {
+        // 更新本地状态
+        if (llmSettings.value && llmSettings.value[type]) {
+          llmSettings.value[type].status =
+            (response.data.status as ServiceProviderStatus) || "success";
+        }
+
+        return {
+          success: true,
+          message: response.data.message || "Connection successful",
+          data: response.data,
+        };
+      } else {
+        // 更新本地状态
+        if (llmSettings.value && llmSettings.value[type]) {
+          llmSettings.value[type].status = "failure";
+        }
+
+        return {
+          success: false,
+          message: response.error || "Connection failed",
+        };
+      }
+    } catch (error) {
+      console.error("Failed to test LLM service provider connection:", error);
+      // 更新本地状态
+      if (llmSettings.value && llmSettings.value[type]) {
+        llmSettings.value[type].status = "failure";
+      }
+
+      return {
+        success: false,
+        message:
+          error instanceof Error ? error.message : "Connection test failed",
+      };
+    }
+  }
+
   // Update TTS service provider config
   async function updateTTSProvider(
     type: TTSProviderType,
@@ -627,6 +678,7 @@ export const useSettingsStore = defineStore("settings", () => {
     setActiveTTSProvider,
     setActiveLLMProvider,
     testTTSProviderConnection,
+    testLLMProviderConnection,
     getSettings,
     updateSettings,
     loadSettings,

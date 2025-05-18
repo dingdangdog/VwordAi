@@ -262,10 +262,56 @@ async function copyAudioFile(sourcePath, destPath) {
   return destPath;
 }
 
+/**
+ * 获取音频文件的时长（秒）
+ * @param {string} filePath 音频文件路径
+ * @returns {Promise<number>} 音频时长（秒）
+ */
+async function getAudioDuration(filePath) {
+  // 检查ffmpeg是否可用
+  if (!checkFfmpeg()) {
+    throw new Error("FFmpeg is not installed or not in PATH");
+  }
+
+  // 规范化路径
+  filePath = path.normalize(filePath);
+
+  // 检查文件是否存在
+  if (!fs.existsSync(filePath)) {
+    throw new Error(`Audio file does not exist: ${filePath}`);
+  }
+
+  try {
+    // 使用ffprobe获取音频时长
+    const cmd = `ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "${filePath.replace(/"/g, '\\"')}"`;
+    console.log(`[Audio] Running FFprobe command: ${cmd}`);
+
+    const output = execSync(cmd, {
+      encoding: "utf8",
+      maxBuffer: 1024 * 1024,
+      windowsHide: true,
+    }).trim();
+
+    // 解析输出为浮点数
+    const duration = parseFloat(output);
+    console.log(`[Audio] Audio duration: ${duration} seconds`);
+
+    return duration;
+  } catch (error) {
+    console.error("[Audio] Error getting audio duration:", error.message);
+    if (error.stdout) console.error("  Command output:", error.stdout);
+    if (error.stderr) console.error("  Command error:", error.stderr);
+
+    // 返回默认值
+    return 0;
+  }
+}
+
 module.exports = {
   saveAudioFile,
   createReadableStreamFromBuffer,
   checkFfmpeg,
   mergeAudioFiles,
   copyAudioFile,
+  getAudioDuration,
 };

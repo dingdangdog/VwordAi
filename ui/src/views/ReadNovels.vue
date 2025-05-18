@@ -73,6 +73,7 @@
           @parse-chapter="parseChapter"
           @generate-tts="generateTts"
           @update-parsed-chapter="updateParsedChapter"
+          @update-llm-provider="updateLLMProvider"
         />
       </div>
     </div>
@@ -108,15 +109,16 @@ import { useToast } from "vue-toastification";
 import { useNovelsStore } from "@/stores/novels";
 import { PlusIcon } from "@heroicons/vue/24/outline";
 import type { Novel, Character } from "@/types/ReadNovels";
+import type { LLMProviderType } from "@/types";
 
 // 导入组件
-import NovelList from "@/components/readnovels/NovelList.vue";
-import NovelDetail from "@/components/readnovels/NovelDetail.vue";
-import ChapterList from "@/components/readnovels/ChapterList.vue";
-import ChapterProcessor from "@/components/readnovels/ChapterProcessor.vue";
-import NovelModal from "@/components/readnovels/NovelModal.vue";
-import CharacterModal from "@/components/readnovels/CharacterModal.vue";
-import ChapterModal from "@/components/readnovels/ChapterModal.vue";
+import NovelList from "@/components/ReadNovels/NovelList.vue";
+import NovelDetail from "@/components/ReadNovels/NovelDetail.vue";
+import ChapterList from "@/components/ReadNovels/ChapterList.vue";
+import ChapterProcessor from "@/components/ReadNovels/ChapterProcessor.vue";
+import NovelModal from "@/components/ReadNovels/NovelModal.vue";
+import CharacterModal from "@/components/ReadNovels/CharacterModal.vue";
+import ChapterModal from "@/components/ReadNovels/ChapterModal.vue";
 
 const toast = useToast();
 const novelsStore = useNovelsStore();
@@ -310,6 +312,22 @@ async function generateTts() {
   } catch (error) {
     toast.error(
       `生成TTS失败：${error instanceof Error ? error.message : String(error)}`
+    );
+  }
+}
+
+// 更新LLM服务商
+async function updateLLMProvider(provider: LLMProviderType) {
+  if (!currentChapter.value) return;
+
+  try {
+    await novelsStore.updateChapter(currentChapter.value.id, {
+      llmProvider: provider
+    });
+    console.log(`LLM服务商已更新为: ${provider}`);
+  } catch (error) {
+    toast.error(
+      `更新LLM服务商失败：${error instanceof Error ? error.message : String(error)}`
     );
   }
 }

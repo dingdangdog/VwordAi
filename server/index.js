@@ -12,6 +12,7 @@ const ChapterController = require("./controllers/ChapterController");
 const SettingsController = require("./controllers/SettingsController");
 const ServiceProviderController = require("./controllers/ServiceProviderController");
 const TTSController = require("./controllers/TTSController");
+const LLMController = require("./controllers/LLMController");
 
 // Import utilities
 const storage = require("./utils/storage");
@@ -75,6 +76,10 @@ function initControllers() {
   // Initialize TTS controller
   TTSController.init();
   console.log("TTS controller initialized");
+
+  // Initialize LLM controller
+  LLMController.initLLMListeners();
+  console.log("LLM controller initialized");
 }
 
 /**

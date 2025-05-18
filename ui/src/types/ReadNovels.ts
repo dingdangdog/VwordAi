@@ -1,3 +1,4 @@
+// 小说
 export interface Novel {
   id: string;
   title: string;
@@ -9,6 +10,7 @@ export interface Novel {
   updatedAt: string;
 }
 
+// 角色
 export interface Character {
   id: string;
   novelId: string;
@@ -20,6 +22,7 @@ export interface Character {
   voiceModel?: string;
 }
 
+// 章节
 export interface Chapter {
   id: string;
   novelId: string;
@@ -29,6 +32,7 @@ export interface Chapter {
   processed: boolean;
   createdAt: string;
   updatedAt: string;
+  llmProvider: string;
 }
 
 export interface ParsedDialogue {

@@ -65,7 +65,8 @@ const mockChapters: Chapter[] = [
     order: 1,
     processed: true,
     createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString()
+    updatedAt: new Date().toISOString(),
+    llmProvider: 'openai'
   },
   {
     id: '2',
@@ -75,7 +76,8 @@ const mockChapters: Chapter[] = [
     order: 2,
     processed: false,
     createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString()
+    updatedAt: new Date().toISOString(),
+    llmProvider: 'volcengine'
   }
 ];
 
@@ -157,11 +159,11 @@ export const novelApi = {
       createdAt: now,
       updatedAt: now
     };
-    
+
     // In a real implementation, this would save to a backend
     // For mock purposes, we'll just add it to our array
     mockNovels.push(newNovel);
-    
+
     return {
       success: true,
       data: newNovel
@@ -177,15 +179,15 @@ export const novelApi = {
         message: 'Novel not found'
       };
     }
-    
+
     const updatedNovel = {
       ...mockNovels[novelIndex],
       ...novelData,
       updatedAt: new Date().toISOString()
     };
-    
+
     mockNovels[novelIndex] = updatedNovel;
-    
+
     return {
       success: true,
       data: updatedNovel
@@ -201,9 +203,9 @@ export const novelApi = {
         message: 'Novel not found'
       };
     }
-    
+
     mockNovels.splice(novelIndex, 1);
-    
+
     return {
       success: true,
       data: true
@@ -225,9 +227,9 @@ export const novelApi = {
       id: uuidv4(),
       ...characterData
     };
-    
+
     mockCharacters.push(newCharacter);
-    
+
     return {
       success: true,
       data: newCharacter
@@ -243,14 +245,14 @@ export const novelApi = {
         message: 'Character not found'
       };
     }
-    
+
     const updatedCharacter = {
       ...mockCharacters[characterIndex],
       ...characterData
     };
-    
+
     mockCharacters[characterIndex] = updatedCharacter;
-    
+
     return {
       success: true,
       data: updatedCharacter
@@ -266,9 +268,9 @@ export const novelApi = {
         message: 'Character not found'
       };
     }
-    
+
     mockCharacters.splice(characterIndex, 1);
-    
+
     return {
       success: true,
       data: true
@@ -290,12 +292,13 @@ export const novelApi = {
     const newChapter: Chapter = {
       id: uuidv4(),
       ...chapterData,
+      llmProvider: chapterData.llmProvider || 'openai', // Default to OpenAI if not specified
       createdAt: now,
       updatedAt: now
     };
-    
+
     mockChapters.push(newChapter);
-    
+
     return {
       success: true,
       data: newChapter
@@ -311,15 +314,15 @@ export const novelApi = {
         message: 'Chapter not found'
       };
     }
-    
+
     const updatedChapter = {
       ...mockChapters[chapterIndex],
       ...chapterData,
       updatedAt: new Date().toISOString()
     };
-    
+
     mockChapters[chapterIndex] = updatedChapter;
-    
+
     return {
       success: true,
       data: updatedChapter
@@ -335,9 +338,9 @@ export const novelApi = {
         message: 'Chapter not found'
       };
     }
-    
+
     mockChapters.splice(chapterIndex, 1);
-    
+
     return {
       success: true,
       data: true
@@ -368,8 +371,11 @@ export const novelApi = {
         message: 'Chapter not found'
       };
     }
-    
-    // In a real implementation, this would call an LLM service
+
+    // In a real implementation, this would call an LLM service based on the provider
+    // Log the LLM provider being used
+    console.log(`Using LLM provider: ${chapter.llmProvider || 'default'}`);
+
     // For mock purposes, we'll create a simple parsed structure
     const parsedChapter: ParsedChapter = {
       id: uuidv4(),
@@ -378,13 +384,13 @@ export const novelApi = {
       segments: [],
       processedAt: new Date().toISOString()
     };
-    
+
     // Add first line as narration
     parsedChapter.segments.push({
       text: chapter.content.split('\n')[0],
       voice: 'narrator-1'
     });
-    
+
     // Simple parsing logic for dialogues - find lines with quotes
     const lines = chapter.content.split('\n');
     for (let i = 1; i < lines.length; i++) {
@@ -397,17 +403,34 @@ export const novelApi = {
           if (line.includes('说道')) {
             character = line.split('说道')[0].split('"').pop() || 'Unknown';
           }
-          
+
+          // Different LLM providers might have different tone detection capabilities
+          // Here we simulate different behaviors based on the provider
+          let tone;
+          switch(chapter.llmProvider) {
+            case 'openai':
+              tone = Math.random() > 0.3 ? '平静' : Math.random() > 0.5 ? '激动' : '愤怒';
+              break;
+            case 'volcengine':
+              tone = Math.random() > 0.4 ? '平静' : Math.random() > 0.5 ? '欢快' : '悲伤';
+              break;
+            case 'aliyun':
+              tone = Math.random() > 0.5 ? '平静' : '激动';
+              break;
+            default:
+              tone = Math.random() > 0.5 ? '平静' : '激动';
+          }
+
           parsedChapter.segments.push({
             text: parts[1],
             character: character,
-            tone: Math.random() > 0.5 ? '平静' : '激动',
+            tone: tone,
             voice: character === '王后' ? 'female-2' : undefined
           });
         }
       }
     }
-    
+
     // Update the mock data
     const existingIndex = mockParsedChapters.findIndex(p => p.chapterId === chapterId);
     if (existingIndex !== -1) {
@@ -415,13 +438,13 @@ export const novelApi = {
     } else {
       mockParsedChapters.push(parsedChapter);
     }
-    
+
     // Update chapter processed status
     const chapterIndex = mockChapters.findIndex(c => c.id === chapterId);
     if (chapterIndex !== -1) {
       mockChapters[chapterIndex].processed = true;
     }
-    
+
     return {
       success: true,
       data: parsedChapter
@@ -437,7 +460,68 @@ export const novelApi = {
     };
   },
 
-  // Generate TTS for a parsed chapter
+  // Generate TTS for a single segment
+  generateSegmentTts: async (chapterId: string, segmentData: { text: string, voice: string, tone?: string }): Promise<ApiResponse<{ audioUrl: string }>> => {
+    try {
+      // Call the real TTS API
+      const response = await window.api.tts.synthesizeSegment(chapterId, segmentData);
+
+      if (response.success && response.data) {
+        return {
+          success: true,
+          data: { audioUrl: response.data.audioUrl }
+        };
+      } else {
+        return {
+          success: false,
+          message: response.error || 'Failed to generate segment TTS'
+        };
+      }
+    } catch (error) {
+      console.error('Error generating segment TTS:', error);
+      return {
+        success: false,
+        message: error instanceof Error ? error.message : 'Unknown error'
+      };
+    }
+  },
+
+  // Generate TTS for a full chapter by combining segment audios
+  generateFullChapterTts: async (chapterId: string, parsedChapterId: string, audioUrls: string[]): Promise<ApiResponse<TtsResult[]>> => {
+    try {
+      // Call the real TTS API to combine audio files
+      const response = await window.api.tts.synthesizeFullChapter(chapterId, parsedChapterId, audioUrls);
+
+      if (response.success && response.data) {
+        // Update the mock data for backward compatibility
+        const ttsResult = response.data[0];
+        const existingIndex = mockTtsResults.findIndex(t => t.chapterId === chapterId);
+        if (existingIndex !== -1) {
+          mockTtsResults[existingIndex] = ttsResult;
+        } else {
+          mockTtsResults.push(ttsResult);
+        }
+
+        return {
+          success: true,
+          data: response.data
+        };
+      } else {
+        return {
+          success: false,
+          message: response.error || 'Failed to generate full chapter TTS'
+        };
+      }
+    } catch (error) {
+      console.error('Error generating full chapter TTS:', error);
+      return {
+        success: false,
+        message: error instanceof Error ? error.message : 'Unknown error'
+      };
+    }
+  },
+
+  // Legacy method for backward compatibility
   generateTts: async (parsedChapterId: string): Promise<ApiResponse<TtsResult[]>> => {
     const parsedChapter = mockParsedChapters.find(p => p.id === parsedChapterId);
     if (!parsedChapter) {
@@ -446,7 +530,7 @@ export const novelApi = {
         message: 'Parsed chapter not found'
       };
     }
-    
+
     // In a real implementation, this would call a TTS service
     // For mock purposes, we'll create a dummy TTS result
     const ttsResult: TtsResult = {
@@ -456,7 +540,7 @@ export const novelApi = {
       duration: Math.floor(Math.random() * 300) + 60, // Random duration between 60-360 seconds
       createdAt: new Date().toISOString()
     };
-    
+
     // Update the mock data
     const existingIndex = mockTtsResults.findIndex(t => t.chapterId === parsedChapter.chapterId);
     if (existingIndex !== -1) {
@@ -464,7 +548,7 @@ export const novelApi = {
     } else {
       mockTtsResults.push(ttsResult);
     }
-    
+
     return {
       success: true,
       data: [ttsResult]
@@ -485,4 +569,4 @@ export const novelApi = {
       message: 'Chapter not found'
     };
   }
-}; 
+};

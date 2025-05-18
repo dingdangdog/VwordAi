@@ -65,6 +65,7 @@ function createChapter(chapterData) {
     settings: chapterData.settings || { ...project.defaultVoiceSettings },
     audioPath: chapterData.audioPath || "",
     status: chapterData.status || "idle", // 'idle', 'processing', 'completed', 'error'
+    llmProvider: chapterData.llmProvider || "openai", // 默认使用OpenAI
     createAt: now,
     updateAt: now,
   };
@@ -118,6 +119,10 @@ function updateChapter(id, chapterData) {
       chapterData.status !== undefined
         ? chapterData.status
         : chapters[index].status || "idle",
+    llmProvider:
+      chapterData.llmProvider !== undefined
+        ? chapterData.llmProvider
+        : chapters[index].llmProvider || "openai",
     updateAt: new Date(),
   };
 

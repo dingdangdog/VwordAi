@@ -134,6 +134,17 @@ export const settingsApi = {
     ),
 
   /**
+   * 测试LLM服务商连接
+   * @param type 服务商类型
+   */
+  testLLMProviderConnection: (type: LLMProviderType, data?: any) =>
+    invoke<Result<{ message: string; status: string }>>(
+      "llm:test-provider-connection",
+      type,
+      data
+    ),
+
+  /**
    * 通过处理器获取所有设置
    */
   getAllViaHandler: () => invokeHandler<Result<Settings>>("getSettings"),

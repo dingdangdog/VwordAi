@@ -414,6 +414,50 @@ class Settings {
   }
 
   /**
+   * 测试LLM服务商连接
+   * @param {string} provider LLM服务商名称 (volcengine, aliyun, openai, azure)
+   * @param {Object} data 测试数据
+   * @param {Object} config 服务商配置
+   * @returns {Object} 测试结果
+   */
+  static async testLLMProviderConnection(provider, data, config) {
+    try {
+      // 这里可以添加实际的LLM服务商连接测试逻辑
+      // 目前简单返回成功
+
+      // 更新LLM设置
+      const llmSettings = this.getLLMSettings();
+      // 更新服务商配置
+      const updatedConfig = { ...config, status: "success" };
+      llmSettings[provider] = updatedConfig;
+      // 保存LLM设置
+      this.saveLLMConfig(llmSettings);
+
+      return {
+        success: true,
+        message: `${provider} 连接测试成功`,
+        status: "success"
+      };
+    } catch (error) {
+      console.error(`测试LLM服务商连接失败: ${error.message}`, error);
+
+      // 更新LLM设置
+      const llmSettings = this.getLLMSettings();
+      // 更新服务商配置
+      const updatedConfig = { ...config, status: "failure" };
+      llmSettings[provider] = updatedConfig;
+      // 保存LLM设置
+      this.saveLLMConfig(llmSettings);
+
+      return {
+        success: false,
+        message: error.message,
+        status: "failure"
+      };
+    }
+  }
+
+  /**
    * 测试Azure TTS服务
    * @param {Object} config Azure配置
    * @returns {Object} 测试结果

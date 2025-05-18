@@ -672,4 +672,6 @@ async function synthesizeMultipleChapters(chapterIds) {
 module.exports = {
   synthesizeChapter,
   synthesizeMultipleChapters,
+  synthesizeWithProvider,
+  splitTextIntoChunks,
 };

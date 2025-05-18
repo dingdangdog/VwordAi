@@ -18,7 +18,7 @@ export const useNovelsStore = defineStore('novels', () => {
   async function loadNovels() {
     isLoading.value = true;
     error.value = null;
-    
+
     try {
       const response = await novelApi.getAllNovels();
       if (response.success && response.data) {
@@ -45,7 +45,7 @@ export const useNovelsStore = defineStore('novels', () => {
       }
 
       currentNovel.value = novel;
-      
+
       // Load characters
       const charResponse = await novelApi.getCharacters(novelId);
       if (charResponse.success && charResponse.data) {
@@ -80,7 +80,7 @@ export const useNovelsStore = defineStore('novels', () => {
       }
 
       currentChapter.value = chapter;
-      
+
       // Load parsed chapter data if processed
       if (chapter.processed) {
         const parsedResponse = await novelApi.getParsedChapter(chapterId);
@@ -112,7 +112,7 @@ export const useNovelsStore = defineStore('novels', () => {
   async function createNovel(novelData: Omit<Novel, 'id' | 'createdAt' | 'updatedAt'>) {
     isLoading.value = true;
     error.value = null;
-    
+
     try {
       const response = await novelApi.createNovel(novelData);
       if (response.success && response.data) {
@@ -133,7 +133,7 @@ export const useNovelsStore = defineStore('novels', () => {
   async function createCharacter(characterData: Omit<Character, 'id'>) {
     isLoading.value = true;
     error.value = null;
-    
+
     try {
       const response = await novelApi.createCharacter(characterData);
       if (response.success && response.data) {
@@ -154,13 +154,13 @@ export const useNovelsStore = defineStore('novels', () => {
   async function createChapter(chapterData: Omit<Chapter, 'id' | 'processed' | 'createdAt' | 'updatedAt'>) {
     isLoading.value = true;
     error.value = null;
-    
+
     try {
       const response = await novelApi.createChapter({
         ...chapterData,
         processed: false
       });
-      
+
       if (response.success && response.data) {
         chapters.value.push(response.data);
         return response.data;
@@ -179,18 +179,22 @@ export const useNovelsStore = defineStore('novels', () => {
   async function parseChapter(chapterId: string) {
     isLoading.value = true;
     error.value = null;
-    
+
     try {
+      // Get the chapter to access its LLM provider
+      const chapter = chapters.value.find(c => c.id === chapterId);
+      if (!chapter) {
+        throw new Error('Chapter not found');
+      }
+
+      // Call the API with the chapter's LLM provider
       const response = await novelApi.parseChapter(chapterId);
       if (response.success && response.data) {
         parsedChapter.value = response.data;
-        
+
         // Update chapter processed status
-        const chapter = chapters.value.find(c => c.id === chapterId);
-        if (chapter) {
-          chapter.processed = true;
-        }
-        
+        chapter.processed = true;
+
         return response.data;
       } else {
         throw new Error(response.message || 'Failed to parse chapter');
@@ -207,7 +211,7 @@ export const useNovelsStore = defineStore('novels', () => {
   async function generateTts(parsedChapterId: string) {
     isLoading.value = true;
     error.value = null;
-    
+
     try {
       const response = await novelApi.generateTts(parsedChapterId);
       if (response.success && response.data) {
@@ -238,7 +242,7 @@ export const useNovelsStore = defineStore('novels', () => {
   async function updateNovel(id: string, novelData: Partial<Novel>) {
     isLoading.value = true;
     error.value = null;
-    
+
     try {
       const response = await novelApi.updateNovel(id, novelData);
       if (response.success && response.data) {
@@ -247,15 +251,52 @@ export const useNovelsStore = defineStore('novels', () => {
         if (index !== -1) {
           novels.value[index] = response.data;
         }
-        
+
         // Update currentNovel if it's the one being edited
         if (currentNovel.value && currentNovel.value.id === id) {
           currentNovel.value = response.data;
         }
-        
+
         return response.data;
       } else {
         throw new Error(response.message || 'Failed to update novel');
+      }
+    } catch (err) {
+      error.value = err instanceof Error ? err.message : String(err);
+      return null;
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  // Update a chapter
+  async function updateChapter(id: string, chapterData: Partial<Chapter>) {
+    isLoading.value = true;
+    error.value = null;
+
+    try {
+      const response = await novelApi.updateChapter(id, chapterData);
+      if (response.success && response.data) {
+        // Update the chapter in the chapters array
+        const index = chapters.value.findIndex(c => c.id === id);
+        if (index !== -1) {
+          chapters.value[index] = {
+            ...chapters.value[index],
+            ...response.data
+          };
+        }
+
+        // Update currentChapter if it's the one being edited
+        if (currentChapter.value && currentChapter.value.id === id) {
+          currentChapter.value = {
+            ...currentChapter.value,
+            ...response.data
+          };
+        }
+
+        return response.data;
+      } else {
+        throw new Error(response.message || 'Failed to update chapter');
       }
     } catch (err) {
       error.value = err instanceof Error ? err.message : String(err);
@@ -280,10 +321,11 @@ export const useNovelsStore = defineStore('novels', () => {
     setCurrentChapter,
     createNovel,
     updateNovel,
+    updateChapter,
     createCharacter,
     createChapter,
     parseChapter,
     generateTts,
     clearCurrentSelections
   };
-}); 
+});

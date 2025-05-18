@@ -14,7 +14,39 @@
           {{ chapterTitle }}
         </h1>
       </div>
-      <div class="flex space-x-2">
+      <div class="flex items-center space-x-2">
+        <div class="flex items-center mr-2">
+          <label class="text-sm text-gray-700 dark:text-gray-300 mr-1"
+            >LLM服务商:</label
+          >
+          <select
+            v-model="selectedLLMProvider"
+            class="select select-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+          >
+            <option
+              v-for="provider in llmProviders"
+              :key="provider.id"
+              :value="provider.type"
+            >
+              {{ provider.name }}
+            </option>
+          </select>
+        </div>
+        <button
+          @click="parseChapter"
+          class="btn btn-sm btn-secondary"
+          :disabled="isProcessing"
+        >
+          <DocumentMagnifyingGlassIcon
+            v-if="!isProcessing"
+            class="h-4 w-4 mr-1"
+          />
+          <div
+            v-else
+            class="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full mr-1"
+          ></div>
+          {{ isProcessing ? "解析中..." : "解析" }}
+        </button>
         <button
           @click="saveChapterContent"
           class="btn btn-sm btn-primary"
@@ -42,18 +74,9 @@
         ></textarea>
       </div>
 
-      <button
-        @click="parseChapter"
-        class="mx-2 btn btn-primary btn-sm w-8"
-        :disabled="isProcessing"
-      >
-        <DocumentMagnifyingGlassIcon v-if="!isProcessing" class="h-4 w-4" />
-        <div
-          v-else
-          class="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full mr-1"
-        ></div>
-        {{ isProcessing ? "解析中..." : "解析" }}
-      </button>
+      <div class="mx-2 flex flex-col justify-center items-center">
+        <ArrowRightIcon class="h-6 w-6 text-gray-400" />
+      </div>
 
       <!-- 右侧 - 解析结果编辑 -->
       <div
@@ -74,7 +97,7 @@
               v-else
               class="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full mr-1"
             ></div>
-            {{ isGeneratingAll ? "生成中..." : "全部合成" }}
+            {{ isGeneratingAll ? "合成中..." : "全部合成" }}
           </button>
         </div>
 
@@ -188,12 +211,12 @@
     </div>
 
     <!-- 中间连接按钮 - 生成TTS -->
-    <div class="flex justify-center my-2">
+    <div class="flex flex-col items-center my-2">
       <button
         v-if="parsedChapter"
         @click="generateTts"
         class="btn btn-primary flex items-center"
-        :disabled="isProcessing"
+        :disabled="isProcessing || !allSegmentsHaveAudio"
       >
         <SpeakerWaveIcon v-if="!isProcessing" class="h-5 w-5 mr-2" />
         <div
@@ -202,6 +225,12 @@
         ></div>
         {{ isProcessing ? "生成中..." : "合成整章音频" }}
       </button>
+      <div
+        v-if="parsedChapter && !allSegmentsHaveAudio"
+        class="mt-2 text-sm text-yellow-500"
+      >
+        请先为所有段落生成TTS，再合成整章音频
+      </div>
     </div>
 
     <!-- TTS播放区域（下部分） -->
@@ -251,11 +280,14 @@ import { ref, computed, watch, onMounted, reactive } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useToast } from "vue-toastification";
 import { useNovelsStore } from "@/stores/novels";
+import { useSettingsStore } from "@/stores/settings";
+import type { LLMProviderType } from "@/types";
 import {
   DocumentMagnifyingGlassIcon,
   SpeakerWaveIcon,
   ArrowPathIcon,
   ArrowLeftIcon,
+  ArrowRightIcon,
 } from "@heroicons/vue/24/outline";
 import { novelApi } from "@/api";
 import type {
@@ -269,6 +301,7 @@ const route = useRoute();
 const router = useRouter();
 const toast = useToast();
 const novelsStore = useNovelsStore();
+const settingsStore = useSettingsStore();
 
 // 状态
 const chapter = ref<Chapter | null>(null);
@@ -285,8 +318,60 @@ const isGeneratingAll = ref(false);
 const isProcessingSegment = reactive<Record<number, boolean>>({});
 const segmentAudios = reactive<Record<number, string>>({});
 
+// LLM服务商
+const selectedLLMProvider = ref<LLMProviderType>("volcengine"); // 默认使用火山引擎
+const llmProviders = computed(() => settingsStore.getLLMProviders());
+
 // 计算属性
 const chapterTitle = computed(() => chapter.value?.title || "章节编辑");
+const allSegmentsHaveAudio = computed(() => {
+  if (!parsedChapter.value || parsedChapter.value.segments.length === 0)
+    return false;
+  return parsedChapter.value.segments.every((_, index) => segmentAudios[index]);
+});
+
+// 根据角色名称匹配角色
+function matchingCharacters(characterName: string): Character[] {
+  if (!characters.value || characters.value.length === 0) return [];
+
+  // 尝试精确匹配
+  const exactMatch = characters.value.filter(
+    (c) => c.name === characterName || c.aliases?.includes(characterName)
+  );
+
+  if (exactMatch.length > 0) return exactMatch;
+
+  // 尝试部分匹配
+  return characters.value.filter(
+    (c) =>
+      c.name.includes(characterName) ||
+      characterName.includes(c.name) ||
+      c.aliases?.some(
+        (alias) =>
+          alias.includes(characterName) || characterName.includes(alias)
+      )
+  );
+}
+
+// 监听LLM提供商变化
+watch(selectedLLMProvider, async (newProvider) => {
+  if (chapter.value && newProvider !== chapter.value.llmProvider) {
+    try {
+      await novelApi.updateChapter(chapter.value.id, {
+        llmProvider: newProvider,
+      });
+
+      // 更新本地章节对象
+      chapter.value.llmProvider = newProvider;
+
+      console.log(`LLM服务商已更新为: ${newProvider}`);
+    } catch (error) {
+      toast.error(
+        `更新LLM服务商失败：${error instanceof Error ? error.message : String(error)}`
+      );
+    }
+  }
+});
 
 // 初始化
 onMounted(async () => {
@@ -297,6 +382,9 @@ onMounted(async () => {
   }
 
   try {
+    // 加载LLM设置
+    await settingsStore.loadLLMSettings();
+
     // 加载章节数据
     const chapterResponse = await novelApi.getChapter(chapterId);
     if (!chapterResponse.success || !chapterResponse.data) {
@@ -306,6 +394,12 @@ onMounted(async () => {
     chapter.value = chapterResponse.data;
     novelId.value = chapterResponse.data.novelId;
     editedContent.value = chapterResponse.data.content;
+
+    // 设置LLM提供商
+    if (chapterResponse.data.llmProvider) {
+      selectedLLMProvider.value = chapterResponse.data
+        .llmProvider as LLMProviderType;
+    }
 
     // 加载解析结果（如果已处理）
     if (chapterResponse.data.processed) {
@@ -385,6 +479,17 @@ async function parseChapter() {
   isProcessing.value = true;
 
   try {
+    // 先更新章节的LLM提供商
+    await novelApi.updateChapter(chapter.value.id, {
+      llmProvider: selectedLLMProvider.value,
+    });
+
+    // 更新本地章节对象
+    if (chapter.value) {
+      chapter.value.llmProvider = selectedLLMProvider.value;
+    }
+
+    // 调用解析API
     const response = await novelApi.parseChapter(chapter.value.id);
     if (response.success && response.data) {
       parsedChapter.value = response.data;
@@ -427,7 +532,11 @@ async function updateParsedChapter() {
 
 // 生成单个段落的TTS
 async function generateSegmentTts(index: number) {
-  if (!parsedChapter.value || !parsedChapter.value.segments[index]) {
+  if (
+    !parsedChapter.value ||
+    !parsedChapter.value.segments[index] ||
+    !chapter.value
+  ) {
     toast.error("无效的段落");
     return;
   }
@@ -435,17 +544,41 @@ async function generateSegmentTts(index: number) {
   isProcessingSegment[index] = true;
 
   try {
-    // 模拟API调用 - 在实际项目中应替换为真实的API
     const segment = parsedChapter.value.segments[index];
-    const mockAudioUrl = `https://example.com/audio/segment_${Date.now()}_${index}.mp3`;
 
-    // 等待一段时间模拟处理
-    await new Promise((resolve) => setTimeout(resolve, 1000));
+    // 确保段落有声音设置
+    if (!segment.voice) {
+      // 如果是角色对话，尝试根据角色名称匹配声音
+      if (segment.character) {
+        const matchedCharacters = matchingCharacters(segment.character);
+        if (matchedCharacters.length > 0) {
+          segment.voice = matchedCharacters[0].voiceModel;
+        } else {
+          // 根据性别选择默认声音
+          segment.voice = segment.character.includes("女")
+            ? "female-1"
+            : "male-1";
+        }
+      } else {
+        // 旁白使用默认旁白声音
+        segment.voice = "narrator-1";
+      }
+    }
 
-    // 设置音频URL到对应的段落
-    segmentAudios[index] = mockAudioUrl;
+    // 调用API生成TTS
+    const response = await novelApi.generateSegmentTts(chapter.value.id, {
+      text: segment.text,
+      voice: segment.voice,
+      tone: segment.tone || "平静",
+    });
 
-    toast.success(`段落 ${index + 1} TTS生成成功`);
+    if (response.success && response.data) {
+      // 设置音频URL到对应的段落
+      segmentAudios[index] = response.data.audioUrl;
+      toast.success(`段落 ${index + 1} TTS生成成功`);
+    } else {
+      throw new Error(response.message || "生成TTS失败");
+    }
   } catch (error) {
     toast.error(
       `生成段落TTS失败: ${error instanceof Error ? error.message : String(error)}`
@@ -457,7 +590,11 @@ async function generateSegmentTts(index: number) {
 
 // 生成所有段落的TTS
 async function generateAllSegmentTts() {
-  if (!parsedChapter.value || parsedChapter.value.segments.length === 0) {
+  if (
+    !parsedChapter.value ||
+    parsedChapter.value.segments.length === 0 ||
+    !chapter.value
+  ) {
     toast.error("无可用的段落");
     return;
   }
@@ -469,14 +606,47 @@ async function generateAllSegmentTts() {
     for (let i = 0; i < parsedChapter.value.segments.length; i++) {
       isProcessingSegment[i] = true;
       const segment = parsedChapter.value.segments[i];
-      const mockAudioUrl = `https://example.com/audio/segment_${Date.now()}_${i}.mp3`;
 
-      // 等待一小段时间模拟处理
-      await new Promise((resolve) => setTimeout(resolve, 300));
+      // 确保段落有声音设置
+      if (!segment.voice) {
+        // 如果是角色对话，尝试根据角色名称匹配声音
+        if (segment.character) {
+          const matchedCharacters = matchingCharacters(segment.character);
+          if (matchedCharacters.length > 0) {
+            segment.voice = matchedCharacters[0].voiceModel;
+          } else {
+            // 根据性别选择默认声音
+            segment.voice = segment.character.includes("女")
+              ? "female-1"
+              : "male-1";
+          }
+        } else {
+          // 旁白使用默认旁白声音
+          segment.voice = "narrator-1";
+        }
+      }
 
-      // 设置音频URL到对应的段落
-      segmentAudios[i] = mockAudioUrl;
-      isProcessingSegment[i] = false;
+      try {
+        // 调用API生成TTS
+        const response = await novelApi.generateSegmentTts(chapter.value.id, {
+          text: segment.text,
+          voice: segment.voice,
+          tone: segment.tone || "平静",
+        });
+
+        if (response.success && response.data) {
+          // 设置音频URL到对应的段落
+          segmentAudios[i] = response.data.audioUrl;
+        } else {
+          throw new Error(response.message || "生成TTS失败");
+        }
+      } catch (error) {
+        toast.error(
+          `段落 ${i + 1} TTS生成失败: ${error instanceof Error ? error.message : String(error)}`
+        );
+      } finally {
+        isProcessingSegment[i] = false;
+      }
     }
 
     toast.success("所有段落TTS生成成功");
@@ -491,15 +661,32 @@ async function generateAllSegmentTts() {
 
 // 生成整章TTS
 async function generateTts() {
-  if (!parsedChapter.value) {
+  if (!parsedChapter.value || !chapter.value) {
     toast.error("无法生成TTS：未找到解析数据");
+    return;
+  }
+
+  // 检查是否所有段落都已经生成了TTS
+  if (!allSegmentsHaveAudio.value) {
+    toast.warning("请先为所有段落生成TTS，再合成整章音频");
     return;
   }
 
   isProcessing.value = true;
 
   try {
-    const response = await novelApi.generateTts(parsedChapter.value.id);
+    // 收集所有段落的音频URL
+    const audioUrls = parsedChapter.value.segments.map(
+      (_, index) => segmentAudios[index]
+    );
+
+    // 调用API合成整章音频
+    const response = await novelApi.generateFullChapterTts(
+      chapter.value.id,
+      parsedChapter.value.id,
+      audioUrls
+    );
+
     if (response.success && response.data) {
       ttsResults.value = response.data;
       toast.success("整章TTS生成成功");
@@ -513,14 +700,6 @@ async function generateTts() {
   } finally {
     isProcessing.value = false;
   }
-}
-
-// 查找匹配的角色
-function matchingCharacters(characterName: string): Character[] {
-  if (!characterName) return [];
-  return characters.value.filter(
-    (c) => c.name === characterName || characterName.includes(c.name)
-  );
 }
 
 // 获取角色声音标签

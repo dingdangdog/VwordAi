@@ -118,6 +118,10 @@ contextBridge.exposeInMainWorld("api", {
     synthesize: (chapterId) => ipcRenderer.invoke("tts:synthesize", chapterId),
     synthesizeMultiple: (chapterIds) =>
       ipcRenderer.invoke("tts:synthesize-multiple", chapterIds),
+    synthesizeSegment: (chapterId, segmentData) =>
+      ipcRenderer.invoke("tts:synthesize-segment", chapterId, segmentData),
+    synthesizeFullChapter: (chapterId, parsedChapterId, audioUrls) =>
+      ipcRenderer.invoke("tts:synthesize-full-chapter", chapterId, parsedChapterId, audioUrls),
     testProviderConnection: (type) =>
       ipcRenderer.invoke("tts:test-provider-connection", type),
     // 注意: Azure TTS测试功能已移至 settings.testProviderConnection
@@ -160,5 +164,12 @@ contextBridge.exposeInMainWorld("api", {
       ipcRenderer.invoke("bililive:get-available-voices"),
     saveLocalConfig: (voice) =>
       ipcRenderer.invoke("bililive:save-local-config", voice),
+  },
+
+  // LLM 相关 API
+  llm: {
+    parseChapter: (chapterId) => ipcRenderer.invoke("llm:parse-chapter", chapterId),
+    testProviderConnection: (type, data) =>
+      ipcRenderer.invoke("llm:test-provider-connection", type, data),
   },
 });

@@ -12,6 +12,7 @@ const ProjectController = require("./server/controllers/ProjectController");
 const ChapterController = require("./server/controllers/ChapterController");
 const SettingsController = require("./server/controllers/SettingsController");
 const TTSController = require("./server/controllers/TTSController");
+const SegmentTTSController = require("./server/controllers/SegmentTTSController");
 const TTSService = require("./server/services/TTSService");
 const BiliLiveController = require("./server/controllers/BiliLiveController");
 
@@ -55,6 +56,9 @@ function init() {
 
   // 初始化语音合成控制器
   TTSController.init();
+
+  // 初始化段落语音合成控制器
+  SegmentTTSController.init();
 
   console.log("All controllers initialized");
 }
