@@ -1,572 +1,561 @@
-import { v4 as uuidv4 } from 'uuid';
-import type { Novel, Character, Chapter, ParsedChapter, TtsResult } from '@/types/ReadNovels';
+/**
+ * 小说相关API模块
+ * 提供与小说、章节、角色等相关的API调用
+ */
+import type { Result } from "@/types";
+import { invoke } from "@/utils/apiBase";
+import type {
+  Novel,
+  Character,
+  Chapter,
+  ParsedChapter,
+  TtsResult,
+  ParsedSegment,
+  SegmentTtsConfig
+} from '@/types/ReadNovels';
 
-// Mock data for testing
-const mockNovels: Novel[] = [
-  {
-    id: '1',
-    title: '白雪公主',
-    author: '安徒生',
-    description: '一个关于白雪公主的童话故事',
-    characters: [],
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString()
-  },
-  {
-    id: '2',
-    title: '三体',
-    author: '刘慈欣',
-    description: '科幻小说，描述了地球文明与三体文明的交流、冲突、战争的故事',
-    characters: [],
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString()
-  }
-];
+/**
+ * 深度克隆对象并确保可序列化
+ * @param obj 要克隆的对象
+ * @returns 克隆后的对象
+ */
+function safeClone<T>(obj: T): T {
+  return JSON.parse(JSON.stringify(obj));
+}
 
-const mockCharacters: Character[] = [
-  {
-    id: '1',
-    novelId: '1',
-    name: '白雪公主',
-    type: 'main',
-    gender: 'female',
-    age: 'youth',
-    description: '美丽的公主',
-    voiceModel: 'female-1'
-  },
-  {
-    id: '2',
-    novelId: '1',
-    name: '王后',
-    type: 'main',
-    gender: 'female',
-    age: 'middle',
-    description: '邪恶的后母',
-    voiceModel: 'female-2'
-  },
-  {
-    id: '3',
-    novelId: '1',
-    name: '猎人',
-    type: 'secondary',
-    gender: 'male',
-    age: 'middle',
-    description: '负责捕猎的猎人',
-    voiceModel: 'male-1'
-  }
-];
-
-const mockChapters: Chapter[] = [
-  {
-    id: '1',
-    novelId: '1',
-    title: '第一章：美丽的公主',
-    content: '从前有一个美丽的公主，名叫白雪公主。她有一个邪恶的后母，后母嫉妒她的美貌。\n"魔镜魔镜，谁是世界上最美的女人？"王后问道。\n"是白雪公主。"魔镜回答道。',
-    order: 1,
-    processed: true,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-    llmProvider: 'openai'
-  },
-  {
-    id: '2',
-    novelId: '1',
-    title: '第二章：逃离城堡',
-    content: '王后命令猎人把白雪公主带到森林里杀死。\n"请把白雪公主带到森林里，然后杀了她。"王后命令道。\n猎人点了点头，但他无法下手杀死这个美丽善良的公主。\n"公主，您必须逃走，永远不要回来。"猎人对白雪公主说。',
-    order: 2,
-    processed: false,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-    llmProvider: 'volcengine'
-  }
-];
-
-const mockParsedChapters: ParsedChapter[] = [
-  {
-    id: '1',
-    chapterId: '1',
-    title: '第一章：美丽的公主',
-    segments: [
-      {
-        text: '从前有一个美丽的公主，名叫白雪公主。她有一个邪恶的后母，后母嫉妒她的美貌。',
-        voice: 'narrator-1'
-      },
-      {
-        text: '魔镜魔镜，谁是世界上最美的女人？',
-        character: '王后',
-        tone: '傲慢',
-        voice: 'female-2'
-      },
-      {
-        text: '是白雪公主。',
-        character: '魔镜',
-        tone: '平静',
-        voice: 'male-3'
-      }
-    ],
-    processedAt: new Date().toISOString()
-  }
-];
-
-const mockTtsResults: TtsResult[] = [
-  {
-    id: '1',
-    chapterId: '1',
-    audioUrl: 'https://example.com/audio/chapter1.mp3',
-    duration: 120,
-    createdAt: new Date().toISOString()
-  }
-];
-
-// API response type
+// API response type - 保持与现有代码兼容
 type ApiResponse<T> = {
   success: boolean;
   data?: T;
   message?: string;
+  error?: string;
 };
 
-// Novel API module
+/**
+ * 小说相关API模块
+ */
 export const novelApi = {
-  // Get all novels
+  /**
+   * 获取所有小说
+   * @returns {Promise<ApiResponse<Novel[]>>} 小说列表
+   */
   getAllNovels: async (): Promise<ApiResponse<Novel[]>> => {
-    return {
-      success: true,
-      data: mockNovels
-    };
-  },
-
-  // Get a novel by ID
-  getNovel: async (id: string): Promise<ApiResponse<Novel>> => {
-    const novel = mockNovels.find(n => n.id === id);
-    if (novel) {
-      return {
-        success: true,
-        data: novel
-      };
-    }
-    return {
-      success: false,
-      message: 'Novel not found'
-    };
-  },
-
-  // Create a new novel
-  createNovel: async (novelData: Omit<Novel, 'id' | 'createdAt' | 'updatedAt'>): Promise<ApiResponse<Novel>> => {
-    const now = new Date().toISOString();
-    const newNovel: Novel = {
-      id: uuidv4(),
-      ...novelData,
-      createdAt: now,
-      updatedAt: now
-    };
-
-    // In a real implementation, this would save to a backend
-    // For mock purposes, we'll just add it to our array
-    mockNovels.push(newNovel);
-
-    return {
-      success: true,
-      data: newNovel
-    };
-  },
-
-  // Update a novel
-  updateNovel: async (id: string, novelData: Partial<Novel>): Promise<ApiResponse<Novel>> => {
-    const novelIndex = mockNovels.findIndex(n => n.id === id);
-    if (novelIndex === -1) {
-      return {
-        success: false,
-        message: 'Novel not found'
-      };
-    }
-
-    const updatedNovel = {
-      ...mockNovels[novelIndex],
-      ...novelData,
-      updatedAt: new Date().toISOString()
-    };
-
-    mockNovels[novelIndex] = updatedNovel;
-
-    return {
-      success: true,
-      data: updatedNovel
-    };
-  },
-
-  // Delete a novel
-  deleteNovel: async (id: string): Promise<ApiResponse<boolean>> => {
-    const novelIndex = mockNovels.findIndex(n => n.id === id);
-    if (novelIndex === -1) {
-      return {
-        success: false,
-        message: 'Novel not found'
-      };
-    }
-
-    mockNovels.splice(novelIndex, 1);
-
-    return {
-      success: true,
-      data: true
-    };
-  },
-
-  // Get characters for a novel
-  getCharacters: async (novelId: string): Promise<ApiResponse<Character[]>> => {
-    const characters = mockCharacters.filter(c => c.novelId === novelId);
-    return {
-      success: true,
-      data: characters
-    };
-  },
-
-  // Create a character
-  createCharacter: async (characterData: Omit<Character, 'id'>): Promise<ApiResponse<Character>> => {
-    const newCharacter: Character = {
-      id: uuidv4(),
-      ...characterData
-    };
-
-    mockCharacters.push(newCharacter);
-
-    return {
-      success: true,
-      data: newCharacter
-    };
-  },
-
-  // Update a character
-  updateCharacter: async (id: string, characterData: Partial<Character>): Promise<ApiResponse<Character>> => {
-    const characterIndex = mockCharacters.findIndex(c => c.id === id);
-    if (characterIndex === -1) {
-      return {
-        success: false,
-        message: 'Character not found'
-      };
-    }
-
-    const updatedCharacter = {
-      ...mockCharacters[characterIndex],
-      ...characterData
-    };
-
-    mockCharacters[characterIndex] = updatedCharacter;
-
-    return {
-      success: true,
-      data: updatedCharacter
-    };
-  },
-
-  // Delete a character
-  deleteCharacter: async (id: string): Promise<ApiResponse<boolean>> => {
-    const characterIndex = mockCharacters.findIndex(c => c.id === id);
-    if (characterIndex === -1) {
-      return {
-        success: false,
-        message: 'Character not found'
-      };
-    }
-
-    mockCharacters.splice(characterIndex, 1);
-
-    return {
-      success: true,
-      data: true
-    };
-  },
-
-  // Get chapters for a novel
-  getChapters: async (novelId: string): Promise<ApiResponse<Chapter[]>> => {
-    const chapters = mockChapters.filter(c => c.novelId === novelId);
-    return {
-      success: true,
-      data: chapters
-    };
-  },
-
-  // Create a chapter
-  createChapter: async (chapterData: Omit<Chapter, 'id' | 'createdAt' | 'updatedAt'>): Promise<ApiResponse<Chapter>> => {
-    const now = new Date().toISOString();
-    const newChapter: Chapter = {
-      id: uuidv4(),
-      ...chapterData,
-      llmProvider: chapterData.llmProvider || 'openai', // Default to OpenAI if not specified
-      createdAt: now,
-      updatedAt: now
-    };
-
-    mockChapters.push(newChapter);
-
-    return {
-      success: true,
-      data: newChapter
-    };
-  },
-
-  // Update a chapter
-  updateChapter: async (id: string, chapterData: Partial<Chapter>): Promise<ApiResponse<Chapter>> => {
-    const chapterIndex = mockChapters.findIndex(c => c.id === id);
-    if (chapterIndex === -1) {
-      return {
-        success: false,
-        message: 'Chapter not found'
-      };
-    }
-
-    const updatedChapter = {
-      ...mockChapters[chapterIndex],
-      ...chapterData,
-      updatedAt: new Date().toISOString()
-    };
-
-    mockChapters[chapterIndex] = updatedChapter;
-
-    return {
-      success: true,
-      data: updatedChapter
-    };
-  },
-
-  // Delete a chapter
-  deleteChapter: async (id: string): Promise<ApiResponse<boolean>> => {
-    const chapterIndex = mockChapters.findIndex(c => c.id === id);
-    if (chapterIndex === -1) {
-      return {
-        success: false,
-        message: 'Chapter not found'
-      };
-    }
-
-    mockChapters.splice(chapterIndex, 1);
-
-    return {
-      success: true,
-      data: true
-    };
-  },
-
-  // Get parsed chapter data
-  getParsedChapter: async (chapterId: string): Promise<ApiResponse<ParsedChapter>> => {
-    const parsedChapter = mockParsedChapters.find(p => p.chapterId === chapterId);
-    if (parsedChapter) {
-      return {
-        success: true,
-        data: parsedChapter
-      };
-    }
-    return {
-      success: false,
-      message: 'Parsed chapter data not found'
-    };
-  },
-
-  // Parse chapter with LLM
-  parseChapter: async (chapterId: string): Promise<ApiResponse<ParsedChapter>> => {
-    const chapter = mockChapters.find(c => c.id === chapterId);
-    if (!chapter) {
-      return {
-        success: false,
-        message: 'Chapter not found'
-      };
-    }
-
-    // In a real implementation, this would call an LLM service based on the provider
-    // Log the LLM provider being used
-    console.log(`Using LLM provider: ${chapter.llmProvider || 'default'}`);
-
-    // For mock purposes, we'll create a simple parsed structure
-    const parsedChapter: ParsedChapter = {
-      id: uuidv4(),
-      chapterId: chapter.id,
-      title: chapter.title,
-      segments: [],
-      processedAt: new Date().toISOString()
-    };
-
-    // Add first line as narration
-    parsedChapter.segments.push({
-      text: chapter.content.split('\n')[0],
-      voice: 'narrator-1'
-    });
-
-    // Simple parsing logic for dialogues - find lines with quotes
-    const lines = chapter.content.split('\n');
-    for (let i = 1; i < lines.length; i++) {
-      const line = lines[i];
-      if (line.includes('"') && line.includes('。"')) {
-        const parts = line.split('"');
-        if (parts.length >= 3) {
-          // Find character
-          let character = 'Unknown';
-          if (line.includes('说道')) {
-            character = line.split('说道')[0].split('"').pop() || 'Unknown';
-          }
-
-          // Different LLM providers might have different tone detection capabilities
-          // Here we simulate different behaviors based on the provider
-          let tone;
-          switch(chapter.llmProvider) {
-            case 'openai':
-              tone = Math.random() > 0.3 ? '平静' : Math.random() > 0.5 ? '激动' : '愤怒';
-              break;
-            case 'volcengine':
-              tone = Math.random() > 0.4 ? '平静' : Math.random() > 0.5 ? '欢快' : '悲伤';
-              break;
-            case 'aliyun':
-              tone = Math.random() > 0.5 ? '平静' : '激动';
-              break;
-            default:
-              tone = Math.random() > 0.5 ? '平静' : '激动';
-          }
-
-          parsedChapter.segments.push({
-            text: parts[1],
-            character: character,
-            tone: tone,
-            voice: character === '王后' ? 'female-2' : undefined
-          });
-        }
-      }
-    }
-
-    // Update the mock data
-    const existingIndex = mockParsedChapters.findIndex(p => p.chapterId === chapterId);
-    if (existingIndex !== -1) {
-      mockParsedChapters[existingIndex] = parsedChapter;
-    } else {
-      mockParsedChapters.push(parsedChapter);
-    }
-
-    // Update chapter processed status
-    const chapterIndex = mockChapters.findIndex(c => c.id === chapterId);
-    if (chapterIndex !== -1) {
-      mockChapters[chapterIndex].processed = true;
-    }
-
-    return {
-      success: true,
-      data: parsedChapter
-    };
-  },
-
-  // Get TTS results for a chapter
-  getTtsResults: async (chapterId: string): Promise<ApiResponse<TtsResult[]>> => {
-    const results = mockTtsResults.filter(t => t.chapterId === chapterId);
-    return {
-      success: true,
-      data: results
-    };
-  },
-
-  // Generate TTS for a single segment
-  generateSegmentTts: async (chapterId: string, segmentData: { text: string, voice: string, tone?: string }): Promise<ApiResponse<{ audioUrl: string }>> => {
     try {
-      // Call the real TTS API
-      const response = await window.api.tts.synthesizeSegment(chapterId, segmentData);
-
-      if (response.success && response.data) {
-        return {
-          success: true,
-          data: { audioUrl: response.data.audioUrl }
-        };
-      } else {
-        return {
-          success: false,
-          message: response.error || 'Failed to generate segment TTS'
-        };
-      }
+      const result = await invoke<Result<Novel[]>>("novel:get-all");
+      return {
+        success: result.success,
+        data: result.data || [],
+        message: result.error
+      };
     } catch (error) {
-      console.error('Error generating segment TTS:', error);
+      console.error("获取小说列表失败:", error);
       return {
         success: false,
-        message: error instanceof Error ? error.message : 'Unknown error'
+        message: error instanceof Error ? error.message : "获取小说列表失败",
+        data: []
       };
     }
   },
 
-  // Generate TTS for a full chapter by combining segment audios
+  /**
+   * 获取小说详情
+   * @param {string} id 小说ID
+   * @returns {Promise<ApiResponse<Novel>>} 小说详情
+   */
+  getNovel: async (id: string): Promise<ApiResponse<Novel>> => {
+    try {
+      const result = await invoke<Result<Novel>>("novel:get", id);
+      return {
+        success: result.success,
+        data: result.data,
+        message: result.error
+      };
+    } catch (error) {
+      console.error(`获取小说[${id}]详情失败:`, error);
+      return {
+        success: false,
+        message: error instanceof Error ? error.message : "获取小说详情失败",
+        data: undefined
+      };
+    }
+  },
+
+  /**
+   * 创建小说
+   * @param {Omit<Novel, 'id' | 'createdAt' | 'updatedAt'>} novelData 小说数据
+   * @returns {Promise<ApiResponse<Novel>>} 创建结果
+   */
+  createNovel: async (novelData: Omit<Novel, 'id' | 'createdAt' | 'updatedAt'>): Promise<ApiResponse<Novel>> => {
+    try {
+      const safeData = safeClone(novelData);
+      const result = await invoke<Result<Novel>>("novel:create", safeData);
+      return {
+        success: result.success,
+        data: result.data,
+        message: result.error
+      };
+    } catch (error) {
+      console.error("创建小说失败:", error);
+      return {
+        success: false,
+        message: error instanceof Error ? error.message : "创建小说失败",
+        data: undefined
+      };
+    }
+  },
+
+  /**
+   * 更新小说
+   * @param {string} id 小说ID
+   * @param {Partial<Novel>} novelData 小说数据
+   * @returns {Promise<ApiResponse<Novel>>} 更新结果
+   */
+  updateNovel: async (id: string, novelData: Partial<Novel>): Promise<ApiResponse<Novel>> => {
+    try {
+      const safeData = safeClone(novelData);
+      const result = await invoke<Result<Novel>>("novel:update", id, safeData);
+      return {
+        success: result.success,
+        data: result.data,
+        message: result.error
+      };
+    } catch (error) {
+      console.error(`更新小说[${id}]失败:`, error);
+      return {
+        success: false,
+        message: error instanceof Error ? error.message : "更新小说失败",
+        data: undefined
+      };
+    }
+  },
+
+  /**
+   * 删除小说
+   * @param {string} id 小说ID
+   * @returns {Promise<ApiResponse<boolean>>} 删除结果
+   */
+  deleteNovel: async (id: string): Promise<ApiResponse<boolean>> => {
+    try {
+      const result = await invoke<Result<boolean>>("novel:delete", id);
+      return {
+        success: result.success,
+        data: result.data,
+        message: result.error
+      };
+    } catch (error) {
+      console.error(`删除小说[${id}]失败:`, error);
+      return {
+        success: false,
+        message: error instanceof Error ? error.message : "删除小说失败",
+        data: false
+      };
+    }
+  },
+
+  /**
+   * 获取小说角色列表
+   * @param {string} novelId 小说ID
+   * @returns {Promise<ApiResponse<Character[]>>} 角色列表
+   */
+  getCharacters: async (novelId: string): Promise<ApiResponse<Character[]>> => {
+    try {
+      const result = await invoke<Result<Character[]>>("character:get-by-novel", novelId);
+      return {
+        success: result.success,
+        data: result.data || [],
+        message: result.error
+      };
+    } catch (error) {
+      console.error(`获取小说[${novelId}]角色列表失败:`, error);
+      return {
+        success: false,
+        message: error instanceof Error ? error.message : "获取角色列表失败",
+        data: []
+      };
+    }
+  },
+
+  /**
+   * 创建角色
+   * @param {Omit<Character, 'id'>} characterData 角色数据
+   * @returns {Promise<ApiResponse<Character>>} 创建结果
+   */
+  createCharacter: async (characterData: Omit<Character, 'id'>): Promise<ApiResponse<Character>> => {
+    try {
+      const safeData = safeClone(characterData);
+      const result = await invoke<Result<Character>>("character:create", safeData);
+      return {
+        success: result.success,
+        data: result.data,
+        message: result.error
+      };
+    } catch (error) {
+      console.error("创建角色失败:", error);
+      return {
+        success: false,
+        message: error instanceof Error ? error.message : "创建角色失败",
+        data: undefined
+      };
+    }
+  },
+
+  /**
+   * 更新角色
+   * @param {string} id 角色ID
+   * @param {Partial<Character>} characterData 角色数据
+   * @returns {Promise<ApiResponse<Character>>} 更新结果
+   */
+  updateCharacter: async (id: string, characterData: Partial<Character>): Promise<ApiResponse<Character>> => {
+    try {
+      const safeData = safeClone(characterData);
+      const result = await invoke<Result<Character>>("character:update", id, safeData);
+      return {
+        success: result.success,
+        data: result.data,
+        message: result.error
+      };
+    } catch (error) {
+      console.error(`更新角色[${id}]失败:`, error);
+      return {
+        success: false,
+        message: error instanceof Error ? error.message : "更新角色失败",
+        data: undefined
+      };
+    }
+  },
+
+  /**
+   * 删除角色
+   * @param {string} id 角色ID
+   * @returns {Promise<ApiResponse<boolean>>} 删除结果
+   */
+  deleteCharacter: async (id: string): Promise<ApiResponse<boolean>> => {
+    try {
+      const result = await invoke<Result<boolean>>("character:delete", id);
+      return {
+        success: result.success,
+        data: result.data,
+        message: result.error
+      };
+    } catch (error) {
+      console.error(`删除角色[${id}]失败:`, error);
+      return {
+        success: false,
+        message: error instanceof Error ? error.message : "删除角色失败",
+        data: false
+      };
+    }
+  },
+
+  /**
+   * 获取小说章节列表
+   * @param {string} novelId 小说ID
+   * @returns {Promise<ApiResponse<Chapter[]>>} 章节列表
+   */
+  getChapters: async (novelId: string): Promise<ApiResponse<Chapter[]>> => {
+    try {
+      const result = await invoke<Result<Chapter[]>>("chapter:get-by-novel", novelId);
+      return {
+        success: result.success,
+        data: result.data || [],
+        message: result.error
+      };
+    } catch (error) {
+      console.error(`获取小说[${novelId}]章节列表失败:`, error);
+      return {
+        success: false,
+        message: error instanceof Error ? error.message : "获取章节列表失败",
+        data: []
+      };
+    }
+  },
+
+  /**
+   * 创建章节
+   * @param {Omit<Chapter, 'id' | 'createdAt' | 'updatedAt'>} chapterData 章节数据
+   * @returns {Promise<ApiResponse<Chapter>>} 创建结果
+   */
+  createChapter: async (chapterData: Omit<Chapter, 'id' | 'createdAt' | 'updatedAt'>): Promise<ApiResponse<Chapter>> => {
+    try {
+      const safeData = safeClone(chapterData);
+      const result = await invoke<Result<Chapter>>("chapter:create", safeData);
+      return {
+        success: result.success,
+        data: result.data,
+        message: result.error
+      };
+    } catch (error) {
+      console.error("创建章节失败:", error);
+      return {
+        success: false,
+        message: error instanceof Error ? error.message : "创建章节失败",
+        data: undefined
+      };
+    }
+  },
+
+  /**
+   * 更新章节
+   * @param {string} id 章节ID
+   * @param {Partial<Chapter>} chapterData 章节数据
+   * @returns {Promise<ApiResponse<Chapter>>} 更新结果
+   */
+  updateChapter: async (id: string, chapterData: Partial<Chapter>): Promise<ApiResponse<Chapter>> => {
+    try {
+      const safeData = safeClone(chapterData);
+      const result = await invoke<Result<Chapter>>("chapter:update", id, safeData);
+      return {
+        success: result.success,
+        data: result.data,
+        message: result.error
+      };
+    } catch (error) {
+      console.error(`更新章节[${id}]失败:`, error);
+      return {
+        success: false,
+        message: error instanceof Error ? error.message : "更新章节失败",
+        data: undefined
+      };
+    }
+  },
+
+  /**
+   * 删除章节
+   * @param {string} id 章节ID
+   * @returns {Promise<ApiResponse<boolean>>} 删除结果
+   */
+  deleteChapter: async (id: string): Promise<ApiResponse<boolean>> => {
+    try {
+      const result = await invoke<Result<boolean>>("chapter:delete", id);
+      return {
+        success: result.success,
+        data: result.data,
+        message: result.error
+      };
+    } catch (error) {
+      console.error(`删除章节[${id}]失败:`, error);
+      return {
+        success: false,
+        message: error instanceof Error ? error.message : "删除章节失败",
+        data: false
+      };
+    }
+  },
+
+  /**
+   * 获取解析后的章节数据
+   * @param {string} chapterId 章节ID
+   * @returns {Promise<ApiResponse<ParsedChapter>>} 解析结果
+   */
+  getParsedChapter: async (chapterId: string): Promise<ApiResponse<ParsedChapter>> => {
+    try {
+      const result = await invoke<Result<ParsedChapter>>("parsed-chapter:get-by-chapter", chapterId);
+      return {
+        success: result.success,
+        data: result.data,
+        message: result.error
+      };
+    } catch (error) {
+      console.error(`获取章节[${chapterId}]解析数据失败:`, error);
+      return {
+        success: false,
+        message: error instanceof Error ? error.message : "获取解析数据失败",
+        data: undefined
+      };
+    }
+  },
+
+  /**
+   * 使用LLM解析章节
+   * @param {string} chapterId 章节ID
+   * @returns {Promise<ApiResponse<ParsedChapter>>} 解析结果
+   */
+  parseChapter: async (chapterId: string): Promise<ApiResponse<ParsedChapter>> => {
+    try {
+      // 调用LLM服务解析章节
+      const result = await invoke<Result<ParsedChapter>>("llm:parse-chapter", chapterId);
+
+      if (result.success && result.data) {
+        // 如果解析成功，更新章节的处理状态
+        await invoke<Result<boolean>>("chapter:update-processed-status", chapterId, true);
+      }
+
+      return {
+        success: result.success,
+        data: result.data,
+        message: result.error
+      };
+    } catch (error) {
+      console.error(`解析章节[${chapterId}]失败:`, error);
+      return {
+        success: false,
+        message: error instanceof Error ? error.message : "解析章节失败",
+        data: undefined
+      };
+    }
+  },
+
+  /**
+   * 获取章节的TTS结果
+   * @param {string} chapterId 章节ID
+   * @returns {Promise<ApiResponse<TtsResult[]>>} TTS结果列表
+   */
+  getTtsResults: async (chapterId: string): Promise<ApiResponse<TtsResult[]>> => {
+    try {
+      const result = await invoke<Result<TtsResult[]>>("tts:get-results", chapterId);
+      return {
+        success: result.success,
+        data: result.data || [],
+        message: result.error
+      };
+    } catch (error) {
+      console.error(`获取章节[${chapterId}]TTS结果失败:`, error);
+      return {
+        success: false,
+        message: error instanceof Error ? error.message : "获取TTS结果失败",
+        data: []
+      };
+    }
+  },
+
+  /**
+   * 为单个段落生成TTS
+   * @param {string} chapterId 章节ID
+   * @param {object} segmentData 段落数据
+   * @returns {Promise<ApiResponse<{audioUrl: string, audioPath?: string}>>} 生成结果
+   */
+  generateSegmentTts: async (chapterId: string, segmentData: {
+    text: string,
+    voice: string,
+    tone?: string,
+    ttsConfig?: SegmentTtsConfig
+  }): Promise<ApiResponse<{ audioUrl: string, audioPath?: string }>> => {
+    try {
+      // 调用真实的TTS API
+      const safeData = safeClone(segmentData);
+      const response = await invoke<Result<{ audioUrl: string, audioPath?: string }>>(
+        "tts:synthesize-segment",
+        chapterId,
+        safeData
+      );
+
+      return {
+        success: response.success,
+        data: response.data,
+        message: response.error
+      };
+    } catch (error) {
+      console.error('生成段落TTS失败:', error);
+      return {
+        success: false,
+        message: error instanceof Error ? error.message : '未知错误',
+        data: undefined
+      };
+    }
+  },
+
+  /**
+   * 通过合并段落音频生成整章TTS
+   * @param {string} chapterId 章节ID
+   * @param {string} parsedChapterId 解析章节ID
+   * @param {string[]} audioUrls 音频URL列表
+   * @returns {Promise<ApiResponse<TtsResult[]>>} 生成结果
+   */
   generateFullChapterTts: async (chapterId: string, parsedChapterId: string, audioUrls: string[]): Promise<ApiResponse<TtsResult[]>> => {
     try {
-      // Call the real TTS API to combine audio files
-      const response = await window.api.tts.synthesizeFullChapter(chapterId, parsedChapterId, audioUrls);
+      // 调用真实的TTS API合并音频文件
+      const response = await invoke<Result<TtsResult[]>>(
+        "tts:synthesize-full-chapter",
+        chapterId,
+        parsedChapterId,
+        audioUrls
+      );
 
-      if (response.success && response.data) {
-        // Update the mock data for backward compatibility
-        const ttsResult = response.data[0];
-        const existingIndex = mockTtsResults.findIndex(t => t.chapterId === chapterId);
-        if (existingIndex !== -1) {
-          mockTtsResults[existingIndex] = ttsResult;
-        } else {
-          mockTtsResults.push(ttsResult);
-        }
-
-        return {
-          success: true,
-          data: response.data
-        };
-      } else {
-        return {
-          success: false,
-          message: response.error || 'Failed to generate full chapter TTS'
-        };
-      }
+      return {
+        success: response.success,
+        data: response.data,
+        message: response.error
+      };
     } catch (error) {
-      console.error('Error generating full chapter TTS:', error);
+      console.error('生成整章TTS失败:', error);
       return {
         success: false,
-        message: error instanceof Error ? error.message : 'Unknown error'
+        message: error instanceof Error ? error.message : '未知错误',
+        data: undefined
       };
     }
   },
 
-  // Legacy method for backward compatibility
+  /**
+   * 生成整章TTS（旧方法，为了向后兼容）
+   * @param {string} parsedChapterId 解析章节ID
+   * @returns {Promise<ApiResponse<TtsResult[]>>} 生成结果
+   */
   generateTts: async (parsedChapterId: string): Promise<ApiResponse<TtsResult[]>> => {
-    const parsedChapter = mockParsedChapters.find(p => p.id === parsedChapterId);
-    if (!parsedChapter) {
+    try {
+      // 调用真实的TTS API
+      const response = await invoke<Result<TtsResult[]>>("tts:synthesize", parsedChapterId);
+
+      return {
+        success: response.success,
+        data: response.data,
+        message: response.error
+      };
+    } catch (error) {
+      console.error(`生成章节[${parsedChapterId}]TTS失败:`, error);
       return {
         success: false,
-        message: 'Parsed chapter not found'
+        message: error instanceof Error ? error.message : "生成TTS失败",
+        data: undefined
       };
     }
-
-    // In a real implementation, this would call a TTS service
-    // For mock purposes, we'll create a dummy TTS result
-    const ttsResult: TtsResult = {
-      id: uuidv4(),
-      chapterId: parsedChapter.chapterId,
-      audioUrl: `https://example.com/audio/chapter_${parsedChapter.chapterId}_${Date.now()}.mp3`,
-      duration: Math.floor(Math.random() * 300) + 60, // Random duration between 60-360 seconds
-      createdAt: new Date().toISOString()
-    };
-
-    // Update the mock data
-    const existingIndex = mockTtsResults.findIndex(t => t.chapterId === parsedChapter.chapterId);
-    if (existingIndex !== -1) {
-      mockTtsResults[existingIndex] = ttsResult;
-    } else {
-      mockTtsResults.push(ttsResult);
-    }
-
-    return {
-      success: true,
-      data: [ttsResult]
-    };
   },
 
-  // Get a chapter by ID
+  /**
+   * 获取章节详情
+   * @param {string} id 章节ID
+   * @returns {Promise<ApiResponse<Chapter>>} 章节详情
+   */
   getChapter: async (id: string): Promise<ApiResponse<Chapter>> => {
-    const chapter = mockChapters.find(c => c.id === id);
-    if (chapter) {
+    try {
+      const result = await invoke<Result<Chapter>>("chapter:get", id);
       return {
-        success: true,
-        data: chapter
+        success: result.success,
+        data: result.data,
+        message: result.error
+      };
+    } catch (error) {
+      console.error(`获取章节[${id}]详情失败:`, error);
+      return {
+        success: false,
+        message: error instanceof Error ? error.message : "获取章节详情失败",
+        data: undefined
       };
     }
-    return {
-      success: false,
-      message: 'Chapter not found'
-    };
+  },
+
+  /**
+   * 更新解析后的章节
+   * @param {string} id 解析章节ID
+   * @param {ParsedChapter} parsedChapterData 解析章节数据
+   * @returns {Promise<ApiResponse<ParsedChapter>>} 更新结果
+   */
+  updateParsedChapter: async (id: string, parsedChapterData: ParsedChapter): Promise<ApiResponse<ParsedChapter>> => {
+    try {
+      const safeData = safeClone(parsedChapterData);
+      const result = await invoke<Result<ParsedChapter>>("parsed-chapter:update", id, safeData);
+      return {
+        success: result.success,
+        data: result.data,
+        message: result.error
+      };
+    } catch (error) {
+      console.error(`更新解析章节[${id}]失败:`, error);
+      return {
+        success: false,
+        message: error instanceof Error ? error.message : "更新解析章节失败",
+        data: undefined
+      };
+    }
   }
 };

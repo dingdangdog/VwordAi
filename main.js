@@ -139,6 +139,7 @@ app.whenReady().then(async () => {
   setupAutoUpdater();
   setupDebugHandlers(); // 设置调试相关的IPC处理器
   setupBiliLiveHandlers(); // 设置BiliLive相关的IPC处理器
+  setupNovelHandlers(); // 设置小说相关的IPC处理器
 
   // 在开发环境下不检查更新
   if (process.env.NODE_ENV !== "development") {
@@ -460,5 +461,103 @@ function setupBiliLiveHandlers() {
   // 保存本地TTS配置
   ipcMain.handle("bililive:save-local-config", async (event, voice) => {
     return await handler.saveBiliLiveLocalConfig(voice);
+  });
+}
+
+// 设置小说相关的IPC处理器
+function setupNovelHandlers() {
+  // 初始化小说服务
+  const { NovelService } = require('./server/services/NovelService');
+  const novelService = new NovelService();
+
+  // 小说相关API
+  ipcMain.handle("novel:get-all", async () => {
+    return await novelService.getAllNovels();
+  });
+
+  ipcMain.handle("novel:get", async (event, id) => {
+    return await novelService.getNovel(id);
+  });
+
+  ipcMain.handle("novel:create", async (event, data) => {
+    return await novelService.createNovel(data);
+  });
+
+  ipcMain.handle("novel:update", async (event, id, data) => {
+    return await novelService.updateNovel(id, data);
+  });
+
+  ipcMain.handle("novel:delete", async (event, id) => {
+    return await novelService.deleteNovel(id);
+  });
+
+  // 角色相关API
+  ipcMain.handle("character:get-by-novel", async (event, novelId) => {
+    return await novelService.getCharactersByNovel(novelId);
+  });
+
+  ipcMain.handle("character:create", async (event, data) => {
+    return await novelService.createCharacter(data);
+  });
+
+  ipcMain.handle("character:update", async (event, id, data) => {
+    return await novelService.updateCharacter(id, data);
+  });
+
+  ipcMain.handle("character:delete", async (event, id) => {
+    return await novelService.deleteCharacter(id);
+  });
+
+  // 章节相关API
+  ipcMain.handle("chapter:get-by-novel", async (event, novelId) => {
+    return await novelService.getChaptersByNovel(novelId);
+  });
+
+  ipcMain.handle("chapter:get", async (event, id) => {
+    return await novelService.getChapter(id);
+  });
+
+  ipcMain.handle("chapter:create", async (event, data) => {
+    return await novelService.createChapter(data);
+  });
+
+  ipcMain.handle("chapter:update", async (event, id, data) => {
+    return await novelService.updateChapter(id, data);
+  });
+
+  ipcMain.handle("chapter:delete", async (event, id) => {
+    return await novelService.deleteChapter(id);
+  });
+
+  // 解析章节相关API
+  ipcMain.handle("parsed-chapter:get-by-chapter", async (event, chapterId) => {
+    return await novelService.getParsedChapterByChapterId(chapterId);
+  });
+
+  ipcMain.handle("parsed-chapter:update", async (event, id, data) => {
+    return await novelService.updateParsedChapter(id, data);
+  });
+
+  // LLM解析相关API
+  ipcMain.handle("llm:parse-chapter", async (event, chapterId) => {
+    const { parseChapter } = require('./server/services/LLMService');
+    return await parseChapter(chapterId);
+  });
+
+  // TTS相关API
+  ipcMain.handle("tts:get-results", async (event, chapterId) => {
+    return await novelService.getTtsResultsByChapterId(chapterId);
+  });
+
+  ipcMain.handle("tts:synthesize-segment", async (event, chapterId, segmentData) => {
+    const { TTSService } = require('./server/services/TTSService');
+    const ttsService = new TTSService();
+    return await ttsService.synthesizeChapter(chapterId, segmentData);
+  });
+
+  ipcMain.handle("tts:synthesize-full-chapter", async (event, chapterId, parsedChapterId, audioUrls) => {
+    const { TTSService } = require('./server/services/TTSService');
+    const ttsService = new TTSService();
+    return await ttsService.synthesizeMultipleChapters(chapterId, parsedChapterId, audioUrls);
   });
 }

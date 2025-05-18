@@ -21,7 +21,7 @@
           >
           <select
             v-model="selectedLLMProvider"
-            class="select select-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+            class="input select select-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
           >
             <option
               v-for="provider in llmProviders"
@@ -34,7 +34,7 @@
         </div>
         <button
           @click="parseChapter"
-          class="btn btn-sm btn-secondary"
+          class="btn btn-sm btn-primary flex items-center"
           :disabled="isProcessing"
         >
           <DocumentMagnifyingGlassIcon
@@ -75,7 +75,7 @@
       </div>
 
       <div class="mx-2 flex flex-col justify-center items-center">
-        <ArrowRightIcon class="h-6 w-6 text-gray-400" />
+        <ArrowRightIcon class="h-6 w-6 text-gray-600 dark:text-gray-400" />
       </div>
 
       <!-- 右侧 - 解析结果编辑 -->
@@ -117,19 +117,7 @@
               <div
                 v-if="segment.character"
                 class="flex justify-between items-start mb-1"
-              >
-                <span
-                  class="inline-flex items-center rounded-full bg-blue-100 dark:bg-blue-900 px-2 py-0.5 text-xs font-medium text-blue-800 dark:text-blue-200"
-                >
-                  {{ segment.character }}
-                </span>
-                <span
-                  v-if="segment.tone"
-                  class="inline-flex items-center rounded-full bg-purple-100 dark:bg-purple-900 px-2 py-0.5 text-xs font-medium text-purple-800 dark:text-purple-200"
-                >
-                  {{ segment.tone }}
-                </span>
-              </div>
+              ></div>
 
               <div class="mt-2">
                 <textarea
@@ -141,10 +129,15 @@
               <div
                 class="mt-2 flex flex-wrap gap-2 justify-between items-center"
               >
+                <span
+                  class="inline-flex items-center rounded-full bg-blue-100 dark:bg-blue-900 px-2 py-0.5 text-xs font-medium text-blue-800 dark:text-blue-200"
+                >
+                  {{ segment.character }}
+                </span>
                 <div class="flex gap-2 flex-1 min-w-[200px]">
                   <select
                     v-model="segment.voice"
-                    class="text-xs py-0.5 px-1 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white flex-1"
+                    class="input text-xs py-0.5 px-1 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white flex-1"
                   >
                     <option value="">
                       {{ segment.character ? "自动选择" : "默认旁白音" }}
@@ -166,7 +159,7 @@
                   <select
                     v-if="segment.character"
                     v-model="segment.tone"
-                    class="text-xs py-0.5 px-1 ml-1 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white flex-1"
+                    class="input text-xs py-0.5 px-1 ml-1 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white flex-1"
                   >
                     <option value="">无语气</option>
                     <option value="平静">平静</option>
@@ -177,7 +170,7 @@
                   </select>
                 </div>
 
-                <div class="flex gap-2">
+                <div class="flex gap-2 text-sm">
                   <button
                     @click="generateSegmentTts(index)"
                     class="btn btn-xs btn-secondary flex items-center"
@@ -227,7 +220,7 @@
       </button>
       <div
         v-if="parsedChapter && !allSegmentsHaveAudio"
-        class="mt-2 text-sm text-yellow-500"
+        class="mt-2 text-sm text-yellow-400"
       >
         请先为所有段落生成TTS，再合成整章音频
       </div>
@@ -276,7 +269,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, onMounted, reactive } from "vue";
+import { ref, computed, watch, onMounted, onUnmounted, reactive } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useToast } from "vue-toastification";
 import { useNovelsStore } from "@/stores/novels";
@@ -373,8 +366,40 @@ watch(selectedLLMProvider, async (newProvider) => {
   }
 });
 
+// 保存所有更改
+async function saveAll() {
+  try {
+    // 保存章节内容
+    if (contentChanged.value) {
+      await saveChapterContent();
+    }
+
+    // 保存解析结果
+    if (parsedChapter.value) {
+      await updateParsedChapter();
+    }
+
+    toast.success("所有更改已保存");
+  } catch (error) {
+    toast.error(
+      `保存失败: ${error instanceof Error ? error.message : String(error)}`
+    );
+  }
+}
+
+// 处理键盘快捷键
+function handleKeyDown(event: KeyboardEvent) {
+  // CTRL+S 保存所有更改
+  if ((event.ctrlKey || event.metaKey) && event.key === "s") {
+    event.preventDefault();
+    saveAll();
+  }
+}
+
 // 初始化
 onMounted(async () => {
+  // 添加键盘快捷键监听
+  window.addEventListener("keydown", handleKeyDown);
   const chapterId = route.params.chapterId as string;
   if (!chapterId) {
     toast.error("章节ID无效");
@@ -492,12 +517,31 @@ async function parseChapter() {
     // 调用解析API
     const response = await novelApi.parseChapter(chapter.value.id);
     if (response.success && response.data) {
+      // 初始化每个段落的TTS配置和合成状态
+      response.data.segments = response.data.segments.map((segment) => ({
+        ...segment,
+        ttsConfig: {
+          provider: settingsStore.activeTTSProviderType,
+          model: segment.voice || "default",
+          speed: 0,
+          pitch: 0,
+          volume: 100,
+        },
+        synthesisStatus: "unsynthesized",
+      }));
+
       parsedChapter.value = response.data;
 
       // 更新章节处理状态
       if (chapter.value) {
         chapter.value.processed = true;
       }
+
+      // 提取并添加新角色
+      await extractAndAddCharacters();
+
+      // 自动保存解析结果
+      await updateParsedChapter();
 
       toast.success("章节解析成功");
     } else {
@@ -512,6 +556,64 @@ async function parseChapter() {
   }
 }
 
+// 从解析结果中提取角色并添加到小说中
+async function extractAndAddCharacters() {
+  if (!parsedChapter.value || !chapter.value) return;
+
+  // 提取所有角色名称
+  const characterNames = new Set<string>();
+  parsedChapter.value.segments.forEach((segment) => {
+    if (
+      segment.character &&
+      segment.character.trim() &&
+      segment.character !== "旁白"
+    ) {
+      characterNames.add(segment.character.trim());
+    }
+  });
+
+  // 过滤掉已存在的角色
+  const existingCharacterNames = new Set(characters.value.map((c) => c.name));
+  const newCharacterNames = Array.from(characterNames).filter(
+    (name) => !existingCharacterNames.has(name)
+  );
+
+  if (newCharacterNames.length === 0) return;
+
+  // 创建新角色
+  for (const name of newCharacterNames) {
+    try {
+      // 根据名称推断性别
+      const gender =
+        name.includes("女") || name.includes("妹") || name.includes("姐")
+          ? "female"
+          : "male";
+
+      // 创建新角色
+      const newCharacter = {
+        novelId: chapter.value.novelId,
+        name,
+        type: "secondary" as const,
+        gender: gender as "male" | "female",
+        age: "youth" as const,
+        description: `从章节 "${chapter.value.title}" 中自动提取的角色`,
+        voiceModel: gender === "female" ? "female-1" : "male-1",
+        aliases: [],
+      };
+
+      // 调用API创建角色
+      const response = await novelApi.createCharacter(newCharacter);
+      if (response.success && response.data) {
+        // 添加到本地角色列表
+        characters.value.push(response.data);
+        console.log(`已添加新角色: ${name}`);
+      }
+    } catch (error) {
+      console.error(`添加角色 ${name} 失败:`, error);
+    }
+  }
+}
+
 // 更新解析结果
 async function updateParsedChapter() {
   if (!parsedChapter.value) return;
@@ -519,8 +621,17 @@ async function updateParsedChapter() {
   isUpdating.value = true;
 
   try {
-    // 实际项目中这里应该调用API更新解析结果
-    toast.success("解析设置已保存");
+    // 调用API更新解析结果
+    const response = await novelApi.updateParsedChapter(
+      parsedChapter.value.id,
+      parsedChapter.value
+    );
+
+    if (response.success) {
+      toast.success("解析设置已保存");
+    } else {
+      throw new Error(response.message || "保存失败");
+    }
   } catch (error) {
     toast.error(
       `更新失败: ${error instanceof Error ? error.message : String(error)}`
@@ -565,16 +676,37 @@ async function generateSegmentTts(index: number) {
       }
     }
 
+    // 确保段落有TTS配置
+    if (!segment.ttsConfig) {
+      segment.ttsConfig = {
+        provider: settingsStore.activeTTSProviderType,
+        model: segment.voice,
+        speed: 0,
+        pitch: 0,
+        volume: 100,
+      };
+    }
+
     // 调用API生成TTS
     const response = await novelApi.generateSegmentTts(chapter.value.id, {
       text: segment.text,
       voice: segment.voice,
       tone: segment.tone || "平静",
+      ttsConfig: segment.ttsConfig,
     });
 
     if (response.success && response.data) {
       // 设置音频URL到对应的段落
       segmentAudios[index] = response.data.audioUrl;
+
+      // 更新段落的合成状态和音频路径
+      segment.synthesisStatus = "synthesized";
+      segment.audioUrl = response.data.audioUrl;
+      segment.audioPath = response.data.audioPath;
+
+      // 保存更新后的解析结果
+      await updateParsedChapter();
+
       toast.success(`段落 ${index + 1} TTS生成成功`);
     } else {
       throw new Error(response.message || "生成TTS失败");
@@ -604,6 +736,15 @@ async function generateAllSegmentTts() {
   try {
     // 对所有段落依次生成TTS
     for (let i = 0; i < parsedChapter.value.segments.length; i++) {
+      // 如果段落已经合成过，则跳过
+      if (
+        parsedChapter.value.segments[i].synthesisStatus === "synthesized" &&
+        parsedChapter.value.segments[i].audioUrl
+      ) {
+        segmentAudios[i] = parsedChapter.value.segments[i].audioUrl;
+        continue;
+      }
+
       isProcessingSegment[i] = true;
       const segment = parsedChapter.value.segments[i];
 
@@ -626,17 +767,34 @@ async function generateAllSegmentTts() {
         }
       }
 
+      // 确保段落有TTS配置
+      if (!segment.ttsConfig) {
+        segment.ttsConfig = {
+          provider: settingsStore.activeTTSProviderType,
+          model: segment.voice,
+          speed: 0,
+          pitch: 0,
+          volume: 100,
+        };
+      }
+
       try {
         // 调用API生成TTS
         const response = await novelApi.generateSegmentTts(chapter.value.id, {
           text: segment.text,
           voice: segment.voice,
           tone: segment.tone || "平静",
+          ttsConfig: segment.ttsConfig,
         });
 
         if (response.success && response.data) {
           // 设置音频URL到对应的段落
           segmentAudios[i] = response.data.audioUrl;
+
+          // 更新段落的合成状态和音频路径
+          segment.synthesisStatus = "synthesized";
+          segment.audioUrl = response.data.audioUrl;
+          segment.audioPath = response.data.audioPath;
         } else {
           throw new Error(response.message || "生成TTS失败");
         }
@@ -648,6 +806,9 @@ async function generateAllSegmentTts() {
         isProcessingSegment[i] = false;
       }
     }
+
+    // 保存更新后的解析结果
+    await updateParsedChapter();
 
     toast.success("所有段落TTS生成成功");
   } catch (error) {
@@ -677,7 +838,7 @@ async function generateTts() {
   try {
     // 收集所有段落的音频URL
     const audioUrls = parsedChapter.value.segments.map(
-      (_, index) => segmentAudios[index]
+      (segment) => segment.audioUrl || ""
     );
 
     // 调用API合成整章音频
@@ -689,6 +850,15 @@ async function generateTts() {
 
     if (response.success && response.data) {
       ttsResults.value = response.data;
+
+      // 更新章节状态
+      if (chapter.value) {
+        await novelApi.updateChapter(chapter.value.id, {
+          audioGenerated: true,
+          audioPath: response.data[0].audioUrl,
+        });
+      }
+
       toast.success("整章TTS生成成功");
     } else {
       throw new Error(response.message || "生成TTS失败");
@@ -742,6 +912,11 @@ function formatDate(dateString: string): string {
     minute: "2-digit",
   }).format(date);
 }
+
+// 组件卸载时清理事件监听
+onUnmounted(() => {
+  window.removeEventListener("keydown", handleKeyDown);
+});
 </script>
 
 <style scoped>

@@ -172,4 +172,34 @@ contextBridge.exposeInMainWorld("api", {
     testProviderConnection: (type, data) =>
       ipcRenderer.invoke("llm:test-provider-connection", type, data),
   },
+
+  // 小说相关 API
+  novel: {
+    // 小说管理
+    getAllNovels: () => ipcRenderer.invoke("novel:get-all"),
+    getNovel: (id) => ipcRenderer.invoke("novel:get", id),
+    createNovel: (data) => ipcRenderer.invoke("novel:create", data),
+    updateNovel: (id, data) => ipcRenderer.invoke("novel:update", id, data),
+    deleteNovel: (id) => ipcRenderer.invoke("novel:delete", id),
+
+    // 角色管理
+    getCharactersByNovel: (novelId) => ipcRenderer.invoke("character:get-by-novel", novelId),
+    createCharacter: (data) => ipcRenderer.invoke("character:create", data),
+    updateCharacter: (id, data) => ipcRenderer.invoke("character:update", id, data),
+    deleteCharacter: (id) => ipcRenderer.invoke("character:delete", id),
+
+    // 章节管理
+    getChaptersByNovel: (novelId) => ipcRenderer.invoke("chapter:get-by-novel", novelId),
+    getChapter: (id) => ipcRenderer.invoke("chapter:get", id),
+    createChapter: (data) => ipcRenderer.invoke("chapter:create", data),
+    updateChapter: (id, data) => ipcRenderer.invoke("chapter:update", id, data),
+    deleteChapter: (id) => ipcRenderer.invoke("chapter:delete", id),
+
+    // 解析章节
+    getParsedChapter: (chapterId) => ipcRenderer.invoke("parsed-chapter:get-by-chapter", chapterId),
+    updateParsedChapter: (id, data) => ipcRenderer.invoke("parsed-chapter:update", id, data),
+
+    // TTS相关
+    getTtsResults: (chapterId) => ipcRenderer.invoke("tts:get-results", chapterId),
+  },
 });

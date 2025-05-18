@@ -20,6 +20,7 @@ export interface Character {
   age: "child" | "youth" | "middle" | "elder";
   description?: string;
   voiceModel?: string;
+  aliases?: string[];
 }
 
 // 章节
@@ -46,12 +47,7 @@ export interface ParsedChapter {
   id: string;
   chapterId: string;
   title: string;
-  segments: Array<{
-    text: string;
-    character?: string;
-    tone?: string;
-    voice?: string;
-  }>;
+  segments: Array<ParsedSegment>;
   processedAt: string;
 }
 
@@ -70,4 +66,23 @@ export interface VoiceModel {
   age: "child" | "youth" | "middle" | "elder";
   type: "narration" | "character";
   sampleUrl?: string;
+}
+
+export interface SegmentTtsConfig {
+  provider?: string;
+  model?: string;
+  speed?: number;
+  pitch?: number;
+  volume?: number;
+}
+
+export interface ParsedSegment {
+  text: string;
+  character?: string;
+  tone?: string;
+  voice?: string;
+  ttsConfig?: SegmentTtsConfig;
+  synthesisStatus?: 'unsynthesized' | 'synthesized';
+  audioPath?: string;
+  audioUrl?: string;
 }
