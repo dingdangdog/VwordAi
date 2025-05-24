@@ -8,7 +8,6 @@ const { error, success } = require("./server/utils/result");
 const { autoUpdater } = require("electron-updater");
 const log = require("electron-log");
 const os = require("os");
-const storage = require("./server/utils/storage");
 
 // 配置日志
 log.transports.file.level = "info";
@@ -69,7 +68,9 @@ function createWindow() {
   setupAutoUpdater();
 
   // 设置基础目录
-  handler.setBaseDir(app.isPackaged ? path.dirname(app.getPath("exe")) : process.cwd());
+  handler.setBaseDir(
+    app.isPackaged ? path.dirname(app.getPath("exe")) : process.cwd()
+  );
 
   // 打印当前工作目录信息
   console.log("Current working directory:", process.cwd());
@@ -103,7 +104,7 @@ function setupIPCHandlers() {
     try {
       const result = await dialog.showOpenDialog(mainWindow, {
         properties: ["openDirectory"],
-        title: "选择文件夹"
+        title: "选择文件夹",
       });
 
       if (result.canceled || !result.filePaths.length) {
@@ -123,8 +124,8 @@ function setupIPCHandlers() {
         title: "选择文件",
         filters: [
           { name: "文本文件", extensions: ["txt", "md", "json"] },
-          { name: "所有文件", extensions: ["*"] }
-        ]
+          { name: "所有文件", extensions: ["*"] },
+        ],
       });
 
       if (result.canceled || !result.filePaths.length) {
@@ -145,7 +146,7 @@ function setupIPCHandlers() {
         name: app.getName(),
         isPackaged: app.isPackaged,
         platform: process.platform,
-        arch: process.arch
+        arch: process.arch,
       });
     } catch (err) {
       return error(err.message);
@@ -159,7 +160,7 @@ function setupIPCHandlers() {
         appData: app.getPath("appData"),
         temp: app.getPath("temp"),
         documents: app.getPath("documents"),
-        downloads: app.getPath("downloads")
+        downloads: app.getPath("downloads"),
       });
     } catch (err) {
       return error(err.message);
@@ -175,7 +176,7 @@ function setupIPCHandlers() {
         type: os.type(),
         totalmem: os.totalmem(),
         freemem: os.freemem(),
-        cpus: os.cpus().length
+        cpus: os.cpus().length,
       });
     } catch (err) {
       return error(err.message);
@@ -200,15 +201,18 @@ function setupIPCHandlers() {
   });
 
   // 处理文件保存请求
-  ipcMain.handle("save-file", async (event, filePath, content, encoding = "utf8") => {
-    try {
-      const buffer = iconv.encode(content, encoding);
-      fs.writeFileSync(filePath, buffer);
-      return success(null, "文件保存成功");
-    } catch (err) {
-      return error(err.message);
+  ipcMain.handle(
+    "save-file",
+    async (event, filePath, content, encoding = "utf8") => {
+      try {
+        const buffer = iconv.encode(content, encoding);
+        fs.writeFileSync(filePath, buffer);
+        return success(null, "文件保存成功");
+      } catch (err) {
+        return error(err.message);
+      }
     }
-  });
+  );
 }
 
 // 当Electron完成初始化并准备创建浏览器窗口时调用此方法
@@ -351,7 +355,9 @@ function setupAutoUpdater() {
   app.whenReady().then(() => {
     // 如果是开发环境，只有在强制配置时才检查更新
     if (!app.isPackaged && !process.env.FORCE_UPDATE_CHECK) {
-      log.info("Skip checkForUpdates because application is not packed and dev update config is not forced");
+      log.info(
+        "Skip checkForUpdates because application is not packed and dev update config is not forced"
+      );
       return;
     }
 
@@ -464,7 +470,7 @@ function setupBiliLiveHandlers() {
 function setupNovelHandlers() {
   try {
     // 初始化小说服务
-    const { NovelService } = require('./server/services/NovelService');
+    const { NovelService } = require("./server/services/NovelService");
 
     // 确保NovelService类存在
     if (!NovelService) {
@@ -539,7 +545,10 @@ function setupNovelHandlers() {
       try {
         return await novelService.getCharactersByNovel(novelId);
       } catch (error) {
-        console.error(`Error in character:get-by-novel for novelId ${novelId}:`, error);
+        console.error(
+          `Error in character:get-by-novel for novelId ${novelId}:`,
+          error
+        );
         return { success: false, error: error.message || "获取角色列表失败" };
       }
     });
@@ -580,7 +589,10 @@ function setupNovelHandlers() {
       try {
         return await novelService.getChaptersByNovel(novelId);
       } catch (error) {
-        console.error(`Error in chapter:get-by-novel for novelId ${novelId}:`, error);
+        console.error(
+          `Error in chapter:get-by-novel for novelId ${novelId}:`,
+          error
+        );
         return { success: false, error: error.message || "获取章节列表失败" };
       }
     });
@@ -627,46 +639,22 @@ function setupNovelHandlers() {
 
     // 解析章节相关API
     ipcMain.handle("parsed-chapter:get-by-chapter", async (_, chapterId) => {
-      console.log(`Handling parsed-chapter:get-by-chapter for chapterId: ${chapterId}`);
-      try {
-        return await novelService.getParsedChapterByChapterId(chapterId);
-      } catch (error) {
-        console.error(`Error in parsed-chapter:get-by-chapter for chapterId ${chapterId}:`, error);
-        return { success: false, error: error.message || "获取解析结果失败" };
-      }
+      return await novelService.getParsedChapterByChapterId(chapterId);
     });
 
     ipcMain.handle("parsed-chapter:update", async (_, id, data) => {
-      console.log(`Handling parsed-chapter:update for id: ${id}`);
-      try {
-        return await novelService.updateParsedChapter(id, data);
-      } catch (error) {
-        console.error(`Error in parsed-chapter:update for id ${id}:`, error);
-        return { success: false, error: error.message || "更新解析结果失败" };
-      }
+      return await novelService.updateParsedChapter(id, data);
     });
 
     // LLM解析相关API
     ipcMain.handle("llm:parse-chapter", async (_, chapterId) => {
-      console.log(`Handling llm:parse-chapter for chapterId: ${chapterId}`);
-      try {
-        const { parseChapter } = require('./server/services/LLMService');
-        return await parseChapter(chapterId);
-      } catch (error) {
-        console.error("Error in llm:parse-chapter:", error);
-        return { success: false, error: error.message || "解析章节失败" };
-      }
+      const { parseChapter } = require("./server/services/LLMService");
+      return await parseChapter(chapterId);
     });
 
     // TTS相关API
     ipcMain.handle("tts:get-results", async (_, chapterId) => {
-      console.log(`Handling tts:get-results for chapterId: ${chapterId}`);
-      try {
-        return await novelService.getTtsResultsByChapterId(chapterId);
-      } catch (error) {
-        console.error(`Error in tts:get-results for chapterId ${chapterId}:`, error);
-        return { success: false, error: error.message || "获取TTS结果失败" };
-      }
+      return await novelService.getTtsResultsByChapterId(chapterId);
     });
 
     // tts:synthesize-segment handler is already registered in SegmentTTSController.js

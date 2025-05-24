@@ -387,22 +387,16 @@ class NovelService {
   /**
    * 根据章节ID获取解析结果
    * @param {string} chapterId 章节ID
-   * @returns {Promise<{success: boolean, data?: any, error?: string}>} 解析结果
+   * @returns {Promise<Object>} 解析结果
    */
   async getParsedChapterByChapterId(chapterId) {
     try {
       const parsedChapters = storage.readData(PARSED_CHAPTERS_STORAGE_KEY, []);
       const parsedChapter = parsedChapters.find(p => p.chapterId === chapterId);
-      return {
-        success: true,
-        data: parsedChapter || null
-      };
-    } catch (error) {
-      console.error(`获取章节 ${chapterId} 解析结果失败:`, error);
-      return {
-        success: false,
-        error: error.message || '获取解析结果失败'
-      };
+      return success(parsedChapter || null);
+    } catch (err) {
+      console.error(`获取章节 ${chapterId} 解析结果失败:`, err);
+      return error(err.message || '获取解析结果失败');
     }
   }
 
@@ -410,7 +404,7 @@ class NovelService {
    * 更新解析结果
    * @param {string} id 解析结果ID
    * @param {object} parsedChapterData 解析结果数据
-   * @returns {Promise<{success: boolean, data?: any, error?: string}>} 更新结果
+   * @returns {Promise<Object>} 更新结果
    */
   async updateParsedChapter(id, parsedChapterData) {
     try {
@@ -439,38 +433,26 @@ class NovelService {
 
       storage.saveData(PARSED_CHAPTERS_STORAGE_KEY, parsedChapters);
 
-      return {
-        success: true,
-        data: parsedChapter
-      };
-    } catch (error) {
-      console.error(`更新解析结果 ${id} 失败:`, error);
-      return {
-        success: false,
-        error: error.message || '更新解析结果失败'
-      };
+      return success(parsedChapter);
+    } catch (err) {
+      console.error(`更新解析结果 ${id} 失败:`, err);
+      return error(err.message || '更新解析结果失败');
     }
   }
 
   /**
    * 根据章节ID获取TTS结果
    * @param {string} chapterId 章节ID
-   * @returns {Promise<{success: boolean, data?: any, error?: string}>} TTS结果
+   * @returns {Promise<Object>} TTS结果
    */
   async getTtsResultsByChapterId(chapterId) {
     try {
       const ttsResults = storage.readData(TTS_RESULTS_STORAGE_KEY, []);
       const chapterTtsResults = ttsResults.filter(t => t.chapterId === chapterId);
-      return {
-        success: true,
-        data: chapterTtsResults || []
-      };
-    } catch (error) {
-      console.error(`获取章节 ${chapterId} TTS结果失败:`, error);
-      return {
-        success: false,
-        error: error.message || '获取TTS结果失败'
-      };
+      return success(chapterTtsResults || []);
+    } catch (err) {
+      console.error(`获取章节 ${chapterId} TTS结果失败:`, err);
+      return error(err.message || '获取TTS结果失败');
     }
   }
 }
