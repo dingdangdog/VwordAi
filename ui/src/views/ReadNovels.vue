@@ -64,7 +64,7 @@
         </div>
 
         <!-- 章节编辑/处理区域 -->
-        <ChapterProcessor
+        <!-- <ChapterProcessor
           v-if="currentChapter"
           :chapter="currentChapter"
           :parsed-chapter="parsedChapter"
@@ -74,7 +74,7 @@
           @generate-tts="generateTts"
           @update-parsed-chapter="updateParsedChapter"
           @update-llm-provider="updateLLMProvider"
-        />
+        /> -->
       </div>
     </div>
 
