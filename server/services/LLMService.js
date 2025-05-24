@@ -7,7 +7,7 @@ const Chapter = require('../models/Chapter');
 const OpenAIClient = require('../llm/openai');
 const AliyunClient = require('../llm/aliyun');
 const VolcengineClient = require('../llm/volcengine');
-const log = require('../utils/log');
+const log = require("electron-log");
 
 /**
  * 解析章节文本

@@ -6,8 +6,8 @@ const path = require('path');
 const fs = require('fs');
 const { v4: uuidv4 } = require('uuid');
 const { app } = require('electron');
-const { LLMService } = require('./LLMService');
-const { TTSService } = require('./TTSService');
+const LLMService = require('./LLMService');
+const TTSService = require('./TTSService');
 const { FileService } = require('./FileService');
 
 class NovelService {
@@ -16,8 +16,8 @@ class NovelService {
     this.ensureDirectories();
 
     // 初始化其他服务
-    this.llmService = new LLMService();
-    this.ttsService = new TTSService();
+    this.llmService = LLMService;
+    this.ttsService = TTSService; // 直接使用TTSService对象，不需要实例化
     this.fileService = new FileService();
 
     // 加载数据
@@ -256,7 +256,7 @@ class NovelService {
         data: characters
       };
     } catch (error) {
-      console.error(`获取小说 ${novelId} 的角色列表失败:`, error);
+      console.error(`获取小说 ${novelId} 角色列表失败:`, error);
       return {
         success: false,
         error: error.message || '获取角色列表失败'
@@ -271,18 +271,12 @@ class NovelService {
    */
   async createCharacter(characterData) {
     try {
-      // 检查小说是否存在
-      const novel = this.novels.find(n => n.id === characterData.novelId);
-      if (!novel) {
-        return {
-          success: false,
-          error: '小说不存在'
-        };
-      }
-
+      const now = new Date().toISOString();
       const newCharacter = {
         id: uuidv4(),
-        ...characterData
+        ...characterData,
+        createdAt: now,
+        updatedAt: now
       };
 
       this.characters.push(newCharacter);
@@ -319,7 +313,8 @@ class NovelService {
 
       const updatedCharacter = {
         ...this.characters[index],
-        ...characterData
+        ...characterData,
+        updatedAt: new Date().toISOString()
       };
 
       this.characters[index] = updatedCharacter;
@@ -382,7 +377,7 @@ class NovelService {
         data: chapters
       };
     } catch (error) {
-      console.error(`获取小说 ${novelId} 的章节列表失败:`, error);
+      console.error(`获取小说 ${novelId} 章节列表失败:`, error);
       return {
         success: false,
         error: error.message || '获取章节列表失败'
@@ -424,21 +419,10 @@ class NovelService {
    */
   async createChapter(chapterData) {
     try {
-      // 检查小说是否存在
-      const novel = this.novels.find(n => n.id === chapterData.novelId);
-      if (!novel) {
-        return {
-          success: false,
-          error: '小说不存在'
-        };
-      }
-
       const now = new Date().toISOString();
       const newChapter = {
         id: uuidv4(),
         ...chapterData,
-        llmProvider: chapterData.llmProvider || 'volcengine', // 默认使用火山引擎
-        processed: false,
         createdAt: now,
         updatedAt: now
       };
@@ -516,10 +500,7 @@ class NovelService {
       this.parsedChapters = this.parsedChapters.filter(p => p.chapterId !== id);
       this.ttsResults = this.ttsResults.filter(t => t.chapterId !== id);
 
-      // 删除章节
       this.chapters.splice(index, 1);
-
-      // 保存数据
       this.saveData('chapters.json', this.chapters);
       this.saveData('parsed-chapters.json', this.parsedChapters);
       this.saveData('tts-results.json', this.ttsResults);
@@ -545,18 +526,12 @@ class NovelService {
   async getParsedChapterByChapterId(chapterId) {
     try {
       const parsedChapter = this.parsedChapters.find(p => p.chapterId === chapterId);
-      if (!parsedChapter) {
-        return {
-          success: false,
-          error: '解析结果不存在'
-        };
-      }
       return {
         success: true,
-        data: parsedChapter
+        data: parsedChapter || null
       };
     } catch (error) {
-      console.error(`获取章节 ${chapterId} 的解析结果失败:`, error);
+      console.error(`获取章节 ${chapterId} 解析结果失败:`, error);
       return {
         success: false,
         error: error.message || '获取解析结果失败'
@@ -572,26 +547,33 @@ class NovelService {
    */
   async updateParsedChapter(id, parsedChapterData) {
     try {
-      const index = this.parsedChapters.findIndex(p => p.id === id);
+      let index = this.parsedChapters.findIndex(p => p.id === id);
+      let parsedChapter;
+
       if (index === -1) {
-        return {
-          success: false,
-          error: '解析结果不存在'
+        // 如果不存在，创建新的解析结果
+        parsedChapter = {
+          id: id || uuidv4(),
+          ...parsedChapterData,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
         };
+        this.parsedChapters.push(parsedChapter);
+      } else {
+        // 如果存在，更新解析结果
+        parsedChapter = {
+          ...this.parsedChapters[index],
+          ...parsedChapterData,
+          updatedAt: new Date().toISOString()
+        };
+        this.parsedChapters[index] = parsedChapter;
       }
 
-      const updatedParsedChapter = {
-        ...this.parsedChapters[index],
-        ...parsedChapterData,
-        processedAt: new Date().toISOString()
-      };
-
-      this.parsedChapters[index] = updatedParsedChapter;
       this.saveData('parsed-chapters.json', this.parsedChapters);
 
       return {
         success: true,
-        data: updatedParsedChapter
+        data: parsedChapter
       };
     } catch (error) {
       console.error(`更新解析结果 ${id} 失败:`, error);
@@ -612,10 +594,10 @@ class NovelService {
       const ttsResults = this.ttsResults.filter(t => t.chapterId === chapterId);
       return {
         success: true,
-        data: ttsResults
+        data: ttsResults || []
       };
     } catch (error) {
-      console.error(`获取章节 ${chapterId} 的TTS结果失败:`, error);
+      console.error(`获取章节 ${chapterId} TTS结果失败:`, error);
       return {
         success: false,
         error: error.message || '获取TTS结果失败'
@@ -624,6 +606,5 @@ class NovelService {
   }
 }
 
-module.exports = {
-  NovelService
-};
+// 导出NovelService类
+module.exports = { NovelService };

@@ -52,14 +52,6 @@ export interface TTSSynthesisResponse {
   settings?: string;
 }
 
-// 服务商类型
-export type TTSProviderType =
-  | "azure"
-  | "aliyun"
-  | "tencent"
-  | "baidu"
-  | "openai";
-
 // 应用设置类型
 export interface Settings {
   theme: "light" | "dark";

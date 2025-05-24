@@ -1,3 +1,5 @@
+import type { TTSProviderType } from "@/types";
+
 // 小说
 export interface Novel {
   id: string;
@@ -69,7 +71,7 @@ export interface VoiceModel {
 }
 
 export interface SegmentTtsConfig {
-  provider?: string;
+  provider?: TTSProviderType | null;
   model?: string;
   speed?: number;
   pitch?: number;
@@ -82,7 +84,7 @@ export interface ParsedSegment {
   tone?: string;
   voice?: string;
   ttsConfig?: SegmentTtsConfig;
-  synthesisStatus?: 'unsynthesized' | 'synthesized';
+  synthesisStatus?: "unsynthesized" | "synthesized";
   audioPath?: string;
   audioUrl?: string;
 }

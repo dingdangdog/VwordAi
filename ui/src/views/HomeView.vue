@@ -24,7 +24,7 @@
       <div class="menu-category">
         <h2 class="menu-category-title">
           <VideoCameraIcon class="h-6 w-6 mr-2" />
-          直播
+          直播工具
         </h2>
         <div class="menu-blocks-grid">
           <router-link to="/bililive" class="menu-block">

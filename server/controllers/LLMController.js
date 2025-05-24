@@ -4,7 +4,7 @@
 const { ipcMain } = require('electron');
 const LLMService = require('../services/LLMService');
 const Settings = require('../models/Settings');
-const log = require('../utils/log');
+const log = require("electron-log");
 
 /**
  * 初始化LLM相关的IPC监听器

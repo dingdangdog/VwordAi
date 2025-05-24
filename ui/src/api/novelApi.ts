@@ -41,7 +41,8 @@ export const novelApi = {
    */
   getAllNovels: async (): Promise<ApiResponse<Novel[]>> => {
     try {
-      const result = await invoke<Result<Novel[]>>("novel:get-all");
+      // @ts-ignore - window.api.novel由preload.js提供
+      const result = await window.api.novel.getAllNovels();
       return {
         success: result.success,
         data: result.data || [],
@@ -64,7 +65,8 @@ export const novelApi = {
    */
   getNovel: async (id: string): Promise<ApiResponse<Novel>> => {
     try {
-      const result = await invoke<Result<Novel>>("novel:get", id);
+      // @ts-ignore - window.api.novel由preload.js提供
+      const result = await window.api.novel.getNovel(id);
       return {
         success: result.success,
         data: result.data,
@@ -88,7 +90,8 @@ export const novelApi = {
   createNovel: async (novelData: Omit<Novel, 'id' | 'createdAt' | 'updatedAt'>): Promise<ApiResponse<Novel>> => {
     try {
       const safeData = safeClone(novelData);
-      const result = await invoke<Result<Novel>>("novel:create", safeData);
+      // @ts-ignore - window.api.novel由preload.js提供
+      const result = await window.api.novel.createNovel(safeData);
       return {
         success: result.success,
         data: result.data,
@@ -113,7 +116,8 @@ export const novelApi = {
   updateNovel: async (id: string, novelData: Partial<Novel>): Promise<ApiResponse<Novel>> => {
     try {
       const safeData = safeClone(novelData);
-      const result = await invoke<Result<Novel>>("novel:update", id, safeData);
+      // @ts-ignore - window.api.novel由preload.js提供
+      const result = await window.api.novel.updateNovel(id, safeData);
       return {
         success: result.success,
         data: result.data,
@@ -136,7 +140,8 @@ export const novelApi = {
    */
   deleteNovel: async (id: string): Promise<ApiResponse<boolean>> => {
     try {
-      const result = await invoke<Result<boolean>>("novel:delete", id);
+      // @ts-ignore - window.api.novel由preload.js提供
+      const result = await window.api.novel.deleteNovel(id);
       return {
         success: result.success,
         data: result.data,
@@ -159,7 +164,8 @@ export const novelApi = {
    */
   getCharacters: async (novelId: string): Promise<ApiResponse<Character[]>> => {
     try {
-      const result = await invoke<Result<Character[]>>("character:get-by-novel", novelId);
+      // @ts-ignore - window.api.novel由preload.js提供
+      const result = await window.api.novel.getCharactersByNovel(novelId);
       return {
         success: result.success,
         data: result.data || [],
@@ -183,7 +189,8 @@ export const novelApi = {
   createCharacter: async (characterData: Omit<Character, 'id'>): Promise<ApiResponse<Character>> => {
     try {
       const safeData = safeClone(characterData);
-      const result = await invoke<Result<Character>>("character:create", safeData);
+      // @ts-ignore - window.api.novel由preload.js提供
+      const result = await window.api.novel.createCharacter(safeData);
       return {
         success: result.success,
         data: result.data,
@@ -208,7 +215,8 @@ export const novelApi = {
   updateCharacter: async (id: string, characterData: Partial<Character>): Promise<ApiResponse<Character>> => {
     try {
       const safeData = safeClone(characterData);
-      const result = await invoke<Result<Character>>("character:update", id, safeData);
+      // @ts-ignore - window.api.novel由preload.js提供
+      const result = await window.api.novel.updateCharacter(id, safeData);
       return {
         success: result.success,
         data: result.data,
@@ -231,7 +239,8 @@ export const novelApi = {
    */
   deleteCharacter: async (id: string): Promise<ApiResponse<boolean>> => {
     try {
-      const result = await invoke<Result<boolean>>("character:delete", id);
+      // @ts-ignore - window.api.novel由preload.js提供
+      const result = await window.api.novel.deleteCharacter(id);
       return {
         success: result.success,
         data: result.data,
@@ -254,7 +263,8 @@ export const novelApi = {
    */
   getChapters: async (novelId: string): Promise<ApiResponse<Chapter[]>> => {
     try {
-      const result = await invoke<Result<Chapter[]>>("chapter:get-by-novel", novelId);
+      // @ts-ignore - window.api.novel由preload.js提供
+      const result = await window.api.novel.getChaptersByNovel(novelId);
       return {
         success: result.success,
         data: result.data || [],
@@ -278,7 +288,8 @@ export const novelApi = {
   createChapter: async (chapterData: Omit<Chapter, 'id' | 'createdAt' | 'updatedAt'>): Promise<ApiResponse<Chapter>> => {
     try {
       const safeData = safeClone(chapterData);
-      const result = await invoke<Result<Chapter>>("chapter:create", safeData);
+      // @ts-ignore - window.api.novel由preload.js提供
+      const result = await window.api.novel.createChapter(safeData);
       return {
         success: result.success,
         data: result.data,
@@ -303,7 +314,8 @@ export const novelApi = {
   updateChapter: async (id: string, chapterData: Partial<Chapter>): Promise<ApiResponse<Chapter>> => {
     try {
       const safeData = safeClone(chapterData);
-      const result = await invoke<Result<Chapter>>("chapter:update", id, safeData);
+      // @ts-ignore - window.api.novel由preload.js提供
+      const result = await window.api.novel.updateChapter(id, safeData);
       return {
         success: result.success,
         data: result.data,
@@ -326,7 +338,8 @@ export const novelApi = {
    */
   deleteChapter: async (id: string): Promise<ApiResponse<boolean>> => {
     try {
-      const result = await invoke<Result<boolean>>("chapter:delete", id);
+      // @ts-ignore - window.api.novel由preload.js提供
+      const result = await window.api.novel.deleteChapter(id);
       return {
         success: result.success,
         data: result.data,
@@ -349,7 +362,8 @@ export const novelApi = {
    */
   getParsedChapter: async (chapterId: string): Promise<ApiResponse<ParsedChapter>> => {
     try {
-      const result = await invoke<Result<ParsedChapter>>("parsed-chapter:get-by-chapter", chapterId);
+      // @ts-ignore - window.api.novel由preload.js提供
+      const result = await window.api.novel.getParsedChapter(chapterId);
       return {
         success: result.success,
         data: result.data,
@@ -373,11 +387,13 @@ export const novelApi = {
   parseChapter: async (chapterId: string): Promise<ApiResponse<ParsedChapter>> => {
     try {
       // 调用LLM服务解析章节
-      const result = await invoke<Result<ParsedChapter>>("llm:parse-chapter", chapterId);
+      // @ts-ignore - window.api.llm由preload.js提供
+      const result = await window.api.llm.parseChapter(chapterId);
 
       if (result.success && result.data) {
         // 如果解析成功，更新章节的处理状态
-        await invoke<Result<boolean>>("chapter:update-processed-status", chapterId, true);
+        // @ts-ignore - window.api.novel由preload.js提供
+        await window.api.novel.updateChapter(chapterId, { processed: true });
       }
 
       return {
@@ -402,7 +418,8 @@ export const novelApi = {
    */
   getTtsResults: async (chapterId: string): Promise<ApiResponse<TtsResult[]>> => {
     try {
-      const result = await invoke<Result<TtsResult[]>>("tts:get-results", chapterId);
+      // @ts-ignore - window.api.novel由preload.js提供
+      const result = await window.api.novel.getTtsResults(chapterId);
       return {
         success: result.success,
         data: result.data || [],
@@ -433,11 +450,8 @@ export const novelApi = {
     try {
       // 调用真实的TTS API
       const safeData = safeClone(segmentData);
-      const response = await invoke<Result<{ audioUrl: string, audioPath?: string }>>(
-        "tts:synthesize-segment",
-        chapterId,
-        safeData
-      );
+      // @ts-ignore - window.api.tts由preload.js提供
+      const response = await window.api.tts.synthesizeSegment(chapterId, safeData);
 
       return {
         success: response.success,
@@ -464,8 +478,8 @@ export const novelApi = {
   generateFullChapterTts: async (chapterId: string, parsedChapterId: string, audioUrls: string[]): Promise<ApiResponse<TtsResult[]>> => {
     try {
       // 调用真实的TTS API合并音频文件
-      const response = await invoke<Result<TtsResult[]>>(
-        "tts:synthesize-full-chapter",
+      // @ts-ignore - window.api.tts由preload.js提供
+      const response = await window.api.tts.synthesizeFullChapter(
         chapterId,
         parsedChapterId,
         audioUrls
@@ -494,7 +508,8 @@ export const novelApi = {
   generateTts: async (parsedChapterId: string): Promise<ApiResponse<TtsResult[]>> => {
     try {
       // 调用真实的TTS API
-      const response = await invoke<Result<TtsResult[]>>("tts:synthesize", parsedChapterId);
+      // @ts-ignore - window.api.tts由preload.js提供
+      const response = await window.api.tts.synthesize(parsedChapterId);
 
       return {
         success: response.success,
@@ -518,7 +533,8 @@ export const novelApi = {
    */
   getChapter: async (id: string): Promise<ApiResponse<Chapter>> => {
     try {
-      const result = await invoke<Result<Chapter>>("chapter:get", id);
+      // @ts-ignore - window.api.novel由preload.js提供
+      const result = await window.api.novel.getChapter(id);
       return {
         success: result.success,
         data: result.data,
@@ -543,7 +559,8 @@ export const novelApi = {
   updateParsedChapter: async (id: string, parsedChapterData: ParsedChapter): Promise<ApiResponse<ParsedChapter>> => {
     try {
       const safeData = safeClone(parsedChapterData);
-      const result = await invoke<Result<ParsedChapter>>("parsed-chapter:update", id, safeData);
+      // @ts-ignore - window.api.novel由preload.js提供
+      const result = await window.api.novel.updateParsedChapter(id, safeData);
       return {
         success: result.success,
         data: result.data,
