@@ -1,83 +1,27 @@
-/**
+﻿/**
  * 小说服务
  * 处理小说、章节、角色等相关操作
+ * 使用专门的小说模型，与项目系统完全分离
  */
-const path = require('path');
-const fs = require('fs');
-const { v4: uuidv4 } = require('uuid');
-const { app } = require('electron');
-const LLMService = require('./LLMService');
-const TTSService = require('./TTSService');
-const { FileService } = require('./FileService');
+const { v4: uuidv4 } = require("uuid");
+const storage = require("../utils/storage");
+const Novel = require("../models/Novel");
+const NovelChapter = require("../models/NovelChapter");
+const NovelCharacter = require("../models/NovelCharacter");
+const LLMService = require("./LLMService");
+const TTSService = require("./TTSService");
+const { FileService } = require("./FileService");
+
+// 存储键名，用于解析结果和TTS结果
+const PARSED_CHAPTERS_STORAGE_KEY = "novel-parsed-chapters";
+const TTS_RESULTS_STORAGE_KEY = "novel-tts-results";
 
 class NovelService {
   constructor() {
-    this.dataDir = path.join(app.getPath('userData'), 'novels');
-    this.ensureDirectories();
-
     // 初始化其他服务
     this.llmService = LLMService;
-    this.ttsService = TTSService; // 直接使用TTSService对象，不需要实例化
+    this.ttsService = TTSService;
     this.fileService = new FileService();
-
-    // 加载数据
-    this.novels = this.loadData('novels.json', []);
-    this.characters = this.loadData('characters.json', []);
-    this.chapters = this.loadData('chapters.json', []);
-    this.parsedChapters = this.loadData('parsed-chapters.json', []);
-    this.ttsResults = this.loadData('tts-results.json', []);
-  }
-
-  /**
-   * 确保必要的目录存在
-   */
-  ensureDirectories() {
-    const dirs = [
-      this.dataDir,
-      path.join(this.dataDir, 'audio'),
-      path.join(this.dataDir, 'covers'),
-      path.join(this.dataDir, 'temp')
-    ];
-
-    dirs.forEach(dir => {
-      if (!fs.existsSync(dir)) {
-        fs.mkdirSync(dir, { recursive: true });
-      }
-    });
-  }
-
-  /**
-   * 加载数据文件
-   * @param {string} filename 文件名
-   * @param {any} defaultValue 默认值
-   * @returns {any} 加载的数据
-   */
-  loadData(filename, defaultValue) {
-    const filePath = path.join(this.dataDir, filename);
-    try {
-      if (fs.existsSync(filePath)) {
-        const data = fs.readFileSync(filePath, 'utf8');
-        return JSON.parse(data);
-      }
-    } catch (error) {
-      console.error(`加载数据文件 ${filename} 失败:`, error);
-    }
-    return defaultValue;
-  }
-
-  /**
-   * 保存数据到文件
-   * @param {string} filename 文件名
-   * @param {any} data 要保存的数据
-   */
-  saveData(filename, data) {
-    const filePath = path.join(this.dataDir, filename);
-    try {
-      fs.writeFileSync(filePath, JSON.stringify(data, null, 2), 'utf8');
-    } catch (error) {
-      console.error(`保存数据文件 ${filename} 失败:`, error);
-      throw error;
-    }
   }
 
   /**
@@ -86,9 +30,10 @@ class NovelService {
    */
   async getAllNovels() {
     try {
+      const novels = Novel.getAllNovels();
       return {
         success: true,
-        data: this.novels
+        data: novels
       };
     } catch (error) {
       console.error('获取所有小说失败:', error);
@@ -106,7 +51,7 @@ class NovelService {
    */
   async getNovel(id) {
     try {
-      const novel = this.novels.find(n => n.id === id);
+      const novel = Novel.getNovelById(id);
       if (!novel) {
         return {
           success: false,
@@ -133,18 +78,7 @@ class NovelService {
    */
   async createNovel(novelData) {
     try {
-      const now = new Date().toISOString();
-      const newNovel = {
-        id: uuidv4(),
-        ...novelData,
-        characters: novelData.characters || [],
-        createdAt: now,
-        updatedAt: now
-      };
-
-      this.novels.push(newNovel);
-      this.saveData('novels.json', this.novels);
-
+      const newNovel = Novel.createNovel(novelData);
       return {
         success: true,
         data: newNovel
@@ -166,23 +100,7 @@ class NovelService {
    */
   async updateNovel(id, novelData) {
     try {
-      const index = this.novels.findIndex(n => n.id === id);
-      if (index === -1) {
-        return {
-          success: false,
-          error: '小说不存在'
-        };
-      }
-
-      const updatedNovel = {
-        ...this.novels[index],
-        ...novelData,
-        updatedAt: new Date().toISOString()
-      };
-
-      this.novels[index] = updatedNovel;
-      this.saveData('novels.json', this.novels);
-
+      const updatedNovel = Novel.updateNovel(id, novelData);
       return {
         success: true,
         data: updatedNovel
@@ -203,32 +121,24 @@ class NovelService {
    */
   async deleteNovel(id) {
     try {
-      const index = this.novels.findIndex(n => n.id === id);
-      if (index === -1) {
-        return {
-          success: false,
-          error: '小说不存在'
-        };
-      }
+      // 删除相关的章节
+      NovelChapter.deleteChaptersByNovelId(id);
 
-      // 删除相关的章节和角色
-      this.chapters = this.chapters.filter(c => c.novelId !== id);
-      this.characters = this.characters.filter(c => c.novelId !== id);
+      // 删除相关的角色
+      NovelCharacter.deleteCharactersByNovelId(id);
 
       // 删除相关的解析结果和TTS结果
-      const chapterIds = this.chapters.filter(c => c.novelId === id).map(c => c.id);
-      this.parsedChapters = this.parsedChapters.filter(p => !chapterIds.includes(p.chapterId));
-      this.ttsResults = this.ttsResults.filter(t => !chapterIds.includes(t.chapterId));
+      const parsedChapters = storage.readData(PARSED_CHAPTERS_STORAGE_KEY, []);
+      const ttsResults = storage.readData(TTS_RESULTS_STORAGE_KEY, []);
+
+      const filteredParsedChapters = parsedChapters.filter(p => p.novelId !== id);
+      const filteredTtsResults = ttsResults.filter(t => t.novelId !== id);
+
+      storage.saveData(PARSED_CHAPTERS_STORAGE_KEY, filteredParsedChapters);
+      storage.saveData(TTS_RESULTS_STORAGE_KEY, filteredTtsResults);
 
       // 删除小说
-      this.novels.splice(index, 1);
-
-      // 保存数据
-      this.saveData('novels.json', this.novels);
-      this.saveData('chapters.json', this.chapters);
-      this.saveData('characters.json', this.characters);
-      this.saveData('parsed-chapters.json', this.parsedChapters);
-      this.saveData('tts-results.json', this.ttsResults);
+      Novel.deleteNovel(id);
 
       return {
         success: true,
@@ -250,7 +160,7 @@ class NovelService {
    */
   async getCharactersByNovel(novelId) {
     try {
-      const characters = this.characters.filter(c => c.novelId === novelId);
+      const characters = NovelCharacter.getCharactersByNovelId(novelId);
       return {
         success: true,
         data: characters
@@ -271,17 +181,7 @@ class NovelService {
    */
   async createCharacter(characterData) {
     try {
-      const now = new Date().toISOString();
-      const newCharacter = {
-        id: uuidv4(),
-        ...characterData,
-        createdAt: now,
-        updatedAt: now
-      };
-
-      this.characters.push(newCharacter);
-      this.saveData('characters.json', this.characters);
-
+      const newCharacter = NovelCharacter.createNovelCharacter(characterData);
       return {
         success: true,
         data: newCharacter
@@ -303,22 +203,14 @@ class NovelService {
    */
   async updateCharacter(id, characterData) {
     try {
-      const index = this.characters.findIndex(c => c.id === id);
-      if (index === -1) {
+      const updatedCharacter = NovelCharacter.updateNovelCharacter(id, characterData);
+
+      if (!updatedCharacter) {
         return {
           success: false,
           error: '角色不存在'
         };
       }
-
-      const updatedCharacter = {
-        ...this.characters[index],
-        ...characterData,
-        updatedAt: new Date().toISOString()
-      };
-
-      this.characters[index] = updatedCharacter;
-      this.saveData('characters.json', this.characters);
 
       return {
         success: true,
@@ -340,16 +232,14 @@ class NovelService {
    */
   async deleteCharacter(id) {
     try {
-      const index = this.characters.findIndex(c => c.id === id);
-      if (index === -1) {
+      const result = NovelCharacter.deleteNovelCharacter(id);
+
+      if (!result) {
         return {
           success: false,
           error: '角色不存在'
         };
       }
-
-      this.characters.splice(index, 1);
-      this.saveData('characters.json', this.characters);
 
       return {
         success: true,
@@ -371,7 +261,7 @@ class NovelService {
    */
   async getChaptersByNovel(novelId) {
     try {
-      const chapters = this.chapters.filter(c => c.novelId === novelId);
+      const chapters = NovelChapter.getChaptersByNovelId(novelId);
       return {
         success: true,
         data: chapters
@@ -392,13 +282,15 @@ class NovelService {
    */
   async getChapter(id) {
     try {
-      const chapter = this.chapters.find(c => c.id === id);
+      const chapter = NovelChapter.getNovelChapterById(id);
+
       if (!chapter) {
         return {
           success: false,
           error: '章节不存在'
         };
       }
+
       return {
         success: true,
         data: chapter
@@ -419,17 +311,7 @@ class NovelService {
    */
   async createChapter(chapterData) {
     try {
-      const now = new Date().toISOString();
-      const newChapter = {
-        id: uuidv4(),
-        ...chapterData,
-        createdAt: now,
-        updatedAt: now
-      };
-
-      this.chapters.push(newChapter);
-      this.saveData('chapters.json', this.chapters);
-
+      const newChapter = NovelChapter.createNovelChapter(chapterData);
       return {
         success: true,
         data: newChapter
@@ -451,22 +333,14 @@ class NovelService {
    */
   async updateChapter(id, chapterData) {
     try {
-      const index = this.chapters.findIndex(c => c.id === id);
-      if (index === -1) {
+      const updatedChapter = NovelChapter.updateNovelChapter(id, chapterData);
+
+      if (!updatedChapter) {
         return {
           success: false,
           error: '章节不存在'
         };
       }
-
-      const updatedChapter = {
-        ...this.chapters[index],
-        ...chapterData,
-        updatedAt: new Date().toISOString()
-      };
-
-      this.chapters[index] = updatedChapter;
-      this.saveData('chapters.json', this.chapters);
 
       return {
         success: true,
@@ -488,22 +362,14 @@ class NovelService {
    */
   async deleteChapter(id) {
     try {
-      const index = this.chapters.findIndex(c => c.id === id);
-      if (index === -1) {
+      const result = NovelChapter.deleteNovelChapter(id);
+
+      if (!result) {
         return {
           success: false,
           error: '章节不存在'
         };
       }
-
-      // 删除相关的解析结果和TTS结果
-      this.parsedChapters = this.parsedChapters.filter(p => p.chapterId !== id);
-      this.ttsResults = this.ttsResults.filter(t => t.chapterId !== id);
-
-      this.chapters.splice(index, 1);
-      this.saveData('chapters.json', this.chapters);
-      this.saveData('parsed-chapters.json', this.parsedChapters);
-      this.saveData('tts-results.json', this.ttsResults);
 
       return {
         success: true,
@@ -525,7 +391,8 @@ class NovelService {
    */
   async getParsedChapterByChapterId(chapterId) {
     try {
-      const parsedChapter = this.parsedChapters.find(p => p.chapterId === chapterId);
+      const parsedChapters = storage.readData(PARSED_CHAPTERS_STORAGE_KEY, []);
+      const parsedChapter = parsedChapters.find(p => p.chapterId === chapterId);
       return {
         success: true,
         data: parsedChapter || null
@@ -547,7 +414,8 @@ class NovelService {
    */
   async updateParsedChapter(id, parsedChapterData) {
     try {
-      let index = this.parsedChapters.findIndex(p => p.id === id);
+      const parsedChapters = storage.readData(PARSED_CHAPTERS_STORAGE_KEY, []);
+      let index = parsedChapters.findIndex(p => p.id === id);
       let parsedChapter;
 
       if (index === -1) {
@@ -558,18 +426,18 @@ class NovelService {
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString()
         };
-        this.parsedChapters.push(parsedChapter);
+        parsedChapters.push(parsedChapter);
       } else {
         // 如果存在，更新解析结果
         parsedChapter = {
-          ...this.parsedChapters[index],
+          ...parsedChapters[index],
           ...parsedChapterData,
           updatedAt: new Date().toISOString()
         };
-        this.parsedChapters[index] = parsedChapter;
+        parsedChapters[index] = parsedChapter;
       }
 
-      this.saveData('parsed-chapters.json', this.parsedChapters);
+      storage.saveData(PARSED_CHAPTERS_STORAGE_KEY, parsedChapters);
 
       return {
         success: true,
@@ -591,10 +459,11 @@ class NovelService {
    */
   async getTtsResultsByChapterId(chapterId) {
     try {
-      const ttsResults = this.ttsResults.filter(t => t.chapterId === chapterId);
+      const ttsResults = storage.readData(TTS_RESULTS_STORAGE_KEY, []);
+      const chapterTtsResults = ttsResults.filter(t => t.chapterId === chapterId);
       return {
         success: true,
-        data: ttsResults || []
+        data: chapterTtsResults || []
       };
     } catch (error) {
       console.error(`获取章节 ${chapterId} TTS结果失败:`, error);
@@ -608,3 +477,5 @@ class NovelService {
 
 // 导出NovelService类
 module.exports = { NovelService };
+
+
