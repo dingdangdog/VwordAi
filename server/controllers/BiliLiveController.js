@@ -2,8 +2,71 @@
  * BiliLive Controller
  * 处理与B站直播相关的请求
  */
+const { ipcMain } = require("electron");
 const BiliLiveService = require("../services/BiliLiveService");
 const { success, error } = require("../utils/result");
+
+/**
+ * 初始化BiliLive控制器
+ */
+function init() {
+  // BiliLive连接
+  ipcMain.handle("bililive:connect", async (_, roomId) => {
+    return await connect(roomId);
+  });
+
+  // BiliLive断开连接
+  ipcMain.handle("bililive:disconnect", async () => {
+    return await disconnect();
+  });
+
+  // 获取B站配置
+  ipcMain.handle("bililive:get-config", async () => {
+    return await getAllConfig();
+  });
+
+  // 保存B站配置
+  ipcMain.handle("bililive:save-bili-config", async (_, data) => {
+    return await saveBiliConfig(data);
+  });
+
+  // 保存TTS模式
+  ipcMain.handle("bililive:save-tts-mode", async (_, mode) => {
+    return await saveTTSMode(mode);
+  });
+
+  // 保存Azure配置
+  ipcMain.handle("bililive:save-azure-config", async (_, data) => {
+    return await saveAzureConfig(data);
+  });
+
+  // 保存阿里云配置
+  ipcMain.handle("bililive:save-alibaba-config", async (_, data) => {
+    return await saveAlibabaConfig(data);
+  });
+
+  // 保存SoVITS配置
+  ipcMain.handle("bililive:save-sovits-config", async (_, data) => {
+    return await saveSovitsConfig(data);
+  });
+
+  // 测试TTS
+  ipcMain.handle("bililive:test-tts", async (_, text) => {
+    return await testTTS(text);
+  });
+
+  // 获取可用的TTS声音列表
+  ipcMain.handle("bililive:get-available-voices", async () => {
+    return await getAvailableVoices();
+  });
+
+  // 保存本地TTS配置
+  ipcMain.handle("bililive:save-local-config", async (_, voice) => {
+    return await saveLocalConfig(voice);
+  });
+
+  console.log("BiliLive controller IPC handlers registered successfully");
+}
 
 /**
  * 连接到B站直播间
@@ -154,6 +217,7 @@ async function saveLocalConfig(voice) {
 }
 
 module.exports = {
+  init,
   connect,
   disconnect,
   getAllConfig,

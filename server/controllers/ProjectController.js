@@ -3,9 +3,71 @@
  * 处理与项目相关的业务逻辑
  * 参考 BiliLiveController 的架构模式
  */
+const { ipcMain } = require("electron");
 const Project = require("../models/Project");
 const Chapter = require("../models/Chapter");
 const { success, error } = require("../utils/result");
+
+/**
+ * 初始化项目控制器
+ */
+function init() {
+  // 项目相关API
+  ipcMain.handle("project:get-all", async () => {
+    console.log("Handling project:get-all");
+    return await getAllProjects();
+  });
+
+  ipcMain.handle("project:get", async (_, id) => {
+    console.log(`Handling project:get for id: ${id}`);
+    return await getProjectById(id);
+  });
+
+  ipcMain.handle("project:create", async (_, data) => {
+    console.log("Handling project:create with data:", data);
+    return await createProject(data);
+  });
+
+  ipcMain.handle("project:update", async (_, id, data) => {
+    console.log(`Handling project:update for id: ${id}`);
+    return await updateProject(id, data);
+  });
+
+  ipcMain.handle("project:delete", async (_, id) => {
+    console.log(`Handling project:delete for id: ${id}`);
+    return await deleteProject(id);
+  });
+
+  // 章节相关API
+  ipcMain.handle("project-chapter:get-by-project", async (_, projectId) => {
+    console.log(
+      `Handling project-chapter:get-by-project for projectId: ${projectId}`
+    );
+    return await getChaptersByProjectId(projectId);
+  });
+
+  ipcMain.handle("project-chapter:get", async (_, id) => {
+    console.log(`Handling project-chapter:get for id: ${id}`);
+    return await getChapterById(id);
+  });
+
+  ipcMain.handle("project-chapter:create", async (_, data) => {
+    console.log("Handling project-chapter:create");
+    return await createChapter(data);
+  });
+
+  ipcMain.handle("project-chapter:update", async (_, id, data) => {
+    console.log(`Handling project-chapter:update for id: ${id}`);
+    return await updateChapter(id, data);
+  });
+
+  ipcMain.handle("project-chapter:delete", async (_, id) => {
+    console.log(`Handling project-chapter:delete for id: ${id}`);
+    return await deleteChapter(id);
+  });
+
+  console.log("Project controller IPC handlers registered successfully");
+}
 
 /**
  * 获取所有项目
@@ -202,6 +264,7 @@ async function deleteChapter(id) {
 }
 
 module.exports = {
+  init,
   getAllProjects,
   getProjectById,
   createProject,
