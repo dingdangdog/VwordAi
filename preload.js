@@ -77,28 +77,23 @@ contextBridge.exposeInMainWorld("electron", {
 
 // 业务API
 contextBridge.exposeInMainWorld("api", {
-  // 通用处理器调用方法
-  invokeHandler: async (functionName, args) => {
-    return await ipcRenderer.invoke("data-handler", functionName, args);
-  },
-
   // 项目相关API
   project: {
-    getAll: () => ipcRenderer.invoke("get-projects"),
-    getById: (id) => ipcRenderer.invoke("get-project", id),
-    create: (data) => ipcRenderer.invoke("create-project", data),
-    update: (id, data) => ipcRenderer.invoke("update-project", id, data),
-    delete: (id) => ipcRenderer.invoke("delete-project", id),
+    getAll: () => ipcRenderer.invoke("project:get-all"),
+    getById: (id) => ipcRenderer.invoke("project:get", id),
+    create: (data) => ipcRenderer.invoke("project:create", data),
+    update: (id, data) => ipcRenderer.invoke("project:update", id, data),
+    delete: (id) => ipcRenderer.invoke("project:delete", id),
   },
 
   // 章节相关API
   chapter: {
     getByProjectId: (projectId) =>
-      ipcRenderer.invoke("get-chapters-by-project-id", projectId),
-    getById: (id) => ipcRenderer.invoke("get-chapter", id),
-    create: (data) => ipcRenderer.invoke("create-chapter", data),
-    update: (id, data) => ipcRenderer.invoke("update-chapter", id, data),
-    delete: (id) => ipcRenderer.invoke("delete-chapter", id),
+      ipcRenderer.invoke("project-chapter:get-by-project", projectId),
+    getById: (id) => ipcRenderer.invoke("project-chapter:get", id),
+    create: (data) => ipcRenderer.invoke("project-chapter:create", data),
+    update: (id, data) => ipcRenderer.invoke("project-chapter:update", id, data),
+    delete: (id) => ipcRenderer.invoke("project-chapter:delete", id),
   },
 
   // 服务商相关API

@@ -2,7 +2,7 @@
  * 语音合成API模块
  */
 import type { Result, TTSSynthesisResponse, TTSProviderType } from "@/types";
-import { invoke, invokeHandler } from "@/utils/apiBase";
+import { invoke } from "@/utils/apiBase";
 
 /**
  * 语音合成API
@@ -29,19 +29,7 @@ export const ttsApi = {
   testProviderConnection: (providerType: string) =>
     invoke<Result<{message: string}>>("tts:test-provider-connection", providerType),
 
-  /**
-   * 通过处理器合成单个章节语音
-   * @param chapterId 章节ID
-   */
-  synthesizeViaHandler: (chapterId: string) =>
-    invokeHandler<Result<TTSSynthesisResponse>>("synthesizeChapter", chapterId),
 
-  /**
-   * 通过处理器批量合成多个章节语音
-   * @param chapterIds 章节ID数组
-   */
-  synthesizeMultipleViaHandler: (chapterIds: string[]) =>
-    invokeHandler<Result<Record<string, TTSSynthesisResponse>>>("synthesizeMultipleChapters", chapterIds),
 };
 
 /**
@@ -86,44 +74,5 @@ export const serviceProviderApi = {
   testConnection: (id: string) =>
     invoke<Result<{message: string}>>("service-provider:test-connection", id),
 
-  /**
-   * 通过处理器获取所有服务商配置
-   */
-  getAllViaHandler: () => invokeHandler<Result<any[]>>("getServiceProviders"),
 
-  /**
-   * 通过处理器获取特定服务商配置
-   * @param id 配置ID
-   */
-  getByIdViaHandler: (id: string) =>
-    invokeHandler<Result<any>>("getServiceProvider", id),
-
-  /**
-   * 通过处理器创建服务商配置
-   * @param data 服务商配置数据
-   */
-  createViaHandler: (data: any) =>
-    invokeHandler<Result<any>>("createServiceProvider", data),
-
-  /**
-   * 通过处理器更新服务商配置
-   * @param id 配置ID
-   * @param data 更新数据
-   */
-  updateViaHandler: (id: string, data: any) =>
-    invokeHandler<Result<any>>("updateServiceProvider", id, data),
-
-  /**
-   * 通过处理器删除服务商配置
-   * @param id 配置ID
-   */
-  deleteViaHandler: (id: string) =>
-    invokeHandler<Result<boolean>>("deleteServiceProvider", id),
-
-  /**
-   * 通过处理器测试服务商连接
-   * @param id 配置ID
-   */
-  testConnectionViaHandler: (id: string) =>
-    invokeHandler<Result<{message: string}>>("testServiceProviderConnection", id),
-}; 
+};

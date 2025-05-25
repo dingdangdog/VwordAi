@@ -21,32 +21,7 @@ export async function invoke<T>(channel: string, ...args: any[]): Promise<T> {
   }
 }
 
-/**
- * 通用处理器调用方法
- * @param functionName 处理器函数名
- * @param args 参数
- * @returns 处理结果
- */
-export async function invokeHandler<T>(
-  functionName: string,
-  ...args: any[]
-): Promise<T> {
-  try {
-    // 将参数转为字符串数组
-    const stringArgs = args.map((arg) => {
-      if (typeof arg === "string") {
-        return arg;
-      }
-      return JSON.stringify(arg);
-    });
-    // @ts-ignore - window.api由preload.js提供
-    const result = await window.api.invokeHandler(functionName, stringArgs);
-    return result;
-  } catch (error) {
-    console.error(`调用处理器[${functionName}]失败:`, error);
-    throw error;
-  }
-}
+
 
 /**
  * 创建错误处理函数
@@ -63,4 +38,4 @@ export function createErrorHandler(serviceName: string) {
       data: null,
     };
   };
-} 
+}

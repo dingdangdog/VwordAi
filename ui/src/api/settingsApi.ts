@@ -7,7 +7,7 @@ import type {
   TTSProviderType,
   LLMProviderType,
 } from "@/types";
-import { invoke, invokeHandler } from "@/utils/apiBase";
+import { invoke } from "@/utils/apiBase";
 
 /**
  * 设置API
@@ -144,20 +144,5 @@ export const settingsApi = {
       data
     ),
 
-  /**
-   * 通过处理器获取所有设置
-   */
-  getAllViaHandler: () => invokeHandler<Result<Settings>>("getSettings"),
 
-  /**
-   * 通过处理器更新设置
-   * @param data 设置数据
-   */
-  updateViaHandler: (data: Partial<Settings>) =>
-    invokeHandler<Result<Settings>>("updateSettings", data),
-
-  /**
-   * 通过处理器重置设置为默认值
-   */
-  resetViaHandler: () => invokeHandler<Result<Settings>>("resetSettings"),
 };

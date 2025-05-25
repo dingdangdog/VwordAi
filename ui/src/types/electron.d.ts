@@ -35,9 +35,6 @@ export interface ElectronAPI {
 }
 
 interface ApiInterface {
-  // 通用处理器调用方法
-  invokeHandler: (functionName: string, args: any[]) => Promise<any>;
-
   // 项目相关API
   project: {
     getAll: () => Promise<any>;

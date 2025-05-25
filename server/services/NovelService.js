@@ -11,6 +11,7 @@ const NovelCharacter = require("../models/NovelCharacter");
 const LLMService = require("./LLMService");
 const TTSService = require("./TTSService");
 const { FileService } = require("./FileService");
+const { success, error } = require("../utils/result");
 
 // 存储键名，用于解析结果和TTS结果
 const PARSED_CHAPTERS_STORAGE_KEY = "novel-parsed-chapters";
