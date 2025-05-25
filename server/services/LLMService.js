@@ -26,11 +26,11 @@ async function parseText(
       providerConfig = llmSettings[providerType];
 
       if (!providerConfig || !providerConfig.key) {
-        return error(`LLM提供商 ${providerType} 未配置或密钥缺失`);
+        return error(`LLM Provider ${providerType} Not find Config`);
       }
     }
 
-    log.info(`[LLMService] 使用 ${providerType} 解析文本`);
+    log.info(`[LLMService] Use ${providerType} Parse Text`);
 
     // 根据提供商类型创建对应的客户端
     const llmClient = createLLMClient(providerType, providerConfig);
@@ -50,8 +50,8 @@ async function parseText(
 
     return success(parsedResults);
   } catch (err) {
-    log.error(`[LLMService] 解析文本失败: ${err.message}`, err);
-    return error("解析文本失败: " + err.message);
+    log.error(`[LLMService] Parse Text Failed: ${err.message}`, err);
+    return error("Parse Text Failed: " + err.message);
   }
 }
 
@@ -65,12 +65,12 @@ async function parseChapter(chapterId) {
     // 这里需要从业务逻辑层传入章节数据，而不是直接访问模型
     // 这个函数应该被ChapterProcessingController调用
     log.warn(
-      `[LLMService] parseChapter(${chapterId})应该被业务逻辑层调用，而不是直接调用`
+      `[LLMService] parseChapter(${chapterId}) Should be called by business logic layer, not directly`
     );
-    return error("parseChapter应该通过业务逻辑层调用");
+    return error("parseChapter Should be called by business logic layer");
   } catch (err) {
-    log.error(`[LLMService] 解析章节失败: ${err.message}`, err);
-    return error("解析章节失败: " + err.message);
+    log.error(`[LLMService] Parse Chapter Failed: ${err.message}`, err);
+    return error("Parse Chapter Failed: " + err.message);
   }
 }
 

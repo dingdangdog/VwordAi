@@ -1,4 +1,4 @@
-const { default: axios } = require("axios");
+const { OpenAI } = require("openai");
 
 /**
  * 火山引擎大语言模型客户端
@@ -13,9 +13,10 @@ class VolcengineClient {
    * @param {string} [config.model] 要使用的模型，默认为'doubao-1.5-pro-32k-250115'
    */
   constructor(config) {
-    this.key = config.key;
-    this.endpoint =
-      config.endpoint || "https://ark.cn-beijing.volces.com/api/v3/";
+    this.client = new OpenAI({
+      apiKey: config.key,
+      baseURL: config.endpoint || "https://ark.cn-beijing.volces.com/api/v3/",
+    });
     this.model = config.model || "doubao-1.5-pro-32k-250115";
     this.prompt = this.createPrompt();
   }
@@ -26,20 +27,17 @@ class VolcengineClient {
    */
   createPrompt() {
     return `### 指令 ###
-分析以下小说文本，识别每句话的说话者和语气或情绪。请按照以下要求进行分析：
+分析指定的小说文本，识别每句话的说话者和语气或情绪。请按照以下要求进行分析：
 
 1. 将文本分解为单独的句子。
 2. 对于每个句子，确定：
    - 说话者是谁（如果是对话，'dft'表示旁白叙述）
    - 特殊语气或情绪（从以下选项中选择：快乐、悲伤、愤怒、恐惧、好奇、紧张、平静、兴奋、惊讶、失望、羞愧、嫌恶、喜爱、骄傲、讽刺、严肃、轻松、'dft'表示默认无特殊情感）
    - 特殊模仿声音（从以下选项中选择：女孩、男孩、年轻女性、年轻男性、年长女性、年长男性、年老女性、年老男性、'dft'表示默认无特殊模仿）
-   
+
 3. 如果说话者没有明确提及，请从上下文中推断。'dft'表示旁白叙述。如果确实无法确定，请使用"未知"。
 
 4. 仅输出JSON格式的结果，不要包含任何其他解释或附加文本。
-
-### 文本 ###
-{{text}}
 
 ### 输出格式 ###
 请以有效的JSON格式输出分析结果，格式为句子对象的数组。每个对象应包含以下字段：
@@ -48,19 +46,36 @@ class VolcengineClient {
 - "e": 已识别的语气或情绪，'dft'表示默认
 - "m": 已识别的模仿声音，'dft'表示默认
 
+### 示例输入 ###
+在风和日丽的下午，小明和小红在公园里散步。
+小红问小明：“你好吗？”
+小明回答说：“我很好，谢谢。”
+
 ### 示例输出 ###
 [
   {
     "t": "在风和日丽的下午，小明和小红在公园里散步。",
     "s": "dft",
     "e": "dft",
-    "m": "dft" 
+    "m": "dft"
+  },
+  {
+    "t": "小红问小明",
+    "s": "dft",
+    "e": "dft",
+    "m": "dft"
   },
   {
     "t": "你好吗？",
     "s": "小红",
     "e": "友好",
-    "m": "dft" 
+    "m": "dft"
+  },
+  {
+    "t": "小明回答说",
+    "s": "dft",
+    "e": "dft",
+    "m": "dft"
   },
   {
     "t": "我很好，谢谢。",
@@ -68,7 +83,11 @@ class VolcengineClient {
     "e": "中性",
     "m": "dft"
   }
-]`;
+]
+
+### 输入文本 ###
+{{text}}
+`;
   }
 
   /**
@@ -78,7 +97,7 @@ class VolcengineClient {
    */
   async analyzeText(text) {
     try {
-      const requestData = {
+      const completion = await this.client.chat.completions.create({
         model: this.model,
         messages: [
           {
@@ -94,32 +113,33 @@ class VolcengineClient {
         temperature: 0.3,
         top_p: 0.95,
         stream: false,
-      };
-
-      const headers = {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${this.key}`,
-      };
-
-      const response = await axios.post(this.endpoint, requestData, {
-        headers,
       });
-      const responseData = response.data;
 
-      if (responseData.choices && responseData.choices.length > 0) {
-        const content = responseData.choices[0].message.content;
-        try {
-          const parsedContent = JSON.parse(content);
-          return parsedContent;
-        } catch (e) {
-          console.error("Failed to parse JSON response:", e);
-          throw new Error("Invalid JSON response from AI service");
+      const responseText = completion.choices[0].message.content;
+      let responseData;
+
+      try {
+        // Try to parse as direct JSON array first
+        responseData = JSON.parse(responseText);
+
+        // If it's an object with array properties, extract the array
+        if (typeof responseData === "object" && !Array.isArray(responseData)) {
+          const arrayKey = Object.keys(responseData).find((key) =>
+            Array.isArray(responseData[key])
+          );
+
+          if (arrayKey) {
+            responseData = responseData[arrayKey];
+          }
         }
-      } else {
-        throw new Error("Unexpected response format from API");
+
+        return responseData;
+      } catch (e) {
+        console.error("Failed to parse JSON response:", e);
+        throw new Error("Invalid JSON response from AI service");
       }
     } catch (error) {
-      console.error("Error calling Volcengine API:", error.message);
+      console.error("Error calling Volcengine API:", error);
       throw error;
     }
   }

@@ -239,6 +239,116 @@ function init() {
       }
     }
   );
+
+  // 通用获取服务商配置
+  ipcMain.handle("get-provider-settings", async (event, provider) => {
+    try {
+      // 先尝试TTS设置
+      const ttsSettings = Settings.getTTSSettings();
+      if (ttsSettings[provider]) {
+        return success({
+          provider,
+          type: 'tts',
+          settings: ttsSettings[provider]
+        });
+      }
+
+      // 再尝试LLM设置
+      const llmSettings = Settings.getLLMSettings();
+      if (llmSettings[provider]) {
+        return success({
+          provider,
+          type: 'llm',
+          settings: llmSettings[provider]
+        });
+      }
+
+      return error(`服务商 ${provider} 未配置`);
+    } catch (err) {
+      console.error("获取服务商配置失败:", err);
+      return error(err.message);
+    }
+  });
+
+  // 通用更新服务商配置
+  ipcMain.handle("update-provider-settings", async (event, provider, data) => {
+    try {
+      // 先尝试更新TTS设置
+      const ttsSettings = Settings.getTTSSettings();
+      if (ttsSettings[provider] !== undefined) {
+        ttsSettings[provider] = {
+          ...(ttsSettings[provider] || {}),
+          ...data,
+        };
+        Settings.saveTTSSettings(ttsSettings);
+        return success({
+          provider,
+          type: 'tts',
+          settings: ttsSettings[provider],
+        });
+      }
+
+      // 再尝试更新LLM设置
+      const llmSettings = Settings.getLLMSettings();
+      if (llmSettings[provider] !== undefined) {
+        llmSettings[provider] = {
+          ...(llmSettings[provider] || {}),
+          ...data,
+        };
+        Settings.saveLLMConfig(llmSettings);
+        return success({
+          provider,
+          type: 'llm',
+          settings: llmSettings[provider],
+        });
+      }
+
+      // 如果都没有，默认创建TTS配置
+      ttsSettings[provider] = data;
+      Settings.saveTTSSettings(ttsSettings);
+      return success({
+        provider,
+        type: 'tts',
+        settings: ttsSettings[provider],
+      });
+    } catch (err) {
+      console.error("更新服务商配置失败:", err);
+      return error(err.message);
+    }
+  });
+
+  // 通用测试服务商连接
+  ipcMain.handle("test-provider-connection", async (event, type) => {
+    try {
+      console.log(`[SettingsController] 测试服务商连接: ${type}`);
+
+      // 先尝试TTS测试
+      const ttsSettings = Settings.getTTSSettings();
+      if (ttsSettings[type]) {
+        const result = await Settings.testProviderConnection(
+          type,
+          { text: "这是一个测试文本" },
+          ttsSettings[type]
+        );
+        return success(result);
+      }
+
+      // 再尝试LLM测试
+      const llmSettings = Settings.getLLMSettings();
+      if (llmSettings[type]) {
+        // 这里应该调用LLM测试逻辑
+        return success({
+          success: true,
+          message: `${type} LLM服务连接测试功能待实现`
+        });
+      }
+
+      return error(`服务商 ${type} 未配置`);
+    } catch (err) {
+      console.error("测试服务商连接失败:", err);
+      return error(err.message);
+    }
+  });
 }
 
 module.exports = {

@@ -17,7 +17,13 @@ function init() {
   registerTTSConfigHandlers();
   registerTTSTestHandlers();
 
-  console.log("TTS controller initialized - configuration and testing only");
+  // 注册TTS合成相关的IPC处理器
+  registerTTSSynthesisHandlers();
+
+  // 注册服务商配置相关的IPC处理器
+  registerServiceProviderHandlers();
+
+  console.log("TTS controller initialized - configuration, testing, synthesis and service providers");
 }
 
 /**
@@ -75,6 +81,42 @@ function registerTTSConfigHandlers() {
       });
     } catch (err) {
       console.error("更新TTS提供商配置失败:", err);
+      return error(err.message);
+    }
+  });
+}
+
+/**
+ * 注册TTS合成相关的IPC处理器
+ */
+function registerTTSSynthesisHandlers() {
+  // 合成单个章节语音
+  ipcMain.handle("tts:synthesize", async (_, chapterId) => {
+    try {
+      console.log(`[TTSController] 合成章节语音: ${chapterId}`);
+
+      // 调用TTS服务进行章节合成
+      const TTSService = require('../services/TTSService');
+      const result = await TTSService.synthesizeChapter(chapterId);
+
+      return result;
+    } catch (err) {
+      console.error(`[TTSController] 合成章节语音失败: ${err.message}`, err);
+      return error(err.message);
+    }
+  });
+
+  // 批量合成多个章节语音
+  ipcMain.handle("tts:synthesize-multiple", async (_, chapterIds) => {
+    try {
+      console.log(`[TTSController] 批量合成章节语音: ${chapterIds.length}个`);
+
+      const TTSService = require('../services/TTSService');
+      const result = await TTSService.synthesizeMultipleChapters(chapterIds);
+
+      return result;
+    } catch (err) {
+      console.error(`[TTSController] 批量合成章节语音失败: ${err.message}`, err);
       return error(err.message);
     }
   });
@@ -207,6 +249,152 @@ async function testTTSProvider(provider, testData, providerConfig) {
       message: error.message || `${provider} 语音服务连接失败`
     };
   }
+}
+
+/**
+ * 注册服务商配置相关的IPC处理器
+ */
+function registerServiceProviderHandlers() {
+  // 获取所有服务商配置
+  ipcMain.handle("service-provider:get-all", async () => {
+    try {
+      console.log("[TTSController] 获取所有服务商配置");
+
+      // 返回支持的TTS服务商列表
+      const providers = [
+        { id: 'azure', name: 'Azure TTS', type: 'tts' },
+        { id: 'aliyun', name: '阿里云TTS', type: 'tts' },
+        { id: 'alibaba', name: '阿里巴巴TTS', type: 'tts' },
+        { id: 'tencent', name: '腾讯云TTS', type: 'tts' },
+        { id: 'baidu', name: '百度TTS', type: 'tts' },
+        { id: 'local', name: '本地TTS', type: 'tts' },
+        { id: 'sovits', name: 'SoVITS', type: 'tts' }
+      ];
+
+      return success(providers);
+    } catch (err) {
+      console.error("[TTSController] 获取服务商配置失败:", err);
+      return error(err.message);
+    }
+  });
+
+  // 获取特定服务商配置
+  ipcMain.handle("service-provider:get", async (_, id) => {
+    try {
+      console.log(`[TTSController] 获取服务商配置: ${id}`);
+
+      const ttsSettings = Settings.getTTSSettings();
+      const providerConfig = ttsSettings[id];
+
+      if (!providerConfig) {
+        return error(`服务商 ${id} 未配置`);
+      }
+
+      return success({
+        id,
+        name: getProviderName(id),
+        type: 'tts',
+        config: providerConfig
+      });
+    } catch (err) {
+      console.error(`[TTSController] 获取服务商配置失败:`, err);
+      return error(err.message);
+    }
+  });
+
+  // 创建服务商配置
+  ipcMain.handle("service-provider:create", async (_, data) => {
+    try {
+      console.log("[TTSController] 创建服务商配置:", data);
+
+      const ttsSettings = Settings.getTTSSettings();
+      ttsSettings[data.id] = data.config;
+      Settings.saveTTSSettings(ttsSettings);
+
+      return success({
+        id: data.id,
+        name: getProviderName(data.id),
+        type: 'tts',
+        config: data.config
+      });
+    } catch (err) {
+      console.error("[TTSController] 创建服务商配置失败:", err);
+      return error(err.message);
+    }
+  });
+
+  // 更新服务商配置
+  ipcMain.handle("service-provider:update", async (_, id, data) => {
+    try {
+      console.log(`[TTSController] 更新服务商配置: ${id}`, data);
+
+      const ttsSettings = Settings.getTTSSettings();
+      ttsSettings[id] = {
+        ...(ttsSettings[id] || {}),
+        ...data
+      };
+      Settings.saveTTSSettings(ttsSettings);
+
+      return success({
+        id,
+        name: getProviderName(id),
+        type: 'tts',
+        config: ttsSettings[id]
+      });
+    } catch (err) {
+      console.error(`[TTSController] 更新服务商配置失败:`, err);
+      return error(err.message);
+    }
+  });
+
+  // 删除服务商配置
+  ipcMain.handle("service-provider:delete", async (_, id) => {
+    try {
+      console.log(`[TTSController] 删除服务商配置: ${id}`);
+
+      const ttsSettings = Settings.getTTSSettings();
+      delete ttsSettings[id];
+      Settings.saveTTSSettings(ttsSettings);
+
+      return success(true);
+    } catch (err) {
+      console.error(`[TTSController] 删除服务商配置失败:`, err);
+      return error(err.message);
+    }
+  });
+
+  // 测试服务商连接
+  ipcMain.handle("service-provider:test-connection", async (_, id) => {
+    try {
+      console.log(`[TTSController] 测试服务商连接: ${id}`);
+
+      // 调用现有的测试连接功能
+      const result = await testTTSProviderConnection(id, {
+        text: "这是一个测试文本"
+      });
+
+      return result;
+    } catch (err) {
+      console.error(`[TTSController] 测试服务商连接失败:`, err);
+      return error(err.message);
+    }
+  });
+}
+
+/**
+ * 获取服务商名称
+ */
+function getProviderName(id) {
+  const names = {
+    'azure': 'Azure TTS',
+    'aliyun': '阿里云TTS',
+    'alibaba': '阿里巴巴TTS',
+    'tencent': '腾讯云TTS',
+    'baidu': '百度TTS',
+    'local': '本地TTS',
+    'sovits': 'SoVITS'
+  };
+  return names[id] || id;
 }
 
 module.exports = {

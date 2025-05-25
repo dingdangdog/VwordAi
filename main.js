@@ -181,6 +181,50 @@ function setupIPCHandlers() {
       return error(err.message);
     }
   });
+
+  // Azure TTS测试处理器
+  ipcMain.handle("test-azure-tts", async (_, data) => {
+    try {
+      console.log("[main.js] 测试Azure TTS连接:", data);
+
+      // 调用Azure TTS模块进行测试
+      const azureTTS = require("./server/tts/azure");
+      const tempFilePath = path.join(os.tmpdir(), `azure_test_${Date.now()}.wav`);
+
+      const result = await azureTTS.synthesize(
+        "这是一个测试文本",
+        tempFilePath,
+        {
+          voice: data.voice || "zh-CN-XiaoxiaoNeural",
+          speed: 1.0,
+          pitch: 0,
+          volume: 50
+        },
+        {
+          key: data.key,
+          region: data.region,
+          endpoint: data.endpoint
+        }
+      );
+
+      // 清理临时文件
+      if (fs.existsSync(tempFilePath)) {
+        fs.unlinkSync(tempFilePath);
+      }
+
+      if (result.success) {
+        return success({
+          message: "Azure TTS连接测试成功",
+          status: "success"
+        });
+      } else {
+        return error(result.message || "Azure TTS连接测试失败");
+      }
+    } catch (err) {
+      console.error("[main.js] Azure TTS测试失败:", err);
+      return error(err.message || "Azure TTS连接测试失败");
+    }
+  });
 }
 
 app.whenReady().then(() => {
