@@ -1,63 +1,72 @@
 name: Electron Builder
 
 on:
-  workflow_dispatch:
-    inputs:
-      target:
-        description: Input Git Tag (Release Version)
-        required: true
+  push:
+    tags:
+      - v*.*.*
 
 jobs:
-  create-tag:
+  create-release:
     runs-on: ubuntu-latest
     steps:
       - name: Check out
         uses: actions/checkout@v4
         with:
           token: ${{ secrets.GH_TOKEN }}
+
+      - name: Get version
+        id: get_version
+        run: |
+          VERSION=$(git describe --tags --always --match 'v*' | sed -n 's|^v\([0-9]*\.[0-9]*\.[0-9]*\)\(-.*\)\{0,1\}|\1|p')
+          echo "VERSION=$VERSION" >> $GITHUB_ENV  # Store version as an environment variable
+
       - name: Git config
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-      - name: Git target
-        run: |
-          TAG_NAME="${{ github.event.inputs.target }}"
-          git tag $TAG_NAME
-          git push origin $TAG_NAME --force
-
-      - name: Get Commit Logs
-        id: get_logs
-        run: |
-          COMMITS=$(git log ${{ github.event.inputs.target }}..HEAD --oneline)
-          echo "COMMITS=$COMMITS" >> $GITHUB_ENV
 
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
           token: ${{ secrets.GH_TOKEN }}
-          name: 🎉Release ${{ github.event.inputs.target }}
-          tag_name: ${{ github.event.inputs.target }}
-          body: ${{ env.COMMITS }}
+          name: 🎉Release v${{ env.VERSION }}
+          tag_name: v${{ env.VERSION }}
+          body: v${{ env.VERSION }}
 
   electron-package:
-    needs: create-tag
+    needs: create-release
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [macos-latest, ubuntu-latest, windows-latest]
+        os: [macos-latest, macos-13, ubuntu-latest, windows-latest]
         include:
           - os: macos-latest
-            package_command: npm run package -- --mac
+            package_command: npm run package -- --mac --arm64
             platform: Mac
+            arch: arm64
+          - os: macos-13
+            package_command: npm run package -- --mac --x64
+            platform: Mac
+            arch: x64
           - os: ubuntu-latest
             package_command: npm run package -- --linux
             platform: Linux
+            arch: x64
           - os: windows-latest
             package_command: npm run package -- --win
             platform: Windows
+            arch: x64
+
     steps:
       - name: Check out
         uses: actions/checkout@v4
+
+      - name: Get version
+        id: get_version
+        run: |
+          VERSION=$(git describe --tags --always --match 'v*' | sed -n 's|^v\([0-9]*\.[0-9]*\.[0-9]*\)\(-.*\)\{0,1\}|\1|p')
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
@@ -65,12 +74,12 @@ jobs:
       # 安装指定 Python
       - uses: actions/setup-python@v4
         with:
-          python-version: '3.11'
+          python-version: "3.11"
 
       # 前端打包
       - name: Install UI dependencies
         run: cd ui && npm ci --no-interactive
-        
+
       # - name: Build UI
       #   run: cd ui && npm run build-only
 
@@ -95,13 +104,13 @@ jobs:
         if: ${{ matrix.platform == 'Mac' }}
         with:
           token: ${{ secrets.GH_TOKEN }}
-          name: 🎉Release ${{ github.event.inputs.target }}
-          tag_name: ${{ github.event.inputs.target }}
+          name: 🎉Release v${{ env.VERSION }}
+          tag_name: v${{ env.VERSION }}
           append_body: true
-          # VwordAi-2.0.0-arm64.dmg
+          # VwordAi-2.0.0-arm64.dmg / VwordAi-2.0.0-x64.dmg
           files: |
-            package/VwordAi-${{ github.event.inputs.target }}.dmg
-            package/VwordAi-${{ github.event.inputs.target }}.zip
+            package/VwordAi-${{ env.VERSION }}-${{ matrix.arch }}.dmg
+            package/VwordAi-${{ env.VERSION }}-${{ matrix.arch }}.zip
             package/latest-mac.yml
 
       - name: Linux Release
@@ -109,13 +118,13 @@ jobs:
         if: ${{ matrix.platform == 'Linux' }}
         with:
           token: ${{ secrets.GH_TOKEN }}
-          name: 🎉Release ${{ github.event.inputs.target }}
-          tag_name: ${{ github.event.inputs.target }}
+          name: 🎉Release v${{ env.VERSION }}
+          tag_name: v${{ env.VERSION }}
           append_body: true
           # VwordAi_2.0.0_amd64.deb/VwordAi-2.0.0.AppImage
           files: |
-            package/VwordAi_${{ github.event.inputs.target }}_amd64.deb
-            package/VwordAi-${{ github.event.inputs.target }}.AppImage
+            package/VwordAi_${{ env.VERSION }}_amd64.deb
+            package/VwordAi-${{ env.VERSION }}.AppImage
             package/latest-linux.yml
 
       - name: Windows Release
@@ -124,10 +133,10 @@ jobs:
         with:
           # make_latest: "true"
           token: ${{ secrets.GH_TOKEN }}
-          name: 🎉Release ${{ github.event.inputs.target }}
-          tag_name: ${{ github.event.inputs.target }}
+          name: 🎉Release v${{ env.VERSION }}
+          tag_name: v${{ env.VERSION }}
           append_body: true
           # VwordAi Setup 2.0.0.exe
           files: |
-            package/VwordAi-Setup-${{ github.event.inputs.target }}.exe
+            package/VwordAi-Setup-${{ env.VERSION }}.exe
             package/latest.yml

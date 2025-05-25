@@ -43,21 +43,35 @@
         "deb"
       ],
       "category": "Utility",
+      "icon": "icons/icon.png",
       "artifactName": "${productName}-${version}.${ext}"
     },
     "mac": {
       "target": [
-        "dmg",
-        "zip"
+        {
+          "target": "dmg",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        },
+        {
+          "target": "zip",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        }
       ],
       "category": "public.app-category.utilities",
-      "artifactName": "${productName}-${version}.${ext}"
+      "icon": "icons/icon.icns",
+      "artifactName": "${productName}-${version}-${arch}.${ext}"
     },
     "win": {
       "target": [
         "nsis"
       ],
-      "icon": "ui/public/icon_256.ico",
+      "icon": "icons/icon.ico",
       "artifactName": "${productName}-Setup-${version}.${ext}"
     },
     "nsis": {
@@ -85,6 +99,9 @@
   "devDependencies": {
     "dotenv": "^16.5.0",
     "electron": "^35.3.0",
-    "electron-builder": "^25.1.8"
+    "electron-builder": "^25.1.8",
+    "png2icons": "^2.0.1",
+    "sharp": "^0.34.2",
+    "svg2img": "^1.0.0-beta.2"
   }
 }
