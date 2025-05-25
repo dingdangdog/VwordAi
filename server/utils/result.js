@@ -9,17 +9,17 @@
  * @param {string} message 成功消息
  * @returns {object} 格式化的成功结果
  */
-function success(data, message = '操作成功') {
+function success(data, message = "操作成功") {
   return { success: true, data, message };
 }
 
 /**
- * 错误结果 
+ * 错误结果
  * @param {string} message 错误消息
  * @param {any} data 错误数据
  * @returns {object} 格式化的错误结果
  */
-function error(message = '操作失败', data = null) {
+function error(message = "操作失败", data = null) {
   return { success: false, error: message, data };
 }
 
@@ -28,12 +28,12 @@ function error(message = '操作失败', data = null) {
  * @param {string} message 错误消息
  * @returns {Object} 标准未授权响应对象
  */
-const unauthorized = (message = '未授权，请先登录') => {
+const unauthorized = (message = "未授权，请先登录") => {
   return { success: false, error: message, code: 401 };
 };
 
 module.exports = {
   success,
   error,
-  unauthorized
-}; 
+  unauthorized,
+};

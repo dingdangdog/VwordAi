@@ -13,7 +13,7 @@ const ProjectController = require("./server/controllers/ProjectController");
 const SettingsController = require("./server/controllers/SettingsController");
 const TTSController = require("./server/controllers/TTSController");
 const SegmentTTSController = require("./server/controllers/SegmentTTSController");
-const ChapterController = require("./server/controllers/ChapterController");
+
 const LLMController = require("./server/controllers/LLMController");
 const NovelController = require("./server/controllers/NovelController");
 const ChapterProcessingController = require("./server/controllers/ChapterProcessingController");
@@ -62,9 +62,7 @@ function init() {
     SegmentTTSController.init();
     console.log("Segment TTS controller initialized");
 
-    // 初始化章节控制器
-    ChapterController.init();
-    console.log("Chapter controller initialized");
+
 
     // 初始化LLM控制器
     LLMController.init();
