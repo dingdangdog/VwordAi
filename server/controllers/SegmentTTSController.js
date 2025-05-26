@@ -8,7 +8,7 @@ const fs = require("fs-extra");
 const { success, error } = require("../utils/result");
 const TTSService = require("../services/TTSService");
 const audioUtils = require("../utils/audioUtils");
-const Chapter = require("../models/Chapter");
+const NovelChapter = require("../models/NovelChapter");
 const Settings = require("../models/Settings");
 const os = require("os");
 const { v4: uuidv4 } = require("uuid");
@@ -40,7 +40,7 @@ async function synthesizeSegment(chapterId, segmentData) {
     console.log(`[SegmentTTS] Segment data:`, JSON.stringify(segmentData, null, 2));
 
     // Get chapter information
-    const chapter = Chapter.getChapterById(chapterId);
+    const chapter = NovelChapter.getNovelChapterById(chapterId);
     if (!chapter) {
       return error("Chapter not found");
     }
@@ -48,13 +48,11 @@ async function synthesizeSegment(chapterId, segmentData) {
     // Get TTS settings
     const ttsSettings = Settings.getTTSSettings();
 
-    // Priority: segment TTS config > chapter config > default config
+    // Priority: segment TTS config > default config
     let providerType = "azure"; // Default to Azure
 
     if (segmentData.ttsConfig && segmentData.ttsConfig.provider) {
       providerType = segmentData.ttsConfig.provider;
-    } else if (chapter.ttsProvider) {
-      providerType = chapter.ttsProvider;
     }
 
     console.log(`[SegmentTTS] Using TTS provider: ${providerType}`);
@@ -134,17 +132,16 @@ async function synthesizeSegment(chapterId, segmentData) {
 /**
  * 合成整章语音（合并多个段落音频）
  * @param {string} chapterId 章节ID
- * @param {string} parsedChapterId 解析后的章节ID
  * @param {string[]} audioUrls 段落音频URL数组
  * @returns {Promise<Object>} 合成结果
  */
-async function synthesizeFullChapter(chapterId, parsedChapterId, audioUrls) {
+async function synthesizeFullChapter(chapterId, audioUrls) {
   try {
     console.log(`[SegmentTTS] Starting full chapter synthesis for chapter ID: ${chapterId}`);
     console.log(`[SegmentTTS] Number of audio URLs: ${audioUrls.length}`);
 
     // Get chapter information
-    const chapter = Chapter.getChapterById(chapterId);
+    const chapter = NovelChapter.getNovelChapterById(chapterId);
     if (!chapter) {
       return error("Chapter not found");
     }
@@ -227,7 +224,7 @@ async function synthesizeFullChapter(chapterId, parsedChapterId, audioUrls) {
     await audioUtils.copyAudioFile(mergedPath, finalOutputPath);
 
     // Update chapter status
-    Chapter.updateChapter(chapterId, {
+    NovelChapter.updateNovelChapter(chapterId, {
       audioPath: finalOutputPath,
       status: "completed",
     });

@@ -5,7 +5,7 @@
 const path = require("path");
 const fs = require("fs-extra");
 
-const Chapter = require("../models/Chapter");
+const Chapter = require("../models/ProjectChapter");
 const Settings = require("../models/Settings");
 const audioUtils = require("../utils/audioUtils");
 const { success, error } = require("../utils/result");

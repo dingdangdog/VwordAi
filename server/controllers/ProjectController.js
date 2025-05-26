@@ -5,7 +5,7 @@
  */
 const { ipcMain } = require("electron");
 const Project = require("../models/Project");
-const Chapter = require("../models/Chapter");
+const Chapter = require("../models/ProjectChapter");
 const { success, error } = require("../utils/result");
 
 /**
