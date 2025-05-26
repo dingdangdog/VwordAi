@@ -1088,36 +1088,58 @@ async function generateSegmentTts(index: number) {
   try {
     const segment = parsedChapter.value.segments[index];
 
-    // 确保段落有声音设置
-    if (!segment.voice) {
-      // 如果是角色对话，尝试根据角色名称匹配声音
+    // 确保段落有声音设置和TTS配置
+    if (!segment.voice || !segment.ttsConfig) {
+      // 如果是角色对话，尝试根据角色名称匹配声音和TTS配置
       if (segment.character) {
         const matchedCharacters = matchingCharacters(segment.character);
         if (matchedCharacters.length > 0) {
-          segment.voice = matchedCharacters[0].voiceModel;
-        } else {
-          // 根据性别选择默认声音
+          const character = matchedCharacters[0];
+
+          // 使用角色的语音模型
+          if (!segment.voice) {
+            segment.voice = character.voiceModel || character.ttsConfig?.model || "";
+          }
+
+          // 使用角色的TTS配置
+          if (!segment.ttsConfig && character.ttsConfig) {
+            segment.ttsConfig = {
+              provider: character.ttsConfig.provider || settingsStore.activeTTSProviderType || "azure",
+              model: character.ttsConfig.model || segment.voice,
+              speed: character.ttsConfig.speed || 0,
+              pitch: character.ttsConfig.pitch || 0,
+              volume: character.ttsConfig.volume || 100,
+              emotion: character.ttsConfig.emotion || "",
+              style: character.ttsConfig.style || "",
+            };
+          }
+        }
+
+        // 如果仍然没有配置，使用默认配置
+        if (!segment.voice) {
           segment.voice = segment.character.includes("女")
             ? "zh-CN-XiaoxiaoNeural"
             : "zh-CN-YunxiNeural";
         }
       } else {
         // 旁白使用默认旁白声音
-        segment.voice = "zh-CN-XiaoxiaoNeural";
+        if (!segment.voice) {
+          segment.voice = "zh-CN-XiaoxiaoNeural";
+        }
       }
-    }
 
-    // 确保段落有TTS配置
-    if (!segment.ttsConfig) {
-      segment.ttsConfig = {
-        provider: settingsStore.activeTTSProviderType || "azure",
-        model: segment.voice,
-        speed: 0,
-        pitch: 0,
-        volume: 100,
-        emotion: "",
-        style: "",
-      };
+      // 确保有TTS配置
+      if (!segment.ttsConfig) {
+        segment.ttsConfig = {
+          provider: settingsStore.activeTTSProviderType || "azure",
+          model: segment.voice,
+          speed: 0,
+          pitch: 0,
+          volume: 100,
+          emotion: "",
+          style: "",
+        };
+      }
     }
 
     // 调用API生成TTS
@@ -1181,36 +1203,58 @@ async function generateAllSegmentTts() {
       isProcessingSegment[i] = true;
       const segment = parsedChapter.value.segments[i];
 
-      // 确保段落有声音设置
-      if (!segment.voice) {
-        // 如果是角色对话，尝试根据角色名称匹配声音
+      // 确保段落有声音设置和TTS配置
+      if (!segment.voice || !segment.ttsConfig) {
+        // 如果是角色对话，尝试根据角色名称匹配声音和TTS配置
         if (segment.character) {
           const matchedCharacters = matchingCharacters(segment.character);
           if (matchedCharacters.length > 0) {
-            segment.voice = matchedCharacters[0].voiceModel;
-          } else {
-            // 根据性别选择默认声音
+            const character = matchedCharacters[0];
+
+            // 使用角色的语音模型
+            if (!segment.voice) {
+              segment.voice = character.voiceModel || character.ttsConfig?.model || "";
+            }
+
+            // 使用角色的TTS配置
+            if (!segment.ttsConfig && character.ttsConfig) {
+              segment.ttsConfig = {
+                provider: character.ttsConfig.provider || settingsStore.activeTTSProviderType || "azure",
+                model: character.ttsConfig.model || segment.voice,
+                speed: character.ttsConfig.speed || 0,
+                pitch: character.ttsConfig.pitch || 0,
+                volume: character.ttsConfig.volume || 100,
+                emotion: character.ttsConfig.emotion || "",
+                style: character.ttsConfig.style || "",
+              };
+            }
+          }
+
+          // 如果仍然没有配置，使用默认配置
+          if (!segment.voice) {
             segment.voice = segment.character.includes("女")
               ? "zh-CN-XiaoxiaoNeural"
               : "zh-CN-YunxiNeural";
           }
         } else {
           // 旁白使用默认旁白声音
-          segment.voice = "zh-CN-XiaoxiaoNeural";
+          if (!segment.voice) {
+            segment.voice = "zh-CN-XiaoxiaoNeural";
+          }
         }
-      }
 
-      // 确保段落有TTS配置
-      if (!segment.ttsConfig) {
-        segment.ttsConfig = {
-          provider: settingsStore.activeTTSProviderType || "azure",
-          model: segment.voice,
-          speed: 0,
-          pitch: 0,
-          volume: 100,
-          emotion: "",
-          style: "",
-        };
+        // 确保有TTS配置
+        if (!segment.ttsConfig) {
+          segment.ttsConfig = {
+            provider: settingsStore.activeTTSProviderType || "azure",
+            model: segment.voice,
+            speed: 0,
+            pitch: 0,
+            volume: 100,
+            emotion: "",
+            style: "",
+          };
+        }
       }
 
       try {

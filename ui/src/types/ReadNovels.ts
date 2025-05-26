@@ -35,6 +35,16 @@ export interface Character {
   description?: string;
   voiceModel?: string;
   aliases?: string[];
+  // TTS配置
+  ttsConfig?: {
+    provider?: TTSProviderType;
+    model?: string;
+    speed?: number;
+    pitch?: number;
+    volume?: number;
+    emotion?: string;
+    style?: string;
+  };
   createdAt: string;
   updatedAt?: string;
 }

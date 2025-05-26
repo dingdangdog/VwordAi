@@ -152,6 +152,16 @@ class Novel {
       description: characterData.description || "",
       voiceModel: characterData.voiceModel || "",
       aliases: characterData.aliases || [],
+      // TTS配置
+      ttsConfig: characterData.ttsConfig || {
+        provider: "azure",
+        model: "",
+        speed: 0,
+        pitch: 0,
+        volume: 100,
+        emotion: "",
+        style: "",
+      },
       createdAt: new Date().toISOString(),
     };
 

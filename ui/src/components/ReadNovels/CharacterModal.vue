@@ -70,7 +70,7 @@
                       <select id="type" v-model="form.type" class="input">
                         <option value="main">主要角色</option>
                         <option value="secondary">次要角色</option>
-                        <option value="extra">路人角色</option>
+                        <option value="minor">路人角色</option>
                       </select>
                     </div>
 
@@ -116,6 +116,139 @@
                         class="input"
                         placeholder="请输入角色描述（选填）"
                       ></textarea>
+                    </div>
+
+                    <!-- TTS配置区域 -->
+                    <div class="md:col-span-2">
+                      <h5 class="text-sm font-medium text-gray-900 dark:text-white mb-3">
+                        TTS语音配置
+                      </h5>
+
+                      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-gray-100 dark:bg-gray-600 rounded-lg">
+                        <!-- TTS服务商 -->
+                        <div>
+                          <label
+                            for="tts-provider"
+                            class="block text-sm font-medium text-gray-700 dark:text-gray-300"
+                          >
+                            TTS服务商
+                          </label>
+                          <select
+                            id="tts-provider"
+                            v-model="form.ttsConfig.provider"
+                            class="input"
+                            @change="onTtsProviderChange"
+                          >
+                            <option value="">请选择服务商</option>
+                            <option
+                              v-for="provider in ttsProviders"
+                              :key="provider.type"
+                              :value="provider.type"
+                            >
+                              {{ provider.name }}
+                            </option>
+                          </select>
+                        </div>
+
+                        <!-- 语音模型 -->
+                        <div>
+                          <label
+                            for="tts-model"
+                            class="block text-sm font-medium text-gray-700 dark:text-gray-300"
+                          >
+                            语音模型
+                          </label>
+                          <select
+                            id="tts-model"
+                            v-model="form.ttsConfig.model"
+                            class="input"
+                            :disabled="!form.ttsConfig.provider"
+                          >
+                            <option value="">请选择语音模型</option>
+                            <option
+                              v-for="model in availableVoiceModels"
+                              :key="model.code"
+                              :value="model.code"
+                            >
+                              {{ model.name }} ({{ model.gender === "0" ? "女" : "男" }})
+                            </option>
+                          </select>
+                        </div>
+
+                        <!-- 语速 -->
+                        <div>
+                          <label
+                            for="tts-speed"
+                            class="block text-sm font-medium text-gray-700 dark:text-gray-300"
+                          >
+                            语速 ({{ form.ttsConfig.speed }})
+                          </label>
+                          <input
+                            id="tts-speed"
+                            v-model.number="form.ttsConfig.speed"
+                            type="range"
+                            min="-50"
+                            max="50"
+                            step="5"
+                            class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700"
+                          />
+                        </div>
+
+                        <!-- 音调 -->
+                        <div>
+                          <label
+                            for="tts-pitch"
+                            class="block text-sm font-medium text-gray-700 dark:text-gray-300"
+                          >
+                            音调 ({{ form.ttsConfig.pitch }})
+                          </label>
+                          <input
+                            id="tts-pitch"
+                            v-model.number="form.ttsConfig.pitch"
+                            type="range"
+                            min="-50"
+                            max="50"
+                            step="5"
+                            class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700"
+                          />
+                        </div>
+
+                        <!-- 音量 -->
+                        <div>
+                          <label
+                            for="tts-volume"
+                            class="block text-sm font-medium text-gray-700 dark:text-gray-300"
+                          >
+                            音量 ({{ form.ttsConfig.volume }})
+                          </label>
+                          <input
+                            id="tts-volume"
+                            v-model.number="form.ttsConfig.volume"
+                            type="range"
+                            min="0"
+                            max="100"
+                            step="5"
+                            class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700"
+                          />
+                        </div>
+
+                        <!-- 情感 -->
+                        <div>
+                          <label
+                            for="tts-emotion"
+                            class="block text-sm font-medium text-gray-700 dark:text-gray-300"
+                          >
+                            情感
+                          </label>
+                          <input
+                            id="tts-emotion"
+                            v-model="form.ttsConfig.emotion"
+                            type="text"
+                            class="input"
+                            placeholder="如：开心、悲伤、愤怒等"
+                          />
+                        </div>
+                      </div>
                     </div>
                   </div>
 
@@ -175,6 +308,17 @@
                           >
                             {{ character.description }}
                           </p>
+                          <!-- TTS配置信息 -->
+                          <div
+                            v-if="character.ttsConfig?.provider"
+                            class="mt-2 text-xs text-blue-600 dark:text-blue-400"
+                          >
+                            <span class="font-medium">TTS:</span>
+                            {{ getTtsProviderName(character.ttsConfig.provider) }}
+                            <span v-if="character.ttsConfig.model">
+                              - {{ character.ttsConfig.model }}
+                            </span>
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -202,8 +346,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed } from "vue";
+import { ref, reactive, computed, onMounted } from "vue";
 import type { Character } from "@/types/ReadNovels";
+import type { TTSProviderType } from "@/types";
+import { useSettingsStore } from "@/stores/settings";
 
 const props = defineProps<{
   novelId?: string;
@@ -216,19 +362,63 @@ const emit = defineEmits<{
 }>();
 
 const isSaving = ref(false);
+const settingsStore = useSettingsStore();
 
 // 表单数据
 const form = reactive({
   name: "",
-  type: "main" as "main" | "secondary" | "extra",
+  type: "main" as "main" | "secondary" | "minor",
   gender: "male" as "male" | "female",
   age: "youth" as "child" | "youth" | "middle" | "elder",
   description: "",
+  ttsConfig: {
+    provider: "" as TTSProviderType | "",
+    model: "",
+    speed: 0,
+    pitch: 0,
+    volume: 100,
+    emotion: "",
+    style: "",
+  },
+});
+
+// TTS服务商列表
+const ttsProviders = computed(() => settingsStore.getTTSProviders());
+
+// 根据选择的服务商获取可用的语音模型
+const availableVoiceModels = computed(() => {
+  if (!form.ttsConfig.provider) return [];
+
+  // 这里应该根据服务商类型返回对应的模型列表
+  // 简化处理，返回一些示例模型
+  return [
+    { code: "zh-CN-XiaoxiaoNeural", name: "晓晓", gender: "0" },
+    { code: "zh-CN-YunxiNeural", name: "云希", gender: "1" },
+    { code: "zh-CN-YunyangNeural", name: "云扬", gender: "1" },
+    { code: "zh-CN-XiaoyiNeural", name: "晓伊", gender: "0" },
+  ];
 });
 
 // 表单验证
 const isFormValid = computed(() => {
   return form.name.trim() !== "" && props.novelId;
+});
+
+// TTS服务商变化处理
+function onTtsProviderChange() {
+  form.ttsConfig.model = "";
+  form.ttsConfig.emotion = "";
+}
+
+// 初始化
+onMounted(async () => {
+  // 加载TTS设置
+  await settingsStore.loadTTSSettings();
+
+  // 设置默认TTS服务商
+  if (!form.ttsConfig.provider) {
+    form.ttsConfig.provider = settingsStore.activeTTSProviderType || "azure";
+  }
 });
 
 // 保存角色
@@ -239,12 +429,21 @@ function saveCharacter() {
 
   try {
     const characterData: Omit<Character, "id"> = {
-      novelId: props.novelId!,
       name: form.name.trim(),
       type: form.type,
       gender: form.gender,
       age: form.age,
       description: form.description.trim() || undefined,
+      ttsConfig: form.ttsConfig.provider ? {
+        provider: form.ttsConfig.provider as TTSProviderType,
+        model: form.ttsConfig.model,
+        speed: form.ttsConfig.speed,
+        pitch: form.ttsConfig.pitch,
+        volume: form.ttsConfig.volume,
+        emotion: form.ttsConfig.emotion,
+        style: form.ttsConfig.style,
+      } : undefined,
+      createdAt: new Date().toISOString(),
     };
 
     emit("save", characterData);
@@ -260,6 +459,9 @@ function saveCharacter() {
 function resetForm() {
   form.name = "";
   form.description = "";
+  // 重置TTS配置
+  form.ttsConfig.model = "";
+  form.ttsConfig.emotion = "";
   // 保留其他选择，以便于连续添加相似角色
 }
 
@@ -270,7 +472,7 @@ function characterTypeLabel(type: string): string {
       return "主要角色";
     case "secondary":
       return "次要角色";
-    case "extra":
+    case "minor":
       return "路人角色";
     default:
       return type;
@@ -298,5 +500,18 @@ function genderAgeLabel(character: Character): string {
   }
 
   return `${gender}${age}`;
+}
+
+// 获取TTS服务商名称
+function getTtsProviderName(provider: TTSProviderType): string {
+  const providerMap: Record<TTSProviderType, string> = {
+    azure: "Azure",
+    aliyun: "阿里云",
+    tencent: "腾讯云",
+    baidu: "百度",
+    openai: "OpenAI",
+    blive: "B站直播",
+  };
+  return providerMap[provider] || provider;
 }
 </script>
