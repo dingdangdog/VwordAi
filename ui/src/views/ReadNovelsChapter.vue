@@ -50,7 +50,7 @@
         <button
           @click="saveChapterContent"
           class="btn btn-sm btn-primary"
-          :disabled="!contentChanged || isSaving"
+          :disabled="isSaving"
         >
           {{ isSaving ? "保存中..." : "保存修改" }}
         </button>
@@ -108,7 +108,9 @@
         </div>
 
         <template v-else>
-          <div class="space-y-3 overflow-y-auto flex-1">
+          <div
+            class="space-y-3 max-h-[calc(100vh-18rem)] overflow-y-auto flex-1"
+          >
             <div
               v-for="(segment, index) in parsedChapter.segments"
               :key="`segment-${index}`"
@@ -122,7 +124,7 @@
               <div class="mt-2">
                 <textarea
                   v-model="segment.text"
-                  class="input w-full py-1 px-2 text-sm resize-none min-h-[60px]"
+                  class="input w-full py-1 px-2 text-sm resize-none min-h-6 max-h-12"
                 ></textarea>
               </div>
 
@@ -135,9 +137,28 @@
                   {{ segment.character }}
                 </span>
                 <div class="flex gap-2 flex-1 min-w-[200px]">
+                  <!-- TTS服务商选择 -->
+                  <select
+                    v-model="segment.ttsConfig.provider"
+                    class="input text-xs py-0.5 px-1 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white flex-1"
+                    @change="onProviderChange(segment, index)"
+                  >
+                    <option value="">选择服务商</option>
+                    <option
+                      v-for="provider in ttsProviders"
+                      :key="provider.type"
+                      :value="provider.type"
+                    >
+                      {{ provider.name }}
+                    </option>
+                  </select>
+
+                  <!-- 语音模型选择 -->
                   <select
                     v-model="segment.voice"
                     class="input text-xs py-0.5 px-1 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white flex-1"
+                    :disabled="!segment.ttsConfig?.provider"
+                    @change="onVoiceChange(segment, index)"
                   >
                     <option value="">
                       {{ segment.character ? "自动选择" : "默认旁白音" }}
@@ -151,30 +172,53 @@
                       {{ character.name }} -
                       {{ characterVoiceLabel(character) }}
                     </option>
-                    <option value="narrator-1">旁白音 1</option>
-                    <option value="narrator-2">旁白音 2</option>
-                    <option value="female-1">女声 1</option>
-                    <option value="male-1">男声 1</option>
+                    <option
+                      v-for="model in getAvailableVoiceModels(
+                        segment.ttsConfig?.provider
+                      )"
+                      :key="model.code"
+                      :value="model.code"
+                    >
+                      {{ model.name }} ({{
+                        model.gender === "0" ? "女" : "男"
+                      }})
+                    </option>
                   </select>
+
+                  <!-- 情感选择 -->
                   <select
-                    v-if="segment.character"
-                    v-model="segment.tone"
+                    v-model="segment.ttsConfig.emotion"
                     class="input text-xs py-0.5 px-1 ml-1 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white flex-1"
+                    :disabled="!segment.voice || !segment.ttsConfig?.provider"
                   >
-                    <option value="">无语气</option>
-                    <option value="平静">平静</option>
-                    <option value="激动">激动</option>
-                    <option value="愤怒">愤怒</option>
-                    <option value="悲伤">悲伤</option>
-                    <option value="欢快">欢快</option>
+                    <option value="">无情感</option>
+                    <option
+                      v-for="emotion in getAvailableEmotions(
+                        segment.voice,
+                        segment.ttsConfig?.provider
+                      )"
+                      :key="emotion.code"
+                      :value="emotion.code"
+                    >
+                      {{ emotion.name }}
+                    </option>
                   </select>
                 </div>
 
                 <div class="flex gap-2 text-sm">
                   <button
+                    @click="showTtsConfig(index)"
+                    class="btn btn-xs btn-outline flex items-center"
+                    title="详细配置"
+                  >
+                    <CogIcon class="h-3 w-3" />
+                  </button>
+                  <button
                     @click="generateSegmentTts(index)"
                     class="btn btn-xs btn-secondary flex items-center"
-                    :disabled="isProcessingSegment[index]"
+                    :disabled="
+                      isProcessingSegment[index] || !segment.ttsConfig?.provider
+                    "
                   >
                     <SpeakerWaveIcon
                       v-if="!isProcessingSegment[index]"
@@ -265,6 +309,173 @@
         </div>
       </div>
     </div>
+
+    <!-- TTS详细配置弹窗 -->
+    <div
+      v-if="showTtsConfigModal"
+      class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+    >
+      <div
+        class="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-2xl mx-4"
+      >
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+          TTS 详细配置 - 段落 {{ currentConfigSegmentIndex + 1 }}
+        </h3>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <!-- TTS 服务商 -->
+          <div class="form-control">
+            <label class="label">
+              <span class="label-text text-gray-700 dark:text-gray-300"
+                >TTS 服务商</span
+              >
+            </label>
+            <select
+              v-model="currentTtsConfig.provider"
+              class="select select-bordered w-full bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+              @change="onConfigProviderChange"
+            >
+              <option value="">选择服务商</option>
+              <option
+                v-for="provider in ttsProviders"
+                :key="provider.type"
+                :value="provider.type"
+              >
+                {{ provider.name }}
+              </option>
+            </select>
+          </div>
+
+          <!-- 语音模型 -->
+          <div class="form-control">
+            <label class="label">
+              <span class="label-text text-gray-700 dark:text-gray-300"
+                >语音模型</span
+              >
+            </label>
+            <select
+              v-model="currentTtsConfig.model"
+              class="select select-bordered w-full bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+              :disabled="!currentTtsConfig.provider"
+            >
+              <option value="">选择模型</option>
+              <option
+                v-for="model in getAvailableVoiceModels(
+                  currentTtsConfig.provider
+                )"
+                :key="model.code"
+                :value="model.code"
+              >
+                {{ model.name }} ({{ model.gender === "0" ? "女" : "男" }})
+              </option>
+            </select>
+          </div>
+
+          <!-- 情感 -->
+          <div class="form-control">
+            <label class="label">
+              <span class="label-text text-gray-700 dark:text-gray-300"
+                >情感</span
+              >
+            </label>
+            <select
+              v-model="currentTtsConfig.emotion"
+              class="select select-bordered w-full bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+              :disabled="!currentTtsConfig.model"
+            >
+              <option value="">无情感</option>
+              <option
+                v-for="emotion in getAvailableEmotions(
+                  currentTtsConfig.model,
+                  currentTtsConfig.provider
+                )"
+                :key="emotion.code"
+                :value="emotion.code"
+              >
+                {{ emotion.name }}
+              </option>
+            </select>
+          </div>
+
+          <!-- 语速 -->
+          <div class="form-control">
+            <label class="label">
+              <span class="label-text text-gray-700 dark:text-gray-300"
+                >语速</span
+              >
+              <span class="label-text-alt text-gray-500">{{
+                currentTtsConfig.speed
+              }}</span>
+            </label>
+            <input
+              v-model="currentTtsConfig.speed"
+              type="range"
+              min="-50"
+              max="50"
+              class="range range-sm"
+            />
+            <div class="flex justify-between text-xs text-gray-500 px-1">
+              <span>慢</span>
+              <span>正常</span>
+              <span>快</span>
+            </div>
+          </div>
+
+          <!-- 音调 -->
+          <div class="form-control">
+            <label class="label">
+              <span class="label-text text-gray-700 dark:text-gray-300"
+                >音调</span
+              >
+              <span class="label-text-alt text-gray-500">{{
+                currentTtsConfig.pitch
+              }}</span>
+            </label>
+            <input
+              v-model="currentTtsConfig.pitch"
+              type="range"
+              min="-50"
+              max="50"
+              class="range range-sm"
+            />
+            <div class="flex justify-between text-xs text-gray-500 px-1">
+              <span>低</span>
+              <span>正常</span>
+              <span>高</span>
+            </div>
+          </div>
+
+          <!-- 音量 -->
+          <div class="form-control">
+            <label class="label">
+              <span class="label-text text-gray-700 dark:text-gray-300"
+                >音量</span
+              >
+              <span class="label-text-alt text-gray-500">{{
+                currentTtsConfig.volume
+              }}</span>
+            </label>
+            <input
+              v-model="currentTtsConfig.volume"
+              type="range"
+              min="0"
+              max="100"
+              class="range range-sm"
+            />
+            <div class="flex justify-between text-xs text-gray-500 px-1">
+              <span>小</span>
+              <span>中</span>
+              <span>大</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="flex justify-end mt-6 space-x-2">
+          <button @click="closeTtsConfig" class="btn btn-outline">取消</button>
+          <button @click="saveTtsConfig" class="btn btn-primary">保存</button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -274,6 +485,7 @@ import { useRoute, useRouter } from "vue-router";
 import { useToast } from "vue-toastification";
 import { useNovelsStore } from "@/stores/novels";
 import { useSettingsStore } from "@/stores/settings";
+import { useProjectsStore } from "@/stores/projects";
 import type { LLMProviderType } from "@/types";
 import {
   DocumentMagnifyingGlassIcon,
@@ -281,6 +493,7 @@ import {
   ArrowPathIcon,
   ArrowLeftIcon,
   ArrowRightIcon,
+  CogIcon,
 } from "@heroicons/vue/24/outline";
 import { novelApi } from "@/api";
 import type {
@@ -295,6 +508,7 @@ const router = useRouter();
 const toast = useToast();
 const novelsStore = useNovelsStore();
 const settingsStore = useSettingsStore();
+const projectsStore = useProjectsStore();
 
 // 状态
 const chapter = ref<Chapter | null>(null);
@@ -311,9 +525,29 @@ const isGeneratingAll = ref(false);
 const isProcessingSegment = reactive<Record<number, boolean>>({});
 const segmentAudios = reactive<Record<number, string>>({});
 
+// TTS配置弹窗状态
+const showTtsConfigModal = ref(false);
+const currentConfigSegmentIndex = ref(-1);
+const currentTtsConfig = reactive({
+  provider: "",
+  model: "",
+  speed: 0,
+  pitch: 0,
+  volume: 100,
+  emotion: "",
+  style: "",
+});
+
 // LLM服务商
 const selectedLLMProvider = ref<LLMProviderType>("volcengine"); // 默认使用火山引擎
 const llmProviders = computed(() => settingsStore.getLLMProviders());
+
+// TTS服务商和语音模型
+const ttsProviders = computed(() => {
+  const providers = settingsStore.getTTSProviders();
+  console.log('TTS Providers:', providers);
+  return providers;
+});
 
 // 计算属性
 const chapterTitle = computed(() => chapter.value?.title || "章节编辑");
@@ -344,6 +578,153 @@ function matchingCharacters(characterName: string): Character[] {
           alias.includes(characterName) || characterName.includes(alias)
       )
   );
+}
+
+// 获取可用的语音模型 - 同步版本，直接从projectsStore.voiceModels获取
+function getAvailableVoiceModels(provider?: string | null) {
+  if (!provider) return [];
+
+  try {
+    // 直接从projectsStore.voiceModels中过滤
+    const models = projectsStore.voiceModels.filter((model: any) => model.provider === provider);
+    return models.map((model: any) => ({
+      code: model.code,
+      name: model.name,
+      gender: model.gender,
+      lang: model.lang,
+      emotions: model.emotions || [],
+    }));
+  } catch (error) {
+    console.error("Failed to load voice models:", error);
+    return [];
+  }
+}
+
+// 获取可用的情感选项 - 同步版本
+function getAvailableEmotions(voiceCode?: string, provider?: string | null) {
+  if (!provider || !voiceCode) return [];
+
+  try {
+    // 直接从projectsStore.voiceModels中查找
+    const voiceModel = projectsStore.voiceModels.find((model: any) => model.code === voiceCode);
+
+    if (voiceModel && voiceModel.emotions && voiceModel.emotions.length > 0) {
+      // 返回该语音模型支持的情感
+      return voiceModel.emotions.map((emotion: any) => ({
+        code: emotion.code,
+        name: emotion.name,
+      }));
+    }
+
+    // 如果没有找到特定模型的情感，返回该提供商的所有情感
+    const models = projectsStore.voiceModels.filter((model: any) => model.provider === provider);
+    const allEmotions = new Map();
+
+    models.forEach((model: any) => {
+      if (model.emotions) {
+        model.emotions.forEach((emotion: any) => {
+          allEmotions.set(emotion.code, emotion);
+        });
+      }
+    });
+
+    return Array.from(allEmotions.values());
+  } catch (error) {
+    console.error("Failed to load emotions:", error);
+    return [];
+  }
+}
+
+// TTS服务商变化处理
+function onProviderChange(segment: any, _index: number) {
+  // 重置语音模型和情感
+  segment.voice = "";
+  if (segment.ttsConfig) {
+    segment.ttsConfig.emotion = "";
+    segment.ttsConfig.model = "";
+  }
+}
+
+// 语音模型变化处理
+function onVoiceChange(segment: any, _index: number) {
+  // 重置情感选择
+  if (segment.ttsConfig) {
+    segment.ttsConfig.emotion = "";
+    segment.ttsConfig.model = segment.voice;
+  }
+}
+
+// 显示TTS详细配置
+function showTtsConfig(index: number) {
+  if (!parsedChapter.value || !parsedChapter.value.segments[index]) return;
+
+  const segment = parsedChapter.value.segments[index];
+  currentConfigSegmentIndex.value = index;
+
+  // 确保段落有TTS配置
+  if (!segment.ttsConfig) {
+    segment.ttsConfig = {
+      provider: settingsStore.activeTTSProviderType || "azure",
+      model: segment.voice || "",
+      speed: 0,
+      pitch: 0,
+      volume: 100,
+      emotion: "",
+      style: "",
+    };
+  }
+
+  // 复制配置到当前编辑配置
+  Object.assign(currentTtsConfig, segment.ttsConfig);
+
+  showTtsConfigModal.value = true;
+}
+
+// 配置弹窗中的服务商变化处理
+function onConfigProviderChange() {
+  currentTtsConfig.model = "";
+  currentTtsConfig.emotion = "";
+}
+
+// 关闭TTS配置弹窗
+function closeTtsConfig() {
+  showTtsConfigModal.value = false;
+  currentConfigSegmentIndex.value = -1;
+}
+
+// 保存TTS配置
+function saveTtsConfig() {
+  if (currentConfigSegmentIndex.value >= 0 && parsedChapter.value) {
+    const segment =
+      parsedChapter.value.segments[currentConfigSegmentIndex.value];
+    if (segment.ttsConfig) {
+      Object.assign(segment.ttsConfig, currentTtsConfig);
+      // 同步语音模型到segment.voice
+      segment.voice = currentTtsConfig.model;
+    }
+
+    // 保存解析结果
+    updateParsedChapter();
+  }
+
+  closeTtsConfig();
+}
+
+// 调试函数 - 检查TTS提供商加载状态
+function debugTtsProviders() {
+  console.log('=== TTS Providers Debug ===');
+  console.log('settingsStore.ttsSettings:', settingsStore.ttsSettings);
+  console.log('ttsProviders computed:', ttsProviders.value);
+  console.log('activeTTSProviderType:', settingsStore.activeTTSProviderType);
+  console.log('projectsStore.voiceModels length:', projectsStore.voiceModels.length);
+
+  // 测试语音模型获取
+  if (ttsProviders.value.length > 0) {
+    const firstProvider = ttsProviders.value[0];
+    console.log(`Testing voice models for provider: ${firstProvider.type}`);
+    const models = getAvailableVoiceModels(firstProvider.type);
+    console.log(`Found ${models.length} voice models:`, models.slice(0, 3));
+  }
 }
 
 // 监听LLM提供商变化
@@ -407,8 +788,17 @@ onMounted(async () => {
   }
 
   try {
-    // 加载LLM设置
+    // 加载LLM设置和TTS设置
     await settingsStore.loadLLMSettings();
+    await settingsStore.loadTTSSettings();
+
+    // 加载语音模型
+    if (projectsStore.voiceModels.length === 0) {
+      await projectsStore.loadVoiceModels();
+    }
+
+    // 调试TTS提供商加载状态
+    debugTtsProviders();
 
     // 加载章节数据
     const chapterResponse = await novelApi.getChapter(chapterId);
@@ -430,6 +820,32 @@ onMounted(async () => {
     if (chapterResponse.data.processed) {
       const parsedResponse = await novelApi.getParsedChapter(chapterId);
       if (parsedResponse.success && parsedResponse.data) {
+        // 确保每个段落都有完整的TTS配置
+        parsedResponse.data.segments = parsedResponse.data.segments.map(
+          (segment, index) => {
+            const updatedSegment = {
+              ...segment,
+              ttsConfig: segment.ttsConfig || {
+                provider: settingsStore.activeTTSProviderType || "azure",
+                model: segment.voice || "",
+                speed: 0,
+                pitch: 0,
+                volume: 100,
+                emotion: "",
+                style: "",
+              },
+              synthesisStatus: segment.synthesisStatus || "unsynthesized",
+            };
+
+            // 如果段落已经有音频URL，恢复到segmentAudios中
+            if (updatedSegment.audioUrl) {
+              segmentAudios[index] = updatedSegment.audioUrl;
+            }
+
+            return updatedSegment;
+          }
+        );
+
         parsedChapter.value = parsedResponse.data;
       }
 
@@ -518,17 +934,25 @@ async function parseChapter() {
     const response = await novelApi.parseChapter(chapter.value.id);
     if (response.success && response.data) {
       // 初始化每个段落的TTS配置和合成状态
-      response.data.segments = response.data.segments.map((segment) => ({
-        ...segment,
-        ttsConfig: {
-          provider: settingsStore.activeTTSProviderType,
-          model: segment.voice || "default",
+      response.data.segments = response.data.segments.map((segment) => {
+        const ttsConfig = {
+          provider: settingsStore.activeTTSProviderType || "azure",
+          model: segment.voice || "",
           speed: 0,
           pitch: 0,
           volume: 100,
-        },
-        synthesisStatus: "unsynthesized",
-      }));
+          emotion: "",
+          style: "",
+        };
+
+        console.log('Initializing segment TTS config:', ttsConfig);
+
+        return {
+          ...segment,
+          ttsConfig,
+          synthesisStatus: "unsynthesized",
+        };
+      });
 
       parsedChapter.value = response.data;
 
@@ -599,6 +1023,7 @@ async function extractAndAddCharacters() {
         description: `从章节 "${chapter.value.title}" 中自动提取的角色`,
         voiceModel: gender === "female" ? "female-1" : "male-1",
         aliases: [],
+        createdAt: new Date().toISOString(),
       };
 
       // 调用API创建角色
@@ -616,18 +1041,24 @@ async function extractAndAddCharacters() {
 
 // 更新解析结果
 async function updateParsedChapter() {
-  if (!parsedChapter.value) return;
+  if (!parsedChapter.value || !chapter.value) return;
 
   isUpdating.value = true;
 
   try {
-    // 调用API更新解析结果
+    // 调用API更新解析结果 - 现在直接保存到章节的内嵌数据中
     const response = await novelApi.updateParsedChapter(
-      parsedChapter.value.id,
+      chapter.value.id,  // 使用章节ID而不是解析结果ID
       parsedChapter.value
     );
 
     if (response.success) {
+      // 更新当前章节的解析数据
+      if (chapter.value) {
+        chapter.value.parsedData = response.data;
+        chapter.value.processed = true;
+      }
+
       toast.success("解析设置已保存");
     } else {
       throw new Error(response.message || "保存失败");
@@ -667,30 +1098,32 @@ async function generateSegmentTts(index: number) {
         } else {
           // 根据性别选择默认声音
           segment.voice = segment.character.includes("女")
-            ? "female-1"
-            : "male-1";
+            ? "zh-CN-XiaoxiaoNeural"
+            : "zh-CN-YunxiNeural";
         }
       } else {
         // 旁白使用默认旁白声音
-        segment.voice = "narrator-1";
+        segment.voice = "zh-CN-XiaoxiaoNeural";
       }
     }
 
     // 确保段落有TTS配置
     if (!segment.ttsConfig) {
       segment.ttsConfig = {
-        provider: settingsStore.activeTTSProviderType,
+        provider: settingsStore.activeTTSProviderType || "azure",
         model: segment.voice,
         speed: 0,
         pitch: 0,
         volume: 100,
+        emotion: "",
+        style: "",
       };
     }
 
     // 调用API生成TTS
     const response = await novelApi.generateSegmentTts(chapter.value.id, {
       text: segment.text,
-      voice: segment.voice,
+      voice: segment.voice || "zh-CN-XiaoxiaoNeural",
       tone: segment.tone || "平静",
       ttsConfig: segment.ttsConfig,
     });
@@ -741,7 +1174,7 @@ async function generateAllSegmentTts() {
         parsedChapter.value.segments[i].synthesisStatus === "synthesized" &&
         parsedChapter.value.segments[i].audioUrl
       ) {
-        segmentAudios[i] = parsedChapter.value.segments[i].audioUrl;
+        segmentAudios[i] = parsedChapter.value.segments[i].audioUrl || "";
         continue;
       }
 
@@ -758,23 +1191,25 @@ async function generateAllSegmentTts() {
           } else {
             // 根据性别选择默认声音
             segment.voice = segment.character.includes("女")
-              ? "female-1"
-              : "male-1";
+              ? "zh-CN-XiaoxiaoNeural"
+              : "zh-CN-YunxiNeural";
           }
         } else {
           // 旁白使用默认旁白声音
-          segment.voice = "narrator-1";
+          segment.voice = "zh-CN-XiaoxiaoNeural";
         }
       }
 
       // 确保段落有TTS配置
       if (!segment.ttsConfig) {
         segment.ttsConfig = {
-          provider: settingsStore.activeTTSProviderType,
+          provider: settingsStore.activeTTSProviderType || "azure",
           model: segment.voice,
           speed: 0,
           pitch: 0,
           volume: 100,
+          emotion: "",
+          style: "",
         };
       }
 
@@ -782,7 +1217,7 @@ async function generateAllSegmentTts() {
         // 调用API生成TTS
         const response = await novelApi.generateSegmentTts(chapter.value.id, {
           text: segment.text,
-          voice: segment.voice,
+          voice: segment.voice || "zh-CN-XiaoxiaoNeural",
           tone: segment.tone || "平静",
           ttsConfig: segment.ttsConfig,
         });
@@ -844,7 +1279,6 @@ async function generateTts() {
     // 调用API合成整章音频
     const response = await novelApi.generateFullChapterTts(
       chapter.value.id,
-      parsedChapter.value.id,
       audioUrls
     );
 
@@ -854,8 +1288,7 @@ async function generateTts() {
       // 更新章节状态
       if (chapter.value) {
         await novelApi.updateChapter(chapter.value.id, {
-          audioGenerated: true,
-          audioPath: response.data[0].audioUrl,
+          processed: true,
         });
       }
 

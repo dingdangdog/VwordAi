@@ -57,7 +57,7 @@ function createNovelChapter(chapterData) {
   }
 
   // 计算章节顺序
-  const maxOrder = novelChapters.length > 0 
+  const maxOrder = novelChapters.length > 0
     ? Math.max(...novelChapters.map(c => c.order || 0))
     : 0;
 
@@ -72,6 +72,17 @@ function createNovelChapter(chapterData) {
     llmProvider: chapterData.llmProvider || "volcengine",
     createdAt: now,
     updatedAt: now,
+    // 内嵌解析结果
+    parsedData: chapterData.parsedData || null,
+    // 内嵌TTS结果
+    ttsResults: chapterData.ttsResults || {
+      segments: [],
+      audioFiles: [],
+      mergedAudioFile: null,
+      status: "pending", // pending, processing, completed, failed
+      createdAt: null,
+      completedAt: null
+    }
   };
 
   chapters.push(newChapter);
@@ -115,6 +126,10 @@ function updateNovelChapter(id, chapterData) {
     order: chapterData.order !== undefined ? chapterData.order : chapters[index].order,
     processed: chapterData.processed !== undefined ? chapterData.processed : chapters[index].processed,
     llmProvider: chapterData.llmProvider !== undefined ? chapterData.llmProvider : chapters[index].llmProvider,
+    // 更新解析结果
+    parsedData: chapterData.parsedData !== undefined ? chapterData.parsedData : chapters[index].parsedData,
+    // 更新TTS结果
+    ttsResults: chapterData.ttsResults !== undefined ? chapterData.ttsResults : chapters[index].ttsResults,
     updatedAt: new Date().toISOString(),
   };
 
@@ -135,7 +150,7 @@ function updateNovelChapter(id, chapterData) {
 function deleteNovelChapter(id) {
   const chapters = getAllNovelChapters();
   const chapter = chapters.find(c => c.id === id);
-  
+
   if (!chapter) {
     return false;
   }
@@ -188,6 +203,55 @@ function updateNovelStats(novelId) {
   Novel.updateNovelWordCount(novelId, wordCount);
 }
 
+/**
+ * 更新章节的解析结果
+ * @param {string} chapterId 章节ID
+ * @param {Object} parsedData 解析结果数据
+ * @returns {Object|null} 更新后的章节或null
+ */
+function updateChapterParsedData(chapterId, parsedData) {
+  return updateNovelChapter(chapterId, {
+    parsedData,
+    processed: true,
+    updatedAt: new Date().toISOString()
+  });
+}
+
+/**
+ * 更新章节的TTS结果
+ * @param {string} chapterId 章节ID
+ * @param {Object} ttsResults TTS结果数据
+ * @returns {Object|null} 更新后的章节或null
+ */
+function updateChapterTTSResults(chapterId, ttsResults) {
+  return updateNovelChapter(chapterId, {
+    ttsResults: {
+      ...ttsResults,
+      updatedAt: new Date().toISOString()
+    }
+  });
+}
+
+/**
+ * 获取章节的解析结果
+ * @param {string} chapterId 章节ID
+ * @returns {Object|null} 解析结果或null
+ */
+function getChapterParsedData(chapterId) {
+  const chapter = getNovelChapterById(chapterId);
+  return chapter ? chapter.parsedData : null;
+}
+
+/**
+ * 获取章节的TTS结果
+ * @param {string} chapterId 章节ID
+ * @returns {Object|null} TTS结果或null
+ */
+function getChapterTTSResults(chapterId) {
+  const chapter = getNovelChapterById(chapterId);
+  return chapter ? chapter.ttsResults : null;
+}
+
 module.exports = {
   getAllNovelChapters,
   getChaptersByNovelId,
@@ -197,4 +261,9 @@ module.exports = {
   deleteNovelChapter,
   deleteChaptersByNovelId,
   updateNovelStats,
+  // 新增的解析结果和TTS结果管理方法
+  updateChapterParsedData,
+  updateChapterTTSResults,
+  getChapterParsedData,
+  getChapterTTSResults,
 };

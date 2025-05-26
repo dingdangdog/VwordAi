@@ -42,11 +42,24 @@ class Novel {
       description: novelData.description || "",
       author: novelData.author || "",
       cover: novelData.cover || null,
+      // 内嵌角色列表
       characters: novelData.characters || [],
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       chapterCount: 0,
       wordCount: 0,
+      // 小说级别配置
+      settings: {
+        defaultLLMProvider: novelData.settings?.defaultLLMProvider || "volcengine",
+        defaultTTSProvider: novelData.settings?.defaultTTSProvider || "azure",
+        defaultVoiceSettings: {
+          speed: novelData.settings?.defaultVoiceSettings?.speed || 0,
+          pitch: novelData.settings?.defaultVoiceSettings?.pitch || 0,
+          volume: novelData.settings?.defaultVoiceSettings?.volume || 100,
+          emotion: novelData.settings?.defaultVoiceSettings?.emotion || "",
+          style: novelData.settings?.defaultVoiceSettings?.style || "",
+        }
+      }
     };
 
     novels.push(newNovel);
@@ -116,6 +129,94 @@ class Novel {
    */
   static updateNovelChapterCount(id, chapterCount) {
     return this.updateNovel(id, { chapterCount });
+  }
+
+  /**
+   * 添加角色到小说
+   * @param {string} novelId 小说ID
+   * @param {Object} characterData 角色数据
+   * @returns {Object} 更新后的小说
+   */
+  static addCharacter(novelId, characterData) {
+    const novel = this.getNovelById(novelId);
+    if (!novel) {
+      throw new Error("小说不存在");
+    }
+
+    const newCharacter = {
+      id: uuidv4(),
+      name: characterData.name || "未命名角色",
+      type: characterData.type || "secondary", // main, secondary, minor
+      gender: characterData.gender || "unknown", // male, female, unknown
+      age: characterData.age || "unknown", // child, youth, middle, elder, unknown
+      description: characterData.description || "",
+      voiceModel: characterData.voiceModel || "",
+      aliases: characterData.aliases || [],
+      createdAt: new Date().toISOString(),
+    };
+
+    novel.characters.push(newCharacter);
+    return this.updateNovel(novelId, { characters: novel.characters });
+  }
+
+  /**
+   * 更新小说中的角色
+   * @param {string} novelId 小说ID
+   * @param {string} characterId 角色ID
+   * @param {Object} characterData 角色更新数据
+   * @returns {Object} 更新后的小说
+   */
+  static updateCharacter(novelId, characterId, characterData) {
+    const novel = this.getNovelById(novelId);
+    if (!novel) {
+      throw new Error("小说不存在");
+    }
+
+    const characterIndex = novel.characters.findIndex(c => c.id === characterId);
+    if (characterIndex === -1) {
+      throw new Error("角色不存在");
+    }
+
+    novel.characters[characterIndex] = {
+      ...novel.characters[characterIndex],
+      ...characterData,
+      updatedAt: new Date().toISOString(),
+    };
+
+    return this.updateNovel(novelId, { characters: novel.characters });
+  }
+
+  /**
+   * 删除小说中的角色
+   * @param {string} novelId 小说ID
+   * @param {string} characterId 角色ID
+   * @returns {Object} 更新后的小说
+   */
+  static deleteCharacter(novelId, characterId) {
+    const novel = this.getNovelById(novelId);
+    if (!novel) {
+      throw new Error("小说不存在");
+    }
+
+    const filteredCharacters = novel.characters.filter(c => c.id !== characterId);
+    if (filteredCharacters.length === novel.characters.length) {
+      throw new Error("角色不存在");
+    }
+
+    return this.updateNovel(novelId, { characters: filteredCharacters });
+  }
+
+  /**
+   * 获取小说的所有角色
+   * @param {string} novelId 小说ID
+   * @returns {Array} 角色列表
+   */
+  static getCharacters(novelId) {
+    const novel = this.getNovelById(novelId);
+    if (!novel) {
+      throw new Error("小说不存在");
+    }
+    return novel.characters || [];
   }
 }
 

@@ -4,16 +4,9 @@
  * 使用专门的小说模型，与项目系统完全分离
  * 使用普通function而不是class语法
  */
-const { v4: uuidv4 } = require("uuid");
-const storage = require("../utils/storage");
 const Novel = require("../models/Novel");
 const NovelChapter = require("../models/NovelChapter");
-const NovelCharacter = require("../models/NovelCharacter");
 const { success, error } = require("../utils/result");
-
-// 存储键名，用于解析结果和TTS结果
-const PARSED_CHAPTERS_STORAGE_KEY = "novel-parsed-chapters";
-const TTS_RESULTS_STORAGE_KEY = "novel-tts-results";
 
 /**
  * 获取所有小说
@@ -75,20 +68,10 @@ async function updateNovel(id, novelData) {
  */
 async function deleteNovel(id) {
   try {
+    // 删除小说下的所有章节（包含内嵌的解析结果和TTS结果）
     NovelChapter.deleteChaptersByNovelId(id);
-    NovelCharacter.deleteCharactersByNovelId(id);
 
-    const parsedChapters = storage.readData(PARSED_CHAPTERS_STORAGE_KEY, []);
-    const ttsResults = storage.readData(TTS_RESULTS_STORAGE_KEY, []);
-
-    const filteredParsedChapters = parsedChapters.filter(
-      (p) => p.novelId !== id
-    );
-    const filteredTtsResults = ttsResults.filter((t) => t.novelId !== id);
-
-    storage.saveData(PARSED_CHAPTERS_STORAGE_KEY, filteredParsedChapters);
-    storage.saveData(TTS_RESULTS_STORAGE_KEY, filteredTtsResults);
-
+    // 删除小说（包含内嵌的角色）
     Novel.deleteNovel(id);
     return success({ message: "小说删除成功" });
   } catch (err) {
@@ -102,7 +85,7 @@ async function deleteNovel(id) {
  */
 async function getCharactersByNovel(novelId) {
   try {
-    const characters = NovelCharacter.getCharactersByNovelId(novelId);
+    const characters = Novel.getCharacters(novelId);
     return success(characters);
   } catch (err) {
     console.error(`[NovelService] 获取小说 ${novelId} 角色列表失败:`, err);
@@ -115,7 +98,9 @@ async function getCharactersByNovel(novelId) {
  */
 async function createCharacter(characterData) {
   try {
-    const newCharacter = NovelCharacter.createNovelCharacter(characterData);
+    const updatedNovel = Novel.addCharacter(characterData.novelId, characterData);
+    // 返回新创建的角色
+    const newCharacter = updatedNovel.characters[updatedNovel.characters.length - 1];
     return success(newCharacter);
   } catch (err) {
     console.error("[NovelService] 创建角色失败:", err);
@@ -126,18 +111,28 @@ async function createCharacter(characterData) {
 /**
  * 更新角色
  */
-async function updateCharacter(id, characterData) {
+async function updateCharacter(characterId, characterData) {
   try {
-    const updatedCharacter = NovelCharacter.updateNovelCharacter(
-      id,
-      characterData
-    );
-    if (!updatedCharacter) {
+    // 需要先找到角色所属的小说
+    const novels = Novel.getAllNovels();
+    let targetNovelId = null;
+
+    for (const novel of novels) {
+      if (novel.characters && novel.characters.some(c => c.id === characterId)) {
+        targetNovelId = novel.id;
+        break;
+      }
+    }
+
+    if (!targetNovelId) {
       return error("角色不存在");
     }
+
+    const updatedNovel = Novel.updateCharacter(targetNovelId, characterId, characterData);
+    const updatedCharacter = updatedNovel.characters.find(c => c.id === characterId);
     return success(updatedCharacter);
   } catch (err) {
-    console.error(`[NovelService] 更新角色 ${id} 失败:`, err);
+    console.error(`[NovelService] 更新角色 ${characterId} 失败:`, err);
     return error("更新角色失败: " + err.message);
   }
 }
@@ -145,15 +140,27 @@ async function updateCharacter(id, characterData) {
 /**
  * 删除角色
  */
-async function deleteCharacter(id) {
+async function deleteCharacter(characterId) {
   try {
-    const result = NovelCharacter.deleteNovelCharacter(id);
-    if (!result) {
+    // 需要先找到角色所属的小说
+    const novels = Novel.getAllNovels();
+    let targetNovelId = null;
+
+    for (const novel of novels) {
+      if (novel.characters && novel.characters.some(c => c.id === characterId)) {
+        targetNovelId = novel.id;
+        break;
+      }
+    }
+
+    if (!targetNovelId) {
       return error("角色不存在");
     }
+
+    Novel.deleteCharacter(targetNovelId, characterId);
     return success({ message: "角色删除成功" });
   } catch (err) {
-    console.error(`[NovelService] 删除角色 ${id} 失败:`, err);
+    console.error(`[NovelService] 删除角色 ${characterId} 失败:`, err);
     return error("删除角色失败: " + err.message);
   }
 }
@@ -237,9 +244,8 @@ async function deleteChapter(id) {
  */
 async function getParsedChapterByChapterId(chapterId) {
   try {
-    const parsedChapters = storage.readData(PARSED_CHAPTERS_STORAGE_KEY, []);
-    const parsedChapter = parsedChapters.find((p) => p.chapterId === chapterId);
-    return success(parsedChapter || null);
+    const parsedData = NovelChapter.getChapterParsedData(chapterId);
+    return success(parsedData);
   } catch (err) {
     console.error(`[NovelService] 获取章节 ${chapterId} 解析结果失败:`, err);
     return error("获取解析结果失败: " + err.message);
@@ -249,33 +255,15 @@ async function getParsedChapterByChapterId(chapterId) {
 /**
  * 更新解析结果
  */
-async function updateParsedChapter(id, parsedChapterData) {
+async function updateParsedChapter(chapterId, parsedChapterData) {
   try {
-    const parsedChapters = storage.readData(PARSED_CHAPTERS_STORAGE_KEY, []);
-    let index = parsedChapters.findIndex((p) => p.id === id);
-    let parsedChapter;
-
-    if (index === -1) {
-      parsedChapter = {
-        id: id || uuidv4(),
-        ...parsedChapterData,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      };
-      parsedChapters.push(parsedChapter);
-    } else {
-      parsedChapter = {
-        ...parsedChapters[index],
-        ...parsedChapterData,
-        updatedAt: new Date().toISOString(),
-      };
-      parsedChapters[index] = parsedChapter;
+    const updatedChapter = NovelChapter.updateChapterParsedData(chapterId, parsedChapterData);
+    if (!updatedChapter) {
+      return error("章节不存在");
     }
-
-    storage.saveData(PARSED_CHAPTERS_STORAGE_KEY, parsedChapters);
-    return success(parsedChapter);
+    return success(updatedChapter.parsedData);
   } catch (err) {
-    console.error(`[NovelService] 更新解析结果 ${id} 失败:`, err);
+    console.error(`[NovelService] 更新解析结果 ${chapterId} 失败:`, err);
     return error("更新解析结果失败: " + err.message);
   }
 }
@@ -285,14 +273,27 @@ async function updateParsedChapter(id, parsedChapterData) {
  */
 async function getTtsResultsByChapterId(chapterId) {
   try {
-    const ttsResults = storage.readData(TTS_RESULTS_STORAGE_KEY, []);
-    const chapterTtsResults = ttsResults.filter(
-      (t) => t.chapterId === chapterId
-    );
-    return success(chapterTtsResults || []);
+    const ttsResults = NovelChapter.getChapterTTSResults(chapterId);
+    return success(ttsResults);
   } catch (err) {
     console.error(`[NovelService] 获取章节 ${chapterId} TTS结果失败:`, err);
     return error("获取TTS结果失败: " + err.message);
+  }
+}
+
+/**
+ * 更新章节的TTS结果
+ */
+async function updateChapterTTSResults(chapterId, ttsResults) {
+  try {
+    const updatedChapter = NovelChapter.updateChapterTTSResults(chapterId, ttsResults);
+    if (!updatedChapter) {
+      return error("章节不存在");
+    }
+    return success(updatedChapter.ttsResults);
+  } catch (err) {
+    console.error(`[NovelService] 更新章节 ${chapterId} TTS结果失败:`, err);
+    return error("更新TTS结果失败: " + err.message);
   }
 }
 
@@ -314,4 +315,5 @@ module.exports = {
   getParsedChapterByChapterId,
   updateParsedChapter,
   getTtsResultsByChapterId,
+  updateChapterTTSResults,
 };

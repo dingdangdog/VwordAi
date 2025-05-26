@@ -7,25 +7,56 @@ export interface Novel {
   author: string;
   cover?: string;
   description?: string;
+  // 内嵌角色列表
   characters: Character[];
   createdAt: string;
   updatedAt: string;
+  // 小说级别配置
+  settings?: {
+    defaultLLMProvider?: string;
+    defaultTTSProvider?: string;
+    defaultVoiceSettings?: {
+      speed?: number;
+      pitch?: number;
+      volume?: number;
+      emotion?: string;
+      style?: string;
+    };
+  };
 }
 
-// 角色
+// 角色（内嵌在小说中）
 export interface Character {
   id: string;
-  novelId: string;
   name: string;
-  type: "main" | "secondary" | "extra";
-  gender: "male" | "female";
-  age: "child" | "youth" | "middle" | "elder";
+  type: "main" | "secondary" | "minor";
+  gender: "male" | "female" | "unknown";
+  age: "child" | "youth" | "middle" | "elder" | "unknown";
   description?: string;
   voiceModel?: string;
   aliases?: string[];
+  createdAt: string;
+  updatedAt?: string;
 }
 
-// 章节
+// TTS结果数据结构
+export interface ChapterTTSResults {
+  segments: Array<{
+    index: number;
+    audioPath?: string;
+    audioUrl?: string;
+    duration?: number;
+    synthesisStatus: "pending" | "processing" | "completed" | "failed";
+  }>;
+  audioFiles: string[];
+  mergedAudioFile?: string;
+  status: "pending" | "processing" | "completed" | "failed";
+  createdAt?: string;
+  completedAt?: string;
+  updatedAt?: string;
+}
+
+// 章节（包含内嵌的解析结果和TTS结果）
 export interface Chapter {
   id: string;
   novelId: string;
@@ -36,6 +67,10 @@ export interface Chapter {
   createdAt: string;
   updatedAt: string;
   llmProvider: string;
+  // 内嵌解析结果
+  parsedData?: ParsedChapter;
+  // 内嵌TTS结果
+  ttsResults?: ChapterTTSResults;
 }
 
 export interface ParsedDialogue {
@@ -46,11 +81,10 @@ export interface ParsedDialogue {
 }
 
 export interface ParsedChapter {
-  id: string;
-  chapterId: string;
   title: string;
   segments: Array<ParsedSegment>;
-  processedAt: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface TtsResult {
@@ -76,6 +110,8 @@ export interface SegmentTtsConfig {
   speed?: number;
   pitch?: number;
   volume?: number;
+  emotion?: string;
+  style?: string;
 }
 
 export interface ParsedSegment {
@@ -83,7 +119,7 @@ export interface ParsedSegment {
   character?: string;
   tone?: string;
   voice?: string;
-  ttsConfig?: SegmentTtsConfig;
+  ttsConfig: SegmentTtsConfig;
   synthesisStatus?: "unsynthesized" | "synthesized";
   audioPath?: string;
   audioUrl?: string;

@@ -66,17 +66,22 @@ function registerLLMProcessingHandlers() {
       );
 
       if (parseResult.success) {
-        // 保存解析结果
+        // 保存解析结果到章节的内嵌数据中
         const parsedData = {
-          chapterId,
           title: chapter.title || chapter.name,
           ...parseResult.data,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
         };
 
-        // 更新章节状态
-        await NovelService.updateChapter(chapterId, { processed: true });
+        // 更新章节的解析结果和状态
+        const updateResult = await NovelService.updateParsedChapter(chapterId, parsedData);
 
-        return success(parsedData);
+        if (updateResult.success) {
+          return success(updateResult.data);
+        } else {
+          return error("Failed to save parsed data: " + updateResult.error);
+        }
       } else {
         return error(parseResult.error);
       }

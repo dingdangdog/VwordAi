@@ -31,44 +31,68 @@ function init() {
 /**
  * 合成单个段落的语音
  * @param {string} chapterId 章节ID
- * @param {Object} segmentData 段落数据 { text, voice, tone }
+ * @param {Object} segmentData 段落数据 { text, voice, tone, ttsConfig }
  * @returns {Promise<Object>} 合成结果
  */
 async function synthesizeSegment(chapterId, segmentData) {
   try {
-    // 获取章节信息
+    console.log(`[SegmentTTS] Starting segment synthesis for chapter ID: ${chapterId}`);
+    console.log(`[SegmentTTS] Segment data:`, JSON.stringify(segmentData, null, 2));
+
+    // Get chapter information
     const chapter = Chapter.getChapterById(chapterId);
     if (!chapter) {
-      return error("章节不存在");
+      return error("Chapter not found");
     }
 
-    // 获取TTS设置
+    // Get TTS settings
     const ttsSettings = Settings.getTTSSettings();
-    
-    // 使用章节中指定的TTS提供商
-    const providerType = chapter.ttsProvider || "azure"; // 默认使用Azure
-    
-    // 获取对应提供商的配置
-    const providerConfig = ttsSettings[providerType];
-    if (!providerConfig || !providerConfig.key) {
-      return error(`TTS提供商 ${providerType} 未配置或密钥缺失`);
+
+    // Priority: segment TTS config > chapter config > default config
+    let providerType = "azure"; // Default to Azure
+
+    if (segmentData.ttsConfig && segmentData.ttsConfig.provider) {
+      providerType = segmentData.ttsConfig.provider;
+    } else if (chapter.ttsProvider) {
+      providerType = chapter.ttsProvider;
     }
 
-    // 创建临时文件路径
+    console.log(`[SegmentTTS] Using TTS provider: ${providerType}`);
+
+    // Get provider configuration
+    const providerConfig = ttsSettings[providerType];
+    if (!providerConfig) {
+      return error(`TTS provider ${providerType} not configured`);
+    }
+
+    // Validate provider configuration completeness
+    if (providerType === "azure" && (!providerConfig.key || !providerConfig.region)) {
+      return error(`Azure TTS configuration incomplete, requires key and region`);
+    }
+    if (providerType === "aliyun" && (!providerConfig.appkey || !providerConfig.token)) {
+      return error(`Aliyun TTS configuration incomplete, requires appkey and token`);
+    }
+
+    // Create temporary file path
     const tempDir = path.join(os.tmpdir(), `segment_tts_${chapterId}`);
     fs.ensureDirSync(tempDir);
     const tempFilePath = path.join(tempDir, `segment_${Date.now()}_${uuidv4()}.wav`);
 
-    // 准备合成设置
+    // Prepare synthesis settings - use segment TTS configuration
     const synthesisSettings = {
-      voice: segmentData.voice || "default",
+      voice: segmentData.voice || "zh-CN-XiaoxiaoNeural",
       tone: segmentData.tone || "平静",
-      volume: 100,
-      speed: 0,
-      pitch: 0
+      volume: segmentData.ttsConfig?.volume || 100,
+      speed: segmentData.ttsConfig?.speed || 0,
+      pitch: segmentData.ttsConfig?.pitch || 0,
+      emotion: segmentData.ttsConfig?.emotion || "",
+      style: segmentData.ttsConfig?.style || "",
+      model: segmentData.ttsConfig?.model || segmentData.voice || "zh-CN-XiaoxiaoNeural"
     };
 
-    // 调用对应的TTS提供商进行合成
+    console.log(`[SegmentTTS] Synthesis settings:`, JSON.stringify(synthesisSettings, null, 2));
+
+    // Call corresponding TTS provider for synthesis
     const result = await TTSService.synthesizeWithProvider(
       segmentData.text,
       synthesisSettings,
@@ -78,10 +102,19 @@ async function synthesizeSegment(chapterId, segmentData) {
     );
 
     if (!result.success || !result.data || !result.data.filePath || !fs.existsSync(result.data.filePath)) {
-      return error(`语音合成失败: ${result.message || "无法生成音频文件"}`);
+      console.error(`[SegmentTTS] Speech synthesis failed:`, result);
+      return error(`Speech synthesis failed: ${result.message || "Unable to generate audio file"}`);
     }
 
-    // 创建音频URL
+    // Validate generated audio file
+    const stats = fs.statSync(result.data.filePath);
+    if (stats.size === 0) {
+      return error(`Generated audio file is empty: ${result.data.filePath}`);
+    }
+
+    console.log(`[SegmentTTS] Speech synthesis successful, file size: ${stats.size} bytes`);
+
+    // Create audio URL
     const audioUrl = `file://${result.data.filePath
       .replace(/\\/g, "/")
       .replace(/#/g, "%23")
@@ -89,11 +122,12 @@ async function synthesizeSegment(chapterId, segmentData) {
 
     return success({
       audioUrl: audioUrl,
+      audioPath: result.data.filePath,
       filePath: result.data.filePath
     });
   } catch (err) {
-    console.error(`[SegmentTTS] 合成段落语音失败:`, err);
-    return error(`合成段落语音失败: ${err.message}`);
+    console.error(`[SegmentTTS] Segment speech synthesis failed:`, err);
+    return error(`Segment speech synthesis failed: ${err.message}`);
   }
 }
 
@@ -106,72 +140,108 @@ async function synthesizeSegment(chapterId, segmentData) {
  */
 async function synthesizeFullChapter(chapterId, parsedChapterId, audioUrls) {
   try {
-    // 获取章节信息
+    console.log(`[SegmentTTS] Starting full chapter synthesis for chapter ID: ${chapterId}`);
+    console.log(`[SegmentTTS] Number of audio URLs: ${audioUrls.length}`);
+
+    // Get chapter information
     const chapter = Chapter.getChapterById(chapterId);
     if (!chapter) {
-      return error("章节不存在");
+      return error("Chapter not found");
     }
 
-    // 创建输出目录
+    // Validate input parameters
+    if (!audioUrls || audioUrls.length === 0) {
+      return error("No audio URLs provided");
+    }
+
+    // Create output directory
     const outputDir = path.join(process.cwd(), "output", "audio");
     fs.ensureDirSync(outputDir);
-    
-    // 创建临时目录
+
+    // Create temporary directory
     const tempDir = path.join(outputDir, `temp`, `${chapterId}`);
     fs.ensureDirSync(tempDir);
 
-    // 准备音频文件路径
+    // Prepare audio file paths
     const audioFiles = [];
     for (let i = 0; i < audioUrls.length; i++) {
       const url = audioUrls[i];
-      // 从URL中提取文件路径
-      const filePath = url.replace(/^file:\/\//, "")
-                          .replace(/%23/g, "#")
-                          .replace(/%3F/g, "?");
-      
+      if (!url || url.trim() === "") {
+        console.warn(`[SegmentTTS] Audio URL for segment ${i + 1} is empty, skipping`);
+        continue;
+      }
+
+      // Extract file path from URL
+      let filePath = url.replace(/^file:\/\//, "")
+                        .replace(/%23/g, "#")
+                        .replace(/%3F/g, "?")
+                        .replace(/%20/g, " ");
+
+      // Normalize path
+      filePath = path.normalize(filePath);
+
+      console.log(`[SegmentTTS] Checking audio file: ${filePath}`);
+
       if (fs.existsSync(filePath)) {
-        audioFiles.push(filePath);
+        const stats = fs.statSync(filePath);
+        if (stats.size > 0) {
+          audioFiles.push(filePath);
+          console.log(`[SegmentTTS] Valid audio file: ${filePath} (${stats.size} bytes)`);
+        } else {
+          console.warn(`[SegmentTTS] Audio file is empty: ${filePath}`);
+        }
       } else {
-        console.warn(`[SegmentTTS] 音频文件不存在: ${filePath}`);
+        console.warn(`[SegmentTTS] Audio file does not exist: ${filePath}`);
       }
     }
 
     if (audioFiles.length === 0) {
-      return error("没有有效的音频文件可合并");
+      return error("No valid audio files to merge");
     }
 
-    // 合并音频文件
+    console.log(`[SegmentTTS] Found ${audioFiles.length} valid audio files, starting merge`);
+
+    // Merge audio files
     const finalOutputFileName = `chapter_${chapterId}_${Date.now()}`;
     const mergedFilePath = path.join(tempDir, `${finalOutputFileName}.wav`);
-    
-    // 使用audioUtils合并音频文件
-    await audioUtils.mergeAudioFiles(audioFiles, mergedFilePath);
-    
-    // 验证合并后的文件
-    if (!fs.existsSync(mergedFilePath)) {
-      return error(`合并后的文件未创建: ${mergedFilePath}`);
+
+    // Use audioUtils to merge audio files
+    const mergedPath = await audioUtils.mergeAudioFiles(audioFiles, mergedFilePath);
+
+    // Validate merged file
+    if (!fs.existsSync(mergedPath)) {
+      return error(`Merged file not created: ${mergedPath}`);
     }
 
-    // 创建最终输出路径
+    const mergedStats = fs.statSync(mergedPath);
+    if (mergedStats.size === 0) {
+      return error(`Merged file is empty: ${mergedPath}`);
+    }
+
+    console.log(`[SegmentTTS] Audio merge successful, file size: ${mergedStats.size} bytes`);
+
+    // Create final output path
     const finalOutputPath = path.join(outputDir, `${finalOutputFileName}.wav`);
-    
-    // 复制合并后的文件到最终输出路径
-    await audioUtils.copyAudioFile(mergedFilePath, finalOutputPath);
-    
-    // 更新章节状态
+
+    // Copy merged file to final output path
+    await audioUtils.copyAudioFile(mergedPath, finalOutputPath);
+
+    // Update chapter status
     Chapter.updateChapter(chapterId, {
       audioPath: finalOutputPath,
       status: "completed",
     });
 
-    // 创建音频URL
+    // Create audio URL
     const audioUrl = `file://${finalOutputPath
       .replace(/\\/g, "/")
       .replace(/#/g, "%23")
       .replace(/\?/g, "%3F")}`;
 
-    // 获取音频时长
+    // Get audio duration
     const duration = await audioUtils.getAudioDuration(finalOutputPath);
+
+    console.log(`[SegmentTTS] Full chapter speech synthesis completed, duration: ${duration} seconds`);
 
     return success([{
       id: uuidv4(),
@@ -181,8 +251,8 @@ async function synthesizeFullChapter(chapterId, parsedChapterId, audioUrls) {
       createdAt: new Date().toISOString()
     }]);
   } catch (err) {
-    console.error(`[SegmentTTS] 合成整章语音失败:`, err);
-    return error(`合成整章语音失败: ${err.message}`);
+    console.error(`[SegmentTTS] Full chapter speech synthesis failed:`, err);
+    return error(`Full chapter speech synthesis failed: ${err.message}`);
   }
 }
 

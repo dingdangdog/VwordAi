@@ -471,17 +471,15 @@ export const novelApi = {
   /**
    * 通过合并段落音频生成整章TTS
    * @param {string} chapterId 章节ID
-   * @param {string} parsedChapterId 解析章节ID
    * @param {string[]} audioUrls 音频URL列表
    * @returns {Promise<ApiResponse<TtsResult[]>>} 生成结果
    */
-  generateFullChapterTts: async (chapterId: string, parsedChapterId: string, audioUrls: string[]): Promise<ApiResponse<TtsResult[]>> => {
+  generateFullChapterTts: async (chapterId: string, audioUrls: string[]): Promise<ApiResponse<TtsResult[]>> => {
     try {
       // 调用真实的TTS API合并音频文件
       // @ts-ignore - window.api.tts由preload.js提供
       const response = await window.api.tts.synthesizeFullChapter(
         chapterId,
-        parsedChapterId,
         audioUrls
       );
 
