@@ -92,6 +92,8 @@
       :characters="characters"
       @close="closeCharacterModal"
       @save="saveCharacter"
+      @update="updateCharacter"
+      @delete="deleteCharacter"
     />
 
     <ChapterModal
@@ -231,10 +233,33 @@ async function saveCharacter(characterData: Omit<Character, "id">) {
     if (character) {
       toast.success("角色创建成功");
     }
-    closeCharacterModal();
   } catch (error) {
     toast.error(
       `保存角色失败：${error instanceof Error ? error.message : String(error)}`
+    );
+  }
+}
+
+// 更新角色
+async function updateCharacter(characterId: string, characterData: Partial<Character>) {
+  try {
+    await novelsStore.updateCharacter(characterId, characterData);
+    toast.success("角色更新成功");
+  } catch (error) {
+    toast.error(
+      `更新角色失败：${error instanceof Error ? error.message : String(error)}`
+    );
+  }
+}
+
+// 删除角色
+async function deleteCharacter(characterId: string) {
+  try {
+    await novelsStore.deleteCharacter(characterId);
+    toast.success("角色删除成功");
+  } catch (error) {
+    toast.error(
+      `删除角色失败：${error instanceof Error ? error.message : String(error)}`
     );
   }
 }

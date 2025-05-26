@@ -150,6 +150,53 @@ export const useNovelsStore = defineStore('novels', () => {
     }
   }
 
+  // Update a character
+  async function updateCharacter(characterId: string, characterData: Partial<Character>) {
+    isLoading.value = true;
+    error.value = null;
+
+    try {
+      const response = await novelApi.updateCharacter(characterId, characterData);
+      if (response.success && response.data) {
+        // Update the character in the local array
+        const index = characters.value.findIndex(c => c.id === characterId);
+        if (index !== -1) {
+          characters.value[index] = { ...characters.value[index], ...response.data };
+        }
+        return response.data;
+      } else {
+        throw new Error(response.message || 'Failed to update character');
+      }
+    } catch (err) {
+      error.value = err instanceof Error ? err.message : String(err);
+      return null;
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  // Delete a character
+  async function deleteCharacter(characterId: string) {
+    isLoading.value = true;
+    error.value = null;
+
+    try {
+      const response = await novelApi.deleteCharacter(characterId);
+      if (response.success) {
+        // Remove the character from the local array
+        characters.value = characters.value.filter(c => c.id !== characterId);
+        return true;
+      } else {
+        throw new Error(response.message || 'Failed to delete character');
+      }
+    } catch (err) {
+      error.value = err instanceof Error ? err.message : String(err);
+      return false;
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
   // Create a new chapter
   async function createChapter(chapterData: Omit<Chapter, 'id' | 'processed' | 'createdAt' | 'updatedAt'>) {
     isLoading.value = true;
@@ -323,6 +370,8 @@ export const useNovelsStore = defineStore('novels', () => {
     updateNovel,
     updateChapter,
     createCharacter,
+    updateCharacter,
+    deleteCharacter,
     createChapter,
     parseChapter,
     generateTts,
