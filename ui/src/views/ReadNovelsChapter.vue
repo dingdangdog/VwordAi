@@ -545,7 +545,7 @@ const llmProviders = computed(() => settingsStore.getLLMProviders());
 // TTS服务商和语音模型
 const ttsProviders = computed(() => {
   const providers = settingsStore.getTTSProviders();
-  console.log('TTS Providers:', providers);
+  console.log("TTS Providers:", providers);
   return providers;
 });
 
@@ -586,7 +586,9 @@ function getAvailableVoiceModels(provider?: string | null) {
 
   try {
     // 直接从projectsStore.voiceModels中过滤
-    const models = projectsStore.voiceModels.filter((model: any) => model.provider === provider);
+    const models = projectsStore.voiceModels.filter(
+      (model: any) => model.provider === provider
+    );
     return models.map((model: any) => ({
       code: model.code,
       name: model.name,
@@ -606,7 +608,9 @@ function getAvailableEmotions(voiceCode?: string, provider?: string | null) {
 
   try {
     // 直接从projectsStore.voiceModels中查找
-    const voiceModel = projectsStore.voiceModels.find((model: any) => model.code === voiceCode);
+    const voiceModel = projectsStore.voiceModels.find(
+      (model: any) => model.code === voiceCode
+    );
 
     if (voiceModel && voiceModel.emotions && voiceModel.emotions.length > 0) {
       // 返回该语音模型支持的情感
@@ -617,7 +621,9 @@ function getAvailableEmotions(voiceCode?: string, provider?: string | null) {
     }
 
     // 如果没有找到特定模型的情感，返回该提供商的所有情感
-    const models = projectsStore.voiceModels.filter((model: any) => model.provider === provider);
+    const models = projectsStore.voiceModels.filter(
+      (model: any) => model.provider === provider
+    );
     const allEmotions = new Map();
 
     models.forEach((model: any) => {
@@ -712,11 +718,14 @@ function saveTtsConfig() {
 
 // 调试函数 - 检查TTS提供商加载状态
 function debugTtsProviders() {
-  console.log('=== TTS Providers Debug ===');
-  console.log('settingsStore.ttsSettings:', settingsStore.ttsSettings);
-  console.log('ttsProviders computed:', ttsProviders.value);
-  console.log('activeTTSProviderType:', settingsStore.activeTTSProviderType);
-  console.log('projectsStore.voiceModels length:', projectsStore.voiceModels.length);
+  console.log("=== TTS Providers Debug ===");
+  console.log("settingsStore.ttsSettings:", settingsStore.ttsSettings);
+  console.log("ttsProviders computed:", ttsProviders.value);
+  console.log("activeTTSProviderType:", settingsStore.activeTTSProviderType);
+  console.log(
+    "projectsStore.voiceModels length:",
+    projectsStore.voiceModels.length
+  );
 
   // 测试语音模型获取
   if (ttsProviders.value.length > 0) {
@@ -933,9 +942,9 @@ async function parseChapter() {
     // 调用解析API
     const response = await novelApi.parseChapter(chapter.value.id);
     if (response.success && response.data) {
-      // 初始化每个段落的TTS配置和合成状态
+      // 初始化每个段落的TTS配置和合成状态，优先使用角色的TTS配置
       response.data.segments = response.data.segments.map((segment) => {
-        const ttsConfig = {
+        let ttsConfig = {
           provider: settingsStore.activeTTSProviderType || "azure",
           model: segment.voice || "",
           speed: 0,
@@ -945,10 +954,77 @@ async function parseChapter() {
           style: "",
         };
 
-        console.log('Initializing segment TTS config:', ttsConfig);
+        let voice = segment.voice || "";
+
+        // 如果是角色对话，尝试应用角色的TTS配置
+        if (
+          segment.character &&
+          segment.character.trim() &&
+          segment.character !== "旁白"
+        ) {
+          const matchedCharacters = matchingCharacters(segment.character);
+          if (matchedCharacters.length > 0) {
+            const character = matchedCharacters[0];
+
+            console.log(
+              `Found existing character for segment: ${segment.character}`,
+              character
+            );
+
+            // 使用角色的TTS配置
+            if (character.ttsConfig) {
+              ttsConfig = {
+                provider:
+                  character.ttsConfig.provider ||
+                  settingsStore.activeTTSProviderType ||
+                  "azure",
+                model: character.ttsConfig.model || "",
+                speed: character.ttsConfig.speed || 0,
+                pitch: character.ttsConfig.pitch || 0,
+                volume: character.ttsConfig.volume || 100,
+                emotion: character.ttsConfig.emotion || "",
+                style: character.ttsConfig.style || "",
+              };
+
+              // 使用角色TTS配置中的语音模型
+              if (character.ttsConfig.model) {
+                voice = character.ttsConfig.model;
+              }
+
+              console.log(
+                `Applied character TTS config for ${segment.character}:`,
+                ttsConfig
+              );
+            }
+          } else {
+            // 如果角色不存在，使用默认配置
+            if (!voice) {
+              voice = segment.character.includes("女")
+                ? "zh-CN-XiaoxiaoNeural"
+                : "zh-CN-YunxiNeural";
+            }
+          }
+        } else {
+          // 旁白使用默认旁白声音
+          if (!voice) {
+            voice = "zh-CN-XiaoxiaoNeural";
+          }
+        }
+
+        // 确保model字段与voice字段一致
+        if (voice && !ttsConfig.model) {
+          ttsConfig.model = voice;
+        }
+
+        console.log("Final segment TTS config:", {
+          character: segment.character,
+          voice,
+          ttsConfig,
+        });
 
         return {
           ...segment,
+          voice,
           ttsConfig,
           synthesisStatus: "unsynthesized",
         };
@@ -963,6 +1039,9 @@ async function parseChapter() {
 
       // 提取并添加新角色
       await extractAndAddCharacters();
+
+      // 重新应用角色TTS配置（因为可能有新角色被添加）
+      await reapplyCharacterTtsConfigs();
 
       // 自动保存解析结果
       await updateParsedChapter();
@@ -1002,7 +1081,15 @@ async function extractAndAddCharacters() {
     (name) => !existingCharacterNames.has(name)
   );
 
-  if (newCharacterNames.length === 0) return;
+  if (newCharacterNames.length === 0) {
+    console.log("No new characters to add");
+    return;
+  }
+
+  console.log(
+    `Adding ${newCharacterNames.length} new characters:`,
+    newCharacterNames
+  );
 
   // 创建新角色
   for (const name of newCharacterNames) {
@@ -1013,7 +1100,7 @@ async function extractAndAddCharacters() {
           ? "female"
           : "male";
 
-      // 创建新角色
+      // 创建新角色，包含默认TTS配置
       const newCharacter = {
         novelId: chapter.value.novelId,
         name,
@@ -1021,8 +1108,17 @@ async function extractAndAddCharacters() {
         gender: gender as "male" | "female",
         age: "youth" as const,
         description: `从章节 "${chapter.value.title}" 中自动提取的角色`,
-        voiceModel: gender === "female" ? "female-1" : "male-1",
         aliases: [],
+        ttsConfig: {
+          provider: settingsStore.activeTTSProviderType || "azure",
+          model:
+            gender === "female" ? "zh-CN-XiaoxiaoNeural" : "zh-CN-YunxiNeural",
+          speed: 0,
+          pitch: 0,
+          volume: 100,
+          emotion: "",
+          style: "",
+        },
         createdAt: new Date().toISOString(),
       };
 
@@ -1031,12 +1127,64 @@ async function extractAndAddCharacters() {
       if (response.success && response.data) {
         // 添加到本地角色列表
         characters.value.push(response.data);
-        console.log(`已添加新角色: ${name}`);
+        console.log(`已添加新角色: ${name}`, response.data);
       }
     } catch (error) {
       console.error(`添加角色 ${name} 失败:`, error);
     }
   }
+}
+
+// 重新应用角色TTS配置到解析结果中
+async function reapplyCharacterTtsConfigs() {
+  if (!parsedChapter.value) return;
+
+  console.log("Reapplying character TTS configs to parsed segments");
+
+  // 遍历所有段落，重新应用角色TTS配置
+  parsedChapter.value.segments.forEach((segment, index) => {
+    if (
+      segment.character &&
+      segment.character.trim() &&
+      segment.character !== "旁白"
+    ) {
+      const matchedCharacters = matchingCharacters(segment.character);
+      if (matchedCharacters.length > 0) {
+        const character = matchedCharacters[0];
+
+        console.log(
+          `Reapplying TTS config for segment ${index + 1}, character: ${segment.character}`,
+          character
+        );
+
+        // 更新TTS配置
+        if (character.ttsConfig) {
+          segment.ttsConfig = {
+            provider:
+              character.ttsConfig.provider ||
+              settingsStore.activeTTSProviderType ||
+              "azure",
+            model: character.ttsConfig.model || "",
+            speed: character.ttsConfig.speed || 0,
+            pitch: character.ttsConfig.pitch || 0,
+            volume: character.ttsConfig.volume || 100,
+            emotion: character.ttsConfig.emotion || "",
+            style: character.ttsConfig.style || "",
+          };
+
+          // 更新语音模型
+          if (character.ttsConfig.model) {
+            segment.voice = character.ttsConfig.model;
+          }
+
+          console.log(
+            `Updated segment ${index + 1} TTS config:`,
+            segment.ttsConfig
+          );
+        }
+      }
+    }
+  });
 }
 
 // 更新解析结果
@@ -1048,7 +1196,7 @@ async function updateParsedChapter() {
   try {
     // 调用API更新解析结果 - 现在直接保存到章节的内嵌数据中
     const response = await novelApi.updateParsedChapter(
-      chapter.value.id,  // 使用章节ID而不是解析结果ID
+      chapter.value.id, // 使用章节ID而不是解析结果ID
       parsedChapter.value
     );
 
@@ -1096,22 +1244,25 @@ async function generateSegmentTts(index: number) {
         if (matchedCharacters.length > 0) {
           const character = matchedCharacters[0];
 
-          // 使用角色的语音模型
-          if (!segment.voice) {
-            segment.voice = character.voiceModel || character.ttsConfig?.model || "";
-          }
-
           // 使用角色的TTS配置
           if (!segment.ttsConfig && character.ttsConfig) {
             segment.ttsConfig = {
-              provider: character.ttsConfig.provider || settingsStore.activeTTSProviderType || "azure",
-              model: character.ttsConfig.model || segment.voice,
+              provider:
+                character.ttsConfig.provider ||
+                settingsStore.activeTTSProviderType ||
+                "azure",
+              model: character.ttsConfig.model || "",
               speed: character.ttsConfig.speed || 0,
               pitch: character.ttsConfig.pitch || 0,
               volume: character.ttsConfig.volume || 100,
               emotion: character.ttsConfig.emotion || "",
               style: character.ttsConfig.style || "",
             };
+
+            // 使用角色TTS配置中的语音模型
+            if (!segment.voice && character.ttsConfig.model) {
+              segment.voice = character.ttsConfig.model;
+            }
           }
         }
 
@@ -1211,22 +1362,25 @@ async function generateAllSegmentTts() {
           if (matchedCharacters.length > 0) {
             const character = matchedCharacters[0];
 
-            // 使用角色的语音模型
-            if (!segment.voice) {
-              segment.voice = character.voiceModel || character.ttsConfig?.model || "";
-            }
-
             // 使用角色的TTS配置
             if (!segment.ttsConfig && character.ttsConfig) {
               segment.ttsConfig = {
-                provider: character.ttsConfig.provider || settingsStore.activeTTSProviderType || "azure",
-                model: character.ttsConfig.model || segment.voice,
+                provider:
+                  character.ttsConfig.provider ||
+                  settingsStore.activeTTSProviderType ||
+                  "azure",
+                model: character.ttsConfig.model || "",
                 speed: character.ttsConfig.speed || 0,
                 pitch: character.ttsConfig.pitch || 0,
                 volume: character.ttsConfig.volume || 100,
                 emotion: character.ttsConfig.emotion || "",
                 style: character.ttsConfig.style || "",
               };
+
+              // 使用角色TTS配置中的语音模型
+              if (!segment.voice && character.ttsConfig.model) {
+                segment.voice = character.ttsConfig.model;
+              }
             }
           }
 

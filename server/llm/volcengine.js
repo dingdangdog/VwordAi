@@ -10,7 +10,7 @@ class VolcengineClient {
    * @param {Object} config 配置对象
    * @param {string} config.key 火山引擎API密钥
    * @param {string} config.endpoint 火山引擎API端点
-   * @param {string} [config.model] 要使用的模型，默认为'doubao-1.5-pro-32k-250115'
+   * @param {string} [config.model] 要使用的模型，默认为'doubao-1.5-pro-32k-250115' doubao-1.5-lite-32k-250115
    */
   constructor(config) {
     this.client = new OpenAI({
@@ -18,6 +18,7 @@ class VolcengineClient {
       baseURL: config.endpoint || "https://ark.cn-beijing.volces.com/api/v3/",
     });
     this.model = config.model || "doubao-1.5-pro-32k-250115";
+    console.log("LLM Model:", this.model);
     this.prompt = this.createPrompt();
   }
 
@@ -27,11 +28,11 @@ class VolcengineClient {
    */
   createPrompt() {
     return `### 指令 ###
-分析指定的小说文本，识别每句话的说话者和语气或情绪。请按照以下要求进行分析：
+分析指定的小说文本，将其拆解为有声小说文稿，识别每句话的说话者和语气或情绪，并且尽量不要省略任何一段文字。请按照以下要求进行分析：
 
 1. 将文本分解为单独的句子。
 2. 对于每个句子，确定：
-   - 说话者是谁（如果是对话，'dft'表示旁白叙述）
+   - 说话者是谁（明确区分如果是有声小说，每句话应该是谁说的，'dft'表示旁白叙述）
    - 特殊语气或情绪（从以下选项中选择：快乐、悲伤、愤怒、恐惧、好奇、紧张、平静、兴奋、惊讶、失望、羞愧、嫌恶、喜爱、骄傲、讽刺、严肃、轻松、'dft'表示默认无特殊情感）
    - 特殊模仿声音（从以下选项中选择：女孩、男孩、年轻女性、年轻男性、年长女性、年长男性、年老女性、年老男性、'dft'表示默认无特殊模仿）
 

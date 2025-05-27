@@ -31,15 +31,20 @@
                 class="text-lg leading-6 font-medium text-gray-900 dark:text-white"
                 id="modal-headline"
               >
-                {{ editingCharacter ? '编辑角色' : '角色管理' }}
+                {{ editingCharacter ? "编辑角色" : "角色管理" }}
               </h3>
 
               <div class="mt-4 space-y-4">
                 <!-- 角色表单 -->
-                <div v-if="showForm" class="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
+                <div
+                  v-if="showForm"
+                  class="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg"
+                >
                   <div class="flex justify-between items-center mb-3">
-                    <h4 class="text-md font-medium text-gray-900 dark:text-white">
-                      {{ editingCharacter ? '编辑角色信息' : '添加新角色' }}
+                    <h4
+                      class="text-md font-medium text-gray-900 dark:text-white"
+                    >
+                      {{ editingCharacter ? "编辑角色信息" : "添加新角色" }}
                     </h4>
                     <button
                       v-if="editingCharacter"
@@ -129,11 +134,15 @@
 
                     <!-- TTS配置区域 -->
                     <div class="md:col-span-2">
-                      <h5 class="text-sm font-medium text-gray-900 dark:text-white mb-3">
+                      <h5
+                        class="text-sm font-medium text-gray-900 dark:text-white mb-3"
+                      >
                         TTS语音配置
                       </h5>
 
-                      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-gray-100 dark:bg-gray-600 rounded-lg">
+                      <div
+                        class="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-gray-100 dark:bg-gray-600 rounded-lg"
+                      >
                         <!-- TTS服务商 -->
                         <div>
                           <label
@@ -179,7 +188,9 @@
                               :key="model.code"
                               :value="model.code"
                             >
-                              {{ model.name }} ({{ model.gender === "0" ? "女" : "男" }})
+                              {{ model.name }} ({{
+                                model.gender === "0" ? "女" : "男"
+                              }})
                             </option>
                           </select>
                         </div>
@@ -274,7 +285,13 @@
                       class="btn btn-primary"
                       :disabled="!isFormValid || isSaving"
                     >
-                      {{ isSaving ? "保存中..." : (editingCharacter ? "更新角色" : "添加角色") }}
+                      {{
+                        isSaving
+                          ? "保存中..."
+                          : editingCharacter
+                            ? "更新角色"
+                            : "添加角色"
+                      }}
                     </button>
                   </div>
                 </div>
@@ -282,7 +299,9 @@
                 <!-- 现有角色列表 -->
                 <div v-if="!editingCharacter">
                   <div class="flex justify-between items-center mb-3">
-                    <h4 class="text-md font-medium text-gray-900 dark:text-white">
+                    <h4
+                      class="text-md font-medium text-gray-900 dark:text-white"
+                    >
                       现有角色
                     </h4>
                     <button
@@ -309,7 +328,9 @@
                       <div class="flex justify-between items-start">
                         <div class="flex-1">
                           <div class="flex items-center space-x-3 mb-2">
-                            <h5 class="text-sm font-medium text-gray-900 dark:text-white">
+                            <h5
+                              class="text-sm font-medium text-gray-900 dark:text-white"
+                            >
                               {{ character.name }}
                             </h5>
                             <div class="flex items-center space-x-2">
@@ -339,12 +360,21 @@
                             class="text-xs text-blue-600 dark:text-blue-400"
                           >
                             <span class="font-medium">TTS:</span>
-                            {{ getTtsProviderName(character.ttsConfig.provider) }}
+                            {{
+                              getTtsProviderName(character.ttsConfig.provider)
+                            }}
                             <span v-if="character.ttsConfig.model">
                               - {{ character.ttsConfig.model }}
                             </span>
-                            <span v-if="character.ttsConfig.speed !== undefined && character.ttsConfig.speed !== 0">
-                              (语速: {{ character.ttsConfig.speed > 0 ? '+' : '' }}{{ character.ttsConfig.speed }})
+                            <span
+                              v-if="
+                                character.ttsConfig.speed !== undefined &&
+                                character.ttsConfig.speed !== 0
+                              "
+                            >
+                              (语速:
+                              {{ character.ttsConfig.speed > 0 ? "+" : ""
+                              }}{{ character.ttsConfig.speed }})
                             </span>
                           </div>
                         </div>
@@ -392,10 +422,14 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed, onMounted } from "vue";
+import { ref, reactive, computed, onMounted, watch } from "vue";
 import type { Character } from "@/types/ReadNovels";
-import type { TTSProviderType } from "@/types";
+import type { TTSProviderType, VoiceModel } from "@/types";
 import { useSettingsStore } from "@/stores/settings";
+import {
+  getVoiceModelsByProvider,
+  getProcessedVoiceModels,
+} from "@/utils/voice-utils";
 
 const props = defineProps<{
   novelId?: string;
@@ -413,6 +447,10 @@ const isSaving = ref(false);
 const showForm = ref(false);
 const editingCharacter = ref<Character | null>(null);
 const settingsStore = useSettingsStore();
+
+// 语音模型相关状态
+const isLoadingVoiceModels = ref(false);
+const voiceModelsData = ref<VoiceModel[]>([]);
 
 // 表单数据
 const form = reactive({
@@ -439,14 +477,22 @@ const ttsProviders = computed(() => settingsStore.getTTSProviders());
 const availableVoiceModels = computed(() => {
   if (!form.ttsConfig.provider) return [];
 
-  // 这里应该根据服务商类型返回对应的模型列表
-  // 简化处理，返回一些示例模型
-  return [
-    { code: "zh-CN-XiaoxiaoNeural", name: "晓晓", gender: "0" },
-    { code: "zh-CN-YunxiNeural", name: "云希", gender: "1" },
-    { code: "zh-CN-YunyangNeural", name: "云扬", gender: "1" },
-    { code: "zh-CN-XiaoyiNeural", name: "晓伊", gender: "0" },
-  ];
+  try {
+    const models = getVoiceModelsByProvider(form.ttsConfig.provider);
+    return models.map((model) => ({
+      code: model.code,
+      name: model.name,
+      gender: model.gender || "0",
+      language: model.lang,
+    }));
+  } catch (error) {
+    console.error(
+      "Failed to get voice models for provider:",
+      form.ttsConfig.provider,
+      error
+    );
+    return [];
+  }
 });
 
 // 表单验证
@@ -458,16 +504,48 @@ const isFormValid = computed(() => {
 function onTtsProviderChange() {
   form.ttsConfig.model = "";
   form.ttsConfig.emotion = "";
+
+  // 加载新服务商的语音模型
+  if (form.ttsConfig.provider) {
+    isLoadingVoiceModels.value = true;
+    try {
+      // 触发计算属性重新计算
+      // availableVoiceModels 会自动更新
+    } catch (error) {
+      console.error("Failed to load voice models:", error);
+    } finally {
+      isLoadingVoiceModels.value = false;
+    }
+  }
 }
+
+// 监听TTS服务商变化
+watch(
+  () => form.ttsConfig.provider,
+  (newProvider) => {
+    if (newProvider) {
+      // 重置模型选择
+      form.ttsConfig.model = "";
+      form.ttsConfig.emotion = "";
+    }
+  }
+);
 
 // 初始化
 onMounted(async () => {
-  // 加载TTS设置
-  await settingsStore.loadTTSSettings();
+  try {
+    // 加载TTS设置
+    await settingsStore.loadTTSSettings();
 
-  // 设置默认TTS服务商
-  if (!form.ttsConfig.provider) {
-    form.ttsConfig.provider = settingsStore.activeTTSProviderType || "azure";
+    // 预加载语音模型数据
+    voiceModelsData.value = getProcessedVoiceModels();
+
+    // 设置默认TTS服务商
+    if (!form.ttsConfig.provider) {
+      form.ttsConfig.provider = settingsStore.activeTTSProviderType || "azure";
+    }
+  } catch (error) {
+    console.error("Failed to initialize character modal:", error);
   }
 });
 
@@ -486,15 +564,17 @@ function saveCharacter() {
         gender: form.gender,
         age: form.age,
         description: form.description.trim() || undefined,
-        ttsConfig: form.ttsConfig.provider ? {
-          provider: form.ttsConfig.provider as TTSProviderType,
-          model: form.ttsConfig.model,
-          speed: form.ttsConfig.speed,
-          pitch: form.ttsConfig.pitch,
-          volume: form.ttsConfig.volume,
-          emotion: form.ttsConfig.emotion,
-          style: form.ttsConfig.style,
-        } : undefined,
+        ttsConfig: form.ttsConfig.provider
+          ? {
+              provider: form.ttsConfig.provider as TTSProviderType,
+              model: form.ttsConfig.model,
+              speed: form.ttsConfig.speed,
+              pitch: form.ttsConfig.pitch,
+              volume: form.ttsConfig.volume,
+              emotion: form.ttsConfig.emotion,
+              style: form.ttsConfig.style,
+            }
+          : undefined,
         updatedAt: new Date().toISOString(),
       };
 
@@ -507,15 +587,17 @@ function saveCharacter() {
         gender: form.gender,
         age: form.age,
         description: form.description.trim() || undefined,
-        ttsConfig: form.ttsConfig.provider ? {
-          provider: form.ttsConfig.provider as TTSProviderType,
-          model: form.ttsConfig.model,
-          speed: form.ttsConfig.speed,
-          pitch: form.ttsConfig.pitch,
-          volume: form.ttsConfig.volume,
-          emotion: form.ttsConfig.emotion,
-          style: form.ttsConfig.style,
-        } : undefined,
+        ttsConfig: form.ttsConfig.provider
+          ? {
+              provider: form.ttsConfig.provider as TTSProviderType,
+              model: form.ttsConfig.model,
+              speed: form.ttsConfig.speed,
+              pitch: form.ttsConfig.pitch,
+              volume: form.ttsConfig.volume,
+              emotion: form.ttsConfig.emotion,
+              style: form.ttsConfig.style,
+            }
+          : undefined,
         createdAt: new Date().toISOString(),
       };
 
