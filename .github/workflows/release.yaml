@@ -39,24 +39,17 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [macos-latest, macos-13, ubuntu-latest, windows-latest]
+        os: [macos-latest, ubuntu-latest, windows-latest]
         include:
           - os: macos-latest
-            package_command: npm run builder -- --mac --arm64
+            package_command: npm run builder -- --mac
             platform: Mac
-            arch: arm64
-          - os: macos-13
-            package_command: npm run builder -- --mac --x64
-            platform: Mac
-            arch: x64
           - os: ubuntu-latest
             package_command: npm run builder -- --linux
             platform: Linux
-            arch: x64
           - os: windows-latest
             package_command: npm run builder -- --win
             platform: Windows
-            arch: x64
 
     steps:
       - name: Check out
@@ -109,9 +102,10 @@ jobs:
           name: 🎉Release v${{ env.VERSION }}
           tag_name: v${{ env.VERSION }}
           append_body: true
-          # VwordAi-2.0.0-arm64.dmg / VwordAi-2.0.0-x64.dmg
+          # VwordAi-2.0.0-arm64.dmg / VwordAi-2.0.0-x64.dmg / VwordAi-2.0.0-arm64.zip / VwordAi-2.0.0-x64.zip
           files: |
-            package/VwordAi-${{ env.VERSION }}-${{ matrix.arch }}.dmg
+            package/VwordAi-${{ env.VERSION }}-arm64.dmg
+            package/VwordAi-${{ env.VERSION }}-x64.dmg
             package/latest-mac.yml
 
       - name: Linux Release
@@ -124,7 +118,7 @@ jobs:
           append_body: true
           # VwordAi_2.0.0_amd64.deb/VwordAi-2.0.0.AppImage
           files: |
-            package/VwordAi-${{ env.VERSION }}.deb
+            package/VwordAi_${{ env.VERSION }}_amd64.deb
             package/VwordAi-${{ env.VERSION }}.AppImage
             package/latest-linux.yml
 
