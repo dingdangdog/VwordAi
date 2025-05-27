@@ -118,7 +118,7 @@ jobs:
           append_body: true
           # VwordAi_2.0.0_amd64.deb/VwordAi-2.0.0.AppImage
           files: |
-            package/VwordAi_${{ env.VERSION }}_amd64.deb
+            package/VwordAi-${{ env.VERSION }}.deb
             package/VwordAi-${{ env.VERSION }}.AppImage
             package/latest-linux.yml
 
