@@ -86,19 +86,35 @@
           <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
             解析结果
           </h2>
-          <button
-            v-if="parsedChapter && parsedChapter.segments.length > 0"
-            @click="generateAllSegmentTts"
-            class="btn btn-sm btn-primary flex items-center"
-            :disabled="isGeneratingAll"
-          >
-            <SpeakerWaveIcon v-if="!isGeneratingAll" class="h-4 w-4 mr-1" />
-            <div
-              v-else
-              class="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full mr-1"
-            ></div>
-            {{ isGeneratingAll ? "合成中..." : "全部合成" }}
-          </button>
+          <div class="flex space-x-2">
+            <button
+              v-if="parsedChapter && parsedChapter.segments.length > 0"
+              @click="autoConfigureTts"
+              class="btn btn-sm btn-secondary flex items-center"
+              :disabled="isAutoConfiguring"
+              title="自动检测并应用角色的TTS配置"
+            >
+              <CogIcon v-if="!isAutoConfiguring" class="h-4 w-4 mr-1" />
+              <div
+                v-else
+                class="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full mr-1"
+              ></div>
+              {{ isAutoConfiguring ? "配置中..." : "自动配置" }}
+            </button>
+            <button
+              v-if="parsedChapter && parsedChapter.segments.length > 0"
+              @click="generateAllSegmentTts"
+              class="btn btn-sm btn-primary flex items-center"
+              :disabled="isGeneratingAll"
+            >
+              <SpeakerWaveIcon v-if="!isGeneratingAll" class="h-4 w-4 mr-1" />
+              <div
+                v-else
+                class="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full mr-1"
+              ></div>
+              {{ isGeneratingAll ? "合成中..." : "全部合成" }}
+            </button>
+          </div>
         </div>
 
         <div v-if="!parsedChapter" class="text-center py-8">
@@ -522,6 +538,7 @@ const isProcessing = ref(false);
 const isUpdating = ref(false);
 const novelId = ref("");
 const isGeneratingAll = ref(false);
+const isAutoConfiguring = ref(false);
 const isProcessingSegment = reactive<Record<number, boolean>>({});
 const segmentAudios = reactive<Record<number, string>>({});
 
@@ -1185,6 +1202,126 @@ async function reapplyCharacterTtsConfigs() {
       }
     }
   });
+}
+
+// 自动配置TTS - 检测并应用角色的TTS配置
+async function autoConfigureTts() {
+  if (!parsedChapter.value || parsedChapter.value.segments.length === 0) {
+    toast.warning("没有可配置的解析结果");
+    return;
+  }
+
+  isAutoConfiguring.value = true;
+
+  try {
+    console.log("Starting auto TTS configuration...");
+
+    let configuredCount = 0;
+    let totalCharacterSegments = 0;
+
+    // 遍历所有段落，为角色对话应用TTS配置
+    parsedChapter.value.segments.forEach((segment, index) => {
+      if (
+        segment.character &&
+        segment.character.trim() &&
+        segment.character !== "旁白"
+      ) {
+        totalCharacterSegments++;
+
+        const matchedCharacters = matchingCharacters(segment.character);
+        if (matchedCharacters.length > 0) {
+          const character = matchedCharacters[0];
+
+          console.log(
+            `Auto-configuring segment ${index + 1}, character: ${segment.character}`,
+            character
+          );
+
+          // 应用角色的TTS配置
+          if (character.ttsConfig) {
+            segment.ttsConfig = {
+              provider:
+                character.ttsConfig.provider ||
+                settingsStore.activeTTSProviderType ||
+                "azure",
+              model: character.ttsConfig.model || "",
+              speed: character.ttsConfig.speed || 0,
+              pitch: character.ttsConfig.pitch || 0,
+              volume: character.ttsConfig.volume || 100,
+              emotion: character.ttsConfig.emotion || "",
+              style: character.ttsConfig.style || "",
+            };
+
+            // 应用语音模型
+            if (character.ttsConfig.model) {
+              segment.voice = character.ttsConfig.model;
+            }
+
+            configuredCount++;
+            console.log(
+              `Applied TTS config for ${segment.character}:`,
+              segment.ttsConfig
+            );
+          } else {
+            console.log(
+              `Character ${segment.character} has no TTS config, using defaults`
+            );
+
+            // 如果角色没有TTS配置，使用默认配置
+            if (!segment.voice) {
+              segment.voice = segment.character.includes("女")
+                ? "zh-CN-XiaoxiaoNeural"
+                : "zh-CN-YunxiNeural";
+            }
+
+            if (!segment.ttsConfig.model) {
+              segment.ttsConfig.model = segment.voice;
+            }
+          }
+        } else {
+          console.log(
+            `No matching character found for: ${segment.character}, using defaults`
+          );
+
+          // 如果找不到匹配的角色，使用默认配置
+          if (!segment.voice) {
+            segment.voice = segment.character.includes("女")
+              ? "zh-CN-XiaoxiaoNeural"
+              : "zh-CN-YunxiNeural";
+          }
+
+          if (!segment.ttsConfig.model) {
+            segment.ttsConfig.model = segment.voice;
+          }
+        }
+      }
+    });
+
+    // 保存更新后的解析结果
+    await updateParsedChapter();
+
+    // 显示配置结果
+    if (totalCharacterSegments === 0) {
+      toast.info("没有找到角色对话段落");
+    } else if (configuredCount === 0) {
+      toast.warning(`找到 ${totalCharacterSegments} 个角色对话段落，但没有角色有TTS配置`);
+    } else {
+      toast.success(
+        `自动配置完成！成功为 ${configuredCount}/${totalCharacterSegments} 个角色对话段落应用了TTS配置`
+      );
+    }
+
+    console.log(
+      `Auto configuration completed: ${configuredCount}/${totalCharacterSegments} segments configured`
+    );
+  } catch (error) {
+    toast.error(
+      `自动配置失败: ${error instanceof Error ? error.message : String(error)}`
+    );
+    console.error("Auto TTS configuration failed:", error);
+  } finally {
+    isAutoConfiguring.value = false;
+  }
 }
 
 // 更新解析结果

@@ -9,6 +9,7 @@ const { success, error } = require("../utils/result");
 const TTSService = require("../services/TTSService");
 const audioUtils = require("../utils/audioUtils");
 const NovelChapter = require("../models/NovelChapter");
+const Novel = require("../models/Novel");
 const Settings = require("../models/Settings");
 const os = require("os");
 const { v4: uuidv4 } = require("uuid");
@@ -151,12 +152,40 @@ async function synthesizeFullChapter(chapterId, audioUrls) {
       return error("No audio URLs provided");
     }
 
-    // Create output directory
-    const outputDir = path.join(process.cwd(), "output", "audio");
-    fs.ensureDirSync(outputDir);
+    // Get novel information for proper directory structure
+    const novel = Novel.getNovelById(chapter.novelId);
+    if (!novel) {
+      return error("Novel not found");
+    }
+
+    // Use the same output directory structure as TTSService
+    const globalSettings = Settings.getSettings();
+
+    // Verify and prepare output directory
+    let outputDir = globalSettings.defaultExportPath;
+    // 检查输出目录是否存在且可写，不存在则设为null
+    if (outputDir) {
+      try {
+        fs.ensureDirSync(outputDir);
+      } catch (error) {
+        console.error(
+          `[SegmentTTS] Error accessing output directory: ${error.message}`
+        );
+        outputDir = null;
+      }
+    } else {
+      outputDir = path.join(process.cwd(), "audio_output");
+    }
+
+    // 添加小说ID到输出路径，便于分类查看
+    const novelDir = path.join(outputDir, novel.id);
+    fs.ensureDirSync(novelDir);
+
+    // 使用小说目录作为最终输出目录
+    const finalOutputDir = novelDir;
 
     // Create temporary directory
-    const tempDir = path.join(outputDir, `temp`, `${chapterId}`);
+    const tempDir = path.join(finalOutputDir, `temp`, `${chapterId}`);
     fs.ensureDirSync(tempDir);
 
     // Prepare audio file paths
@@ -218,7 +247,7 @@ async function synthesizeFullChapter(chapterId, audioUrls) {
     console.log(`[SegmentTTS] Audio merge successful, file size: ${mergedStats.size} bytes`);
 
     // Create final output path
-    const finalOutputPath = path.join(outputDir, `${finalOutputFileName}.wav`);
+    const finalOutputPath = path.join(finalOutputDir, `${finalOutputFileName}.wav`);
 
     // Copy merged file to final output path
     await audioUtils.copyAudioFile(mergedPath, finalOutputPath);
