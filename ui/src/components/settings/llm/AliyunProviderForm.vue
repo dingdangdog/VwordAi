@@ -19,7 +19,7 @@
         v-else-if="providerStatus === 'untested'"
         class="p-2 bg-yellow-100 dark:bg-yellow-900 text-yellow-600 dark:text-yellow-300 rounded-md"
       >
-        <span class="text-sm">已配置但未测试，请测试配置确保能正常工作</span>
+        <span class="text-sm">未配置或未测试</span>
       </div>
       <div
         v-else-if="providerStatus === 'success'"

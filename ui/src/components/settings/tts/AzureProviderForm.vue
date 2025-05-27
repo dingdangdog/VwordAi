@@ -13,7 +13,7 @@
         v-if="providerStatus === 'untested'"
         class="p-2 bg-yellow-100 dark:bg-yellow-900 text-yellow-600 dark:text-yellow-300 rounded-md"
       >
-        <span class="text-sm">已配置但未测试，请测试配置确保能正常工作</span>
+        <span class="text-sm">未配置或未测试</span>
       </div>
       <div
         v-else-if="providerStatus === 'success'"
@@ -224,9 +224,9 @@ async function saveForm() {
     await emit("save", data);
 
     // 提示用户测试配置
-    if (settingsStore.isTTSProviderConfiguredButUntested("azure")) {
-      toast.info("配置已保存。建议您测试配置以确保它可以正常工作。");
-    }
+    // if (settingsStore.isTTSProviderConfiguredButUntested("azure")) {
+    //   toast.info("配置已保存。建议您测试配置以确保它可以正常工作。");
+    // }
 
     // 检查并输出表单状态日志，帮助调试
     setTimeout(() => {

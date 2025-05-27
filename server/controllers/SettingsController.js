@@ -210,20 +210,22 @@ function init() {
     }
   );
 
-  // 测试服务商连接（TTS）
+  // 测试服务商连接（TTS）- 已迁移到TTSController，保留兼容性
   ipcMain.handle(
     "test-tts-provider-connection",
     async (event, provider, test) => {
-      try {
-        // 更新配置
-        const ttsSettings = Settings.getTTSSettings();
+      console.log(`[SettingsController] TTS test interface deprecated, please use tts:test-provider-connection instead`);
+      console.log(`[SettingsController] Attempting legacy TTS test for: ${provider}`);
 
-        // 执行测试
+      try {
+        // 执行旧的测试逻辑以保持兼容性
+        const ttsSettings = Settings.getTTSSettings();
         const result = await Settings.testProviderConnection(
           provider,
           test,
           ttsSettings[provider]
         );
+
         if (result.success) {
           // 更新状态
           ttsSettings[provider].status = "success";
@@ -232,9 +234,10 @@ function init() {
           ttsSettings[provider].status = "failure";
           Settings.saveTTSSettings(ttsSettings);
         }
+
         return success(result);
       } catch (err) {
-        console.error("测试TTS服务商连接失败:", err);
+        console.error(`[SettingsController] Legacy TTS test failed for ${provider}:`, err);
         return error(err.message);
       }
     }

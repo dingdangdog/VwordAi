@@ -125,10 +125,11 @@ export const settingsApi = {
   /**
    * 测试TTS服务商连接
    * @param type 服务商类型
+   * @param model 测试配置数据
    */
   testTTSProviderConnection: (type: TTSProviderType, model?: any) =>
-    invoke<Result<{ message: string; status: string }>>(
-      "test-tts-provider-connection",
+    invoke<Result<{ message: string; status: string; audioData?: any }>>(
+      "tts:test-provider-connection",
       type,
       model
     ),

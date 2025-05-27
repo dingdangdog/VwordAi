@@ -126,40 +126,83 @@ function registerTTSSynthesisHandlers() {
  * 注册TTS测试相关的IPC处理器
  */
 function registerTTSTestHandlers() {
-  // 测试TTS提供商连接
+  // 测试TTS提供商连接 - 主要接口
   ipcMain.handle("tts:test-provider-connection", async (event, provider, testData) => {
     try {
-      console.log(`[TTSController] 测试TTS提供商连接: ${provider}`);
+      console.log(`[TTSController] Testing TTS provider connection: ${provider}`);
+      console.log(`[TTSController] Test data:`, testData);
 
       // 获取TTS设置
       const ttsSettings = Settings.getTTSSettings();
-      const providerConfig = ttsSettings[provider];
+      let providerConfig = ttsSettings[provider];
+
+      // 如果传入了测试数据，先临时更新配置用于测试
+      if (testData && typeof testData === 'object') {
+        providerConfig = { ...providerConfig, ...testData };
+        console.log(`[TTSController] Using test config:`, providerConfig);
+      }
 
       if (!providerConfig) {
+        console.error(`[TTSController] TTS provider ${provider} not configured`);
         return error(`TTS提供商 ${provider} 未配置`);
       }
 
       // 调用对应的TTS客户端进行测试
-      const result = await testTTSProvider(provider, testData, providerConfig);
+      const result = await testTTSProvider(provider, testData || {}, providerConfig);
 
       if (result.success) {
-        // 更新状态
-        ttsSettings[provider].status = "success";
-        Settings.saveTTSSettings(ttsSettings);
+        // 更新状态到数据库
+        const updatedSettings = Settings.getTTSSettings();
+        if (!updatedSettings[provider]) {
+          updatedSettings[provider] = {};
+        }
+        updatedSettings[provider].status = "success";
+
+        // 如果测试数据包含配置更新，也保存配置
+        if (testData && typeof testData === 'object') {
+          Object.assign(updatedSettings[provider], testData);
+        }
+
+        Settings.saveTTSSettings(updatedSettings);
+        console.log(`[TTSController] TTS provider ${provider} test successful, status updated`);
+
         return success({
           status: 'success',
-          message: result.message || `${provider} 连接测试成功`
+          message: result.message || `${provider} 连接测试成功`,
+          audioData: result.audioData // 传递音频数据用于前端播放
         });
       } else {
-        ttsSettings[provider].status = "failure";
-        Settings.saveTTSSettings(ttsSettings);
+        // 更新失败状态
+        const updatedSettings = Settings.getTTSSettings();
+        if (!updatedSettings[provider]) {
+          updatedSettings[provider] = {};
+        }
+        updatedSettings[provider].status = "failure";
+        Settings.saveTTSSettings(updatedSettings);
+        console.error(`[TTSController] TTS provider ${provider} test failed:`, result.message);
+
         return error(result.message || `${provider} 连接测试失败`);
       }
     } catch (err) {
-      console.error("测试TTS提供商连接失败:", err);
+      console.error(`[TTSController] Error testing TTS provider ${provider}:`, err);
+
+      // 更新失败状态
+      try {
+        const updatedSettings = Settings.getTTSSettings();
+        if (!updatedSettings[provider]) {
+          updatedSettings[provider] = {};
+        }
+        updatedSettings[provider].status = "failure";
+        Settings.saveTTSSettings(updatedSettings);
+      } catch (saveErr) {
+        console.error(`[TTSController] Failed to save failure status:`, saveErr);
+      }
+
       return error(err.message);
     }
   });
+
+  // 注意：test-tts-provider-connection 接口已在 SettingsController 中处理，避免重复注册
 }
 
 /**
@@ -172,12 +215,7 @@ function registerTTSTestHandlers() {
 async function testTTSProvider(provider, testData, providerConfig) {
   try {
     const testText = testData.text || "这是一个语音合成测试，如果您能听到这段话，说明配置正确。";
-
-    // 创建临时文件路径
-    const tempFilePath = path.join(
-      os.tmpdir(),
-      `${provider}_test_${Date.now()}.wav`
-    );
+    console.log(`[TTSController] Testing ${provider} with text: ${testText}`);
 
     let ttsClient;
 
@@ -203,6 +241,7 @@ async function testTTSProvider(provider, testData, providerConfig) {
         ttsClient = require("../tts/baidu");
         break;
       default:
+        console.error(`[TTSController] Unsupported TTS provider: ${provider}`);
         return {
           success: false,
           message: `不支持的TTS提供商: ${provider}`
@@ -211,12 +250,45 @@ async function testTTSProvider(provider, testData, providerConfig) {
 
     // 准备测试设置
     const settings = {
-      voice: testData.voice || providerConfig.voice || "default",
+      voice: testData.voice || providerConfig.voice || getDefaultVoice(provider),
       speed: testData.speed || providerConfig.speed || 1.0,
       pitch: testData.pitch || providerConfig.pitch || 0,
       volume: testData.volume || providerConfig.volume || 50,
+      emotion: testData.emotion || providerConfig.emotion || "general",
       ...testData.settings
     };
+
+    console.log(`[TTSController] Test settings for ${provider}:`, settings);
+    console.log(`[TTSController] Provider config for ${provider}:`, providerConfig);
+
+    // 对于Azure，使用play方法直接获取音频数据，避免文件操作
+    if (provider === 'azure' && ttsClient.play) {
+      console.log(`[TTSController] Using Azure play method for testing`);
+      const result = await ttsClient.play(testText, settings, providerConfig);
+
+      if (result.success) {
+        console.log(`[TTSController] Azure test successful, audio data length: ${result.data?.audioData?.length || 0}`);
+        return {
+          success: true,
+          message: `${provider} 语音服务连接成功`,
+          audioData: result.data?.audioData // 返回音频数据用于前端播放
+        };
+      } else {
+        console.error(`[TTSController] Azure test failed:`, result.error);
+        return {
+          success: false,
+          message: result.error || `${provider} 语音服务连接失败`
+        };
+      }
+    }
+
+    // 对于其他提供商，使用文件方式测试
+    const tempFilePath = path.join(
+      os.tmpdir(),
+      `${provider}_test_${Date.now()}.wav`
+    );
+
+    console.log(`[TTSController] Using file-based testing for ${provider}, temp file: ${tempFilePath}`);
 
     // 执行测试
     const result = await ttsClient.synthesize(
@@ -229,26 +301,47 @@ async function testTTSProvider(provider, testData, providerConfig) {
     // 清理临时文件
     if (fs.existsSync(tempFilePath)) {
       fs.unlinkSync(tempFilePath);
+      console.log(`[TTSController] Cleaned up temp file: ${tempFilePath}`);
     }
 
     if (result.success) {
+      console.log(`[TTSController] ${provider} test successful`);
       return {
         success: true,
         message: `${provider} 语音服务连接成功`
       };
     } else {
+      console.error(`[TTSController] ${provider} test failed:`, result.message);
       return {
         success: false,
         message: result.message || `${provider} 语音服务连接失败`
       };
     }
   } catch (error) {
-    console.error(`测试${provider}语音服务连接失败:`, error);
+    console.error(`[TTSController] Error testing ${provider} TTS service:`, error);
     return {
       success: false,
       message: error.message || `${provider} 语音服务连接失败`
     };
   }
+}
+
+/**
+ * 获取提供商的默认语音
+ * @param {string} provider 提供商名称
+ * @returns {string} 默认语音
+ */
+function getDefaultVoice(provider) {
+  const defaultVoices = {
+    'azure': 'zh-CN-XiaoxiaoNeural',
+    'aliyun': 'xiaoyun',
+    'alibaba': 'xiaoyun',
+    'tencent': 'zh-CN-XiaoxiaoNeural',
+    'baidu': 'zh-CN-XiaoxiaoNeural',
+    'local': 'default',
+    'sovits': 'default'
+  };
+  return defaultVoices[provider] || 'default';
 }
 
 /**
@@ -368,12 +461,30 @@ function registerServiceProviderHandlers() {
     try {
       console.log(`[TTSController] 测试服务商连接: ${id}`);
 
-      // 调用现有的测试连接功能
-      const result = await testTTSProviderConnection(id, {
-        text: "这是一个测试文本"
-      });
+      // 获取TTS设置
+      const ttsSettings = Settings.getTTSSettings();
+      const providerConfig = ttsSettings[id];
 
-      return result;
+      if (!providerConfig) {
+        return error(`服务商 ${id} 未配置`);
+      }
+
+      // 调用内部测试函数
+      const result = await testTTSProvider(id, { text: "这是一个测试文本" }, providerConfig);
+
+      if (result.success) {
+        // 更新状态
+        ttsSettings[id].status = "success";
+        Settings.saveTTSSettings(ttsSettings);
+        return success({
+          status: 'success',
+          message: result.message || `${id} 连接测试成功`
+        });
+      } else {
+        ttsSettings[id].status = "failure";
+        Settings.saveTTSSettings(ttsSettings);
+        return error(result.message || `${id} 连接测试失败`);
+      }
     } catch (err) {
       console.error(`[TTSController] 测试服务商连接失败:`, err);
       return error(err.message);

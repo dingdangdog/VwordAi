@@ -394,23 +394,75 @@ class Settings {
   /**
    * 测试服务商连接
    * @param {string} provider 服务商名称 (azure, aliyun, tencent, baidu, openai)
+   * @param {Object} test 测试数据
+   * @param {Object} config 服务商配置
    * @returns {Object} 测试结果
    */
   static async testProviderConnection(provider, test, config) {
     let result;
-    if (provider === "azure") {
-      result = await this.testAzureTTS(test, config);
+
+    try {
+      console.log(`[Settings] Testing provider connection: ${provider}`);
+      console.log(`[Settings] Test data:`, test);
+      console.log(`[Settings] Config:`, config);
+
+      if (provider === "azure") {
+        result = await this.testAzureTTS(test, config);
+      } else {
+        // 对于其他提供商，返回未实现的错误
+        result = {
+          success: false,
+          message: `Provider ${provider} test not implemented in Settings.js`,
+          status: "failure"
+        };
+      }
+
+      console.log(`[Settings] Test result for ${provider}:`, result);
+
+      if (result && result.success) {
+        // 获取TTS设置
+        const ttsSettings = this.getTTSSettings();
+        // 更新服务商配置状态
+        if (!ttsSettings[provider]) {
+          ttsSettings[provider] = {};
+        }
+        ttsSettings[provider] = { ...ttsSettings[provider], ...config, status: "success" };
+        // 保存TTS设置
+        this.saveTTSSettings(ttsSettings);
+        console.log(`[Settings] Updated ${provider} status to success`);
+      } else {
+        // 更新失败状态
+        const ttsSettings = this.getTTSSettings();
+        if (!ttsSettings[provider]) {
+          ttsSettings[provider] = {};
+        }
+        ttsSettings[provider] = { ...ttsSettings[provider], ...config, status: "failure" };
+        this.saveTTSSettings(ttsSettings);
+        console.log(`[Settings] Updated ${provider} status to failure`);
+      }
+
+      return result;
+    } catch (error) {
+      console.error(`[Settings] Error testing ${provider} connection:`, error);
+
+      // 更新失败状态
+      try {
+        const ttsSettings = this.getTTSSettings();
+        if (!ttsSettings[provider]) {
+          ttsSettings[provider] = {};
+        }
+        ttsSettings[provider] = { ...ttsSettings[provider], ...config, status: "failure" };
+        this.saveTTSSettings(ttsSettings);
+      } catch (saveError) {
+        console.error(`[Settings] Failed to save failure status:`, saveError);
+      }
+
+      return {
+        success: false,
+        message: error.message || `${provider} 连接测试失败`,
+        status: "failure"
+      };
     }
-    if (result.success) {
-      // 获取所有设置
-      const allSettings = this.getSettings();
-      // 更新服务商配置
-      const updatedConfig = { ...config, status: "success" };
-      allSettings[provider] = updatedConfig;
-      // 保存所有设置
-      storage.saveConfig(SETTINGS_KEY, allSettings);
-    }
-    return result;
   }
 
   /**
@@ -459,27 +511,54 @@ class Settings {
 
   /**
    * 测试Azure TTS服务
+   * @param {Object} test 测试数据
    * @param {Object} config Azure配置
    * @returns {Object} 测试结果
    */
   static async testAzureTTS(test, config) {
-    const text = test.text || "azure配置成功";
-    const settings = {
-      voice: test.model || "zh-CN-XiaoxiaoMultilingualNeural",
-      speed: 1.0,
-      emotion: "general",
-    };
+    try {
+      console.log(`[Settings] Testing Azure TTS with test:`, test);
+      console.log(`[Settings] Testing Azure TTS with config:`, config);
 
-    const azureProvider = require("../tts/azure");
-    const result = await azureProvider.play(text, settings, config);
+      const text = test.text || "这是一个Azure TTS配置测试，如果您能听到这段话，说明配置正确。";
 
-    if (result.success) {
-      return {
-        ...result.data,
-        status: "success",
+      // 构建语音设置，支持多种字段名称映射
+      const settings = {
+        voice: test.voice || test.model || config.voice || config.model || "zh-CN-XiaoxiaoNeural",
+        speed: test.speed || config.speed || 1.0,
+        emotion: test.emotion || config.emotion || "general",
+        pitch: test.pitch || config.pitch || 0,
+        volume: test.volume || config.volume || 50
       };
-    } else {
-      return result;
+
+      console.log(`[Settings] Azure TTS settings:`, settings);
+
+      const azureProvider = require("../tts/azure");
+      const result = await azureProvider.play(text, settings, config);
+
+      console.log(`[Settings] Azure TTS result:`, result);
+
+      if (result.success) {
+        return {
+          success: true,
+          message: "Azure TTS 连接测试成功",
+          status: "success",
+          audioData: result.data?.audioData // 传递音频数据
+        };
+      } else {
+        return {
+          success: false,
+          message: result.error || "Azure TTS 连接测试失败",
+          status: "failure"
+        };
+      }
+    } catch (error) {
+      console.error(`[Settings] Azure TTS test error:`, error);
+      return {
+        success: false,
+        message: error.message || "Azure TTS 连接测试失败",
+        status: "failure"
+      };
     }
   }
 }
