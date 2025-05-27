@@ -889,7 +889,22 @@ onMounted(async () => {
       // 加载TTS结果
       const ttsResponse = await novelApi.getTtsResults(chapterId);
       if (ttsResponse.success && ttsResponse.data) {
-        ttsResults.value = ttsResponse.data;
+        // 处理TTS结果数据结构
+        if (Array.isArray(ttsResponse.data)) {
+          // 如果是数组，直接使用
+          ttsResults.value = ttsResponse.data;
+        } else if (ttsResponse.data && typeof ttsResponse.data === 'object' && 'mergedAudioFile' in ttsResponse.data) {
+          // 如果是对象结构且有合并的音频文件，转换为数组
+          const ttsData = ttsResponse.data as any;
+          if (ttsData.mergedAudioFile) {
+            ttsResults.value = [ttsData.mergedAudioFile];
+          } else {
+            ttsResults.value = [];
+          }
+        } else {
+          // 其他情况，初始化为空数组
+          ttsResults.value = [];
+        }
       }
     }
 
@@ -1629,6 +1644,7 @@ async function generateTts() {
     );
 
     if (response.success && response.data) {
+      // 更新TTS结果
       ttsResults.value = response.data;
 
       // 更新章节状态
@@ -1638,6 +1654,7 @@ async function generateTts() {
         });
       }
 
+      console.log("Full chapter TTS generation completed:", response.data);
       toast.success("整章TTS生成成功");
     } else {
       throw new Error(response.message || "生成TTS失败");

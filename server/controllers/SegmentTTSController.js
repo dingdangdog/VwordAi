@@ -252,12 +252,6 @@ async function synthesizeFullChapter(chapterId, audioUrls) {
     // Copy merged file to final output path
     await audioUtils.copyAudioFile(mergedPath, finalOutputPath);
 
-    // Update chapter status
-    NovelChapter.updateNovelChapter(chapterId, {
-      audioPath: finalOutputPath,
-      status: "completed",
-    });
-
     // Create audio URL
     const audioUrl = `file://${finalOutputPath
       .replace(/\\/g, "/")
@@ -269,13 +263,46 @@ async function synthesizeFullChapter(chapterId, audioUrls) {
 
     console.log(`[SegmentTTS] Full chapter speech synthesis completed, duration: ${duration} seconds`);
 
-    return success([{
+    // Create TTS result data
+    const ttsResult = {
       id: uuidv4(),
       chapterId: chapterId,
       audioUrl: audioUrl,
+      audioPath: finalOutputPath,
       duration: duration || 0,
       createdAt: new Date().toISOString()
-    }]);
+    };
+
+    // Update chapter with TTS results
+    const currentChapter = NovelChapter.getNovelChapterById(chapterId);
+    if (currentChapter) {
+      // 获取现有的TTS结果结构
+      const existingTtsResults = currentChapter.ttsResults || {
+        segments: [],
+        audioFiles: [],
+        mergedAudioFile: null,
+        status: "pending",
+        createdAt: null,
+        completedAt: null
+      };
+
+      // 更新TTS结果结构
+      const updatedTtsResults = {
+        ...existingTtsResults,
+        mergedAudioFile: ttsResult,
+        status: "completed",
+        completedAt: new Date().toISOString()
+      };
+
+      // Update chapter status and TTS results
+      NovelChapter.updateNovelChapter(chapterId, {
+        audioPath: finalOutputPath,
+        status: "completed",
+        ttsResults: updatedTtsResults
+      });
+    }
+
+    return success([ttsResult]);
   } catch (err) {
     console.error(`[SegmentTTS] Full chapter speech synthesis failed:`, err);
     return error(`Full chapter speech synthesis failed: ${err.message}`);
