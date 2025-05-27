@@ -16,6 +16,7 @@ jobs:
 
       - name: Get version
         id: get_version
+        shell: bash
         run: |
           VERSION=$(git describe --tags --always --match 'v*' | sed -n 's|^v\([0-9]*\.[0-9]*\.[0-9]*\)\(-.*\)\{0,1\}|\1|p')
           echo "VERSION=$VERSION" >> $GITHUB_ENV  # Store version as an environment variable
@@ -41,19 +42,19 @@ jobs:
         os: [macos-latest, macos-13, ubuntu-latest, windows-latest]
         include:
           - os: macos-latest
-            package_command: npm run package -- --mac --arm64
+            package_command: npm run builder -- --mac --arm64
             platform: Mac
             arch: arm64
           - os: macos-13
-            package_command: npm run package -- --mac --x64
+            package_command: npm run builder -- --mac --x64
             platform: Mac
             arch: x64
           - os: ubuntu-latest
-            package_command: npm run package -- --linux
+            package_command: npm run builder -- --linux
             platform: Linux
             arch: x64
           - os: windows-latest
-            package_command: npm run package -- --win
+            package_command: npm run builder -- --win
             platform: Windows
             arch: x64
 
@@ -63,6 +64,7 @@ jobs:
 
       - name: Get version
         id: get_version
+        shell: bash
         run: |
           VERSION=$(git describe --tags --always --match 'v*' | sed -n 's|^v\([0-9]*\.[0-9]*\.[0-9]*\)\(-.*\)\{0,1\}|\1|p')
           echo "VERSION=$VERSION" >> $GITHUB_ENV
@@ -80,8 +82,8 @@ jobs:
       - name: Install UI dependencies
         run: cd ui && npm ci --no-interactive
 
-      # - name: Build UI
-      #   run: cd ui && npm run build-only
+      - name: Build UI
+        run: cd ui && npm run build-only
 
       - name: Install Main dependencies
         run: npm ci --no-interactive
