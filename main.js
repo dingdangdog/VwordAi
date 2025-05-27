@@ -289,6 +289,23 @@ ipcMain.handle("open-folder", (event, dir) => {
   return success(null, "已打开文件夹");
 });
 
+ipcMain.handle("show-item-in-folder", async (event, filePath) => {
+  try {
+    // 检查文件是否存在
+    if (!fs.existsSync(filePath)) {
+      return error(`文件不存在: ${filePath}`);
+    }
+
+    // 使用shell.showItemInFolder在文件管理器中显示文件
+    shell.showItemInFolder(filePath);
+
+    return success(null, "已在文件管理器中显示文件");
+  } catch (err) {
+    console.error("Failed to show item in folder:", err);
+    return error(`打开文件夹失败: ${err.message}`);
+  }
+});
+
 function setupAutoUpdater() {
   autoUpdater.on("error", (err) => {
     log.error("Update error:", err);

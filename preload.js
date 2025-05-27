@@ -8,6 +8,7 @@ contextBridge.exposeInMainWorld("electron", {
   },
   openFolder: (dir) => ipcRenderer.invoke("open-folder", dir),
   openFile: () => ipcRenderer.invoke("open-file"),
+  showItemInFolder: (filePath) => ipcRenderer.invoke("show-item-in-folder", filePath),
 
   // 窗口控制
   isMaximized: () => ipcRenderer.invoke("is-maximized"),

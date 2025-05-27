@@ -317,10 +317,20 @@
         >
           <audio :src="result.audioUrl" controls class="w-full"></audio>
           <div
-            class="text-xs text-gray-500 dark:text-gray-400 mt-1 flex justify-between"
+            class="text-xs text-gray-500 dark:text-gray-400 mt-1 flex justify-between items-center"
           >
-            <span>时长: {{ formatDuration(result.duration) }}</span>
-            <span>生成时间: {{ formatDate(result.createdAt) }}</span>
+            <div class="flex flex-col">
+              <span>时长: {{ formatDuration(result.duration) }}</span>
+              <span>生成时间: {{ formatDate(result.createdAt) }}</span>
+            </div>
+            <button
+              @click="openAudioFolder(result.audioUrl)"
+              class="btn btn-xs btn-outline flex items-center"
+              title="打开文件夹"
+            >
+              <FolderOpenIcon class="h-3 w-3 mr-1" />
+              打开文件夹
+            </button>
           </div>
         </div>
       </div>
@@ -510,6 +520,7 @@ import {
   ArrowLeftIcon,
   ArrowRightIcon,
   CogIcon,
+  FolderOpenIcon,
 } from "@heroicons/vue/24/outline";
 import { novelApi } from "@/api";
 import type {
@@ -1679,6 +1690,37 @@ function formatDate(dateString: string): string {
     hour: "2-digit",
     minute: "2-digit",
   }).format(date);
+}
+
+// 打开音频文件所在文件夹
+async function openAudioFolder(audioUrl: string) {
+  try {
+    // 从音频URL中提取文件路径
+    let filePath = audioUrl.replace(/^file:\/\//, "")
+                           .replace(/%23/g, "#")
+                           .replace(/%3F/g, "?")
+                           .replace(/%20/g, " ");
+
+    // 标准化路径
+    filePath = filePath.replace(/\//g, "\\");
+
+    console.log("Opening folder for audio file:", filePath);
+
+    // 调用系统API打开文件夹并选中文件
+    // @ts-ignore - window.electron由preload.js提供
+    const result = await window.electron.showItemInFolder(filePath);
+
+    if (!result.success) {
+      throw new Error(result.message || "无法打开文件夹");
+    }
+
+    console.log("Successfully opened folder for:", filePath);
+  } catch (error) {
+    console.error("Failed to open audio folder:", error);
+    toast.error(
+      `打开文件夹失败: ${error instanceof Error ? error.message : String(error)}`
+    );
+  }
 }
 
 // 组件卸载时清理事件监听
