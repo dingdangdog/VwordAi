@@ -1,6 +1,6 @@
 const { app, BrowserWindow, ipcMain, dialog, shell } = require("electron");
 const path = require("path");
-const handler = require("./handler.js");
+const handler = require("./handler.js"); // 函数封装在handler.js中
 const chardet = require("chardet");
 const iconv = require("iconv-lite");
 const fs = require("fs");
@@ -8,64 +8,126 @@ const { error, success } = require("./server/utils/result");
 const { autoUpdater } = require("electron-updater");
 const log = require("electron-log");
 const os = require("os");
+const storage = require("./server/utils/storage");
 
 // 配置日志
-log.transports.file.level = "info";
+log.transports.file.level = "debug";
 autoUpdater.logger = log;
-
-// 设置自动更新配置
 autoUpdater.autoDownload = false;
-autoUpdater.autoInstallOnAppQuit = true;
 
-// 主窗口
-let mainWindow;
+// 配置 GitHub 更新源
+// 指定正确的 GitHub 仓库信息
+autoUpdater.setFeedURL({
+  provider: "github",
+  owner: "dingdangdog",
+  repo: "vwordai",
+  releaseType: "release",
+});
 
-// 创建主窗口
+// 设置应用程序基础目录
+if (app.isPackaged) {
+  const defaultPath = path.join(app.getPath("userData"));
+  handler.setBaseDir(defaultPath);
+} else {
+  handler.setBaseDir(__dirname);
+}
+
+let win;
+// 设置应用程序的默认语言为中文
+// app.locale = 'zh-CN';
+// app.commandLine.appendSwitch('--lang', 'zh-CN')
+
 function createWindow() {
-  mainWindow = new BrowserWindow({
+  // 创建浏览器窗口
+  win = new BrowserWindow({
     width: 1280,
     height: 800,
-    minWidth: 1024,
-    minHeight: 768,
-    frame: false,
+    minWidth: 1280, // 设置最小宽度
+    minHeight: 800, // 设置最小高度
+    // resizable: false, // 设置为 false 禁止缩小
+    //绝对路径
+    // icon: path.join(__dirname, 'icon.ico'),
     webPreferences: {
-      preload: path.join(__dirname, "preload.js"),
-      nodeIntegration: false,
-      contextIsolation: true,
-      webSecurity: false,
+      // devTools: true,
+      nodeIntegration: true, // 启用 Node.js 集成以便访问本地文件
+      contextIsolation: true, // 启用上下文隔离
+      preload: path.join(__dirname, "preload.js"), // 预加载脚本
+      webSecurity: false, // 允许加载不安全的内容
+      allowRunningInsecureContent: true, // 允许运行不安全的内容
     },
+    frame: false, // 无边框窗口
+    transparent: true, // 透明窗口
   });
+  // 初始最大化窗口
 
   if (app.isPackaged) {
-    mainWindow.loadFile(path.join(__dirname, "ui/dist/index.html"));
+    win.loadFile(path.join(__dirname, "ui", "dist", "index.html"));
   } else {
-    mainWindow.loadURL("http://localhost:5173");
-    mainWindow.webContents.openDevTools();
+    win.loadURL("http://localhost:5173/");
   }
 
-  mainWindow.on("closed", () => {
-    mainWindow = null;
+  win.webContents.on("did-finish-load", () => {
+    if (!app.isPackaged) {
+      // 打开开发者工具
+      win.webContents.openDevTools({ mode: "detach" });
+    }
+  });
+  // 加载应用程序
+
+  // 关闭窗口时
+  win.on("close", () => {});
+}
+
+// 应用更新相关事件处理
+function setupAutoUpdater() {
+  // 发送更新消息到渲染进程
+  function sendStatusToWindow(text, data = null) {
+    if (win) {
+      win.webContents.send("update-message", { message: text, data });
+    }
+  }
+
+  // 检查到更新
+  autoUpdater.on("update-available", (info) => {
+    log.info("Find update:", info);
+    sendStatusToWindow("update-available", info);
   });
 
-  setupMenu();
-  setupIPCHandlers();
-  setupAutoUpdater();
+  // 未检查到更新
+  autoUpdater.on("update-not-available", (info) => {
+    log.info("Already the latest version", info);
+    sendStatusToWindow("update-not-available", info);
+  });
 
-  handler.setBaseDir(
-    app.isPackaged ? path.dirname(app.getPath("exe")) : process.cwd()
-  );
+  // 更新下载进度
+  autoUpdater.on("download-progress", (progressObj) => {
+    let message = `下载速度: ${progressObj.bytesPerSecond} - 已下载 ${progressObj.percent}% (${progressObj.transferred}/${progressObj.total})`;
+    log.info(message);
+    sendStatusToWindow("download-progress", progressObj);
+  });
 
+  // 更新下载完成
+  autoUpdater.on("update-downloaded", (info) => {
+    log.info("Update downloaded", info);
+    sendStatusToWindow("update-downloaded", info);
+  });
+
+  // 更新错误
+  autoUpdater.on("error", (err) => {
+    log.error("Auto update error:", err);
+    sendStatusToWindow("error", err.toString());
+  });
+}
+
+// 当 Electron 完成初始化时，创建窗口
+app.whenReady().then(async () => {
+  console.log("Electron app is ready");
   console.log("Current working directory:", process.cwd());
   console.log("__dirname:", __dirname);
   console.log("app.isPackaged:", app.isPackaged);
   console.log("process.resourcesPath:", process.resourcesPath);
-}
 
-function setupMenu() {
-  // 设置应用菜单
-}
-
-function setupIPCHandlers() {
+  // 尝试加载server/util.js文件
   try {
     const serverUtil = require("./server/utils/result.js");
     console.log("server/utils/result.js loaded successfully");
@@ -73,172 +135,37 @@ function setupIPCHandlers() {
     console.error("Failed to load server/utils/result.js:", err);
   }
 
-  ipcMain.handle("is-maximized", () => {
-    const win = BrowserWindow.getFocusedWindow() || mainWindow;
-    return win ? win.isMaximized() : false;
-  });
-
-  ipcMain.handle("select-folder", async () => {
-    try {
-      const result = await dialog.showOpenDialog(mainWindow, {
-        properties: ["openDirectory"],
-        title: "选择文件夹",
-      });
-
-      if (result.canceled || !result.filePaths.length) {
-        return success(null, "用户取消选择");
-      }
-
-      return success({ path: result.filePaths[0] });
-    } catch (err) {
-      return error(err.message);
-    }
-  });
-
-  ipcMain.handle("open-file", async () => {
-    try {
-      const result = await dialog.showOpenDialog(mainWindow, {
-        properties: ["openFile"],
-        title: "选择文件",
-        filters: [
-          { name: "文本文件", extensions: ["txt", "md", "json"] },
-          { name: "所有文件", extensions: ["*"] },
-        ],
-      });
-
-      if (result.canceled || !result.filePaths.length) {
-        return success(null, "用户取消选择");
-      }
-
-      return success({ path: result.filePaths[0] });
-    } catch (err) {
-      return error(err.message);
-    }
-  });
-
-  ipcMain.handle("get-app-info", async () => {
-    try {
-      return success({
-        version: app.getVersion(),
-        name: app.getName(),
-        isPackaged: app.isPackaged,
-        platform: process.platform,
-        arch: process.arch,
-      });
-    } catch (err) {
-      return error(err.message);
-    }
-  });
-
-  ipcMain.handle("get-storage-paths", async () => {
-    try {
-      return success({
-        userData: app.getPath("userData"),
-        appData: app.getPath("appData"),
-        temp: app.getPath("temp"),
-        documents: app.getPath("documents"),
-        downloads: app.getPath("downloads"),
-      });
-    } catch (err) {
-      return error(err.message);
-    }
-  });
-
-  ipcMain.handle("get-system-info", async () => {
-    try {
-      return success({
-        platform: os.platform(),
-        arch: os.arch(),
-        release: os.release(),
-        type: os.type(),
-        totalmem: os.totalmem(),
-        freemem: os.freemem(),
-        cpus: os.cpus().length,
-      });
-    } catch (err) {
-      return error(err.message);
-    }
-  });
-
-  ipcMain.handle("read-file", async (_, filePath, encoding) => {
-    try {
-      const detectedEncoding = await chardet.detectFile(filePath);
-      const fileEncoding = encoding || detectedEncoding || "utf8";
-      const buffer = fs.readFileSync(filePath);
-      const content = iconv.decode(buffer, fileEncoding);
-      return success({ content, encoding: fileEncoding });
-    } catch (err) {
-      return error(err.message);
-    }
-  });
-
-  ipcMain.handle("save-file", async (event, filePath, content, encoding = "utf8") => {
-    try {
-      const buffer = iconv.encode(content, encoding);
-      fs.writeFileSync(filePath, buffer);
-      return success(null, "文件保存成功");
-    } catch (err) {
-      return error(err.message);
-    }
-  });
-
-  // Azure TTS测试处理器
-  ipcMain.handle("test-azure-tts", async (_, data) => {
-    try {
-      console.log("[main.js] 测试Azure TTS连接:", data);
-
-      // 调用Azure TTS模块进行测试
-      const azureTTS = require("./server/tts/azure");
-      const tempFilePath = path.join(os.tmpdir(), `azure_test_${Date.now()}.wav`);
-
-      const result = await azureTTS.synthesize(
-        "这是一个测试文本",
-        tempFilePath,
-        {
-          voice: data.voice || "zh-CN-XiaoxiaoNeural",
-          speed: 1.0,
-          pitch: 0,
-          volume: 50
-        },
-        {
-          key: data.key,
-          region: data.region,
-          endpoint: data.endpoint
-        }
-      );
-
-      // 清理临时文件
-      if (fs.existsSync(tempFilePath)) {
-        fs.unlinkSync(tempFilePath);
-      }
-
-      if (result.success) {
-        return success({
-          message: "Azure TTS连接测试成功",
-          status: "success"
-        });
-      } else {
-        return error(result.message || "Azure TTS连接测试失败");
-      }
-    } catch (err) {
-      console.error("[main.js] Azure TTS测试失败:", err);
-      return error(err.message || "Azure TTS连接测试失败");
-    }
-  });
-}
-
-app.whenReady().then(() => {
   createWindow();
-  console.log("Electron app is ready");
+  setupAutoUpdater();
+  setupDebugHandlers(); // 设置调试相关的IPC处理器
+
+  // 在开发环境下不检查更新
+  if (process.env.NODE_ENV !== "development") {
+    // 应用启动时检查更新，延迟3秒让应用完全加载
+    setTimeout(() => {
+      autoUpdater.checkForUpdates().catch((err) => {
+        log.error("Auto check update failed:", err);
+      });
+    }, 3000);
+  }
 
   app.on("activate", () => {
+    // 在 macOS 上，当点击 dock 图标并且没有其他窗口打开时，
+    // 通常在应用程序中重新创建一个窗口。
     if (BrowserWindow.getAllWindows().length === 0) {
       createWindow();
     }
   });
+
+  app.on("before-quit", () => {
+    // nuxt.close();
+  });
 });
 
+// 在所有窗口关闭时退出应用程序。
 app.on("window-all-closed", () => {
+  // 在 macOS 上，应用程序和它们的菜单栏是常见的
+  // 保持活动状态，直到用户使用 Cmd + Q 显式退出。
   if (process.platform !== "darwin") {
     app.quit();
   }
@@ -262,103 +189,86 @@ ipcMain.on("window-control", (event, action) => {
     case "close":
       win.close();
       break;
+    case "restore-window":
+      win.restore();
+      break;
   }
 });
+ipcMain.handle("is-maximized", () => {
+  return win.isMaximized();
+});
 
+// 监听渲染进程的事件，弹出选择文件夹对话框
+ipcMain.handle("select-folder", async () => {
+  const { filePaths } = await dialog.showOpenDialog(win, {
+    properties: ["openDirectory"], // 仅允许选择文件夹
+  });
+  return filePaths[0]; // 返回选中的文件夹路径
+});
+
+// 处理媒体文件URL请求
 ipcMain.handle("get-media-url", async (event, filePath) => {
   try {
+    // 验证文件是否存在
     if (!fs.existsSync(filePath)) {
-      return error(`文件不存在: ${filePath}`);
+      console.error(`Media file not found: ${filePath}`);
+      return null;
     }
 
-    const mediaUrl = `file://${filePath
+    // 确保路径中特殊字符被正确编码
+    const encodedPath = filePath
       .replace(/\\/g, "/")
       .replace(/#/g, "%23")
-      .replace(/\?/g, "%3F")}`;
+      .replace(/\?/g, "%3F")
+      .replace(/\s/g, "%20");
 
-    return success({ url: mediaUrl });
+    // 返回正确的file://协议URL
+    return `file://${encodedPath}`;
   } catch (err) {
-    return error(err.message);
+    console.error("Error processing media URL:", err);
+    return null;
   }
 });
 
+// 监听渲染进程的事件，弹出选择文件夹对话框
 ipcMain.handle("open-folder", (event, dir) => {
+  // 打开文件夹
   const dirs = dir.split("/");
   const folder = path.join(...dirs);
-  shell.openPath(folder);
-  return success(null, "已打开文件夹");
-});
-
-ipcMain.handle("show-item-in-folder", async (event, filePath) => {
-  try {
-    // 检查文件是否存在
-    if (!fs.existsSync(filePath)) {
-      return error(`文件不存在: ${filePath}`);
-    }
-
-    // 使用shell.showItemInFolder在文件管理器中显示文件
-    shell.showItemInFolder(filePath);
-
-    return success(null, "已在文件管理器中显示文件");
-  } catch (err) {
-    console.error("Failed to show item in folder:", err);
-    return error(`打开文件夹失败: ${err.message}`);
+  if (fs.existsSync(folder)) {
+    shell.openPath(folder);
+    return success("Folder opened");
+  } else {
+    return error("Local project not found, please download first!");
   }
 });
 
-function setupAutoUpdater() {
-  autoUpdater.on("error", (err) => {
-    log.error("Update error:", err);
-    if (mainWindow) {
-      mainWindow.webContents.send("update-error", err.message);
-    }
+// 监听渲染进程的事件，弹出选择文件夹对话框
+ipcMain.handle("open-file", async () => {
+  // 打开文件
+  const { canceled, filePaths } = await dialog.showOpenDialog({
+    filters: [{ name: "Text Files", extensions: ["txt"] }],
+    properties: ["openFile"],
   });
+  // 读取文件内容
+  if (!canceled && filePaths.length > 0) {
+    const filePath = filePaths[0];
 
-  autoUpdater.on("update-available", (info) => {
-    log.info("Update available:", info);
-    if (mainWindow) {
-      mainWindow.webContents.send("update-available", info);
-    }
-  });
+    // Detect encoding of the file
+    const encoding = chardet.detectFileSync(filePath);
+    // console.log(`Detected encoding: ${encoding}`);
 
-  autoUpdater.on("update-not-available", (info) => {
-    log.info("Update not available:", info);
-    if (mainWindow) {
-      mainWindow.webContents.send("update-not-available", info);
-    }
-  });
+    // Read file with the detected encoding
+    const contentBuffer = fs.readFileSync(filePath);
+    const content = iconv.decode(contentBuffer, encoding || "utf-8");
 
-  autoUpdater.on("download-progress", (progressObj) => {
-    log.info("Download progress:", progressObj);
-    if (mainWindow) {
-      mainWindow.webContents.send("download-progress", progressObj);
-    }
-  });
+    // Send file content to renderer
+    return content;
+  }
+});
 
-  autoUpdater.on("update-downloaded", (info) => {
-    log.info("Update downloaded:", info);
-    if (mainWindow) {
-      mainWindow.webContents.send("update-downloaded", info);
-    }
-  });
-
-  app.whenReady().then(() => {
-    if (!app.isPackaged && !process.env.FORCE_UPDATE_CHECK) {
-      log.info("Skip checkForUpdates because application is not packed");
-      return;
-    }
-
-    setTimeout(() => {
-      try {
-        log.info("Checking for updates...");
-        autoUpdater.checkForUpdates();
-      } catch (err) {
-        log.error("Failed to check for updates:", err);
-      }
-    }, 3000);
-  });
-}
-
+// 更新相关的IPC处理
+// 检查更新
 ipcMain.handle("check-updates", async () => {
   try {
     log.info("Manually check update");
@@ -366,28 +276,82 @@ ipcMain.handle("check-updates", async () => {
     return { checking: true };
   } catch (err) {
     log.error("Check update failed:", err);
-    return { checking: false, error: err.message };
+    return { error: err.message || "Check update failed" };
   }
 });
 
+// 下载更新
 ipcMain.handle("download-update", async () => {
   try {
     log.info("Start downloading update");
     autoUpdater.downloadUpdate();
-    return { downloading: true };
+    return { success: true, message: "Update downloading started" };
   } catch (err) {
     log.error("Download update failed:", err);
-    return { downloading: false, error: err.message };
+    return { success: false, error: err.message || "Download update failed" };
   }
 });
 
+// 安装更新
 ipcMain.handle("install-update", async () => {
   try {
-    log.info("Install update now");
-    autoUpdater.quitAndInstall();
-    return { installing: true };
+    log.info("Install update");
+    autoUpdater.quitAndInstall(false, true);
+    return { success: true };
   } catch (err) {
     log.error("Install update failed:", err);
-    return { installing: false, error: err.message };
+    return { success: false, error: err.message || "Install update failed" };
   }
 });
+
+// 设置调试相关的IPC处理器
+function setupDebugHandlers() {
+  // 获取应用信息
+  ipcMain.handle("get-app-info", () => {
+    return {
+      version: app.getVersion(),
+      name: app.getName(),
+      appPath: app.getAppPath(),
+      locale: app.getLocale(),
+      isPackaged: app.isPackaged,
+      electron: process.versions.electron,
+      node: process.versions.node,
+      chrome: process.versions.chrome,
+      v8: process.versions.v8,
+      buildDate: new Date().toISOString(),
+      processEnv: process.env.NODE_ENV || "production",
+    };
+  });
+
+  // 获取存储路径信息
+  ipcMain.handle("get-storage-paths", () => {
+    const userDataPath = app.getPath("userData");
+    return {
+      userDataPath: userDataPath,
+      storagePath: storage.getStoragePath(),
+      configPath: storage.getConfigPath(),
+      tempPath: app.getPath("temp"),
+      documentsPath: app.getPath("documents"),
+      downloadsPath: app.getPath("downloads"),
+      appPath: app.getAppPath(),
+      exePath: app.getPath("exe"),
+    };
+  });
+
+  // 获取系统信息
+  ipcMain.handle("get-system-info", () => {
+    return {
+      platform: process.platform,
+      arch: process.arch,
+      osVersion: os.version(),
+      osRelease: os.release(),
+      hostname: os.hostname(),
+      userInfo: os.userInfo().username,
+      cpus: os.cpus().length,
+      totalMemory: Math.round(os.totalmem() / (1024 * 1024 * 1024)) + "GB",
+      freeMemory: Math.round(os.freemem() / (1024 * 1024 * 1024)) + "GB",
+      uptime: Math.round(os.uptime() / 3600) + "小时",
+      loadAvg: os.loadavg(),
+    };
+  });
+}

@@ -1,6 +1,7 @@
 build
 config
 vwordai
+.idea
 
 dist
 
