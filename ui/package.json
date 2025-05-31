@@ -1,6 +1,6 @@
 {
   "name": "vwordai-ui",
-  "version": "",
+  "version": "1.0.6",
   "private": true,
   "type": "module",
   "scripts": {
