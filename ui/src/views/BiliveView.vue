@@ -293,6 +293,8 @@
               </div>
             </div>
 
+
+
             <div>
               <label
                 class="block text-xs font-medium text-gray-700 mb-0.5 dark:text-gray-200"
@@ -366,6 +368,8 @@
                 </div>
               </div>
             </div>
+
+
           </div>
         </div>
 
@@ -878,23 +882,13 @@ const config = ref<BiliLiveConfig>({
   recordVisitor: true, // 是否记录访客
 });
 
-// 获取TTS模式（从settings store）
+// 获取TTS模式（从BiliLive store）
 const ttsMode = computed({
   get: () => {
-    // 从BiliLive专用存储中获取TTS模式设置
-    const biliTTSMode = biliLiveStore.getTTSMode();
-
-    // 检查是否有有效值
-    if (
-      biliTTSMode &&
-      ["local", "azure", "aliyun", "sovits"].includes(biliTTSMode)
-    ) {
-      return biliTTSMode;
-    }
-
-    // 兼容: 如果没有从BiliLive获取到值，尝试从settings中判断
-    const provider = settingsStore.getTTSProviderConfig("azure");
-    return provider && provider.enabled ? "azure" : "local";
+    // 直接从BiliLive store获取TTS模式
+    const mode = biliLiveStore.getTTSMode();
+    console.log(`当前TTS模式: ${mode}`);
+    return mode;
   },
   set: (value: string) => {
     // 确保值在允许的范围内
@@ -902,6 +896,8 @@ const ttsMode = computed({
       console.warn(`Invalid TTS mode: ${value}, defaulting to local`);
       value = "local";
     }
+
+    console.log(`设置TTS模式为: ${value}`);
 
     // 如果是Azure模式，确保在settings中启用
     if (value === "azure") {
@@ -920,11 +916,11 @@ const ttsMode = computed({
       });
     }
 
-    // 无论是什么模式，都通过saveTTSMode更新
+    // 通过saveTTSMode更新
     biliLiveStore
       .saveTTSMode(value)
       .then(() => {
-        console.log(`TTS mode updated to: ${value}`);
+        console.log(`TTS mode successfully updated to: ${value}`);
       })
       .catch((err: Error) => {
         console.error("Failed to save TTS mode:", err);
@@ -1096,16 +1092,21 @@ const saveConfig = async (showToast = true) => {
   }
 };
 
-// 保存TTS模式（更新为使用settings store）
+// 保存TTS模式
 async function saveTTSMode() {
   try {
-    // ttsMode计算属性会自动更新settings store
-    // 同时更新BiliLive服务
-    const response = await biliLiveStore.saveTTSMode(ttsMode.value);
+    const currentMode = ttsMode.value;
+    console.log(`正在保存TTS模式: ${currentMode}`);
+
+    const response = await biliLiveStore.saveTTSMode(currentMode);
     if (response.success) {
-      toast.success(`TTS模式已切换为: ${ttsMode.value}`);
+      // 从响应中获取实际保存的模式，或使用当前模式
+      const savedMode = response.data || currentMode;
+      toast.success(`TTS模式已切换为: ${savedMode}`);
+      console.log(`TTS模式保存成功: ${savedMode}`);
     } else {
       toast.error("保存TTS模式失败: " + response.error);
+      console.error("保存TTS模式失败:", response.error);
     }
   } catch (err: unknown) {
     const error = err as Error;
@@ -1206,6 +1207,8 @@ function selectRoom(room: Room) {
   roomIdInput.value = room.id.toString();
 }
 
+
+
 // 连接到直播间
 async function connectToRoom() {
   if (!roomIdInput.value) {
@@ -1214,6 +1217,37 @@ async function connectToRoom() {
   }
 
   try {
+    // 在尝试连接前就保存房间ID到历史记录（无论成功失败）
+    const roomIdStr = String(roomIdInput.value);
+    const roomIndex = config.value.room_ids.findIndex(
+      (r) => String(r.id) === roomIdStr
+    );
+
+    console.log(`尝试连接房间ID ${roomIdStr}，检查是否存在于历史记录`);
+
+    if (roomIndex === -1) {
+      // 新房间，添加到历史记录
+      console.log(`将房间ID ${roomIdStr} 添加到历史记录`);
+      config.value.room_ids.unshift({
+        id: roomIdStr,
+        name: `房间 ${roomIdStr}`,
+      });
+      // 限制最多保存10个历史记录
+      if (config.value.room_ids.length > 10) {
+        config.value.room_ids.pop();
+      }
+      // 立即保存配置
+      await saveConfig(false);
+    } else {
+      // 已存在的房间，移动到最前面
+      console.log(`房间ID ${roomIdStr} 已存在于历史记录，移动到最前面`);
+      const existingRoom = config.value.room_ids.splice(roomIndex, 1)[0];
+      config.value.room_ids.unshift(existingRoom);
+      // 保存配置
+      await saveConfig(false);
+    }
+
+    // 尝试连接
     const response = await biliLiveStore.connect(roomIdInput.value);
     if (!response.success) {
       toast.error("连接失败: " + response.error);
@@ -1344,38 +1378,9 @@ function setupListeners() {
       // Update current room ID if connected
       currentRoomId.value = data.roomId;
 
-      // 只在连接成功添加新房间时显示通知
-      const roomIdStr = String(data.roomId);
-      const roomIndex = config.value.room_ids.findIndex(
-        (r) => String(r.id) === roomIdStr
-      );
-
-      console.log(
-        `检查房间ID ${roomIdStr} 是否存在于历史记录:`,
-        config.value.room_ids.map((r) => String(r.id)),
-        `结果: ${roomIndex}`
-      );
-
-      if (roomIndex === -1) {
-        // 只有新房间才显示toast通知
-        toast.success(`已连接到新房间: ${data.roomId}`);
-
-        console.log(`将房间ID ${roomIdStr} 添加到历史记录`);
-        // 确保id是字符串类型
-        config.value.room_ids.unshift({
-          id: roomIdStr,
-          name: `房间 ${roomIdStr}`,
-        });
-        // 限制最多保存10个历史记录
-        if (config.value.room_ids.length > 10) {
-          config.value.room_ids.pop();
-        }
-        // 立即保存配置，但不显示额外的保存成功通知
-        saveConfig(false);
-      } else {
-        // 只在控制台记录已知房间的连接
-        console.log(`房间ID ${roomIdStr} 已存在于历史记录，位置: ${roomIndex}`);
-      }
+      // 连接成功时显示通知
+      toast.success(`已连接到房间: ${data.roomId}`);
+      console.log(`连接状态：已连接到房间 ${data.roomId}`);
     } else {
       // 如果断开连接，更新最后连接的房间ID并清除当前房间ID
       if (currentRoomId.value) {

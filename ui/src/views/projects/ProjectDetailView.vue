@@ -304,7 +304,8 @@ const chapters = computed(() => {
   return projectsStore.chapters
     .filter((c) => c.projectId === projectId.value)
     .sort((a, b) => {
-      return new Date(a.createAt).getTime() - new Date(b.createAt).getTime();
+      // 倒序排列：最新创建的章节在前面
+      return new Date(b.createAt).getTime() - new Date(a.createAt).getTime();
     });
 });
 
@@ -485,7 +486,7 @@ function toggleExpandChapter(chapterId: string) {
 async function handleSynthesisComplete(data: { chapterId: string; audioPath?: string; status: string }) {
   // 刷新项目章节数据
   await projectsStore.loadChaptersByProjectId(projectId.value);
-  
+
   // 更新UI显示
   const chapter = chapters.value.find(c => c.id === data.chapterId);
   if (chapter) {

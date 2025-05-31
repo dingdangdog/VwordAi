@@ -148,8 +148,16 @@ export const useBiliLiveStore = defineStore("biliLive", () => {
         config.value = safeClone(response.data);
         console.log("B站直播配置加载成功");
 
-        if (response.data.mode) {
+        // 加载TTS模式，优先从tts.mode获取
+        if (response.data.tts && response.data.tts.mode) {
+          ttsMode.value = response.data.tts.mode;
+          console.log(`从配置加载TTS模式: ${response.data.tts.mode}`);
+        } else if (response.data.mode) {
           ttsMode.value = response.data.mode;
+          console.log(`从旧配置加载TTS模式: ${response.data.mode}`);
+        } else {
+          ttsMode.value = "local";
+          console.log("未找到TTS模式配置，使用默认值: local");
         }
 
         if (response.data.azure) {
@@ -692,14 +700,19 @@ export const useBiliLiveStore = defineStore("biliLive", () => {
    * 获取当前TTS模式
    * @returns 当前TTS模式
    */
-  function getTTSMode(): string | null {
+  function getTTSMode(): string {
+    // 首先检查内存中的ttsMode
+    if (ttsMode.value && ttsMode.value !== "local") {
+      return ttsMode.value;
+    }
+
+    // 然后检查config中的tts.mode
     if (config.value && config.value.tts && config.value.tts.mode) {
       return config.value.tts.mode;
     }
 
-    // 如果没有在内存中找到，尝试从服务获取最新状态
-    // console.log("TTS mode not found in memory config, fetching from service");
-    return null;
+    // 默认返回local
+    return "local";
   }
 
   return {

@@ -44,7 +44,7 @@ const router = createRouter({
     {
       path: "/bililive",
       name: "bililive",
-      component: () => import("@/views/BiliLive/Index.vue"),
+      component: () => import("@/views/BiliveView.vue"),
     },
     {
       path: "/about",

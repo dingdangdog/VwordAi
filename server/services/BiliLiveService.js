@@ -15,6 +15,7 @@ const Settings = require("../models/Settings");
 const { success, error } = require("../utils/result");
 const { BLiveClient } = require("../blive/client");
 const os = require("os");
+const storage = require("../utils/storage");
 
 let client = null;
 let win = null;
@@ -37,9 +38,20 @@ let visitorStream = null;
 async function loadAllConfig() {
   try {
     // 从配置目录加载B站配置
-    const biliveConfig = Settings.getBliveSettings();
+    const loadedConfig = Settings.getBliveSettings();
 
-    // console.log("Merged biliveConfig:", biliveConfig);
+    // 确保配置结构完整，特别是tts对象
+    biliveConfig = {
+      ...loadedConfig,
+      tts: {
+        mode: "local",
+        azure: {},
+        alibaba: {},
+        sovits: {},
+        ...loadedConfig.tts
+      }
+    };
+
     log.info(
       `(BiliLive Service) Bilive Config loaded, SESSDATA length: ${
         biliveConfig.SESSDATA ? String(biliveConfig.SESSDATA).length : 0
@@ -90,6 +102,21 @@ async function saveBiliveConfig(configData) {
  */
 async function saveTTSMode(mode) {
   try {
+    // 确保配置已加载
+    if (!biliveConfig || typeof biliveConfig !== 'object') {
+      await loadAllConfig();
+    }
+
+    // 确保tts对象存在
+    if (!biliveConfig.tts) {
+      biliveConfig.tts = {
+        mode: "local",
+        azure: {},
+        alibaba: {},
+        sovits: {}
+      };
+    }
+
     // 更新配置中的TTS模式
     biliveConfig.tts.mode = mode;
 
@@ -110,6 +137,21 @@ async function saveTTSMode(mode) {
  */
 async function saveAzureConfig(configData) {
   try {
+    // 确保配置已加载
+    if (!biliveConfig || typeof biliveConfig !== 'object') {
+      await loadAllConfig();
+    }
+
+    // 确保tts对象存在
+    if (!biliveConfig.tts) {
+      biliveConfig.tts = {
+        mode: "local",
+        azure: {},
+        alibaba: {},
+        sovits: {}
+      };
+    }
+
     // 更新配置中的Azure设置
     biliveConfig.tts.azure = {
       ...biliveConfig.tts.azure,
@@ -133,6 +175,21 @@ async function saveAzureConfig(configData) {
  */
 async function saveAlibabaConfig(configData) {
   try {
+    // 确保配置已加载
+    if (!biliveConfig || typeof biliveConfig !== 'object') {
+      await loadAllConfig();
+    }
+
+    // 确保tts对象存在
+    if (!biliveConfig.tts) {
+      biliveConfig.tts = {
+        mode: "local",
+        azure: {},
+        alibaba: {},
+        sovits: {}
+      };
+    }
+
     // 更新配置中的阿里云设置
     biliveConfig.tts.alibaba = {
       ...biliveConfig.tts.alibaba,
@@ -156,6 +213,21 @@ async function saveAlibabaConfig(configData) {
  */
 async function saveSovitsConfig(configData) {
   try {
+    // 确保配置已加载
+    if (!biliveConfig || typeof biliveConfig !== 'object') {
+      await loadAllConfig();
+    }
+
+    // 确保tts对象存在
+    if (!biliveConfig.tts) {
+      biliveConfig.tts = {
+        mode: "local",
+        azure: {},
+        alibaba: {},
+        sovits: {}
+      };
+    }
+
     // 更新配置中的SoVITS设置
     biliveConfig.tts.sovits = {
       ...biliveConfig.tts.sovits,
@@ -178,8 +250,24 @@ async function getConfig() {
   // Load latest config from storage (this already merges with default config)
   await loadAllConfig();
 
+  // 确保返回的配置包含所有必要的字段
+  const configToReturn = {
+    ...biliveConfig,
+    tts: {
+      mode: "local",
+      azure: {},
+      alibaba: {},
+      sovits: {},
+      ...biliveConfig.tts
+    }
+  };
+
+  log.info(`(BiliLive Service) Returning config with SESSDATA length: ${
+    configToReturn.SESSDATA ? String(configToReturn.SESSDATA).length : 0
+  }`);
+
   // Return the complete config object (which now contains merged defaults)
-  return biliveConfig;
+  return configToReturn;
 }
 
 /**
@@ -971,7 +1059,7 @@ function speechText(text) {
     );
     biliveConfig.ttsEnabled = true;
     // Save this change to storage
-    storage.saveConfig(BILIVE_CONFIG_KEY, biliveConfig);
+    Settings.saveBiliveConfig(biliveConfig);
   }
 
   if (!text || !biliveConfig.ttsEnabled) {
@@ -1005,7 +1093,7 @@ async function processSpeechQueue() {
   let ttsMode = biliveConfig.tts?.mode || "local";
 
   // 检查是否使用settings中的配置
-  const settings = storage.readConfig("settings", {});
+  const settings = Settings.getTTSSettings();
   const useAzure =
     settings.azure && settings.azure.enabled && settings.azure.key;
 
@@ -1107,7 +1195,7 @@ async function azureTTS(text) {
   // 检查配置是否完整
   if (!config.azure_key || !config.azure_region) {
     // 尝试使用系统全局配置
-    const systemSetting = storage.readConfig("tts", {});
+    const systemSetting = Settings.getTTSSettings();
 
     if (
       systemSetting.azure &&
@@ -1202,7 +1290,7 @@ async function alibabaTTS(text) {
   // 检查是否有配置信息，如果没有则尝试从全局配置获取
   if (!config || !config.alibaba_appkey || !config.alibaba_token) {
     // 尝试使用系统全局配置
-    const systemSetting = storage.readConfig("tts", {});
+    const systemSetting = Settings.getTTSSettings();
 
     if (
       systemSetting.aliyun &&

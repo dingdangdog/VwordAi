@@ -9,6 +9,131 @@ const axios = require("axios");
 const log = require("electron-log");
 const zlib = require("zlib");
 const brotli = require("brotli");
+const crypto = require("crypto");
+
+// API URLs (matching Python implementation)
+const UID_INIT_URL = "https://api.bilibili.com/x/web-interface/nav";
+const BUVID_INIT_URL = "https://www.bilibili.com/";
+const ROOM_INIT_URL = "https://api.live.bilibili.com/room/v1/Room/get_info";
+const DANMAKU_SERVER_CONF_URL =
+  "https://api.live.bilibili.com/xlive/web-room/v1/index/getDanmuInfo";
+
+// WBI signature constants (matching Python implementation)
+const MIXIN_KEY_ENC_TAB = [
+  46, 47, 18, 2, 53, 8, 23, 32, 15, 50, 10, 31, 58, 3, 45, 35, 27, 43, 5, 49,
+  33, 9, 42, 19, 29, 28, 14, 39, 12, 38, 41, 13, 37, 48, 7, 16, 24, 55, 40, 61,
+  26, 17, 0, 1, 60, 51, 30, 4, 22, 25, 54, 21, 56, 59, 6, 63, 57, 62, 11, 36,
+  20, 34, 44, 52,
+];
+
+/**
+ * WBI Signer class (matching Python implementation)
+ */
+class WbiSigner {
+  /**
+   * Get mixin key from original string
+   * @param {string} orig Original string
+   * @returns {string} Mixin key
+   */
+  static getMixinKey(orig) {
+    return MIXIN_KEY_ENC_TAB.map((i) => orig[i])
+      .join("")
+      .substring(0, 32);
+  }
+
+  /**
+   * Get WBI keys from API
+   * @param {Object} options Request options with headers
+   * @returns {Promise<{imgKey: string, subKey: string}>} WBI keys
+   */
+  async getWbiKeys(options = {}) {
+    try {
+      const headers = {
+        "User-Agent":
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
+        ...options.headers,
+      };
+
+      const response = await axios.get(UID_INIT_URL, {
+        headers,
+        timeout: 10000,
+      });
+
+      if (response.data.code === 0) {
+        const data = response.data.data;
+        const imgUrl = data.wbi_img.img_url;
+        const subUrl = data.wbi_img.sub_url;
+
+        const imgKey = imgUrl.substring(
+          imgUrl.lastIndexOf("/") + 1,
+          imgUrl.lastIndexOf(".")
+        );
+        const subKey = subUrl.substring(
+          subUrl.lastIndexOf("/") + 1,
+          subUrl.lastIndexOf(".")
+        );
+
+        return { imgKey, subKey };
+      } else {
+        throw new Error(`Failed to get WBI keys: ${response.data.message}`);
+      }
+    } catch (err) {
+      log.error(`(WbiSigner) Error getting WBI keys:`, err);
+      throw err;
+    }
+  }
+
+  /**
+   * Sign parameters with WBI
+   * @param {Object} params Parameters to sign
+   * @param {Object} options Request options
+   * @returns {Promise<string>} Signed query string
+   */
+  async signParams(params, options = {}) {
+    try {
+      // Get WBI keys
+      const { imgKey, subKey } = await this.getWbiKeys(options);
+      const mixinKey = WbiSigner.getMixinKey(imgKey + subKey);
+
+      log.debug(`(WbiSigner) Got WBI keys - imgKey: ${imgKey}, subKey: ${subKey}`);
+      log.debug(`(WbiSigner) Generated mixinKey: ${mixinKey}`);
+
+      // Add timestamp and filter parameters
+      const signedParams = { ...params };
+      signedParams.wts = Math.floor(Date.now() / 1000);
+
+      log.debug(`(WbiSigner) Signing params: ${JSON.stringify(signedParams)}`);
+
+      // Filter special characters and sort (matching Python's str.maketrans)
+      const query = [];
+      for (const key of Object.keys(signedParams).sort()) {
+        const value = String(signedParams[key]).replace(/[!'()*]/g, "");
+        // 不要URL编码，因为签名是基于原始字符串计算的
+        query.push(`${key}=${value}`);
+      }
+
+      // Generate signature
+      const queryStr = query.join("&");
+      const signString = queryStr + mixinKey;
+      const wbiSign = crypto
+        .createHash("md5")
+        .update(signString)
+        .digest("hex");
+
+      log.debug(`(WbiSigner) Query string: ${queryStr}`);
+      log.debug(`(WbiSigner) Sign string: ${signString}`);
+      log.debug(`(WbiSigner) Generated signature: ${wbiSign}`);
+
+      const result = `${queryStr}&w_rid=${wbiSign}`;
+      log.debug(`(WbiSigner) Final signed query: ${result}`);
+
+      return result;
+    } catch (err) {
+      log.error(`(WbiSigner) Error signing parameters:`, err);
+      throw err;
+    }
+  }
+}
 
 /**
  * Operation codes for packets
@@ -112,6 +237,9 @@ class BLiveClient {
     // Added fields to match Python implementation
     this._uid = null; // Will be initialized during connect
     this._cookies = {}; // Store cookies for auth
+    this._room_id = null; // Real room ID from parseRoomInit
+    this._room_owner_uid = null; // Room owner UID from parseRoomInit
+    this._wbi_signer = new WbiSigner(); // WBI signature handler
 
     // Event callbacks
     this.onOpen = null;
@@ -316,43 +444,89 @@ class BLiveClient {
   }
 
   /**
-   * Get real room ID
+   * Parse room init data (following Python blivedm pattern)
    * @param {number} shortRoomId Short room ID
-   * @returns {Promise<number|null>} Real room ID or null
+   * @returns {Promise<boolean>} Success status
    */
-  async getRealRoomId(shortRoomId) {
+  async parseRoomInit(shortRoomId) {
     try {
-      const url = `https://api.live.bilibili.com/room/v1/Room/room_init?id=${shortRoomId}`;
-      const response = await axios.get(url, { timeout: 5000 });
+      // Use get_info API like Python blivedm library
+      const url = `${ROOM_INIT_URL}?room_id=${shortRoomId}`;
+      log.debug(`(BLiveClient) Getting room info from: ${url}`);
+
+      const headers = {
+        "User-Agent":
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
+      };
+
+      const response = await axios.get(url, { headers, timeout: 10000 });
+
       if (response.data.code === 0) {
-        return response.data.data.room_id;
-      } else {
-        log.error(
-          `(BLiveClient) Failed to get real room ID for ${shortRoomId}:`,
-          response.data.message
+        const data = response.data.data;
+
+        // Store room info like Python implementation
+        this._room_id = data.room_id;
+        this._room_owner_uid = data.uid;
+
+        log.info(
+          `(BLiveClient) Room init successful: ${shortRoomId} -> Real room ID: ${this._room_id}, Owner UID: ${this._room_owner_uid}`
         );
-        return null;
+
+        // Return true like Python implementation
+        return true;
+      } else {
+        const errorCode = response.data.code;
+        const errorMessage = response.data.message || "No message provided";
+        const detailedError = this.getBiliApiErrorDescription(errorCode);
+
+        log.error(
+          `(BLiveClient) Failed to parse room init for ${shortRoomId}: ${errorCode}`
+        );
+        log.error(`(BLiveClient) Error message: ${errorMessage}`);
+        log.error(`(BLiveClient) Error description: ${detailedError}`);
+        return false;
       }
     } catch (err) {
       log.error(
-        `(BLiveClient) Error getting real room ID for ${shortRoomId}:`,
-        err
+        `(BLiveClient) Error parsing room init for ${shortRoomId}:`,
+        err.message || err
       );
-      return null;
+      return false;
     }
   }
 
   /**
-   * Get WebSocket connection info
+   * Get real room ID (simplified version)
+   * @param {number} shortRoomId Short room ID
+   * @returns {Promise<number|null>} Real room ID or null
+   */
+  async getRealRoomId(shortRoomId) {
+    const success = await this.parseRoomInit(shortRoomId);
+    if (success && this._room_id) {
+      return this._room_id;
+    }
+    return null;
+  }
+
+  /**
+   * Get WebSocket connection info (with WBI signature like Python implementation)
    * @param {number} realRoomId Real room ID
    * @returns {Promise<Object|null>} WebSocket info or null
    */
   async getWebSocketInfo(realRoomId) {
     try {
       // Set headers (with optional SESSDATA for authentication)
-      const headers = {};
+      const headers = {
+        "User-Agent":
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
+        Referer: `https://live.bilibili.com/${realRoomId}`,
+        Origin: "https://live.bilibili.com",
+      };
+
+      // 添加Cookie支持，包括SESSDATA和BUVID
+      const cookies = [];
       if (this.options.SESSDATA) {
-        headers.Cookie = `SESSDATA=${this.options.SESSDATA}`;
+        cookies.push(`SESSDATA=${this.options.SESSDATA}`);
         log.info(
           `(BLiveClient) Using SESSDATA for authentication, length: ${this.options.SESSDATA.length}`
         );
@@ -362,38 +536,143 @@ class BLiveClient {
         );
       }
 
-      const url = `https://api.live.bilibili.com/xlive/web-room/v1/index/getDanmuInfo?id=${realRoomId}`;
-      const response = await axios.get(url, { headers, timeout: 5000 });
+      // 添加BUVID cookie如果可用
+      const buvid = this._getBuvid();
+      if (buvid) {
+        cookies.push(`buvid3=${buvid}`);
+        log.debug(`(BLiveClient) Using BUVID: ${buvid}`);
+      }
 
-      if (response.data.code === 0) {
-        // Prefer wss hosts
-        const hostInfo = response.data.data.host_list.find(
-          (h) => h.host && h.wss_port === 443
+      if (cookies.length > 0) {
+        headers.Cookie = cookies.join('; ');
+      }
+
+      // Use WBI signature like Python implementation to avoid -352 error
+      try {
+        log.debug(
+          `(BLiveClient) Attempting to get WebSocket info with WBI signature for room ${realRoomId}`
         );
 
-        if (hostInfo) {
-          return {
-            host: hostInfo.host,
-            port: hostInfo.wss_port,
-            token: response.data.data.token,
-          };
-        } else if (response.data.data.host_list.length > 0) {
-          // Fallback to first host
-          log.warn(
-            `(BLiveClient) No WSS host found for room ${realRoomId}, using fallback`
+        // Construct base parameters (matching Python implementation)
+        const baseParams = { id: realRoomId, type: 0 };
+
+        // Generate signed query string
+        const signedQuery = await this._wbi_signer.signParams(baseParams, {
+          headers,
+        });
+
+        // Make request with signed parameters (直接在URL中使用查询字符串)
+        const url = `${DANMAKU_SERVER_CONF_URL}?${signedQuery}`;
+        log.debug(
+          `(BLiveClient) Requesting WebSocket info with WBI signature from: ${url}`
+        );
+
+        // 重要：不要在axios.get中再次传递params，因为查询字符串已经在URL中了
+        const response = await axios.get(url, {
+          headers,
+          timeout: 10000,
+          // 不要传递params，避免重复编码
+        });
+
+        if (response.data.code === 0) {
+          log.info(
+            `(BLiveClient) Successfully got WebSocket info with WBI signature for room ${realRoomId}`
           );
-          const firstHost = response.data.data.host_list[0];
-          return {
-            host: firstHost.host,
-            port: firstHost.wss_port || firstHost.ws_port,
-            token: response.data.data.token,
-          };
+
+          // Parse response like Python implementation
+          const hostList = response.data.data.host_list;
+          const token = response.data.data.token;
+
+          if (!hostList || hostList.length === 0) {
+            log.warn(
+              `(BLiveClient) Empty host list in WBI response for room ${realRoomId}`
+            );
+            throw new Error("Empty host list");
+          }
+
+          // Prefer wss hosts
+          const hostInfo = hostList.find((h) => h.host && h.wss_port === 443);
+
+          if (hostInfo) {
+            return {
+              host: hostInfo.host,
+              port: hostInfo.wss_port,
+              token: token,
+            };
+          } else if (hostList.length > 0) {
+            // Fallback to first host
+            log.warn(
+              `(BLiveClient) No WSS host found for room ${realRoomId}, using fallback`
+            );
+            const firstHost = hostList[0];
+            return {
+              host: firstHost.host,
+              port: firstHost.wss_port || firstHost.ws_port,
+              token: token,
+            };
+          }
+        } else {
+          log.warn(
+            `(BLiveClient) WBI signed request failed with code ${response.data.code}: ${response.data.message}`
+          );
+          throw new Error(`WBI request failed: ${response.data.code}`);
         }
-      } else {
-        log.error(
-          `(BLiveClient) Failed to get WebSocket info for ${realRoomId}:`,
-          response.data.message
+      } catch (wbiError) {
+        log.warn(
+          `(BLiveClient) WBI signature method failed for room ${realRoomId}:`,
+          wbiError.message
         );
+        log.info(
+          `(BLiveClient) Falling back to legacy method for room ${realRoomId}`
+        );
+
+        // Fallback to legacy method (without WBI signature)
+        const url = `${DANMAKU_SERVER_CONF_URL}?id=${realRoomId}`;
+        log.debug(
+          `(BLiveClient) Requesting WebSocket info (legacy) from: ${url}`
+        );
+        const response = await axios.get(url, { headers, timeout: 10000 });
+
+        if (response.data.code === 0) {
+          // Prefer wss hosts
+          const hostInfo = response.data.data.host_list.find(
+            (h) => h.host && h.wss_port === 443
+          );
+
+          if (hostInfo) {
+            return {
+              host: hostInfo.host,
+              port: hostInfo.wss_port,
+              token: response.data.data.token,
+            };
+          } else if (response.data.data.host_list.length > 0) {
+            // Fallback to first host
+            log.warn(
+              `(BLiveClient) No WSS host found for room ${realRoomId}, using fallback`
+            );
+            const firstHost = response.data.data.host_list[0];
+            return {
+              host: firstHost.host,
+              port: firstHost.wss_port || firstHost.ws_port,
+              token: response.data.data.token,
+            };
+          }
+        } else {
+          const errorCode = response.data.code;
+          const errorMessage = response.data.message || "No message provided";
+
+          // Handle specific error codes
+          let detailedError = this.getBiliApiErrorDescription(errorCode);
+
+          log.error(
+            `(BLiveClient) Failed to get WebSocket info for ${realRoomId}: ${errorCode}`
+          );
+          log.error(`(BLiveClient) Error message: ${errorMessage}`);
+          log.error(`(BLiveClient) Error description: ${detailedError}`);
+          log.error(
+            `(BLiveClient) Full response data: ${JSON.stringify(response.data)}`
+          );
+        }
       }
       return null;
     } catch (err) {
@@ -403,6 +682,32 @@ class BLiveClient {
       );
       return null;
     }
+  }
+
+  /**
+   * Get detailed description for Bilibili API error codes
+   * @param {number} errorCode Error code from API response
+   * @returns {string} Detailed error description
+   */
+  getBiliApiErrorDescription(errorCode) {
+    const errorDescriptions = {
+      "-352": "Room does not exist or is not live (房间不存在或未开播)",
+      "-400": "Invalid request parameters (请求参数错误)",
+      "-401":
+        "Authentication required or SESSDATA invalid (需要登录或SESSDATA无效)",
+      "-403": "Access forbidden (访问被禁止)",
+      "-404": "Resource not found (资源不存在)",
+      "-500": "Internal server error (服务器内部错误)",
+      "-503": "Service unavailable (服务不可用)",
+      1: "Room is closed or does not exist (直播间已关闭或不存在)",
+      60004: "Room does not exist (直播间不存在)",
+      19002003: "Room is banned (直播间被封禁)",
+    };
+
+    return (
+      errorDescriptions[errorCode.toString()] ||
+      `Unknown error code: ${errorCode}`
+    );
   }
 
   /**
@@ -835,14 +1140,16 @@ class BLiveClient {
     }
 
     try {
-      const url = "https://api.bilibili.com/x/web-interface/nav";
       const headers = {
         "User-Agent":
           "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
         Cookie: `SESSDATA=${this.options.SESSDATA}`,
       };
 
-      const response = await axios.get(url, { headers, timeout: 5000 });
+      const response = await axios.get(UID_INIT_URL, {
+        headers,
+        timeout: 5000,
+      });
 
       if (response.data.code === 0) {
         const data = response.data.data;
@@ -879,13 +1186,12 @@ class BLiveClient {
    */
   async initBuvid() {
     try {
-      const url = "https://www.bilibili.com/";
       const headers = {
         "User-Agent":
           "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
       };
 
-      const response = await axios.get(url, {
+      const response = await axios.get(BUVID_INIT_URL, {
         headers,
         timeout: 5000,
         withCredentials: true,
