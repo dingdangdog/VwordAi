@@ -293,8 +293,6 @@
               </div>
             </div>
 
-
-
             <div>
               <label
                 class="block text-xs font-medium text-gray-700 mb-0.5 dark:text-gray-200"
@@ -368,8 +366,6 @@
                 </div>
               </div>
             </div>
-
-
           </div>
         </div>
 
@@ -401,7 +397,6 @@
               >
               <select
                 v-model="ttsMode"
-                @change="saveTTSMode"
                 class="border rounded px-2 py-1 text-sm"
               >
                 <option value="local">本地默认语音</option>
@@ -897,7 +892,7 @@ const ttsMode = computed({
       value = "local";
     }
 
-    console.log(`设置TTS模式为: ${value}`);
+    console.log(`[ttsMode.setter] 设置TTS模式为: ${value}`);
 
     // 如果是Azure模式，确保在settings中启用
     if (value === "azure") {
@@ -916,14 +911,19 @@ const ttsMode = computed({
       });
     }
 
-    // 通过saveTTSMode更新
+    // 简化：直接保存到后端，不依赖复杂的内存管理
+    console.log(`[ttsMode.setter] 直接保存TTS模式: ${value}`);
     biliLiveStore
       .saveTTSMode(value)
-      .then(() => {
-        console.log(`TTS mode successfully updated to: ${value}`);
+      .then((response) => {
+        if (response.success) {
+          console.log(`[ttsMode.setter] TTS模式保存成功: ${value}`);
+        } else {
+          console.error(`[ttsMode.setter] TTS模式保存失败:`, response.error);
+        }
       })
-      .catch((err: Error) => {
-        console.error("Failed to save TTS mode:", err);
+      .catch((error) => {
+        console.error(`[ttsMode.setter] TTS模式保存异常:`, error);
       });
   },
 });
@@ -1092,25 +1092,59 @@ const saveConfig = async (showToast = true) => {
   }
 };
 
-// 保存TTS模式
-async function saveTTSMode() {
+// 处理TTS模式变化
+async function handleTTSModeChange() {
   try {
+    console.log(`[handleTTSModeChange] TTS模式发生变化`);
+
+    // 获取当前选择的模式
     const currentMode = ttsMode.value;
-    console.log(`正在保存TTS模式: ${currentMode}`);
+    console.log(`[handleTTSModeChange] 当前选择的模式: ${currentMode}`);
+
+    // 自动保存
+    await saveTTSMode(currentMode);
+  } catch (err: unknown) {
+    const error = err as Error;
+    console.error("[handleTTSModeChange] 处理TTS模式变化失败:", error);
+    toast.error("处理TTS模式变化失败: " + error.message);
+  }
+}
+
+// 保存TTS模式
+async function saveTTSMode(modeToSave?: string) {
+  try {
+    console.log(`[saveTTSMode] 开始保存TTS模式`);
+
+    // 如果没有传入特定模式，则从store获取
+    let currentMode: string;
+    if (modeToSave) {
+      currentMode = modeToSave;
+      console.log(`[saveTTSMode] 使用传入的模式: ${currentMode}`);
+    } else {
+      currentMode = biliLiveStore.getTTSMode();
+      console.log(`[saveTTSMode] 从store获取的当前模式: ${currentMode}`);
+    }
+
+    // 也检查computed的值用于调试
+    const computedMode = ttsMode.value;
+    console.log(`[saveTTSMode] computed ttsMode.value: ${computedMode}`);
+
+    console.log(`[saveTTSMode] 正在保存TTS模式: ${currentMode}`);
 
     const response = await biliLiveStore.saveTTSMode(currentMode);
     if (response.success) {
-      // 从响应中获取实际保存的模式，或使用当前模式
+      // 后端返回的data就是保存的模式字符串
       const savedMode = response.data || currentMode;
       toast.success(`TTS模式已切换为: ${savedMode}`);
-      console.log(`TTS模式保存成功: ${savedMode}`);
+      console.log(`[saveTTSMode] TTS模式保存成功: ${savedMode}`);
+      console.log(`[saveTTSMode] 响应数据:`, response.data);
     } else {
       toast.error("保存TTS模式失败: " + response.error);
-      console.error("保存TTS模式失败:", response.error);
+      console.error("[saveTTSMode] 保存TTS模式失败:", response.error);
     }
   } catch (err: unknown) {
     const error = err as Error;
-    console.error("Failed to save TTS mode:", error);
+    console.error("[saveTTSMode] Failed to save TTS mode:", error);
     toast.error("保存TTS模式失败: " + error.message);
   }
 }
@@ -1206,8 +1240,6 @@ async function testTTS() {
 function selectRoom(room: Room) {
   roomIdInput.value = room.id.toString();
 }
-
-
 
 // 连接到直播间
 async function connectToRoom() {
