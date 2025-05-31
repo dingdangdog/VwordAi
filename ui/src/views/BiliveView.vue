@@ -881,9 +881,7 @@ const config = ref<BiliLiveConfig>({
 const ttsMode = computed({
   get: () => {
     // 直接从BiliLive store获取TTS模式
-    const mode = biliLiveStore.getTTSMode();
-    console.log(`当前TTS模式: ${mode}`);
-    return mode;
+    return biliLiveStore.getTTSMode();
   },
   set: (value: string) => {
     // 确保值在允许的范围内
@@ -891,8 +889,6 @@ const ttsMode = computed({
       console.warn(`Invalid TTS mode: ${value}, defaulting to local`);
       value = "local";
     }
-
-    console.log(`[ttsMode.setter] 设置TTS模式为: ${value}`);
 
     // 如果是Azure模式，确保在settings中启用
     if (value === "azure") {
@@ -911,19 +907,26 @@ const ttsMode = computed({
       });
     }
 
-    // 简化：直接保存到后端，不依赖复杂的内存管理
-    console.log(`[ttsMode.setter] 直接保存TTS模式: ${value}`);
+    // 保存到后端并显示成功提示
     biliLiveStore
       .saveTTSMode(value)
       .then((response) => {
         if (response.success) {
-          console.log(`[ttsMode.setter] TTS模式保存成功: ${value}`);
+          const modeNames: Record<string, string> = {
+            local: "本地默认语音",
+            azure: "微软Azure",
+            aliyun: "阿里云Aliyun",
+            sovits: "SoVITS"
+          };
+          toast.success(`TTS引擎已切换为: ${modeNames[value] || value}`);
         } else {
-          console.error(`[ttsMode.setter] TTS模式保存失败:`, response.error);
+          toast.error("TTS模式保存失败: " + response.error);
+          console.error(`TTS模式保存失败:`, response.error);
         }
       })
       .catch((error) => {
-        console.error(`[ttsMode.setter] TTS模式保存异常:`, error);
+        toast.error("TTS模式保存失败: " + error.message);
+        console.error(`TTS模式保存异常:`, error);
       });
   },
 });
@@ -1092,59 +1095,27 @@ const saveConfig = async (showToast = true) => {
   }
 };
 
-// 处理TTS模式变化
-async function handleTTSModeChange() {
+// 保存TTS模式（手动保存按钮使用）
+async function saveTTSMode() {
   try {
-    console.log(`[handleTTSModeChange] TTS模式发生变化`);
-
-    // 获取当前选择的模式
-    const currentMode = ttsMode.value;
-    console.log(`[handleTTSModeChange] 当前选择的模式: ${currentMode}`);
-
-    // 自动保存
-    await saveTTSMode(currentMode);
-  } catch (err: unknown) {
-    const error = err as Error;
-    console.error("[handleTTSModeChange] 处理TTS模式变化失败:", error);
-    toast.error("处理TTS模式变化失败: " + error.message);
-  }
-}
-
-// 保存TTS模式
-async function saveTTSMode(modeToSave?: string) {
-  try {
-    console.log(`[saveTTSMode] 开始保存TTS模式`);
-
-    // 如果没有传入特定模式，则从store获取
-    let currentMode: string;
-    if (modeToSave) {
-      currentMode = modeToSave;
-      console.log(`[saveTTSMode] 使用传入的模式: ${currentMode}`);
-    } else {
-      currentMode = biliLiveStore.getTTSMode();
-      console.log(`[saveTTSMode] 从store获取的当前模式: ${currentMode}`);
-    }
-
-    // 也检查computed的值用于调试
-    const computedMode = ttsMode.value;
-    console.log(`[saveTTSMode] computed ttsMode.value: ${computedMode}`);
-
-    console.log(`[saveTTSMode] 正在保存TTS模式: ${currentMode}`);
-
+    const currentMode = biliLiveStore.getTTSMode();
     const response = await biliLiveStore.saveTTSMode(currentMode);
+
     if (response.success) {
-      // 后端返回的data就是保存的模式字符串
-      const savedMode = response.data || currentMode;
-      toast.success(`TTS模式已切换为: ${savedMode}`);
-      console.log(`[saveTTSMode] TTS模式保存成功: ${savedMode}`);
-      console.log(`[saveTTSMode] 响应数据:`, response.data);
+      const modeNames: Record<string, string> = {
+        local: "本地默认语音",
+        azure: "微软Azure",
+        aliyun: "阿里云Aliyun",
+        sovits: "SoVITS"
+      };
+      toast.success(`TTS引擎已切换为: ${modeNames[currentMode] || currentMode}`);
     } else {
       toast.error("保存TTS模式失败: " + response.error);
-      console.error("[saveTTSMode] 保存TTS模式失败:", response.error);
+      console.error("保存TTS模式失败:", response.error);
     }
   } catch (err: unknown) {
     const error = err as Error;
-    console.error("[saveTTSMode] Failed to save TTS mode:", error);
+    console.error("保存TTS模式失败:", error);
     toast.error("保存TTS模式失败: " + error.message);
   }
 }

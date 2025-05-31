@@ -269,28 +269,18 @@ export const useBiliLiveStore = defineStore("biliLive", () => {
     lastError.value = null;
 
     try {
-      console.log(`[store.saveTTSMode] 开始保存TTS模式: ${mode}`);
-      console.log(
-        `[store.saveTTSMode] 当前内存中的ttsMode.value: ${ttsMode.value}`
-      );
-
       const response = await biliLiveService.saveTTSMode(mode);
-      console.log(`[store.saveTTSMode] 后端响应:`, response);
 
       if (response.success) {
         ttsMode.value = mode;
-        console.log(`[store.saveTTSMode] TTS模式已更新为: ${mode}`);
-        console.log(
-          `[store.saveTTSMode] 更新后的ttsMode.value: ${ttsMode.value}`
-        );
       } else {
-        console.warn("[store.saveTTSMode] TTS模式保存失败:", response.error);
+        console.warn("TTS模式保存失败:", response.error);
         lastError.value = response.error || "保存TTS模式失败";
       }
 
       return response;
     } catch (error) {
-      console.error("[store.saveTTSMode] 异常:", error);
+      console.error("保存TTS模式异常:", error);
       return handleError(error, "保存TTS模式失败");
     } finally {
       isLoading.value = false;
@@ -710,33 +700,19 @@ export const useBiliLiveStore = defineStore("biliLive", () => {
    * @returns 当前TTS模式
    */
   function getTTSMode(): string {
-    console.log(`[getTTSMode] 开始获取TTS模式`);
-    console.log(`[getTTSMode] 内存中的ttsMode.value: ${ttsMode.value}`);
-    console.log(`[getTTSMode] config.value存在: ${!!config.value}`);
-    console.log(
-      `[getTTSMode] config.value.tts存在: ${!!(config.value && config.value.tts)}`
-    );
-    console.log(
-      `[getTTSMode] config.value.tts.mode: ${config.value && config.value.tts ? config.value.tts.mode : "undefined"}`
-    );
-
-    // 首先检查内存中的ttsMode（修复：移除错误的 !== "local" 条件）
+    // 首先检查内存中的ttsMode
     if (ttsMode.value) {
-      console.log(`[getTTSMode] 从内存获取TTS模式: ${ttsMode.value}`);
       return ttsMode.value;
     }
 
     // 然后检查config中的tts.mode
     if (config.value && config.value.tts && config.value.tts.mode) {
-      console.log(`[getTTSMode] 从配置获取TTS模式: ${config.value.tts.mode}`);
       // 同时更新内存中的值
       ttsMode.value = config.value.tts.mode;
       return config.value.tts.mode;
     }
 
     // 默认返回local
-    console.log(`[getTTSMode] 使用默认TTS模式: local`);
-    // 同时更新内存中的值
     ttsMode.value = "local";
     return "local";
   }
@@ -746,7 +722,6 @@ export const useBiliLiveStore = defineStore("biliLive", () => {
    * @param mode TTS模式
    */
   function setTTSModeLocal(mode: string) {
-    console.log(`设置本地TTS模式: ${mode}`);
     ttsMode.value = mode;
   }
 
