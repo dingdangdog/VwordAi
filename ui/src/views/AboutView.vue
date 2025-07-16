@@ -88,6 +88,7 @@
       @close="showUpdateDialog = false"
       @download="handleDownloadUpdate"
       @install="handleInstallUpdate"
+      @cancel="handleCancelUpdate"
     />
 
     <!-- 调试对话框 -->
@@ -209,6 +210,9 @@ const systemInfo = ref("");
 
 // 组件挂载时检查是否需要自动更新
 onMounted(() => {
+  // 重置下载状态，防止窗口关闭后状态不一致
+  resetDownloadState();
+
   if (shouldCheckForUpdates()) {
     checkForUpdates(false);
   }
@@ -395,6 +399,31 @@ async function handleInstallUpdate() {
       `安装更新失败: ${error instanceof Error ? error.message : "未知错误"}`
     );
     console.error("安装更新失败:", error);
+  }
+}
+
+// 重置下载状态
+function resetDownloadState() {
+  downloadState.value = "idle";
+  downloadProgress.value = 0;
+  console.log("Download state reset to idle");
+}
+
+// 取消下载更新
+async function handleCancelUpdate() {
+  if (!window.electron) {
+    return;
+  }
+
+  try {
+    await window.electron.cancelUpdate();
+    resetDownloadState();
+    toast.info("更新下载已取消");
+  } catch (error) {
+    toast.error(
+      `取消下载失败: ${error instanceof Error ? error.message : "未知错误"}`
+    );
+    console.error("取消下载失败:", error);
   }
 }
 

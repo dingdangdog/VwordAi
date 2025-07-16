@@ -82,6 +82,13 @@
             <span class="text-sm font-medium text-blue-700 dark:text-blue-400"
               >正在下载更新 {{ Math.round(downloadProgress || 0) }}%</span
             >
+            <button
+              @click="$emit('cancel')"
+              class="text-sm text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 font-medium"
+              title="取消下载"
+            >
+              取消
+            </button>
           </div>
           <div class="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700">
             <div
@@ -160,6 +167,7 @@ const emit = defineEmits<{
   (e: "close"): void;
   (e: "download"): void;
   (e: "install"): void;
+  (e: "cancel"): void;
 }>();
 
 // 格式化发布说明

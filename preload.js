@@ -40,6 +40,11 @@ contextBridge.exposeInMainWorld("electron", {
     return await ipcRenderer.invoke("install-update");
   },
 
+  // 取消下载更新
+  cancelUpdate: async () => {
+    return await ipcRenderer.invoke("cancel-update");
+  },
+
   // 监听更新消息
   onUpdateMessage: (callback) => {
     ipcRenderer.on("update-message", (event, data) => {

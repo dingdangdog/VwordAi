@@ -304,6 +304,29 @@ ipcMain.handle("install-update", async () => {
   }
 });
 
+// 取消下载更新
+ipcMain.handle("cancel-update", async () => {
+  try {
+    log.info("Cancel update download");
+    // electron-updater 没有直接的取消方法，我们通过发送取消消息给渲染进程
+    // 让用户知道取消操作已执行，实际的下载可能会继续在后台进行
+    autoUpdater.autoDownload = false;
+
+    // 发送取消消息到渲染进程
+    if (win) {
+      win.webContents.send("update-message", {
+        message: "download-cancelled",
+        data: { reason: "User cancelled" }
+      });
+    }
+
+    return { success: true, message: "Update download cancelled" };
+  } catch (err) {
+    log.error("Cancel update failed:", err);
+    return { success: false, error: err.message || "Cancel update failed" };
+  }
+});
+
 // 设置调试相关的IPC处理器
 function setupDebugHandlers() {
   // 获取应用信息
