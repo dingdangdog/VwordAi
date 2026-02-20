@@ -1,8 +1,11 @@
 /**
  * 语音合成API模块
  */
-import type { Result, TTSSynthesisResponse, TTSProviderType } from "@/types";
+import type { Result, TTSSynthesisResponse, TTSProviderType, VoiceModel } from "@/types";
 import { invoke } from "@/utils/apiBase";
+
+/** 按服务商缓存的语音模型列表 */
+export type VoiceModelsCache = Partial<Record<TTSProviderType, VoiceModel[]>>;
 
 /**
  * 语音合成API
@@ -27,9 +30,25 @@ export const ttsApi = {
    * @param providerType 服务商类型
    */
   testProviderConnection: (providerType: string) =>
-    invoke<Result<{message: string}>>("tts:test-provider-connection", providerType),
+    invoke<Result<{ message: string }>>("tts:test-provider-connection", providerType),
 
+  /**
+   * 获取已缓存的语音模型（按服务商）
+   */
+  getVoiceModels: () =>
+    invoke<Result<VoiceModelsCache>>("tts:get-voice-models"),
 
+  /**
+   * 同步语音模型（如 Azure 从接口拉取并保存）
+   * @param provider 服务商
+   * @param locale 可选，仅同步该语种（如 zh-CN）
+   */
+  syncVoiceModels: (provider: TTSProviderType, locale?: string) =>
+    invoke<Result<{ provider: string; count: number; models: VoiceModel[] }>>(
+      "tts:sync-voice-models",
+      provider,
+      locale
+    ),
 };
 
 /**

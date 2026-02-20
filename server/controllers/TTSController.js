@@ -5,9 +5,13 @@
 const { ipcMain } = require("electron");
 const path = require("path");
 const fs = require("fs-extra");
+const https = require("https");
 const { success, error } = require("../utils/result");
 const Settings = require("../models/Settings");
 const os = require("os");
+
+/** TTS 设置中用于缓存各服务商同步的语音模型列表的键 */
+const TTS_VOICE_MODELS_CACHE_KEY = "voiceModelsCache";
 
 /**
  * 初始化TTS控制器
@@ -22,6 +26,9 @@ function init() {
 
   // 注册服务商配置相关的IPC处理器
   registerServiceProviderHandlers();
+
+  // 注册语音模型同步与获取的 IPC 处理器
+  registerVoiceModelsHandlers();
 
   console.log("TTS controller initialized - configuration, testing, synthesis and service providers");
 }
@@ -506,6 +513,129 @@ function getProviderName(id) {
     'sovits': 'SoVITS'
   };
   return names[id] || id;
+}
+
+/**
+ * 从 Azure TTS REST 拉取语音列表
+ * @param {object} config - { key, region }
+ * @returns {Promise<Array>} 原始语音项数组
+ */
+function fetchAzureVoicesList(config) {
+  return new Promise((resolve, reject) => {
+    if (!config || !config.key || !config.region) {
+      reject(new Error("Azure 配置不完整，需要 key 和 region"));
+      return;
+    }
+    const host = `${config.region}.tts.speech.microsoft.com`;
+    const pathName = "/cognitiveservices/voices/list";
+    const options = {
+      host,
+      path: pathName,
+      method: "GET",
+      headers: {
+        "Ocp-Apim-Subscription-Key": config.key,
+      },
+    };
+    const req = https.request(options, (res) => {
+      let body = "";
+      res.on("data", (chunk) => { body += chunk; });
+      res.on("end", () => {
+        if (res.statusCode !== 200) {
+          reject(new Error(`Azure 语音列表请求失败: ${res.statusCode} ${body.slice(0, 200)}`));
+          return;
+        }
+        try {
+          const list = JSON.parse(body);
+          resolve(Array.isArray(list) ? list : []);
+        } catch (e) {
+          reject(new Error("解析 Azure 语音列表响应失败: " + e.message));
+        }
+      });
+    });
+    req.on("error", reject);
+    req.setTimeout(30000, () => {
+      req.destroy();
+      reject(new Error("请求 Azure 语音列表超时"));
+    });
+    req.end();
+  });
+}
+
+/**
+ * 将 Azure 原始语音项转换为前端 VoiceModel 结构
+ * @param {object} item - Azure 返回的单条语音 { Name, ShortName, Gender, Locale, LocalName?, StyleList? }
+ * @param {string} provider - 服务商 id
+ */
+function mapAzureVoiceToModel(item, provider) {
+  const gender = (item.Gender || "").toLowerCase() === "female" ? "0" : "1";
+  const styleList = item.StyleList || [];
+  const emotions = styleList.map((s) => ({ code: s, name: s }));
+  return {
+    code: item.ShortName || item.Name || "",
+    name: item.LocalName || item.ShortName || item.Name || "",
+    provider,
+    lang: item.Locale || "",
+    gender,
+    emotions: emotions.length ? emotions : undefined,
+    styles: emotions.length ? emotions : undefined,
+  };
+}
+
+/**
+ * 注册语音模型同步与获取的 IPC 处理器
+ */
+function registerVoiceModelsHandlers() {
+  // 获取已缓存的语音模型（按服务商）
+  ipcMain.handle("tts:get-voice-models", async () => {
+    try {
+      const ttsSettings = Settings.getTTSSettings();
+      const cache = ttsSettings[TTS_VOICE_MODELS_CACHE_KEY];
+      return success(cache && typeof cache === "object" ? cache : {});
+    } catch (err) {
+      console.error("[TTSController] 获取语音模型缓存失败:", err);
+      return error(err.message);
+    }
+  });
+
+  // 同步语音模型：拉取并保存。仅支持 azure；可选 locale 时只同步该语种并合并到缓存
+  ipcMain.handle("tts:sync-voice-models", async (_, provider, locale) => {
+    if (provider !== "azure") {
+      return error("当前仅支持同步 Azure 语音模型");
+    }
+    try {
+      const ttsSettings = Settings.getTTSSettings();
+      const config = ttsSettings[provider];
+      if (!config || !config.key || !config.region) {
+        return error("请先配置 Azure 的 key 和 region");
+      }
+      const rawList = await fetchAzureVoicesList(config);
+      const list = rawList.map((item) => mapAzureVoiceToModel(item, provider));
+      let toSave = list;
+      const cache = ttsSettings[TTS_VOICE_MODELS_CACHE_KEY] && typeof ttsSettings[TTS_VOICE_MODELS_CACHE_KEY] === "object"
+        ? { ...ttsSettings[TTS_VOICE_MODELS_CACHE_KEY] }
+        : {};
+      if (locale) {
+        // "zh" 表示所有中文相关 locale（普通话、粤语、台湾等）
+        const matchLocale = (m) => {
+          if (!m.lang) return false;
+          if (locale === "zh") return m.lang.startsWith("zh");
+          return m.lang === locale;
+        };
+        const forLocale = list.filter(matchLocale);
+        const rest = (cache[provider] || []).filter((m) => !matchLocale(m));
+        toSave = [...rest, ...forLocale];
+      }
+      cache[provider] = toSave;
+      ttsSettings[TTS_VOICE_MODELS_CACHE_KEY] = cache;
+      Settings.saveTTSSettings(ttsSettings);
+      const count = toSave.length;
+      console.log(`[TTSController] 已同步 Azure 语音模型: ${count} 条${locale ? ` (语种: ${locale})` : ""}`);
+      return success({ provider, count, models: toSave });
+    } catch (err) {
+      console.error("[TTSController] 同步语音模型失败:", err);
+      return error(err.message);
+    }
+  });
 }
 
 module.exports = {

@@ -222,7 +222,6 @@
   },
   {
     "provider": "azure",
-
     "lang": "中文（普通话，简体）",
     "gender": "1",
     "name": "云溪",
@@ -444,7 +443,6 @@
   },
   {
     "provider": "azure",
-
     "lang": "中文（普通话，简体）",
     "gender": "1",
     "name": "云健",
@@ -452,7 +450,6 @@
   },
   {
     "provider": "azure",
-
     "lang": "中文（普通话，简体）",
     "gender": "0",
     "name": "晓伊",
@@ -460,7 +457,6 @@
   },
   {
     "provider": "azure",
-
     "lang": "中文（普通话，简体）",
     "gender": "1",
     "name": "云扬",
@@ -468,7 +464,6 @@
   },
   {
     "provider": "azure",
-
     "lang": "中文（普通话，简体）",
     "gender": "0",
     "name": "晓辰",
@@ -476,7 +471,6 @@
   },
   {
     "provider": "azure",
-
     "lang": "中文（普通话，简体）",
     "gender": "0",
     "name": "晓辰多语言",
@@ -485,7 +479,6 @@
   },
   {
     "provider": "azure",
-
     "lang": "中文（普通话，简体）",
     "gender": "0",
     "name": "晓涵",
@@ -493,7 +486,6 @@
   },
   {
     "provider": "azure",
-
     "lang": "中文（普通话，简体）",
     "gender": "0",
     "name": "晓萌",
@@ -501,7 +493,6 @@
   },
   {
     "provider": "azure",
-
     "lang": "中文（普通话，简体）",
     "gender": "0",
     "name": "晓墨",
@@ -509,7 +500,6 @@
   },
   {
     "provider": "azure",
-
     "lang": "中文（普通话，简体）",
     "gender": "0",
     "name": "晓秋",
@@ -517,7 +507,6 @@
   },
   {
     "provider": "azure",
-
     "lang": "中文（普通话，简体）",
     "gender": "0",
     "name": "晓柔",
@@ -525,7 +514,6 @@
   },
   {
     "provider": "azure",
-
     "lang": "中文（普通话，简体）",
     "gender": "0",
     "name": "晓睿",
@@ -533,16 +521,16 @@
   },
   {
     "provider": "azure",
-
     "lang": "中文（普通话，简体）",
     "gender": "0",
     "name": "晓霜",
     "code": "zh-CN-XiaoshuangNeural",
-    "emotions": ["儿童"]
+    "emotions": [
+      "儿童"
+    ]
   },
   {
     "provider": "azure",
-
     "lang": "中文（普通话，简体）",
     "gender": "0",
     "name": "晓晓方言",
@@ -550,7 +538,6 @@
   },
   {
     "provider": "azure",
-
     "lang": "中文（普通话，简体）",
     "gender": "0",
     "name": "晓晓多语言",
@@ -559,7 +546,6 @@
   },
   {
     "provider": "azure",
-
     "lang": "中文（普通话，简体）",
     "gender": "0",
     "name": "晓燕",
@@ -567,16 +553,16 @@
   },
   {
     "provider": "azure",
-
     "lang": "中文（普通话，简体）",
     "gender": "0",
     "name": "晓优",
     "code": "zh-CN-XiaoyouNeural",
-    "emotions": ["儿童"]
+    "emotions": [
+      "儿童"
+    ]
   },
   {
     "provider": "azure",
-
     "lang": "中文（普通话，简体）",
     "gender": "0",
     "name": "晓瑜多语言",
@@ -585,7 +571,6 @@
   },
   {
     "provider": "azure",
-
     "lang": "中文（普通话，简体）",
     "gender": "0",
     "name": "晓珍",
@@ -593,7 +578,6 @@
   },
   {
     "provider": "azure",
-
     "lang": "中文（普通话，简体）",
     "gender": "1",
     "name": "云峰",
@@ -601,7 +585,6 @@
   },
   {
     "provider": "azure",
-
     "lang": "中文（普通话，简体）",
     "gender": "1",
     "name": "云浩",
@@ -609,7 +592,6 @@
   },
   {
     "provider": "azure",
-
     "lang": "中文（普通话，简体）",
     "gender": "1",
     "name": "云杰",
@@ -617,7 +599,6 @@
   },
   {
     "provider": "azure",
-
     "lang": "中文（普通话，简体）",
     "gender": "1",
     "name": "云霞",
@@ -625,7 +606,6 @@
   },
   {
     "provider": "azure",
-
     "lang": "中文（普通话，简体）",
     "gender": "1",
     "name": "云烨",
@@ -633,7 +613,6 @@
   },
   {
     "provider": "azure",
-
     "lang": "中文（普通话，简体）",
     "gender": "1",
     "name": "云逸多语言",
@@ -642,7 +621,6 @@
   },
   {
     "provider": "azure",
-
     "lang": "中文（普通话，简体）",
     "gender": "1",
     "name": "云泽",
@@ -650,7 +628,6 @@
   },
   {
     "provider": "azure",
-
     "lang": "中文（广西口音普通话，简体）",
     "gender": "1",
     "name": "云启",
@@ -659,7 +636,6 @@
   },
   {
     "provider": "azure",
-
     "lang": "中文（中原官话河南，简体）",
     "gender": "1",
     "name": "云登",
@@ -668,7 +644,6 @@
   },
   {
     "provider": "azure",
-
     "lang": "中文（东北官话，简体）",
     "gender": "0",
     "name": "晓贝",
@@ -677,7 +652,6 @@
   },
   {
     "provider": "azure",
-
     "lang": "中文（东北官话，简体）",
     "gender": "1",
     "name": "云彪",
@@ -686,7 +660,6 @@
   },
   {
     "provider": "azure",
-
     "lang": "中文（中原官话陕西，简体）",
     "gender": "0",
     "name": "晓妮",
@@ -695,7 +668,6 @@
   },
   {
     "provider": "azure",
-
     "lang": "中文（冀鲁官话，简体）",
     "gender": "1",
     "name": "云翔",
@@ -704,7 +676,6 @@
   },
   {
     "provider": "azure",
-
     "lang": "中文（西南普通话，简体）",
     "gender": "1",
     "name": "云熙",
@@ -713,7 +684,6 @@
   },
   {
     "provider": "azure",
-
     "lang": "中文(粤语，繁体)",
     "gender": "0",
     "name": "晓雯",
@@ -721,7 +691,6 @@
   },
   {
     "provider": "azure",
-
     "lang": "中文(粤语，繁体)",
     "gender": "1",
     "name": "雯龙",
@@ -729,7 +698,6 @@
   },
   {
     "provider": "azure",
-
     "lang": "中文(粤语，繁体)",
     "gender": "0",
     "name": "晓佳",
@@ -737,7 +705,6 @@
   },
   {
     "provider": "azure",
-
     "lang": "中文（台湾普通话，繁体）",
     "gender": "0",
     "name": "晓辰",
@@ -745,7 +712,6 @@
   },
   {
     "provider": "azure",
-
     "lang": "中文（台湾普通话，繁体）",
     "gender": "1",
     "name": "云哲",
@@ -753,7 +719,6 @@
   },
   {
     "provider": "azure",
-
     "lang": "中文（台湾普通话，繁体）",
     "gender": "0",
     "name": "晓瑜",
@@ -761,7 +726,6 @@
   },
   {
     "provider": "azure",
-
     "lang": "中文（吴语，简体）",
     "gender": "0",
     "name": "小彤",
@@ -770,7 +734,6 @@
   },
   {
     "provider": "azure",
-
     "lang": "中文（吴语，简体）",
     "gender": "1",
     "name": "云哲",
@@ -779,7 +742,6 @@
   },
   {
     "provider": "azure",
-
     "lang": "中文（粤语，简体）",
     "gender": "0",
     "name": "晓敏",
@@ -788,7 +750,6 @@
   },
   {
     "provider": "azure",
-
     "lang": "中文（粤语，简体）",
     "gender": "1",
     "name": "云松",

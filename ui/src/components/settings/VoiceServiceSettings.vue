@@ -6,28 +6,22 @@
         <div class="card p-4">
           <ul class="space-y-2">
             <li v-for="provider in providers" :key="provider.id">
-              <button
-                class="w-full flex items-center px-3 py-2 rounded-md transition-colors text-left"
-                :class="
-                  selectedProviderType === provider.type
-                    ? 'bg-primary-muted text-primary'
-                    : 'hover:bg-surface-hover text-ink'
-                "
-                @click="selectProvider(provider.type)"
-              >
-                <CloudIcon
-                  class="h-5 w-5 mr-2"
-                  :class="
-                    selectedProviderType === provider.type
-                      ? 'text-primary'
-                      : 'text-ink-muted'
-                  "
-                />
+              <button class="w-full flex items-center px-3 py-2 rounded-md transition-colors text-left" :class="selectedProviderType === provider.type
+                ? 'bg-primary-muted text-primary'
+                : 'hover:bg-surface-hover text-ink'
+                " @click="selectProvider(provider.type)">
+                <CloudIcon class="h-5 w-5 mr-2" :class="selectedProviderType === provider.type
+                  ? 'text-primary'
+                  : 'text-ink-muted'
+                  " />
                 <span>{{ provider.name }}</span>
                 <span class="ml-auto">
-                  <span v-if="provider.status === 'success'" class="w-3 h-3 rounded-full bg-green-500 inline-block"></span>
-                  <span v-else-if="provider.status === 'failure'" class="w-3 h-3 rounded-full bg-red-500 inline-block"></span>
-                  <span v-else-if="provider.status === 'untested'" class="w-3 h-3 rounded-full bg-yellow-500 inline-block"></span>
+                  <span v-if="provider.status === 'success'"
+                    class="w-3 h-3 rounded-full bg-green-500 inline-block"></span>
+                  <span v-else-if="provider.status === 'failure'"
+                    class="w-3 h-3 rounded-full bg-red-500 inline-block"></span>
+                  <span v-else-if="provider.status === 'untested'"
+                    class="w-3 h-3 rounded-full bg-yellow-500 inline-block"></span>
                   <span v-else class="w-3 h-3 rounded-full bg-border inline-block"></span>
                 </span>
               </button>
@@ -42,17 +36,11 @@
           <!-- 子 Tab -->
           <div class="border-b border-border mb-4">
             <nav class="flex -mb-px">
-              <button
-                v-for="t in subTabs"
-                :key="t.id"
-                @click="subTab = t.id"
-                class="py-2 px-4 border-b-2 font-medium text-sm whitespace-nowrap transition-colors"
-                :class="
-                  subTab === t.id
-                    ? 'border-primary text-primary'
-                    : 'border-transparent text-ink-muted hover:text-ink'
-                "
-              >
+              <button v-for="t in subTabs" :key="t.id" @click="subTab = t.id"
+                class="py-2 px-4 border-b-2 font-medium text-sm whitespace-nowrap transition-colors" :class="subTab === t.id
+                  ? 'border-primary text-primary'
+                  : 'border-transparent text-ink-muted hover:text-ink'
+                  ">
                 <component :is="t.icon" class="h-4 w-4 inline-block mr-1.5" />
                 {{ t.name }}
               </button>
@@ -87,48 +75,46 @@
                 <h2 class="text-lg font-semibold text-ink">
                   语音模型 ({{ filteredModels.length }})
                 </h2>
-                <div class="relative">
-                  <input
-                    type="text"
-                    v-model="searchQuery"
-                    placeholder="搜索模型..."
-                    class="input px-3 py-2 w-full"
-                  />
+                <div class="flex flex-wrap items-center gap-2">
+                  <template v-if="selectedProviderType === 'azure'">
+                    <select v-model="syncLocale"
+                      class="input px-3 py-2 text-sm border border-border rounded-md bg-surface text-ink">
+                      <option value="">全部语种</option>
+                      <option value="zh">中文(含方言)</option>
+                      <option value="ja-JP">日语</option>
+                      <option value="en-US">英语</option>
+                    </select>
+                    <button type="button" :disabled="isSyncingVoiceModels" @click="syncVoiceModels"
+                      class="px-3 py-2 text-sm font-medium rounded-md transition-colors bg-primary text-white hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed">
+                      <span v-if="isSyncingVoiceModels">同步中...</span>
+                      <span v-else>同步模型</span>
+                    </button>
+                  </template>
+                </div>
+                <div class="flex flex-wrap items-center gap-2">
+                  <input type="text" v-model="searchQuery" placeholder="搜索模型..."
+                    class="input px-3 py-2 w-full min-w-32" />
                 </div>
               </div>
               <div class="flex flex-wrap gap-2 mb-4">
                 <div class="inline-flex rounded-md shadow-sm">
-                  <button
-                    @click="filterGender = ''"
-                    :class="
-                      filterGender === ''
-                        ? 'bg-primary-muted text-primary'
-                        : 'bg-surface-elevated text-ink border-border hover:bg-surface-hover'
-                    "
-                    class="px-3 py-1 text-sm font-medium border border-border rounded-l-md transition-colors"
-                  >
+                  <button @click="filterGender = ''" :class="filterGender === ''
+                    ? 'bg-primary-muted text-primary'
+                    : 'bg-surface-elevated text-ink border-border hover:bg-surface-hover'
+                    " class="px-3 py-1 text-sm font-medium border border-border rounded-l-md transition-colors">
                     全部
                   </button>
-                  <button
-                    @click="filterGender = '0'"
-                    :class="
-                      filterGender === '0'
-                        ? 'bg-primary-muted text-primary'
-                        : 'bg-surface-elevated text-ink border-border hover:bg-surface-hover'
-                    "
-                    class="px-3 py-1 text-sm font-medium border border-border border-l-0 transition-colors"
-                  >
+                  <button @click="filterGender = '0'" :class="filterGender === '0'
+                    ? 'bg-primary-muted text-primary'
+                    : 'bg-surface-elevated text-ink border-border hover:bg-surface-hover'
+                    " class="px-3 py-1 text-sm font-medium border border-border border-l-0 transition-colors">
                     女声
                   </button>
-                  <button
-                    @click="filterGender = '1'"
-                    :class="
-                      filterGender === '1'
-                        ? 'bg-primary-muted text-primary'
-                        : 'bg-surface-elevated text-ink border-border hover:bg-surface-hover'
+                  <button @click="filterGender = '1'" :class="filterGender === '1'
+                    ? 'bg-primary-muted text-primary'
+                    : 'bg-surface-elevated text-ink border-border hover:bg-surface-hover'
                     "
-                    class="px-3 py-1 text-sm font-medium border border-border border-l-0 rounded-r-md transition-colors"
-                  >
+                    class="px-3 py-1 text-sm font-medium border border-border border-l-0 rounded-r-md transition-colors">
                     男声
                   </button>
                 </div>
@@ -139,49 +125,34 @@
               <div v-else-if="filteredModels.length === 0" class="text-center py-6 text-ink-muted">
                 没有找到符合条件的语音模型
               </div>
-              <div
-                v-else
-                class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 max-h-[calc(100vh-18rem)] overflow-y-auto"
-              >
-                <div
-                  v-for="model in filteredModels"
-                  :key="model.code"
-                  class="border border-border rounded-lg overflow-hidden bg-surface-elevated hover:shadow-md transition-shadow"
-                >
+              <div v-else
+                class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 max-h-[calc(100vh-20rem)] overflow-y-auto">
+                <div v-for="model in filteredModels" :key="model.code"
+                  class="border border-border rounded-lg overflow-hidden bg-surface-elevated hover:shadow-md transition-shadow">
                   <div class="p-3">
                     <div class="flex justify-between items-center">
                       <h3 class="font-semibold text-ink">
                         {{ model.name }}
                       </h3>
-                      <span
-                        :class="
-                          model.gender === '0'
-                            ? 'bg-pink-500/20 text-pink-600 dark:text-pink-300'
-                            : 'bg-primary-muted text-primary'
-                        "
-                        class="px-2 py-0.5 text-xs rounded-full"
-                      >
+                      <span :class="model.gender === '0'
+                        ? 'bg-pink-500/20 text-pink-600 dark:text-pink-300'
+                        : 'bg-primary-muted text-primary'
+                        " class="px-2 py-0.5 text-xs rounded-full">
                         {{ model.gender === "0" ? "女声" : "男声" }}
                       </span>
                     </div>
                     <p class="text-sm text-ink-muted mt-1">{{ model.lang }}</p>
                     <div class="mt-3 flex justify-between items-center">
                       <div class="text-xs text-ink-muted">{{ model.code }}</div>
-                      <button
-                        @click="playTest(model)"
-                        :disabled="isTestingModel[model.code]"
-                        class="px-3 py-1 text-xs font-medium text-primary bg-primary-muted rounded hover:opacity-90 transition-opacity"
-                      >
+                      <button @click="playTest(model)" :disabled="isTestingModel[model.code]"
+                        class="px-3 py-1 text-xs font-medium text-primary bg-primary-muted rounded hover:opacity-90 transition-opacity">
                         <span v-if="isTestingModel[model.code]">测试中...</span>
                         <span v-else>试听</span>
                       </button>
                     </div>
                     <div v-if="model.emotions && model.emotions.length > 0" class="flex flex-wrap gap-1 mt-1">
-                      <span
-                        v-for="emotion in model.emotions.slice(0, 3)"
-                        :key="emotion.code"
-                        class="bg-surface-hover text-ink text-xs px-2 py-0.5 rounded"
-                      >
+                      <span v-for="emotion in model.emotions.slice(0, 3)" :key="emotion.code"
+                        class="bg-surface-hover text-ink text-xs px-2 py-0.5 rounded">
                         {{ emotion.name }}
                       </span>
                       <span v-if="model.emotions.length > 3" class="text-xs text-ink-muted">
@@ -211,6 +182,8 @@ import AzureTTSProviderForm from "./tts/AzureProviderForm.vue";
 import OpenaiTTSProviderForm from "./tts/OpenaiProviderForm.vue";
 import TencentTTSProviderForm from "./tts/TencentProviderForm.vue";
 import { getProcessedVoiceModels } from "@/utils/voice-utils";
+import { ttsApi } from "@/api/ttsApi";
+import type { VoiceModelsCache } from "@/api/ttsApi";
 
 const subTabs = [
   { id: "config" as const, name: "TTS 配置", icon: MicrophoneIcon },
@@ -229,6 +202,9 @@ const filterGender = ref("");
 const voiceModels = ref<VoiceModel[]>([]);
 const isLoadingModels = ref(false);
 const isTestingModel = ref<Record<string, boolean>>({});
+const cachedVoiceModels = ref<VoiceModelsCache>({});
+const syncLocale = ref("");
+const isSyncingVoiceModels = ref(false);
 
 const providers = computed(() => {
   return SUPPORTED_TTS_PROVIDERS.map((provider) => {
@@ -239,15 +215,15 @@ const providers = computed(() => {
 
 const filteredModels = computed(() => {
   if (!selectedProviderType.value) return [];
-  return voiceModels.value.filter((model) => {
-    if (model.provider !== selectedProviderType.value) return false;
+  const list = voiceModels.value.filter((m) => m.provider === selectedProviderType.value);
+  return list.filter((model) => {
     if (filterGender.value && model.gender !== filterGender.value) return false;
     if (searchQuery.value) {
       const q = searchQuery.value.toLowerCase();
       return (
         model.name.toLowerCase().includes(q) ||
         model.code.toLowerCase().includes(q) ||
-        model.lang.toLowerCase().includes(q)
+        (model.lang && model.lang.toLowerCase().includes(q))
       );
     }
     return true;
@@ -261,18 +237,69 @@ onMounted(async () => {
   if (SUPPORTED_TTS_PROVIDERS.length > 0) {
     selectProvider(SUPPORTED_TTS_PROVIDERS[0].type);
   }
-  loadVoiceModels();
+  await loadVoiceModels();
 });
+
+async function loadCachedVoiceModels() {
+  try {
+    const res = await ttsApi.getVoiceModels();
+    if (res.success && res.data) {
+      cachedVoiceModels.value = res.data;
+    }
+  } catch (e) {
+    console.error("Failed to load cached voice models:", e);
+  }
+}
+
+function mergeVoiceModels(): VoiceModel[] {
+  const staticList = getProcessedVoiceModels();
+  const cache = cachedVoiceModels.value;
+  const result: VoiceModel[] = [];
+  const providers = new Set<string>([
+    ...staticList.map((m) => m.provider).filter(Boolean),
+    ...Object.keys(cache || {}),
+  ]);
+  for (const provider of providers) {
+    const cached = cache?.[provider];
+    if (cached && cached.length > 0) {
+      result.push(...cached);
+    } else {
+      result.push(...staticList.filter((m) => m.provider === provider));
+    }
+  }
+  return result;
+}
 
 async function loadVoiceModels() {
   isLoadingModels.value = true;
   try {
-    voiceModels.value = getProcessedVoiceModels();
+    await loadCachedVoiceModels();
+    voiceModels.value = mergeVoiceModels();
   } catch (e) {
     console.error("Failed to load voice models:", e);
     toast.error("加载语音模型失败");
   } finally {
     isLoadingModels.value = false;
+  }
+}
+
+async function syncVoiceModels() {
+  if (selectedProviderType.value !== "azure") return;
+  isSyncingVoiceModels.value = true;
+  try {
+    const locale = syncLocale.value.trim() || undefined;
+    const res = await ttsApi.syncVoiceModels("azure", locale);
+    if (res.success && res.data) {
+      toast.success(`已同步 ${res.data.count} 个语音模型`);
+      await loadVoiceModels();
+    } else {
+      toast.error(res.error || "同步失败");
+    }
+  } catch (e) {
+    console.error("Sync voice models error:", e);
+    toast.error("同步语音模型失败");
+  } finally {
+    isSyncingVoiceModels.value = false;
   }
 }
 
