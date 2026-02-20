@@ -28,8 +28,8 @@ function registerLLMConfigHandlers() {
       const llmSettings = Settings.getLLMSettings();
       return success(llmSettings);
     } catch (err) {
-      console.error("[LLMController] 获取LLM配置失败:", err);
-      return error('获取LLM配置失败: ' + err.message);
+      console.error("[LLMController] Failed to get LLM config:", err);
+      return error('Failed to get LLM config: ' + err.message);
     }
   });
 
@@ -39,8 +39,8 @@ function registerLLMConfigHandlers() {
       Settings.saveLLMConfig(configData);
       return success(Settings.getLLMSettings());
     } catch (err) {
-      console.error("[LLMController] 更新LLM配置失败:", err);
-      return error('更新LLM配置失败: ' + err.message);
+      console.error("[LLMController] Failed to update LLM config:", err);
+      return error('Failed to update LLM config: ' + err.message);
     }
   });
 
@@ -53,8 +53,8 @@ function registerLLMConfigHandlers() {
         config: llmSettings[provider] || {},
       });
     } catch (err) {
-      console.error("[LLMController] 获取LLM提供商配置失败:", err);
-      return error('获取LLM提供商配置失败: ' + err.message);
+      console.error("[LLMController] Failed to get LLM provider config:", err);
+      return error('Failed to get LLM provider config: ' + err.message);
     }
   });
 
@@ -72,8 +72,8 @@ function registerLLMConfigHandlers() {
         config: llmSettings[provider],
       });
     } catch (err) {
-      console.error("[LLMController] 更新LLM提供商配置失败:", err);
-      return error('更新LLM提供商配置失败: ' + err.message);
+      console.error("[LLMController] Failed to update LLM provider config:", err);
+      return error('Failed to update LLM provider config: ' + err.message);
     }
   });
 }
@@ -82,58 +82,70 @@ function registerLLMConfigHandlers() {
  * 注册LLM测试相关的IPC处理器
  */
 function registerLLMTestHandlers() {
-  // 测试LLM提供商连接
+  // 测试LLM提供商连接（provider 为 providerId）
   ipcMain.handle('llm:test-provider-connection', async (_, provider, testData) => {
     try {
-      log.info(`[LLMController] 测试LLM服务商连接: ${provider}`);
+      log.info(`[LLMController] Test LLM provider connection: ${provider}`);
 
-      // 获取LLM设置
       const llmSettings = Settings.getLLMSettings();
-      const providerConfig = llmSettings[provider];
+      const providers = llmSettings.providers || {};
+      const providerConfig = providers[provider];
 
       if (!providerConfig) {
-        return error(`LLM提供商 ${provider} 未配置`);
+        return error(`LLM provider ${provider} not configured`);
       }
 
       // 调用对应的LLM客户端进行测试
       const result = await testLLMProvider(provider, testData, providerConfig);
 
       if (result.success) {
-        // 更新状态
-        llmSettings[provider].status = "success";
-        Settings.saveLLMConfig(llmSettings);
+        if (providers[provider]) {
+          providers[provider].status = "success";
+          Settings.saveLLMConfig(llmSettings);
+        }
         return success({
           status: 'success',
-          message: result.message || `${provider} 连接测试成功`
+          message: result.message || `${provider} connection test OK`
         });
       } else {
-        llmSettings[provider].status = "failure";
-        Settings.saveLLMConfig(llmSettings);
-        return error(result.message || `${provider} 连接测试失败`);
+        if (providers[provider]) {
+          providers[provider].status = "failure";
+          Settings.saveLLMConfig(llmSettings);
+        }
+        return error(result.message || `${provider} connection test failed`);
       }
     } catch (err) {
-      log.error(`[LLMController] 测试LLM服务商连接失败: ${err.message}`, err);
-      return error('测试LLM服务商连接失败: ' + err.message);
+      log.error(`[LLMController] Test LLM provider connection failed: ${err.message}`, err);
+      return error('Test LLM provider connection failed: ' + err.message);
     }
   });
 }
 
 /**
  * 测试LLM提供商连接
- * @param {string} provider 提供商名称
+ * @param {string} providerId 提供商ID
  * @param {object} testData 测试数据
- * @param {object} providerConfig 提供商配置
+ * @param {object} providerConfig 提供商配置（含 protocol）
  * @returns {Promise<object>} 测试结果
  */
-async function testLLMProvider(provider, testData, providerConfig) {
+async function testLLMProvider(providerId, testData, providerConfig) {
   try {
-    const testText = testData.text || "这是一个LLM连接测试，请简单回复确认收到。";
+    const testText = testData.text || "LLM connection test, please reply OK.";
+    let protocol = providerConfig.protocol || providerId;
+    // 兜底：providerId 形如 "openai-xxx" 时视为 openai 协议（兼容未存 protocol 的旧配置）
+    if (providerId.startsWith("openai-") && !["openai", "azure", "gemini", "claude", "aliyun", "volcengine"].includes(protocol)) {
+      protocol = "openai";
+    }
+
+    log.info(`[LLMController] Test connection providerId=${providerId} protocol=${protocol} hasProtocol=${!!providerConfig.protocol}`);
 
     let llmClient;
 
-    // 根据提供商类型加载对应的客户端
-    switch (provider) {
+    switch (protocol) {
       case 'openai':
+      case 'azure':
+      case 'gemini':
+      case 'claude':
         const OpenAIClient = require("../llm/openai");
         llmClient = new OpenAIClient(providerConfig);
         break;
@@ -146,31 +158,42 @@ async function testLLMProvider(provider, testData, providerConfig) {
         llmClient = new VolcengineClient(providerConfig);
         break;
       default:
+        log.warn(`[LLMController] Unsupported protocol: ${protocol}`);
         return {
           success: false,
-          message: `不支持的LLM提供商: ${provider}`
+          message: `Unsupported protocol: ${protocol}`
         };
     }
 
-    // 执行简单的测试请求
-    const result = await llmClient.analyzeText(testText);
+    const useTestConnection = typeof llmClient.testConnection === 'function';
+    log.info(`[LLMController] Using testConnection=${useTestConnection}`);
 
-    if (result && result.length > 0) {
-      return {
-        success: true,
-        message: `${provider} LLM服务连接成功`
-      };
-    } else {
-      return {
-        success: false,
-        message: `${provider} LLM服务返回结果异常`
-      };
+    if (useTestConnection) {
+      const ok = await llmClient.testConnection(testText);
+      log.info(`[LLMController] testConnection result ok=${ok}`);
+      if (!ok) {
+        log.warn(`[LLMController] Test failed: ${providerId} no valid reply; see [OpenAIClient] raw content above`);
+      }
+      return ok
+        ? { success: true, message: `${providerId} LLM connection OK` }
+        : { success: false, message: `${providerId} no valid reply` };
     }
+
+    const result = await llmClient.analyzeText(testText);
+    const valid = result != null && (Array.isArray(result) ? result.length > 0 : true);
+    log.info(`[LLMController] analyzeText result valid=${valid} resultType=${typeof result} isArray=${Array.isArray(result)} len=${Array.isArray(result) ? result.length : 'n/a'}`);
+    if (!valid && result != null) {
+      log.warn(`[LLMController] analyzeText response:`, JSON.stringify(result).slice(0, 500));
+    }
+    if (valid) {
+      return { success: true, message: `${providerId} LLM connection OK` };
+    }
+    return { success: false, message: `${providerId} LLM response invalid` };
   } catch (error) {
-    log.error(`测试${provider} LLM服务连接失败:`, error);
+    log.error(`[LLMController] Test ${providerId} LLM connection failed:`, error);
     return {
       success: false,
-      message: error.message || `${provider} LLM服务连接失败`
+      message: error.message || `${providerId} LLM connection failed`
     };
   }
 }

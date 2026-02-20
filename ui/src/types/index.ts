@@ -57,7 +57,34 @@ export type TTSProviderType =
   | "openai"
   | "blive";
 
-export type LLMProviderType = "volcengine" | "aliyun" | "openai" | "azure";
+// LLM 协议（用于选择客户端实现）
+export type LLMProtocol =
+  | "openai"
+  | "azure"
+  | "volcengine"
+  | "aliyun"
+  | "gemini"
+  | "claude";
+
+// 单个 LLM 服务商配置（可新增多个，每个有 id）
+export interface LLMProviderConfig {
+  id: string;
+  name: string;
+  protocol: LLMProtocol;
+  key?: string;
+  appkey?: string;
+  token?: string;
+  endpoint?: string;
+  model?: string;
+  temperature?: number;
+  maxTokens?: number;
+  topP?: number;
+  status?: ServiceProviderStatus;
+  [key: string]: any;
+}
+
+// 兼容旧类型：章节等处的 llmProvider 存的是 providerId (string)
+export type LLMProviderType = string;
 
 // 连接测试结果
 export interface ConnectionTestResult {

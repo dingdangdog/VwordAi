@@ -1,12 +1,7 @@
 /**
  * 设置相关API模块
  */
-import type {
-  Result,
-  Settings,
-  TTSProviderType,
-  LLMProviderType,
-} from "@/types";
+import type { Result, Settings, TTSProviderType } from "@/types";
 import { invoke } from "@/utils/apiBase";
 
 /**
@@ -102,25 +97,18 @@ export const settingsApi = {
 
   /**
    * 获取LLM服务商配置
-   * @param provider 服务商类型 (volcengine, aliyun, openai, azure)
+   * @param providerId 服务商ID
    */
-  getLLMProviderSettings: (provider: LLMProviderType) =>
-    invoke<Result<any>>(
-      "get-llm-provider-settings",
-      provider as TTSProviderType
-    ),
+  getLLMProviderSettings: (providerId: string) =>
+    invoke<Result<any>>("get-llm-provider-settings", providerId),
 
   /**
-   * 更新LLM服务商配置
-   * @param provider 服务商类型 (volcengine, aliyun, openai, azure)
-   * @param data 服务商配置数据
+   * 更新或新增LLM服务商配置
+   * @param providerId 服务商ID（更新时与 data.id 一致）
+   * @param data 服务商配置数据（含 id, name, protocol 及协议相关字段）
    */
-  updateLLMProviderSettings: (provider: LLMProviderType, data: any) =>
-    invoke<Result<any>>(
-      "update-llm-provider-settings",
-      provider as TTSProviderType,
-      { ...data }
-    ),
+  updateLLMProviderSettings: (providerId: string, data: any) =>
+    invoke<Result<any>>("update-llm-provider-settings", providerId, { ...data }),
 
   /**
    * 测试TTS服务商连接
@@ -136,14 +124,18 @@ export const settingsApi = {
 
   /**
    * 测试LLM服务商连接
-   * @param type 服务商类型
+   * @param providerId 服务商ID
    */
-  testLLMProviderConnection: (type: LLMProviderType, data?: any) =>
+  testLLMProviderConnection: (providerId: string, data?: any) =>
     invoke<Result<{ message: string; status: string }>>(
       "llm:test-provider-connection",
-      type,
+      providerId,
       data
     ),
 
-
+  /**
+   * 删除 LLM 服务商
+   */
+  deleteLLMProvider: (providerId: string) =>
+    invoke<Result<{ deleted: string }>>("delete-llm-provider", providerId),
 };

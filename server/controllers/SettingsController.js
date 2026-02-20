@@ -16,7 +16,7 @@ function init() {
       const settings = Settings.getSettings();
       return success(settings);
     } catch (err) {
-      console.error("获取设置失败:", err);
+      console.error("[SettingsController] Failed to get settings:", err);
       return error(err.message);
     }
   });
@@ -27,7 +27,7 @@ function init() {
       const settings = Settings.getTTSSettings();
       return success(settings);
     } catch (err) {
-      console.error("获取TTS设置失败:", err);
+      console.error("[SettingsController] Failed to get TTS settings:", err);
       return error(err.message);
     }
   });
@@ -38,7 +38,7 @@ function init() {
       const settings = Settings.getLLMSettings();
       return success(settings);
     } catch (err) {
-      console.error("获取LLM设置失败:", err);
+      console.error("[SettingsController] Failed to get LLM settings:", err);
       return error(err.message);
     }
   });
@@ -49,7 +49,7 @@ function init() {
       const settings = Settings.getBliveSettings();
       return success(settings);
     } catch (err) {
-      console.error("获取B站直播设置失败:", err);
+      console.error("[SettingsController] Failed to get Blive settings:", err);
       return error(err.message);
     }
   });
@@ -59,7 +59,7 @@ function init() {
     try {
       return success(Settings.getSetting(key, type));
     } catch (err) {
-      console.error("获取设置项失败:", err);
+      console.error("[SettingsController] Failed to get setting:", err);
       return error(err.message);
     }
   });
@@ -69,7 +69,7 @@ function init() {
     try {
       return success(Settings.updateSettings(settingsData));
     } catch (err) {
-      console.error("更新设置失败:", err);
+      console.error("[SettingsController] Failed to update settings:", err);
       return error(err.message);
     }
   });
@@ -80,7 +80,7 @@ function init() {
       Settings.saveTTSSettings(settingsData);
       return success(Settings.getTTSSettings());
     } catch (err) {
-      console.error("更新TTS设置失败:", err);
+      console.error("[SettingsController] Failed to update TTS settings:", err);
       return error(err.message);
     }
   });
@@ -91,7 +91,7 @@ function init() {
       Settings.saveLLMConfig(settingsData);
       return success(Settings.getLLMSettings());
     } catch (err) {
-      console.error("更新LLM设置失败:", err);
+      console.error("[SettingsController] Failed to update LLM settings:", err);
       return error(err.message);
     }
   });
@@ -102,7 +102,7 @@ function init() {
       Settings.saveBiliveConfig(settingsData);
       return success(Settings.getBliveSettings());
     } catch (err) {
-      console.error("更新B站直播设置失败:", err);
+      console.error("[SettingsController] Failed to update Blive settings:", err);
       return error(err.message);
     }
   });
@@ -112,7 +112,7 @@ function init() {
     try {
       return success(Settings.getDefaultExportPath());
     } catch (err) {
-      console.error("获取默认导出路径失败:", err);
+      console.error("[SettingsController] Failed to get default export path:", err);
       return error(err.message);
     }
   });
@@ -123,7 +123,7 @@ function init() {
       Settings.setDefaultExportPath(path);
       return success({ path });
     } catch (err) {
-      console.error("设置默认导出路径失败:", err);
+      console.error("[SettingsController] Failed to set default export path:", err);
       return error(err.message);
     }
   });
@@ -133,7 +133,7 @@ function init() {
     try {
       return success(Settings.resetToDefaults());
     } catch (err) {
-      console.error("重置设置失败:", err);
+      console.error("[SettingsController] Failed to reset settings:", err);
       return error(err.message);
     }
   });
@@ -147,7 +147,7 @@ function init() {
         settings: ttsSettings[provider] || {},
       });
     } catch (err) {
-      console.error("获取TTS服务商配置失败:", err);
+      console.error("[SettingsController] Failed to get TTS provider config:", err);
       return error(err.message);
     }
   });
@@ -168,47 +168,69 @@ function init() {
           settings: ttsSettings[provider],
         });
       } catch (err) {
-        console.error("更新TTS服务商配置失败:", err);
+        console.error("[SettingsController] Failed to update TTS provider config:", err);
         return error(err.message);
       }
     }
   );
 
-  // 获取服务商配置（LLM）
+  // 获取全部 LLM 配置（含 providers 列表）
+  // get-llm-settings 已返回完整配置，此处保留兼容
+
+  // 获取服务商配置（LLM）- provider 为 providerId
   ipcMain.handle("get-llm-provider-settings", async (event, provider) => {
     try {
       const llmSettings = Settings.getLLMSettings();
+      const prov = llmSettings.providers || {};
       return success({
         provider,
-        settings: llmSettings[provider] || {},
+        settings: prov[provider] || {},
       });
     } catch (err) {
-      console.error("获取LLM服务商配置失败:", err);
+      console.error("[SettingsController] Failed to get LLM provider config:", err);
       return error(err.message);
     }
   });
 
-  // 更新服务商配置（LLM）
+  // 更新或新增服务商配置（LLM）- provider 为 providerId
   ipcMain.handle(
     "update-llm-provider-settings",
     async (event, provider, providerData) => {
       try {
         const llmSettings = Settings.getLLMSettings();
-        llmSettings[provider] = {
-          ...(llmSettings[provider] || {}),
+        if (!llmSettings.providers) llmSettings.providers = {};
+        const id = providerData.id != null ? providerData.id : provider;
+        llmSettings.providers[id] = {
+          ...(llmSettings.providers[id] || {}),
           ...providerData,
+          id,
         };
         Settings.saveLLMConfig(llmSettings);
         return success({
-          provider,
-          settings: llmSettings[provider],
+          provider: id,
+          settings: llmSettings.providers[id],
         });
       } catch (err) {
-        console.error("更新LLM服务商配置失败:", err);
+        console.error("[SettingsController] Failed to update LLM provider config:", err);
         return error(err.message);
       }
     }
   );
+
+  // 删除 LLM 服务商
+  ipcMain.handle("delete-llm-provider", async (event, providerId) => {
+    try {
+      const llmSettings = Settings.getLLMSettings();
+      if (llmSettings.providers && llmSettings.providers[providerId]) {
+        delete llmSettings.providers[providerId];
+        Settings.saveLLMConfig(llmSettings);
+      }
+      return success({ deleted: providerId });
+    } catch (err) {
+      console.error("[SettingsController] Failed to delete LLM provider:", err);
+      return error(err.message);
+    }
+  });
 
   // 测试服务商连接（TTS）- 已迁移到TTSController，保留兼容性
   ipcMain.handle(
@@ -266,9 +288,9 @@ function init() {
         });
       }
 
-      return error(`服务商 ${provider} 未配置`);
+      return error(`Provider ${provider} not configured`);
     } catch (err) {
-      console.error("获取服务商配置失败:", err);
+      console.error("[SettingsController] Failed to get provider config:", err);
       return error(err.message);
     }
   });
@@ -315,7 +337,7 @@ function init() {
         settings: ttsSettings[provider],
       });
     } catch (err) {
-      console.error("更新服务商配置失败:", err);
+      console.error("[SettingsController] Failed to update provider config:", err);
       return error(err.message);
     }
   });
@@ -323,7 +345,7 @@ function init() {
   // 通用测试服务商连接
   ipcMain.handle("test-provider-connection", async (event, type) => {
     try {
-      console.log(`[SettingsController] 测试服务商连接: ${type}`);
+      console.log(`[SettingsController] Test provider connection: ${type}`);
 
       // 先尝试TTS测试
       const ttsSettings = Settings.getTTSSettings();
@@ -342,13 +364,13 @@ function init() {
         // 这里应该调用LLM测试逻辑
         return success({
           success: true,
-          message: `${type} LLM服务连接测试功能待实现`
+          message: `${type} LLM connection test not implemented`
         });
       }
 
-      return error(`服务商 ${type} 未配置`);
+      return error(`Provider ${type} not configured`);
     } catch (err) {
-      console.error("测试服务商连接失败:", err);
+      console.error("[SettingsController] Test provider connection failed:", err);
       return error(err.message);
     }
   });

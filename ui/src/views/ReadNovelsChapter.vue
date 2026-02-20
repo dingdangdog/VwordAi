@@ -23,12 +23,13 @@
             v-model="selectedLLMProvider"
             class="input select select-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
           >
+            <option value="" disabled>请先配置 LLM 服务商</option>
             <option
               v-for="provider in llmProviders"
               :key="provider.id"
-              :value="provider.type"
+              :value="provider.id"
             >
-              {{ provider.name }}
+              {{ provider.name || provider.id }}
             </option>
           </select>
         </div>
@@ -566,9 +567,9 @@ const currentTtsConfig = reactive({
   style: "",
 });
 
-// LLM服务商
-const selectedLLMProvider = ref<LLMProviderType>("volcengine"); // 默认使用火山引擎
+// LLM服务商（使用 providerId）
 const llmProviders = computed(() => settingsStore.getLLMProviders());
+const selectedLLMProvider = ref<LLMProviderType>("");
 
 // TTS服务商和语音模型
 const ttsProviders = computed(() => {
@@ -764,17 +765,25 @@ function debugTtsProviders() {
   }
 }
 
+// 无选中且已有列表时默认选第一个
+watch(
+  llmProviders,
+  (list) => {
+    if (!selectedLLMProvider.value && list.length > 0) {
+      selectedLLMProvider.value = list[0].id;
+    }
+  },
+  { immediate: true }
+);
+
 // 监听LLM提供商变化
 watch(selectedLLMProvider, async (newProvider) => {
-  if (chapter.value && newProvider !== chapter.value.llmProvider) {
+  if (chapter.value && newProvider && newProvider !== chapter.value.llmProvider) {
     try {
       await novelApi.updateChapter(chapter.value.id, {
         llmProvider: newProvider,
       });
-
-      // 更新本地章节对象
       chapter.value.llmProvider = newProvider;
-
       console.log(`LLM服务商已更新为: ${newProvider}`);
     } catch (error) {
       toast.error(

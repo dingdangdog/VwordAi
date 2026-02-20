@@ -25,27 +25,10 @@ const DEFAULT_SETTINGS = {
   outputFormat: "mp3",
 };
 
+// 新结构：providers 为 { [providerId]: { id, name, protocol, ...config, status } }
+// 协议: openai | gemini | claude | volcengine | aliyun | azure
 const DEFAULT_LLM_SETTINGS = {
-  volcengine: {
-    key: "",
-    endpoint: "https://ark.cn-beijing.volces.com/api/v3/",
-    model: "",
-  },
-  aliyun: {
-    key: "",
-    endpoint: "",
-    model: "",
-  },
-  openai: {
-    key: "",
-    endpoint: "",
-    model: "",
-  },
-  azure: {
-    key: "",
-    endpoint: "",
-    model: "",
-  },
+  providers: {},
 };
 
 const DEFAULT_TTS_SETTINGS = {
@@ -191,8 +174,56 @@ class Settings {
   }
 
   static getLLMSettings() {
-    const settings = storage.readConfig(LLM_CONFIG_KEY, DEFAULT_LLM_SETTINGS);
-    return settings;
+    const raw = storage.readConfig(LLM_CONFIG_KEY, DEFAULT_LLM_SETTINGS);
+    return this._normalizeLLMSettings(raw);
+  }
+
+  /**
+   * 将旧版按类型分 key 的 LLM 配置迁移为 providers 结构
+   */
+  static _normalizeLLMSettings(raw) {
+    if (raw && typeof raw.providers === "object") {
+      return raw;
+    }
+    const providers = {};
+    const legacyMap = {
+      volcengine: { name: "火山引擎", protocol: "volcengine" },
+      aliyun: { name: "阿里云百炼", protocol: "aliyun" },
+      openai: { name: "OpenAI", protocol: "openai" },
+      azure: { name: "Azure OpenAI", protocol: "azure" },
+    };
+    for (const [type, meta] of Object.entries(legacyMap)) {
+      const c = raw && raw[type];
+      if (c && (c.key || c.appkey)) {
+        providers[type] = {
+          id: type,
+          name: meta.name,
+          protocol: meta.protocol,
+          ...c,
+        };
+      }
+    }
+    const normalized = { providers };
+    storage.saveConfig(LLM_CONFIG_KEY, normalized);
+    return normalized;
+  }
+
+  /**
+   * 根据 providerId 获取单个 LLM 配置（含 protocol）
+   */
+  static getLLMProvider(providerId) {
+    const settings = this.getLLMSettings();
+    const prov = settings.providers || {};
+    return prov[providerId] || null;
+  }
+
+  /**
+   * 获取所有已配置的 LLM 提供方列表
+   */
+  static getLLMProvidersList() {
+    const settings = this.getLLMSettings();
+    const prov = settings.providers || {};
+    return Object.entries(prov).map(([id, c]) => ({ id, ...c }));
   }
 
   static getTTSSettings() {
@@ -459,7 +490,7 @@ class Settings {
 
       return {
         success: false,
-        message: error.message || `${provider} 连接测试失败`,
+        message: error.message || `${provider} connection test failed`,
         status: "failure"
       };
     }
@@ -487,11 +518,11 @@ class Settings {
 
       return {
         success: true,
-        message: `${provider} 连接测试成功`,
+        message: `${provider} connection test OK`,
         status: "success"
       };
     } catch (error) {
-      console.error(`测试LLM服务商连接失败: ${error.message}`, error);
+      console.error(`[Settings] Test LLM provider connection failed: ${error.message}`, error);
 
       // 更新LLM设置
       const llmSettings = this.getLLMSettings();
@@ -520,7 +551,7 @@ class Settings {
       console.log(`[Settings] Testing Azure TTS with test:`, test);
       console.log(`[Settings] Testing Azure TTS with config:`, config);
 
-      const text = test.text || "这是一个Azure TTS配置测试，如果您能听到这段话，说明配置正确。";
+      const text = test.text || "Azure TTS config test. If you hear this, config is OK.";
 
       // 构建语音设置，支持多种字段名称映射
       const settings = {
@@ -541,14 +572,14 @@ class Settings {
       if (result.success) {
         return {
           success: true,
-          message: "Azure TTS 连接测试成功",
+          message: "Azure TTS connection test OK",
           status: "success",
           audioData: result.data?.audioData // 传递音频数据
         };
       } else {
         return {
           success: false,
-          message: result.error || "Azure TTS 连接测试失败",
+          message: result.error || "Azure TTS connection test failed",
           status: "failure"
         };
       }
@@ -556,7 +587,7 @@ class Settings {
       console.error(`[Settings] Azure TTS test error:`, error);
       return {
         success: false,
-        message: error.message || "Azure TTS 连接测试失败",
+        message: error.message || "Azure TTS connection test failed",
         status: "failure"
       };
     }

@@ -6,6 +6,8 @@ import type {
   ConnectionTestResult,
   TTSProviderType,
   LLMProviderType,
+  LLMProviderConfig,
+  LLMProtocol,
   ServiceProviderStatus,
   TTSProviderConfig,
 } from "@/types";
@@ -21,16 +23,14 @@ export const SUPPORTED_TTS_PROVIDERS = [
   // { id: "openai", name: "OpenAI", type: "openai" as TTSProviderType },
 ];
 
-// 支持的LLM服务商
-export const SUPPORTED_LLM_PROVIDERS = [
-  {
-    id: "volcengine",
-    name: "火山引擎",
-    type: "volcengine" as LLMProviderType,
-  },
-  { id: "aliyun", name: "阿里云百炼", type: "aliyun" as LLMProviderType },
-  { id: "openai", name: "OpenAI", type: "openai" as LLMProviderType },
-  // { id: "azure", name: "Azure", type: "azure" as LLMProviderType },
+// 可选协议列表（用于新增服务商时选择）
+export const LLM_PROTOCOLS: { value: LLMProtocol; label: string }[] = [
+  { value: "openai", label: "OpenAI" },
+  { value: "azure", label: "Azure OpenAI" },
+  { value: "volcengine", label: "火山引擎" },
+  { value: "aliyun", label: "阿里云百炼" },
+  { value: "gemini", label: "Google Gemini" },
+  { value: "claude", label: "Anthropic Claude" },
 ];
 
 export const useSettingsStore = defineStore("settings", () => {
@@ -213,10 +213,10 @@ export const useSettingsStore = defineStore("settings", () => {
     return ttsSettings.value[type];
   }
 
-  // Get LLM service provider config
-  function getLLMProviderConfig(type: LLMProviderType) {
-    if (!llmSettings.value) return null;
-    return llmSettings.value[type];
+  // Get LLM service provider config（按 providerId）
+  function getLLMProviderConfig(providerId: LLMProviderType) {
+    if (!llmSettings.value?.providers) return null;
+    return llmSettings.value.providers[providerId] ?? null;
   }
 
   // Get all TTS service providers config
@@ -233,17 +233,14 @@ export const useSettingsStore = defineStore("settings", () => {
     }));
   }
 
-  // Get all LLM service providers config
-  function getLLMProviders() {
-    if (!llmSettings.value) return [];
-
-    return SUPPORTED_LLM_PROVIDERS.map((provider) => ({
-      ...provider,
-      config: llmSettings.value ? llmSettings.value[provider.type] : null,
-      status:
-        llmSettings.value && llmSettings.value[provider.type]
-          ? llmSettings.value[provider.type].status
-          : "unconfigured",
+  // Get all LLM service providers（从配置的 providers 列表）
+  function getLLMProviders(): (LLMProviderConfig & { config: LLMProviderConfig | null })[] {
+    const prov = llmSettings.value?.providers || {};
+    return Object.entries(prov).map(([id, c]) => ({
+      ...c,
+      id,
+      config: c,
+      status: c.status || "unconfigured",
     }));
   }
 
@@ -254,8 +251,8 @@ export const useSettingsStore = defineStore("settings", () => {
   }
 
   // 获取LLM服务商状态
-  function getLLMProviderStatus(type: LLMProviderType): ServiceProviderStatus {
-    const config = getLLMProviderConfig(type);
+  function getLLMProviderStatus(providerId: LLMProviderType): ServiceProviderStatus {
+    const config = getLLMProviderConfig(providerId);
     return config?.status || "unconfigured";
   }
 
@@ -354,9 +351,8 @@ export const useSettingsStore = defineStore("settings", () => {
       let response = await settingsApi.testLLMProviderConnection(type, data);
 
       if (response.success && response.data) {
-        // 更新本地状态
-        if (llmSettings.value && llmSettings.value[type]) {
-          llmSettings.value[type].status =
+        if (llmSettings.value?.providers?.[type]) {
+          llmSettings.value.providers[type].status =
             (response.data.status as ServiceProviderStatus) || "success";
         }
 
@@ -366,9 +362,8 @@ export const useSettingsStore = defineStore("settings", () => {
           data: response.data,
         };
       } else {
-        // 更新本地状态
-        if (llmSettings.value && llmSettings.value[type]) {
-          llmSettings.value[type].status = "failure";
+        if (llmSettings.value?.providers?.[type]) {
+          llmSettings.value.providers[type].status = "failure";
         }
 
         return {
@@ -378,9 +373,8 @@ export const useSettingsStore = defineStore("settings", () => {
       }
     } catch (error) {
       console.error("Failed to test LLM service provider connection:", error);
-      // 更新本地状态
-      if (llmSettings.value && llmSettings.value[type]) {
-        llmSettings.value[type].status = "failure";
+      if (llmSettings.value?.providers?.[type]) {
+        llmSettings.value.providers[type].status = "failure";
       }
 
       return {
@@ -450,58 +444,47 @@ export const useSettingsStore = defineStore("settings", () => {
     }
   }
 
-  // Update LLM service provider config
+  // Update LLM service provider config（providerId + 部分配置）
   async function updateLLMProvider(
-    type: LLMProviderType,
-    config: Partial<TTSProviderConfig>
+    providerId: LLMProviderType,
+    config: Partial<LLMProviderConfig> & Record<string, any>
   ): Promise<boolean> {
     try {
-      // 检查是否有实际配置的变化（忽略status字段）
       let hasConfigChanges = false;
+      const prov = llmSettings.value?.providers || {};
 
-      if (llmSettings.value && llmSettings.value[type]) {
-        const currentConfig = { ...llmSettings.value[type] };
+      if (prov[providerId]) {
+        const currentConfig = { ...prov[providerId] };
         delete currentConfig.status;
-
         const newConfigWithoutStatus = { ...config };
         delete newConfigWithoutStatus.status;
-
-        // 检查是否有变化
-        const currentStr = JSON.stringify(currentConfig);
-        const newStr = JSON.stringify(newConfigWithoutStatus);
-        hasConfigChanges = currentStr !== newStr;
+        hasConfigChanges =
+          JSON.stringify(currentConfig) !== JSON.stringify(newConfigWithoutStatus);
       }
 
-      // Update local settings first
       if (llmSettings.value) {
-        if (!llmSettings.value[type]) {
-          llmSettings.value[type] = {} as any;
-        }
+        if (!llmSettings.value.providers) llmSettings.value.providers = {};
+        const cur = llmSettings.value.providers[providerId] || {};
+        llmSettings.value.providers[providerId] = { ...cur, ...config };
 
-        // 合并配置
-        llmSettings.value[type] = { ...llmSettings.value[type], ...config };
-
-        // 如果配置有变化，更新状态
         if (hasConfigChanges && !config.status) {
-          // 检查配置是否完整
-          const isConfigComplete = checkLLMProviderConfigComplete(
-            type,
-            llmSettings.value[type]
+          const isComplete = checkLLMProviderConfigComplete(
+            providerId,
+            llmSettings.value.providers[providerId]
           );
-          llmSettings.value[type].status = isConfigComplete
+          llmSettings.value.providers[providerId].status = isComplete
             ? "untested"
             : "unconfigured";
         }
       }
 
-      // Update on backend
       const response = await settingsApi.updateLLMProviderSettings(
-        type as LLMProviderType,
+        providerId,
         config
       );
       return response.success;
     } catch (error) {
-      console.error(`Failed to update ${type} LLM config:`, error);
+      console.error(`Failed to update ${providerId} LLM config:`, error);
       return false;
     }
   }
@@ -527,22 +510,72 @@ export const useSettingsStore = defineStore("settings", () => {
     }
   }
 
-  // 检查LLM服务商配置是否完整
+  // 检查LLM服务商配置是否完整（按 protocol）
   function checkLLMProviderConfigComplete(
-    type: LLMProviderType,
+    _providerId: LLMProviderType,
     config: any
   ): boolean {
-    switch (type) {
+    const protocol = config?.protocol || _providerId;
+    switch (protocol) {
       case "volcengine":
-        return Boolean(config.key && config.endpoint && config.model);
-      case "aliyun":
-        return Boolean(config.key && config.endpoint && config.model);
       case "openai":
-        return Boolean(config.key && config.endpoint && config.model);
       case "azure":
-        return Boolean(config.key && config.endpoint && config.model);
+      case "gemini":
+      case "claude":
+        return Boolean(config?.key && config?.model);
+      case "aliyun":
+        return Boolean(config?.appkey && config?.token);
       default:
         return false;
+    }
+  }
+
+  // 新增 LLM 服务商，返回新 provider 的 id，失败返回 null
+  async function addLLMProvider(
+    data: Partial<LLMProviderConfig> & { name: string; protocol: LLMProtocol }
+  ): Promise<string | null> {
+    try {
+      const id =
+        data.id ||
+        `${data.protocol}-${Date.now().toString(36)}`;
+      const provider: LLMProviderConfig = {
+        id,
+        name: data.name,
+        protocol: data.protocol,
+        key: data.key,
+        appkey: data.appkey,
+        token: data.token,
+        endpoint: data.endpoint,
+        model: data.model,
+        temperature: data.temperature,
+        maxTokens: data.maxTokens,
+        topP: data.topP,
+        status: "unconfigured",
+      };
+      const response = await settingsApi.updateLLMProviderSettings(id, provider);
+      if (response.success) {
+        await loadLLMSettings();
+        return id;
+      }
+      return null;
+    } catch (e) {
+      console.error("addLLMProvider:", e);
+      return null;
+    }
+  }
+
+  // 删除 LLM 服务商
+  async function deleteLLMProvider(providerId: string): Promise<boolean> {
+    try {
+      const response = await settingsApi.deleteLLMProvider(providerId);
+      if (response.success) {
+        await loadLLMSettings();
+        return true;
+      }
+      return false;
+    } catch (e) {
+      console.error("deleteLLMProvider:", e);
+      return false;
     }
   }
 
@@ -702,5 +735,7 @@ export const useSettingsStore = defineStore("settings", () => {
     updateTTSSettings,
     updateLLMSettings,
     updateBliveSettings,
+    addLLMProvider,
+    deleteLLMProvider,
   };
 });

@@ -1,72 +1,73 @@
 <template>
   <div class="llm-setting m-2">
     <div class="flex flex-col md:flex-row space-y-4 md:space-y-0 md:space-x-4">
-      <!-- 左侧服务商列表 -->
+      <!-- 左侧：已配置的服务商列表 + 添加 -->
       <div class="w-full md:w-64 flex-shrink-0">
         <div class="card p-4">
+          <div class="flex items-center justify-between mb-3">
+            <span class="text-sm font-medium text-gray-700 dark:text-gray-300">LLM 服务商</span>
+            <button
+              type="button"
+              class="text-sm text-blue-600 dark:text-blue-400 hover:underline"
+              @click="startAddNew"
+            >
+              + 添加
+            </button>
+          </div>
           <ul class="space-y-2">
-            <li v-for="provider in providers" :key="provider.id">
+            <li v-for="p in providersList" :key="p.id">
               <button
+                type="button"
                 class="w-full flex items-center px-3 py-2 rounded-md transition-colors text-left"
                 :class="
-                  selectedProviderType === provider.type
+                  selectedId === p.id
                     ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300'
                     : 'hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-800 dark:text-gray-200'
                 "
-                @click="selectProvider(provider.type)"
+                @click="selectProvider(p.id)"
               >
                 <CloudIcon
-                  class="h-5 w-5 mr-2"
+                  class="h-5 w-5 mr-2 flex-shrink-0"
                   :class="
-                    selectedProviderType === provider.type
+                    selectedId === p.id
                       ? 'text-blue-600 dark:text-blue-400'
                       : 'text-gray-500 dark:text-gray-400'
                   "
                 />
-                <span>{{ provider.name }}</span>
+                <span class="truncate">{{ p.name || p.id }}</span>
+                <span
+                  v-if="p.status"
+                  class="ml-1 w-2 h-2 rounded-full flex-shrink-0"
+                  :class="statusDotClass(p.status)"
+                />
               </button>
             </li>
           </ul>
+          <p v-if="providersList.length === 0" class="text-sm text-gray-500 mt-2">
+            暂无服务商，点击「添加」创建
+          </p>
         </div>
       </div>
 
-      <!-- 右侧配置编辑 -->
+      <!-- 右侧：编辑/新增表单 -->
       <div class="flex-1">
         <div class="card p-6">
-          <!-- 各服务商配置表单 -->
-          <VolcengineProviderForm
-            v-if="selectedProviderType === 'volcengine'"
+          <LLMProviderForm
+            v-if="selectedId !== null || isAddingNew"
+            :key="formKey"
             :provider="providerData"
-            @update="updateProviderField"
-            @save="saveCurrentProvider"
+            :is-new="isAddingNew"
+            :protocol-options="protocolOptions"
+            @save="onSave"
+            @delete="onDelete"
           />
-          <AliyunLLMProviderForm
-            v-else-if="selectedProviderType === 'aliyun'"
-            :provider="providerData"
-            @update="updateProviderField"
-            @save="saveCurrentProvider"
-          />
-          <AzureLLMProviderForm
-            v-else-if="selectedProviderType === 'azure'"
-            :provider="providerData"
-            @update="updateProviderField"
-            @save="saveCurrentProvider"
-          />
-          <OpenaiLLMProviderForm
-            v-else-if="selectedProviderType === 'openai'"
-            :provider="providerData"
-            @update="updateProviderField"
-            @save="saveCurrentProvider"
-          />
-
-          <!-- 初始状态 -->
           <div
             v-else
-            class="card p-6 flex flex-col items-center justify-center text-center py-12"
+            class="flex flex-col items-center justify-center text-center py-12"
           >
             <ServerIcon class="h-16 w-16 text-gray-400 mb-4" />
             <p class="text-lg text-gray-700 dark:text-gray-300">
-              请从左侧选择一个LLM服务商进行配置
+              请从左侧选择一个服务商，或点击「添加」新建
             </p>
           </div>
         </div>
@@ -76,102 +77,118 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed } from "vue";
+import { ref, computed, onMounted } from "vue";
 import { useToast } from "vue-toastification";
-import { SUPPORTED_LLM_PROVIDERS, useSettingsStore } from "@/stores/settings";
+import { useSettingsStore } from "@/stores/settings";
+import { LLM_PROTOCOLS } from "@/stores/settings";
 import { ServerIcon, CloudIcon } from "@heroicons/vue/24/outline";
-import type { LLMProviderType } from "@/types";
-// 注意：需要创建这些组件
-import AliyunLLMProviderForm from "./llm/AliyunProviderForm.vue";
-import AzureLLMProviderForm from "./llm/AzureProviderForm.vue";
-import OpenaiLLMProviderForm from "./llm/OpenaiProviderForm.vue";
-import VolcengineProviderForm from "./llm/VolcengineProviderForm.vue";
+import type { LLMProviderConfig } from "@/types";
+import LLMProviderForm from "./llm/LLMProviderForm.vue";
 
-// 当前选中的服务商类型
-const selectedProviderType = ref<LLMProviderType | null>(null);
-const providerData = ref<any>({});
 const toast = useToast();
 const settingsStore = useSettingsStore();
-const isLoading = ref(false);
-const llmSettings = ref<any>(null);
+const selectedId = ref<string | null>(null);
+const isAddingNew = ref(false);
+const formKey = ref(0);
 
-// 服务商列表
-const providers = computed(() => {
-  return SUPPORTED_LLM_PROVIDERS;
+const protocolOptions = LLM_PROTOCOLS;
+
+const providersList = computed(() => settingsStore.getLLMProviders());
+
+const providerData = computed((): LLMProviderConfig | null => {
+  if (isAddingNew.value) return null;
+  if (!selectedId.value) return null;
+  const c = settingsStore.getLLMProviderConfig(selectedId.value);
+  if (!c) return null;
+  return { ...c, id: selectedId.value };
 });
 
-// 初始化
+function statusDotClass(status: string) {
+  switch (status) {
+    case "success":
+      return "bg-green-500";
+    case "failure":
+      return "bg-red-500";
+    case "untested":
+      return "bg-yellow-500";
+    default:
+      return "bg-gray-400";
+  }
+}
+
 onMounted(async () => {
-  // 加载LLM设置
-  llmSettings.value = await settingsStore.loadLLMSettings();
-
-  // 默认选择第一个服务商
-  if (SUPPORTED_LLM_PROVIDERS.length > 0) {
-    selectProvider(SUPPORTED_LLM_PROVIDERS[0].type);
+  await settingsStore.loadLLMSettings();
+  const list = settingsStore.getLLMProviders();
+  if (list.length > 0 && !selectedId.value) {
+    selectProvider(list[0].id);
   }
 });
 
-// 选择服务商
-function selectProvider(type: LLMProviderType) {
-  selectedProviderType.value = type;
-
-  // 从设置中获取服务商配置
-  if (llmSettings.value && llmSettings.value[type]) {
-    // 使用已保存的配置
-    providerData.value = { ...llmSettings.value[type] };
-  } else {
-    // 创建新的配置对象
-    providerData.value = {};
-  }
+function selectProvider(id: string) {
+  selectedId.value = id;
+  isAddingNew.value = false;
+  formKey.value += 1;
 }
 
-// 更新表单字段
-function updateProviderField(field: string, value: any) {
-  providerData.value[field] = value;
+function startAddNew() {
+  selectedId.value = null;
+  isAddingNew.value = true;
+  formKey.value += 1;
 }
 
-// 保存当前服务商配置
-async function saveCurrentProvider(data?: Record<string, any>) {
-  if (!selectedProviderType.value) {
-    toast.warning("请先选择一个服务商");
+async function onSave(data: Partial<LLMProviderConfig>) {
+  const id = data.id || (isAddingNew.value ? "" : selectedId.value);
+  if (!id && !isAddingNew.value) {
+    toast.warning("请先选择或新建服务商");
     return;
   }
 
-  isLoading.value = true;
-  try {
-    const type = selectedProviderType.value;
-    console.log(
-      `Saving LLM provider ${type} config:`,
-      JSON.stringify(data || providerData.value, null, 2)
-    );
-
-    // 使用传入的数据或当前数据
-    const providerConfig = data || { ...providerData.value };
-
-    // 通过设置存储保存服务商配置
-    const success = await settingsStore.updateLLMProvider(type, providerConfig);
-
-    if (success) {
-      // 重新加载设置以获取最新状态
-      llmSettings.value = await settingsStore.loadLLMSettings();
-
-      // 更新本地状态以反映保存的配置
-      if (llmSettings.value && llmSettings.value[type]) {
-        providerData.value = { ...llmSettings.value[type] };
-      }
-
-      toast.success("LLM服务商配置保存成功");
+  if (isAddingNew.value) {
+    const newId = await settingsStore.addLLMProvider({
+      name: data.name!,
+      protocol: data.protocol!,
+      key: data.key,
+      appkey: data.appkey,
+      token: data.token,
+      endpoint: data.endpoint,
+      model: data.model,
+      temperature: data.temperature,
+      maxTokens: data.maxTokens,
+      topP: data.topP,
+    });
+    if (newId) {
+      toast.success("已添加服务商");
+      isAddingNew.value = false;
+      selectedId.value = newId;
+      await settingsStore.loadLLMSettings();
+      formKey.value += 1;
     } else {
-      console.error(`Failed to save LLM provider ${type} config`);
-      toast.error("保存失败: 未知错误");
+      toast.error("添加失败");
     }
-  } catch (error) {
-    console.error("Save LLM provider config error:", error);
-    toast.error(
-      `保存失败: ${error instanceof Error ? error.message : "未知错误"}`
-    );
-  } finally {
-    isLoading.value = false;
+    return;
+  }
+
+  const ok = await settingsStore.updateLLMProvider(id!, data);
+  if (ok) {
+    toast.success("配置已保存");
+    await settingsStore.loadLLMSettings();
+    formKey.value += 1;
+  } else {
+    toast.error("保存失败");
+  }
+}
+
+async function onDelete(id: string) {
+  const ok = await settingsStore.deleteLLMProvider(id);
+  if (ok) {
+    toast.success("已删除");
+    if (selectedId.value === id) selectedId.value = null;
+    await settingsStore.loadLLMSettings();
+    const list = settingsStore.getLLMProviders();
+    if (list.length > 0 && !selectedId.value) selectProvider(list[0].id);
+    formKey.value += 1;
+  } else {
+    toast.error("删除失败");
   }
 }
 </script>

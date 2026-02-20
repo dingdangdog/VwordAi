@@ -18,6 +18,8 @@ class OpenAIClient {
       baseURL: config.endpoint,
     });
     this.model = config.model || "gpt-4o";
+    this.temperature = config.temperature != null ? Number(config.temperature) : 0.3;
+    this.maxTokens = config.maxTokens != null ? Number(config.maxTokens) : 4096;
     this.prompt = this.createPrompt();
   }
 
@@ -73,6 +75,97 @@ class OpenAIClient {
   }
 
   /**
+   * 从 API 返回的 message.content 中取出纯文本（兼容 string / array / object）
+   * 部分端点如 NVIDIA 返回 content 为数组 [{ type: 'text', text: '...' }] 或对象
+   */
+  _normalizeContent(content) {
+    if (typeof content === "string" && content.length > 0) return content;
+    if (Array.isArray(content)) {
+      const part = content.find((p) => p && (p.text || p.type === "text"));
+      return part ? (part.text || part.content || "") : "";
+    }
+    if (content && typeof content === "object") {
+      return content.text || content.content || "";
+    }
+    return "";
+  }
+
+  /**
+   * 从 completion 的 choice 中提取回复文本（兼容多种 OpenAI 兼容端点的返回结构）
+   */
+  _getReplyText(completion) {
+    const choice = completion?.choices?.[0];
+    if (!choice) return "";
+
+    // 1. 标准: message.content
+    let raw = choice.message?.content;
+    let text = this._normalizeContent(raw);
+    if (text) return text;
+
+    // 2. 带“思考”的模型（如 DeepSeek）可能只把回复放在 reasoning_content
+    const reasoning = choice.message?.reasoning_content;
+    if (typeof reasoning === "string" && reasoning.length > 0) return reasoning;
+
+    // 3. 部分端点: message.parts 或 content 为数组但放在 message 下
+    const msg = choice.message;
+    if (msg?.parts && Array.isArray(msg.parts)) {
+      text = this._normalizeContent(msg.parts);
+      if (text) return text;
+    }
+
+    // 4. 旧版或部分实现: choice.text
+    if (typeof choice.text === "string" && choice.text.length > 0) return choice.text;
+
+    // 5. 整段 message 再试一次（可能 content 为嵌套对象）
+    if (msg && typeof msg === "object") {
+      text = this._normalizeContent(msg);
+      if (text) return text;
+    }
+
+    return "";
+  }
+
+  /**
+   * 测试连接：仅发送简单请求，收到任意有效回复即视为成功（兼容各兼容 OpenAI 的端点如 NVIDIA）
+   * @param {string} [text] 可选测试文案
+   * @returns {Promise<boolean>} 是否连接成功
+   */
+  async testConnection(text) {
+    const log = require("electron-log");
+    const testMessage = text || "Please reply with the word OK to confirm connection.";
+    let completion;
+    try {
+      completion = await this.openai.chat.completions.create({
+        model: this.model,
+        messages: [{ role: "user", content: testMessage }],
+        max_tokens: 50,
+      });
+    } catch (err) {
+      log.warn("[OpenAIClient] testConnection request failed:", err?.message || err);
+      return false;
+    }
+
+    const content = this._getReplyText(completion);
+    const ok = typeof content === "string" && content.length > 0;
+
+    if (!ok) {
+      // 失败时只打印字段摘要（ASCII），避免 UTF-8 在终端/日志里乱码
+      const choice = completion?.choices?.[0];
+      let summary = "choices[0] missing";
+      if (choice) {
+        const msg = choice.message || {};
+        const keys = Object.keys(msg).join(", ");
+        const parts = [];
+        if (msg.content != null) parts.push("content=" + (typeof msg.content === "string" ? "string(" + msg.content.length + ")" : typeof msg.content));
+        if (msg.reasoning_content != null) parts.push("reasoning_content=string(" + String(msg.reasoning_content).length + ")");
+        summary = "message keys: " + keys + "; " + parts.join("; ") + "; finish_reason=" + (choice.finish_reason ?? "n/a");
+      }
+      log.warn("[OpenAIClient] testConnection no valid text.", summary);
+    }
+    return ok;
+  }
+
+  /**
    * 分析文本识别说话者和语气/情绪
    * @param {string} text 要分析的文本
    * @returns {Promise<Array>} 以JSON格式返回分析结果
@@ -92,8 +185,9 @@ class OpenAIClient {
             content: this.prompt.replace("{{text}}", text),
           },
         ],
-        temperature: 0.3, // 较低的温度以获得更一致的结果
-        response_format: { type: "json_object" }, // 确保返回JSON格式
+        temperature: this.temperature,
+        max_tokens: this.maxTokens,
+        response_format: { type: "json_object" },
       });
 
       const responseText = completion.choices[0].message.content;

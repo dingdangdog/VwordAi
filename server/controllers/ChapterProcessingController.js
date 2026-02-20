@@ -47,21 +47,26 @@ function registerLLMProcessingHandlers() {
       const LLMService = require("../services/LLMService");
       const Settings = require("../models/Settings");
 
-      // 获取LLM设置
       const llmSettings = Settings.getLLMSettings();
-      const providerType = chapter.llmProvider || "volcengine"; // 默认使用火山引擎
-      const providerConfig = llmSettings[providerType];
+      const providers = llmSettings.providers || {};
+      const providerId = chapter.llmProvider || Object.keys(providers)[0] || "volcengine";
+      const providerConfig = providers[providerId];
 
-      if (!providerConfig || !providerConfig.key) {
+      if (!providerConfig) {
         return error(
-          `LLM provider ${providerType} not configured or missing key`
+          `LLM provider ${providerId} not configured`
+        );
+      }
+      const hasKey = providerConfig.key || providerConfig.appkey;
+      if (!hasKey) {
+        return error(
+          `LLM provider ${providerId} missing key/appkey`
         );
       }
 
-      // 解析章节文本
       const parseResult = await LLMService.parseText(
         chapter.content,
-        providerType,
+        providerId,
         providerConfig
       );
 
@@ -250,7 +255,7 @@ async function synthesizeSegmentText(segment, chapterId) {
         ttsClient = require("../tts/local");
         break;
       default:
-        throw new Error(`不支持的TTS提供商: ${providerType}`);
+        throw new Error(`Unsupported TTS provider: ${providerType}`);
     }
 
     // 准备输出路径

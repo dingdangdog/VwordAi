@@ -10,30 +10,32 @@ const log = require("electron-log");
 /**
  * 解析文本内容
  * @param {string} text 要解析的文本
- * @param {string} providerType LLM提供商类型
- * @param {object} providerConfig 提供商配置
+ * @param {string} providerId 提供商ID（用于从设置拉取配置时）
+ * @param {object} providerConfig 提供商配置（含 protocol，可选）
  * @returns {Promise<Object>} 解析结果
  */
 async function parseText(
   text,
-  providerType = "volcengine",
+  providerId = null,
   providerConfig = null
 ) {
   try {
-    // 如果没有提供配置，从设置中获取
     if (!providerConfig) {
       const llmSettings = Settings.getLLMSettings();
-      providerConfig = llmSettings[providerType];
-
-      if (!providerConfig || !providerConfig.key) {
-        return error(`LLM Provider ${providerType} Not find Config`);
+      const providers = llmSettings.providers || {};
+      providerConfig = providerId ? providers[providerId] : null;
+      if (!providerConfig) {
+        return error(`LLM Provider ${providerId || "?"} Not find Config`);
       }
     }
+    const hasKey = providerConfig.key || providerConfig.appkey;
+    if (!hasKey) {
+      return error(`LLM Provider Config Missing key/appkey`);
+    }
 
-    log.info(`[LLMService] Use ${providerType} Parse Text`);
+    log.info(`[LLMService] Parse text using ${providerConfig.name || providerId} (${providerConfig.protocol})`);
 
-    // 根据提供商类型创建对应的客户端
-    const llmClient = createLLMClient(providerType, providerConfig);
+    const llmClient = createLLMClient(providerConfig);
     if (!llmClient.success) {
       return error(llmClient.error);
     }
@@ -43,14 +45,14 @@ async function parseText(
 
     // 将结果转换为标准格式
     const parsedResults = {
-      segments: formatResults(results, providerType),
+      segments: formatResults(results, providerConfig.protocol || "volcengine"),
       processedAt: new Date().toISOString(),
-      provider: providerType,
+      provider: providerConfig.id || providerId,
     };
 
     return success(parsedResults);
   } catch (err) {
-    log.error(`[LLMService] Parse Text Failed: ${err.message}`, err);
+    log.error(`[LLMService] Parse text failed: ${err.message}`, err);
     return error("Parse Text Failed: " + err.message);
   }
 }
@@ -65,27 +67,30 @@ async function parseChapter(chapterId) {
     // 这里需要从业务逻辑层传入章节数据，而不是直接访问模型
     // 这个函数应该被ChapterProcessingController调用
     log.warn(
-      `[LLMService] parseChapter(${chapterId}) Should be called by business logic layer, not directly`
+      `[LLMService] parseChapter(${chapterId}) should be called by business logic layer, not directly`
     );
     return error("parseChapter Should be called by business logic layer");
   } catch (err) {
-    log.error(`[LLMService] Parse Chapter Failed: ${err.message}`, err);
+    log.error(`[LLMService] Parse chapter failed: ${err.message}`, err);
     return error("Parse Chapter Failed: " + err.message);
   }
 }
 
 /**
- * 创建LLM客户端
- * @param {string} providerType 提供商类型
- * @param {object} providerConfig 提供商配置
+ * 创建LLM客户端（按 protocol 选择实现）
+ * @param {object} providerConfig 提供商配置，需含 protocol: openai|azure|volcengine|aliyun|gemini|claude
  * @returns {object} 客户端创建结果
  */
-function createLLMClient(providerType, providerConfig) {
+function createLLMClient(providerConfig) {
   try {
+    const protocol = providerConfig.protocol || "openai";
     let ClientClass;
 
-    switch (providerType) {
+    switch (protocol) {
       case "openai":
+      case "azure":
+      case "gemini":
+      case "claude":
         ClientClass = require("../llm/openai");
         break;
       case "aliyun":
@@ -97,7 +102,7 @@ function createLLMClient(providerType, providerConfig) {
       default:
         return {
           success: false,
-          error: `不支持的LLM提供商: ${providerType}`,
+          error: `Unsupported protocol: ${protocol}`,
         };
     }
 
@@ -109,7 +114,7 @@ function createLLMClient(providerType, providerConfig) {
   } catch (err) {
     return {
       success: false,
-      error: `创建LLM客户端失败: ${err.message}`,
+      error: `Failed to create LLM client: ${err.message}`,
     };
   }
 }

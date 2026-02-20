@@ -55,12 +55,13 @@
               v-model="selectedLLMProvider"
               class="select select-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
             >
+              <option value="" disabled>请先配置 LLM 服务商</option>
               <option
                 v-for="provider in llmProviders"
                 :key="provider.id"
-                :value="provider.type"
+                :value="provider.id"
               >
-                {{ provider.name }}
+                {{ provider.name || provider.id }}
               </option>
             </select>
           </div>
@@ -334,11 +335,9 @@ const isSaving = ref(false);
 const isProcessing = ref(false);
 const isUpdating = ref(false);
 
-// LLM服务商配置
-const selectedLLMProvider = ref<LLMProviderType>(
-  props.chapter.llmProvider || "openai"
-);
-const llmProviders = computed(() => settingsStore.SUPPORTED_LLM_PROVIDERS);
+// LLM服务商（使用 providerId）
+const llmProviders = computed(() => settingsStore.getLLMProviders());
+const selectedLLMProvider = ref<LLMProviderType>(props.chapter.llmProvider || "");
 
 // 标签定义
 const tabs = [
@@ -362,9 +361,20 @@ watch(
   { immediate: true }
 );
 
+// 无选中且已有列表时默认选第一个
+watch(
+  llmProviders,
+  (list) => {
+    if (!selectedLLMProvider.value && list.length > 0) {
+      selectedLLMProvider.value = list[0].id;
+    }
+  },
+  { immediate: true }
+);
+
 // 监听LLM提供商变化
 watch(selectedLLMProvider, (newProvider) => {
-  if (newProvider !== props.chapter.llmProvider) {
+  if (newProvider && newProvider !== props.chapter.llmProvider) {
     emit("update-llm-provider", newProvider);
   }
 });

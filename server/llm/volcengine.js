@@ -18,6 +18,9 @@ class VolcengineClient {
       baseURL: config.endpoint || "https://ark.cn-beijing.volces.com/api/v3/",
     });
     this.model = config.model || "doubao-1.5-pro-32k-250115";
+    this.temperature = config.temperature != null ? Number(config.temperature) : 0.3;
+    this.maxTokens = config.maxTokens != null ? Number(config.maxTokens) : 4096;
+    this.topP = config.topP != null ? Number(config.topP) : 0.95;
     console.log("LLM Model:", this.model);
     this.prompt = this.createPrompt();
   }
@@ -111,8 +114,9 @@ class VolcengineClient {
             content: this.prompt.replace("{{text}}", text),
           },
         ],
-        temperature: 0.3,
-        top_p: 0.95,
+        temperature: this.temperature,
+        max_tokens: this.maxTokens,
+        top_p: this.topP,
         stream: false,
       });
 
