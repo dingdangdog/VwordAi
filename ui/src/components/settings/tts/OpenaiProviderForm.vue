@@ -8,82 +8,30 @@
     </p>
 
     <form @submit.prevent="saveForm" class="space-y-4">
-      <div>
-        <label
-          for="apiKey"
-          class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-        >
-          API 密钥<span class="text-red-500">*</span>
-        </label>
-        <div class="relative">
-          <input
-            :type="showPassword ? 'text' : 'password'"
-            id="apiKey"
-            v-model="form.apiKey"
-            class="input w-full pr-10"
-            placeholder="输入您的 OpenAI API 密钥"
-            required
-          />
-          <button
-            type="button"
-            class="absolute inset-y-0 right-0 pr-3 flex items-center"
-            @click="showPassword = !showPassword"
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              class="h-5 w-5 text-gray-500"
-              :class="{ 'text-blue-500': showPassword }"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                v-if="showPassword"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"
-              />
-              <path
-                v-else
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-              />
-              <path
-                v-if="!showPassword"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
-              />
-            </svg>
+      <FormInput
+        id="apiKey"
+        v-model="form.apiKey"
+        :type="showPassword ? 'text' : 'password'"
+        label="API 密钥"
+        placeholder="输入您的 OpenAI API 密钥"
+        required
+        hint="您的 OpenAI API 密钥，以 sk- 开头。"
+      >
+        <template #label>API 密钥<span class="text-red-500">*</span></template>
+        <template #suffix>
+          <button type="button" class="p-2 rounded hover:bg-gray-100 dark:hover:bg-gray-700" @click="showPassword = !showPassword" tabindex="-1">
+            <EyeIcon class="h-5 w-5 text-gray-500" :class="{ 'text-blue-500': showPassword }" />
           </button>
-        </div>
-        <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
-          您的 OpenAI API 密钥，以 sk- 开头。
-        </p>
-      </div>
+        </template>
+      </FormInput>
 
-      <div>
-        <label
-          for="endpoint"
-          class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-        >
-          自定义端点（可选）
-        </label>
-        <input
-          type="text"
-          id="endpoint"
-          v-model="form.endpoint"
-          class="input w-full"
-          placeholder="例如：https://api.openai.com/v1"
-        />
-        <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
-          如果您使用自定义端点或代理，可以在此指定。
-        </p>
-      </div>
+      <FormInput
+        id="endpoint"
+        v-model="form.endpoint"
+        label="自定义端点（可选）"
+        placeholder="例如：https://api.openai.com/v1"
+        hint="如果您使用自定义端点或代理，可以在此指定。"
+      />
 
       <div class="flex justify-end space-x-2 mt-6">
         <button
@@ -105,6 +53,8 @@
 <script setup lang="ts">
 import { ref, reactive, watchEffect } from "vue";
 import { useToast } from "vue-toastification";
+import { EyeIcon } from "@heroicons/vue/24/outline";
+import FormInput from "@/components/common/FormInput.vue";
 
 const props = defineProps({
   provider: {

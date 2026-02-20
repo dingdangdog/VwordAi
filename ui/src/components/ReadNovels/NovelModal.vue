@@ -24,61 +24,41 @@
               </h3>
               
               <div class="mt-4 space-y-4">
-                <!-- 表单 -->
                 <div class="space-y-3">
-                  <div>
-                    <label for="title" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                      小说标题 <span class="text-red-500">*</span>
-                    </label>
-                    <input 
-                      type="text" 
-                      id="title"
-                      v-model="form.title"
-                      class="input w-full"
-                      placeholder="请输入小说标题"
-                      required
-                    />
-                  </div>
-                  
-                  <div>
-                    <label for="author" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                      作者 <span class="text-red-500">*</span>
-                    </label>
-                    <input 
-                      type="text" 
-                      id="author"
-                      v-model="form.author"
-                      class="input w-full"
-                      placeholder="请输入作者姓名"
-                      required
-                    />
-                  </div>
-                  
-                  <div>
-                    <label for="description" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                      简介
-                    </label>
-                    <textarea 
-                      id="description"
-                      v-model="form.description"
-                      rows="3"
-                      class="input w-full"
-                      placeholder="请输入小说简介（选填）"
-                    ></textarea>
-                  </div>
-                  
-                  <div>
-                    <label for="cover" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                      封面图片URL
-                    </label>
-                    <input 
-                      type="text" 
-                      id="cover"
-                      v-model="form.cover"
-                      class="input w-full"
-                      placeholder="请输入封面图片URL（选填）"
-                    />
-                  </div>
+                  <FormInput
+                    id="title"
+                    v-model="form.title"
+                    label="小说标题"
+                    placeholder="请输入小说标题"
+                    required
+                  >
+                    <template #label>小说标题 <span class="text-red-500">*</span></template>
+                  </FormInput>
+
+                  <FormInput
+                    id="author"
+                    v-model="form.author"
+                    label="作者"
+                    placeholder="请输入作者姓名"
+                    required
+                  >
+                    <template #label>作者 <span class="text-red-500">*</span></template>
+                  </FormInput>
+
+                  <FormTextarea
+                    id="description"
+                    v-model="form.description"
+                    label="简介"
+                    placeholder="请输入小说简介（选填）"
+                    :rows="3"
+                  />
+
+                  <FormInput
+                    id="cover"
+                    v-model="form.cover"
+                    label="封面图片URL"
+                    placeholder="请输入封面图片URL（选填）"
+                  />
                 </div>
               </div>
             </div>
@@ -109,6 +89,8 @@
 
 <script setup lang="ts">
 import { ref, reactive, computed, watch } from 'vue';
+import FormInput from '@/components/common/FormInput.vue';
+import FormTextarea from '@/components/common/FormTextarea.vue';
 import type { Novel } from '@/types/ReadNovels';
 
 const props = defineProps<{

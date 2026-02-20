@@ -35,44 +35,27 @@
               </h3>
 
               <div class="mt-4 space-y-4">
-                <!-- 表单 -->
                 <div class="space-y-3">
-                  <div>
-                    <label
-                      for="title"
-                      class="block text-sm font-medium text-gray-700 dark:text-gray-300"
-                    >
-                      章节标题 <span class="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      id="title"
-                      v-model="form.title"
-                      class="input w-full"
-                      placeholder="请输入章节标题"
-                      required
-                    />
-                  </div>
+                  <FormInput
+                    id="title"
+                    v-model="form.title"
+                    label="章节标题"
+                    placeholder="请输入章节标题"
+                    required
+                  >
+                    <template #label>章节标题 <span class="text-red-500">*</span></template>
+                  </FormInput>
 
-                  <div>
-                    <label
-                      for="content"
-                      class="block text-sm font-medium text-gray-700 dark:text-gray-300"
-                    >
-                      章节内容 <span class="text-red-500">*</span>
-                    </label>
-                    <textarea
-                      id="content"
-                      v-model="form.content"
-                      rows="10"
-                      class="input w-full"
-                      placeholder="请输入章节内容"
-                      required
-                    ></textarea>
-                    <p class="text-xs mt-1 text-gray-500 dark:text-gray-400">
-                      输入章节文本后，将使用LLM自动解析对话和角色，便于后续生成TTS。
-                    </p>
-                  </div>
+                  <FormTextarea
+                    id="content"
+                    v-model="form.content"
+                    label="章节内容"
+                    placeholder="请输入章节内容"
+                    :rows="10"
+                    hint="输入章节文本后，将使用LLM自动解析对话和角色，便于后续生成TTS。"
+                  >
+                    <template #label>章节内容 <span class="text-red-500">*</span></template>
+                  </FormTextarea>
                 </div>
               </div>
             </div>
@@ -105,6 +88,8 @@
 
 <script setup lang="ts">
 import { ref, reactive, computed } from "vue";
+import FormInput from "@/components/common/FormInput.vue";
+import FormTextarea from "@/components/common/FormTextarea.vue";
 
 const props = defineProps<{
   novelId?: string;

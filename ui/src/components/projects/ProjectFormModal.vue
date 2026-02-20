@@ -36,40 +36,24 @@
 
           <form @submit.prevent="submitForm">
             <div class="mb-4">
-              <label
-                for="title"
-                class="block text-sm font-semibold text-gray-700 dark:text-gray-300"
-                >项目名称</label
-              >
-              <input
-                type="text"
+              <FormInput
                 id="title"
                 v-model="form.title"
-                class="mt-1 input dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                label="项目名称"
                 placeholder="请输入项目名称"
+                :error="errors.title"
                 required
               />
-              <p
-                v-if="errors.title"
-                class="mt-1 text-sm text-red-600 dark:text-red-500"
-              >
-                {{ errors.title }}
-              </p>
             </div>
 
             <div class="mb-4">
-              <label
-                for="description"
-                class="block text-sm font-semibold text-gray-700 dark:text-gray-300"
-                >项目描述 (可选)</label
-              >
-              <textarea
+              <FormTextarea
                 id="description"
                 v-model="form.description"
-                rows="3"
-                class="mt-1 input dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                label="项目描述 (可选)"
                 placeholder="请输入项目描述"
-              ></textarea>
+                :rows="3"
+              />
             </div>
 
             <div class="mb-4">
@@ -83,54 +67,24 @@
               </p>
 
               <div class="grid md:grid-cols-2 gap-4">
-                <div>
-                  <label
-                    for="serviceProvider"
-                    class="block text-sm font-medium text-gray-700 dark:text-gray-300"
-                    >服务商</label
-                  >
-                  <select
-                    id="serviceProvider"
-                    v-model="form.defaultVoiceSettings.serviceProvider"
-                    class="mt-1 input dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                    @change="onProviderChange"
-                  >
-                    <option value="">未选择</option>
-                    <option
-                      v-for="provider in serviceProviders"
-                      :key="provider.id"
-                      :value="provider.id"
-                    >
-                      {{ provider.name }}
-                    </option>
-                  </select>
-                </div>
+                <FormSelect
+                  id="serviceProvider"
+                  v-model="form.defaultVoiceSettings.serviceProvider"
+                  label="服务商"
+                  placeholder="未选择"
+                  :options="serviceProviderOptions"
+                  @change="onProviderChange"
+                />
 
-                <div>
-                  <label
-                    for="voice"
-                    class="block text-sm font-medium text-gray-700 dark:text-gray-300"
-                    >声音角色</label
-                  >
-                  <select
-                    id="voice"
-                    v-model="form.defaultVoiceSettings.voice"
-                    class="mt-1 input dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                    :disabled="!form.defaultVoiceSettings.serviceProvider"
-                    @change="onVoiceChange"
-                  >
-                    <option value="">未选择</option>
-                    <option
-                      v-for="role in filteredVoiceRoles"
-                      :key="role.code"
-                      :value="role.code"
-                    >
-                      {{ role.name }} ({{
-                        role.gender === "0" ? "女声" : "男声"
-                      }})
-                    </option>
-                  </select>
-                </div>
+                <FormSelect
+                  id="voice"
+                  v-model="form.defaultVoiceSettings.voice"
+                  label="声音角色"
+                  placeholder="未选择"
+                  :options="voiceRoleOptions"
+                  :disabled="!form.defaultVoiceSettings.serviceProvider"
+                  @change="onVoiceChange"
+                />
 
                 <div>
                   <label
@@ -149,58 +103,18 @@
                   />
                 </div>
 
-                <!-- <div>
-                  <label for="pitch" class="block text-sm font-medium text-gray-700 dark:text-gray-300">音调 ({{ form.defaultVoiceSettings.pitch || 0 }})</label>
-                  <input
-                    type="range"
-                    id="pitch"
-                    v-model.number="form.defaultVoiceSettings.pitch"
-                    min="-10"
-                    max="10"
-                    step="1"
-                    class="w-full mt-1"
-                  />
-                </div> -->
-
-                <!-- <div>
-                  <label for="volume" class="block text-sm font-medium text-gray-700 dark:text-gray-300">音量 ({{ form.defaultVoiceSettings.volume || 100 }})</label>
-                  <input
-                    type="range"
-                    id="volume"
-                    v-model.number="form.defaultVoiceSettings.volume"
-                    min="0"
-                    max="100"
-                    step="1"
-                    class="w-full mt-1"
-                  />
-                </div> -->
-
-                <div>
-                  <label
-                    for="emotion"
-                    class="block text-sm font-medium text-gray-700 dark:text-gray-300"
-                    >情感</label
-                  >
-                  <select
-                    id="emotion"
-                    v-model="form.defaultVoiceSettings.emotion"
-                    class="mt-1 input dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                    :disabled="
-                      !form.defaultVoiceSettings.serviceProvider ||
-                      !form.defaultVoiceSettings.voice ||
-                      filteredEmotions.length === 0
-                    "
-                  >
-                    <option value="">未选择</option>
-                    <option
-                      v-for="emotion in filteredEmotions"
-                      :key="emotion.code"
-                      :value="emotion.code"
-                    >
-                      {{ emotion.name }}
-                    </option>
-                  </select>
-                </div>
+                <FormSelect
+                  id="emotion"
+                  v-model="form.defaultVoiceSettings.emotion"
+                  label="情感"
+                  placeholder="未选择"
+                  :options="emotionOptions"
+                  :disabled="
+                    !form.defaultVoiceSettings.serviceProvider ||
+                    !form.defaultVoiceSettings.voice ||
+                    filteredEmotions.length === 0
+                  "
+                />
               </div>
             </div>
 
@@ -230,8 +144,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted, watchEffect, computed, watch } from "vue";
+import { ref, reactive, watchEffect, computed, watch } from "vue";
 import { XMarkIcon } from "@heroicons/vue/24/outline";
+import FormInput from "@/components/common/FormInput.vue";
+import FormTextarea from "@/components/common/FormTextarea.vue";
+import FormSelect from "@/components/common/FormSelect.vue";
 import type { VoiceSettings } from "@/types";
 import { useProjectsStore } from "@/stores/projects";
 import { getTTSProviders } from "@/utils/voice-utils";
@@ -325,9 +242,21 @@ watch(
   { immediate: true }
 );
 
-// Replace the computed properties with the refs
 const filteredVoiceRoles = computed(() => voiceRoles.value);
 const filteredEmotions = computed(() => emotions.value);
+
+const serviceProviderOptions = computed(() =>
+  serviceProviders.value.map((p) => ({ value: p.id, label: p.name }))
+);
+const voiceRoleOptions = computed(() =>
+  filteredVoiceRoles.value.map((r) => ({
+    value: r.code,
+    label: `${r.name} (${r.gender === "0" ? "女声" : "男声"})`,
+  }))
+);
+const emotionOptions = computed(() =>
+  filteredEmotions.value.map((e) => ({ value: e.code, label: e.name }))
+);
 
 const props = defineProps({
   title: {

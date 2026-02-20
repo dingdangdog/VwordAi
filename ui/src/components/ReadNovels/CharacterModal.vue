@@ -56,80 +56,50 @@
                   </div>
 
                   <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label
-                        for="name"
-                        class="block text-sm font-medium text-gray-700 dark:text-gray-300"
-                      >
-                        角色名称 <span class="text-red-500">*</span>
-                      </label>
-                      <input
-                        type="text"
-                        id="name"
-                        v-model="form.name"
-                        class="input"
-                        placeholder="请输入角色名称"
-                      />
-                    </div>
+                    <FormInput
+                      id="name"
+                      v-model="form.name"
+                      label="角色名称"
+                      placeholder="请输入角色名称"
+                    >
+                      <template #label>角色名称 <span class="text-red-500">*</span></template>
+                    </FormInput>
 
-                    <div>
-                      <label
-                        for="type"
-                        class="block text-sm font-medium text-gray-700 dark:text-gray-300"
-                      >
-                        角色类型 <span class="text-red-500">*</span>
-                      </label>
-                      <select id="type" v-model="form.type" class="input">
-                        <option value="main">主要角色</option>
-                        <option value="secondary">次要角色</option>
-                        <option value="minor">路人角色</option>
-                      </select>
-                    </div>
+                    <FormSelect
+                      id="type"
+                      v-model="form.type"
+                      label="角色类型"
+                      :options="typeOptions"
+                    >
+                      <template #label>角色类型 <span class="text-red-500">*</span></template>
+                    </FormSelect>
 
-                    <div>
-                      <label
-                        for="gender"
-                        class="block text-sm font-medium text-gray-700 dark:text-gray-300"
-                      >
-                        性别 <span class="text-red-500">*</span>
-                      </label>
-                      <select id="gender" v-model="form.gender" class="input">
-                        <option value="male">男</option>
-                        <option value="female">女</option>
-                        <option value="unknown">未知</option>
-                      </select>
-                    </div>
+                    <FormSelect
+                      id="gender"
+                      v-model="form.gender"
+                      label="性别"
+                      :options="genderOptions"
+                    >
+                      <template #label>性别 <span class="text-red-500">*</span></template>
+                    </FormSelect>
 
-                    <div>
-                      <label
-                        for="age"
-                        class="block text-sm font-medium text-gray-700 dark:text-gray-300"
-                      >
-                        年龄段 <span class="text-red-500">*</span>
-                      </label>
-                      <select id="age" v-model="form.age" class="input">
-                        <option value="child">儿童</option>
-                        <option value="youth">青年</option>
-                        <option value="middle">中年</option>
-                        <option value="elder">老年</option>
-                        <option value="unknown">未知</option>
-                      </select>
-                    </div>
+                    <FormSelect
+                      id="age"
+                      v-model="form.age"
+                      label="年龄段"
+                      :options="ageOptions"
+                    >
+                      <template #label>年龄段 <span class="text-red-500">*</span></template>
+                    </FormSelect>
 
                     <div class="md:col-span-2">
-                      <label
-                        for="description"
-                        class="block text-sm font-medium text-gray-700 dark:text-gray-300"
-                      >
-                        角色描述
-                      </label>
-                      <textarea
+                      <FormTextarea
                         id="description"
                         v-model="form.description"
-                        rows="2"
-                        class="input"
+                        label="角色描述"
                         placeholder="请输入角色描述（选填）"
-                      ></textarea>
+                        :rows="2"
+                      />
                     </div>
 
                     <!-- TTS配置区域 -->
@@ -143,59 +113,24 @@
                       <div
                         class="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-gray-100 dark:bg-gray-600 rounded-lg"
                       >
-                        <!-- TTS服务商 -->
-                        <div>
-                          <label
-                            for="tts-provider"
-                            class="block text-sm font-medium text-gray-700 dark:text-gray-300"
-                          >
-                            TTS服务商
-                          </label>
-                          <select
-                            id="tts-provider"
-                            v-model="form.ttsConfig.provider"
-                            class="input"
-                            @change="onTtsProviderChange"
-                          >
-                            <option value="">请选择服务商</option>
-                            <option
-                              v-for="provider in ttsProviders"
-                              :key="provider.type"
-                              :value="provider.type"
-                            >
-                              {{ provider.name }}
-                            </option>
-                          </select>
-                        </div>
+                        <FormSelect
+                          id="tts-provider"
+                          v-model="form.ttsConfig.provider"
+                          label="TTS服务商"
+                          placeholder="请选择服务商"
+                          :options="ttsProviderOptions"
+                          @change="onTtsProviderChange"
+                        />
 
-                        <!-- 语音模型 -->
-                        <div>
-                          <label
-                            for="tts-model"
-                            class="block text-sm font-medium text-gray-700 dark:text-gray-300"
-                          >
-                            语音模型
-                          </label>
-                          <select
-                            id="tts-model"
-                            v-model="form.ttsConfig.model"
-                            class="input"
-                            :disabled="!form.ttsConfig.provider"
-                          >
-                            <option value="">请选择语音模型</option>
-                            <option
-                              v-for="model in availableVoiceModels"
-                              :key="model.code"
-                              :value="model.code"
-                            >
-                              {{ model.name }} ({{
-                                model.gender === "0" ? "女" : "男"
-                              }})
-                            </option>
-                          </select>
-                        </div>
+                        <FormSelect
+                          id="tts-model"
+                          v-model="form.ttsConfig.model"
+                          label="语音模型"
+                          placeholder="请选择语音模型"
+                          :options="ttsModelOptions"
+                          :disabled="!form.ttsConfig.provider"
+                        />
 
-                        <!-- 语速 -->
                         <div>
                           <label
                             for="tts-speed"
@@ -214,7 +149,6 @@
                           />
                         </div>
 
-                        <!-- 音调 -->
                         <div>
                           <label
                             for="tts-pitch"
@@ -233,7 +167,6 @@
                           />
                         </div>
 
-                        <!-- 音量 -->
                         <div>
                           <label
                             for="tts-volume"
@@ -252,22 +185,12 @@
                           />
                         </div>
 
-                        <!-- 情感 -->
-                        <div>
-                          <label
-                            for="tts-emotion"
-                            class="block text-sm font-medium text-gray-700 dark:text-gray-300"
-                          >
-                            情感
-                          </label>
-                          <input
-                            id="tts-emotion"
-                            v-model="form.ttsConfig.emotion"
-                            type="text"
-                            class="input"
-                            placeholder="如：开心、悲伤、愤怒等"
-                          />
-                        </div>
+                        <FormInput
+                          id="tts-emotion"
+                          v-model="form.ttsConfig.emotion"
+                          label="情感"
+                          placeholder="如：开心、悲伤、愤怒等"
+                        />
                       </div>
                     </div>
                   </div>
@@ -423,6 +346,9 @@
 
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted, watch } from "vue";
+import FormInput from "@/components/common/FormInput.vue";
+import FormTextarea from "@/components/common/FormTextarea.vue";
+import FormSelect from "@/components/common/FormSelect.vue";
 import type { Character } from "@/types/ReadNovels";
 import type { TTSProviderType, VoiceModel } from "@/types";
 import { useSettingsStore } from "@/stores/settings";
@@ -472,6 +398,33 @@ const form = reactive({
 
 // TTS服务商列表
 const ttsProviders = computed(() => settingsStore.getTTSProviders());
+
+const typeOptions = [
+  { value: "main", label: "主要角色" },
+  { value: "secondary", label: "次要角色" },
+  { value: "minor", label: "路人角色" },
+];
+const genderOptions = [
+  { value: "male", label: "男" },
+  { value: "female", label: "女" },
+  { value: "unknown", label: "未知" },
+];
+const ageOptions = [
+  { value: "child", label: "儿童" },
+  { value: "youth", label: "青年" },
+  { value: "middle", label: "中年" },
+  { value: "elder", label: "老年" },
+  { value: "unknown", label: "未知" },
+];
+const ttsProviderOptions = computed(() =>
+  ttsProviders.value.map((p) => ({ value: p.type, label: p.name }))
+);
+const ttsModelOptions = computed(() =>
+  availableVoiceModels.value.map((m) => ({
+    value: m.code,
+    label: `${m.name} (${m.gender === "0" ? "女" : "男"})`,
+  }))
+);
 
 // 根据选择的服务商获取可用的语音模型
 const availableVoiceModels = computed(() => {

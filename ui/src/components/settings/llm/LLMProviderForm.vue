@@ -5,125 +5,137 @@
     </h3>
 
     <form @submit.prevent="saveForm" class="space-y-4">
-      <div class="flex items-center space-x-2">
-        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 w-24">名称</label>
-        <input
-          v-model="form.name"
-          type="text"
-          class="input w-full"
-          placeholder="例如：我的 OpenAI"
-          required
-        />
-      </div>
+      <FormInput
+        v-model="form.name"
+        label="名称"
+        placeholder="例如：我的 OpenAI"
+        required
+      />
 
-      <div class="flex items-center space-x-2">
-        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 w-24">协议</label>
-        <select v-model="form.protocol" class="input w-full" :disabled="!isNew">
-          <option v-for="p in protocolOptions" :key="p.value" :value="p.value">
-            {{ p.label }}
-          </option>
-        </select>
-      </div>
+      <FormSelect
+        v-model="form.protocol"
+        label="协议"
+        :options="protocolOptions"
+        :disabled="!isNew"
+      />
 
       <!-- OpenAI / Azure / Gemini / Claude -->
       <template v-if="['openai', 'azure', 'gemini', 'claude'].includes(form.protocol)">
-        <div class="flex items-center space-x-2">
-          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 w-24">
-            API Key<span class="text-red-500">*</span>
-          </label>
-          <div class="relative w-full">
-            <input
-              :type="showKey ? 'text' : 'password'"
-              v-model="form.key"
-              class="input w-full pr-10"
-              placeholder="输入 API Key"
-            />
-            <button type="button" class="absolute inset-y-0 right-0 pr-3 flex items-center" @click="showKey = !showKey">
+        <FormInput
+          v-model="form.key"
+          :type="showKey ? 'text' : 'password'"
+          label="API Key"
+          placeholder="输入 API Key"
+        >
+          <template #label>API Key<span class="text-red-500">*</span></template>
+          <template #suffix>
+            <button type="button" class="p-2 rounded hover:bg-gray-100 dark:hover:bg-gray-700" @click="showKey = !showKey" tabindex="-1">
               <EyeIcon class="h-5 w-5 text-gray-500" />
             </button>
-          </div>
-        </div>
-        <div class="flex items-center space-x-2">
-          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 w-24">Endpoint</label>
-          <input v-model="form.endpoint" type="text" class="input w-full" placeholder="https://api.openai.com/v1" />
-        </div>
-        <div class="flex items-center space-x-2">
-          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 w-24">模型</label>
-          <input v-model="form.model" type="text" class="input w-full" placeholder="gpt-4o" />
-        </div>
+          </template>
+        </FormInput>
+        <FormInput
+          v-model="form.endpoint"
+          label="Endpoint"
+          placeholder="https://api.openai.com/v1"
+        />
+        <FormInput
+          v-model="form.model"
+          label="模型"
+          placeholder="gpt-4o"
+        />
       </template>
 
       <!-- 火山引擎 -->
       <template v-else-if="form.protocol === 'volcengine'">
-        <div class="flex items-center space-x-2">
-          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 w-24">Key<span class="text-red-500">*</span></label>
-          <div class="relative w-full">
-            <input
-              :type="showKey ? 'text' : 'password'"
-              v-model="form.key"
-              class="input w-full pr-10"
-              placeholder="火山引擎 API Key"
-            />
-            <button type="button" class="absolute inset-y-0 right-0 pr-3 flex items-center" @click="showKey = !showKey">
+        <FormInput
+          v-model="form.key"
+          :type="showKey ? 'text' : 'password'"
+          label="Key"
+          placeholder="火山引擎 API Key"
+        >
+          <template #label>Key<span class="text-red-500">*</span></template>
+          <template #suffix>
+            <button type="button" class="p-2 rounded hover:bg-gray-100 dark:hover:bg-gray-700" @click="showKey = !showKey" tabindex="-1">
               <EyeIcon class="h-5 w-5 text-gray-500" />
             </button>
-          </div>
-        </div>
-        <div class="flex items-center space-x-2">
-          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 w-24">Endpoint</label>
-          <input v-model="form.endpoint" type="text" class="input w-full" placeholder="https://ark.cn-beijing.volces.com/api/v3/" />
-        </div>
-        <div class="flex items-center space-x-2">
-          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 w-24">模型</label>
-          <input v-model="form.model" type="text" class="input w-full" placeholder="doubao-1.5-pro-32k-250115" />
-        </div>
+          </template>
+        </FormInput>
+        <FormInput
+          v-model="form.endpoint"
+          label="Endpoint"
+          placeholder="https://ark.cn-beijing.volces.com/api/v3/"
+        />
+        <FormInput
+          v-model="form.model"
+          label="模型"
+          placeholder="doubao-1.5-pro-32k-250115"
+        />
       </template>
 
       <!-- 阿里云 -->
       <template v-else-if="form.protocol === 'aliyun'">
-        <div class="flex items-center space-x-2">
-          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 w-24">AppKey<span class="text-red-500">*</span></label>
-          <input v-model="form.appkey" type="text" class="input w-full" placeholder="阿里云 AppKey" />
-        </div>
-        <div class="flex items-center space-x-2">
-          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 w-24">Token<span class="text-red-500">*</span></label>
-          <div class="relative w-full">
-            <input
-              :type="showKey ? 'text' : 'password'"
-              v-model="form.token"
-              class="input w-full pr-10"
-              placeholder="阿里云 Token"
-            />
-            <button type="button" class="absolute inset-y-0 right-0 pr-3 flex items-center" @click="showKey = !showKey">
+        <FormInput
+          v-model="form.appkey"
+          label="AppKey"
+          placeholder="阿里云 AppKey"
+        >
+          <template #label>AppKey<span class="text-red-500">*</span></template>
+        </FormInput>
+        <FormInput
+          v-model="form.token"
+          :type="showKey ? 'text' : 'password'"
+          label="Token"
+          placeholder="阿里云 Token"
+        >
+          <template #label>Token<span class="text-red-500">*</span></template>
+          <template #suffix>
+            <button type="button" class="p-2 rounded hover:bg-gray-100 dark:hover:bg-gray-700" @click="showKey = !showKey" tabindex="-1">
               <EyeIcon class="h-5 w-5 text-gray-500" />
             </button>
-          </div>
-        </div>
-        <div class="flex items-center space-x-2">
-          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 w-24">Endpoint</label>
-          <input v-model="form.endpoint" type="text" class="input w-full" placeholder="阿里云 API 地址" />
-        </div>
-        <div class="flex items-center space-x-2">
-          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 w-24">模型</label>
-          <input v-model="form.model" type="text" class="input w-full" placeholder="qwen-max" />
-        </div>
+          </template>
+        </FormInput>
+        <FormInput
+          v-model="form.endpoint"
+          label="Endpoint"
+          placeholder="阿里云 API 地址"
+        />
+        <FormInput
+          v-model="form.model"
+          label="模型"
+          placeholder="qwen-max"
+        />
       </template>
 
       <!-- 通用参数 -->
       <div class="border-t border-gray-200 dark:border-gray-700 pt-4 mt-4 space-y-4">
-        <div class="flex items-center space-x-2">
-          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 w-24">温度</label>
-          <input v-model.number="form.temperature" type="number" min="0" max="2" step="0.1" class="input w-24" />
-          <span class="text-sm text-gray-500">0–2，越低越稳定</span>
-        </div>
-        <div class="flex items-center space-x-2">
-          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 w-24">Max Tokens</label>
-          <input v-model.number="form.maxTokens" type="number" min="256" max="128000" step="256" class="input w-24" />
-        </div>
-        <div v-if="form.protocol === 'volcengine'" class="flex items-center space-x-2">
-          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 w-24">Top P</label>
-          <input v-model.number="form.topP" type="number" min="0" max="1" step="0.05" class="input w-24" />
-        </div>
+        <FormInput
+          v-model.number="form.temperature"
+          type="number"
+          label="温度"
+          :min="0"
+          :max="2"
+          :step="0.1"
+        >
+          <template #hint>0–2，越低越稳定</template>
+        </FormInput>
+        <FormInput
+          v-model.number="form.maxTokens"
+          type="number"
+          label="Max Tokens"
+          :min="256"
+          :max="128000"
+          :step="256"
+        />
+        <FormInput
+          v-if="form.protocol === 'volcengine'"
+          v-model.number="form.topP"
+          type="number"
+          label="Top P"
+          :min="0"
+          :max="1"
+          :step="0.05"
+        />
       </div>
 
       <div class="flex justify-between pt-4">
@@ -152,6 +164,8 @@
 import { ref, reactive, watchEffect, computed } from "vue";
 import { useToast } from "vue-toastification";
 import { EyeIcon } from "@heroicons/vue/24/outline";
+import FormInput from "@/components/common/FormInput.vue";
+import FormSelect from "@/components/common/FormSelect.vue";
 import type { LLMProtocol, LLMProviderConfig } from "@/types";
 
 const props = defineProps<{
