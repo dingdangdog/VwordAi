@@ -1,0 +1,149 @@
+# VwordAi 项目开发规则
+
+## 项目概述
+这是一个基于 Electron + Vue3 的文本转语音(TTS)桌面应用程序。项目采用前后端分离架构，前端使用 Vue3 + TypeScript + Tailwind CSS，后端使用 Electron 主进程(JavaScript)。
+
+## 核心架构原则
+
+### 1. 前后端分离
+- **前端 (渲染进程)**: `ui/` 目录，使用 Vue3 + TypeScript + Tailwind CSS
+- **后端 (主进程)**: `server/` 目录，使用 JavaScript (Node.js)
+- **通信方式**: 通过 Electron IPC 机制，使用 `preload.js` 作为桥梁
+
+### 2. 数据存储原则
+**重要**: 所有重要数据必须存储在后端，使用持久化文件存储到硬盘！
+- 系统配置信息 → `storage/` 目录
+- 服务商配置信息 → `storage/` 目录
+- 项目信息 → `storage/` 目录
+- 章节信息 → `storage/` 目录
+- 使用 JSON 文件存储，通过 `server/utils/storage.js` 管理
+
+### 3. 前后端交互流程
+1. **前端调用**: 所有接口调用封装在 `ui/src/utils/apiBase.ts` 中
+2. **业务封装**: 使用 Pinia stores (如 `ui/src/stores/projects.ts`, `ui/src/stores/settings.ts`)
+3. **IPC 通信**: `preload.js` 暴露 API 到 `window.electron` 和 `window.api`
+4. **请求路由**: `handler.js` 接收请求并路由到对应的 Controller
+5. **业务逻辑**: `server/controllers/` 处理业务，调用 `server/services/` 中的服务
+
+## 目录结构
+
+### 前端结构 (`ui/src/`)
+- `components/` - 共享 Vue 组件
+- `views/` - 页面组件
+- `stores/` - Pinia 状态管理
+- `utils/` - 工具函数，包括 `apiBase.ts` (IPC 通信封装)
+- `types/` - TypeScript 类型定义
+- `assets/` - 静态资源
+
+### 后端结构
+- `main.js` - Electron 主进程入口
+- `preload.js` - 预加载脚本，暴露 API 到渲染进程
+- `handler.js` - IPC 请求处理器，路由到各个 Controller
+- `server/controllers/` - 控制器层，处理 IPC 请求
+- `server/services/` - 服务层，业务逻辑实现
+- `server/models/` - 数据模型定义
+- `server/utils/` - 工具函数 (storage, result, audioUtils)
+- `server/tts/` - TTS 服务商实现 (azure, aliyun, baidu, tencent 等)
+- `server/llm/` - LLM 服务商实现
+- `storage/` - 数据存储目录 (JSON 文件)
+- `config/` - 配置文件目录
+
+## 代码规范
+
+### 前端
+- **语言**: TypeScript (必须)
+- **框架**: Vue3 组合式 API (`<script setup>`) (优先)
+- **样式**: Tailwind CSS
+- **状态管理**: Pinia
+- **命名**: camelCase (函数/变量), PascalCase (组件/类/接口)
+
+### 后端
+- **语言**: JavaScript (Node.js)
+- **模块化**: CommonJS (`require`/`module.exports`)
+- **命名**: camelCase
+- **错误处理**: 使用 `server/utils/result.js` 的 `success()` 和 `error()`
+
+## 开发注意事项
+
+### 文件操作
+- 所有文件操作必须在主进程中进行
+- 使用 `fs-extra` 进行文件操作
+- 路径使用 `path.join()` 处理跨平台兼容
+
+### UI 设计
+- **紧凑式设计**: 减少 UI 间的空白
+- **简洁 UI**: 按钮优先使用文字类型
+- **主题支持**: 支持亮色/暗色主题切换
+
+### 性能优化
+- 避免在主进程执行长时间任务
+- 使用异步操作避免阻塞 UI
+- 及时清理事件监听器和定时器
+
+### 安全性
+- API 密钥存储在本地 JSON 文件 (未来可考虑加密)
+- 避免 XSS 攻击，谨慎使用 `v-html`
+- 限制 Electron API 暴露范围
+
+## API 调用模式
+
+### 前端调用示例
+```typescript
+// 在 Vue 组件中
+import { invoke } from '@/utils/apiBase';
+const projects = await invoke('project:get-all');
+```
+
+### 后端处理示例
+```javascript
+// handler.js 中注册
+ipcMain.handle('project:get-all', async () => {
+  return await ProjectController.getAll();
+});
+
+// Controller 中实现
+async function getAll() {
+  const projects = await ProjectService.getAll();
+  return success(projects);
+}
+```
+
+## 关键文件说明
+
+- `main.js` - Electron 应用入口，创建窗口，配置 IPC
+- `preload.js` - 暴露安全的 API 到渲染进程
+- `handler.js` - IPC 请求路由和初始化
+- `server/utils/storage.js` - 数据持久化工具
+- `ui/src/utils/apiBase.ts` - 前端 IPC 通信封装
+- `docs/development.md` - 详细开发规范
+- `docs/Design.md` - 功能设计文档
+
+## 常见任务
+
+### 添加新的 API 接口
+1. 在 `preload.js` 中暴露 API
+2. 在 `handler.js` 中注册 IPC 处理器
+3. 在对应的 Controller 中实现逻辑
+4. 在 Service 中实现业务逻辑
+5. 在前端 `apiBase.ts` 或 stores 中封装调用
+
+### 添加新的 TTS 服务商
+1. 在 `server/tts/` 中创建新的服务商实现文件
+2. 在 `TTSService.js` 中注册新服务商
+3. 在 `server/controllers/TTSController.js` 中处理相关逻辑
+
+### 添加新的数据模型
+1. 在 `server/models/` 中创建模型文件
+2. 在对应的 Service 中使用模型
+3. 在 Controller 中处理 CRUD 操作
+
+## 测试和调试
+- 开发模式: `npm run dev` (启动 Electron)
+- UI 开发: `npm run ui` (仅启动前端开发服务器)
+- 构建: `npm run build-ui` (构建前端) + `npm run package` (打包应用)
+
+## 重要提醒
+- 这是一个 Electron 项目，不是纯 Web 项目
+- 所有数据存储必须在后端完成
+- 前端只负责 UI 展示和用户交互
+- 后端负责所有文件操作、API 调用、数据处理
