@@ -12,8 +12,8 @@ import type {
   TTSProviderConfig,
 } from "@/types";
 
-// 设置选项卡类型
-export type SettingsTab = "tts" | "llm" | "voice" | "system" | "about";
+// 设置选项卡类型（语音服务合并 TTS 配置与语音模型）
+export type SettingsTab = "voice" | "llm" | "system" | "about";
 
 // 支持的TTS服务商
 export const SUPPORTED_TTS_PROVIDERS = [
@@ -36,7 +36,7 @@ export const LLM_PROTOCOLS: { value: LLMProtocol; label: string }[] = [
 export const useSettingsStore = defineStore("settings", () => {
   const theme = ref<"light" | "dark">("light");
   const defaultExportPath = ref<string>("");
-  const activeTab = ref<SettingsTab>("tts");
+  const activeTab = ref<SettingsTab>("voice");
   const activeTTSProviderType = ref<TTSProviderType | null>(null);
   const activeLLMProviderType = ref<LLMProviderType | null>(null);
   const settings = ref<Settings | null>(null);

@@ -22,15 +22,12 @@
 
     <!-- 设置内容 -->
     <div class="tab-content">
-      <!-- TTS设置 -->
-      <TTSSettings v-if="activeTab === 'tts'" />
+      <!-- 语音服务（TTS 配置 + 语音模型） -->
+      <VoiceServiceSettings v-if="activeTab === 'voice'" />
       <!-- LLM设置 -->
-      <LLMSettings v-if="activeTab === 'llm'" />
+      <LLMSettings v-else-if="activeTab === 'llm'" />
       <!-- 系统数据 -->
       <SystemSettings v-else-if="activeTab === 'system'" />
-
-      <!-- 语音模型预览 -->
-      <VoiceModelPreview v-else-if="activeTab === 'voice'" />
     </div>
   </div>
 </template>
@@ -43,45 +40,42 @@ import { useRoute } from "vue-router";
 import {
   ServerIcon,
   ArrowPathIcon,
-  MicrophoneIcon,
   SpeakerWaveIcon,
 } from "@heroicons/vue/24/outline";
 
 // 导入设置组件
-import TTSSettings from "@/components/settings/TTSSettings.vue";
+import VoiceServiceSettings from "@/components/settings/VoiceServiceSettings.vue";
 import LLMSettings from "@/components/settings/LLMSettings.vue";
 import SystemSettings from "@/components/settings/SystemSettings.vue";
-import VoiceModelPreview from "@/components/settings/VoiceModelPreview.vue";
 
 const settingsStore = useSettingsStore();
 const route = useRoute();
 
-// 定义选项卡
+// 定义选项卡（语音服务 = TTS 配置 + 语音模型，同一页内 Tab 切换）
 const tabs = [
-  { id: "tts" as SettingsTab, name: "TTS配置", icon: MicrophoneIcon },
+  { id: "voice" as SettingsTab, name: "语音服务", icon: SpeakerWaveIcon },
   { id: "llm" as SettingsTab, name: "LLM配置", icon: ArrowPathIcon },
-  {
-    id: "system" as SettingsTab,
-    name: "系统设置",
-    icon: ServerIcon,
-  },
-  { id: "voice" as SettingsTab, name: "语音模型", icon: SpeakerWaveIcon },
+  { id: "system" as SettingsTab, name: "系统设置", icon: ServerIcon },
   // { id: "about" as SettingsTab, name: "关于", icon: InformationCircleIcon },
 ];
 
 // 选项卡状态
 const activeTab = computed(() => settingsStore.activeTab);
 
+// 兼容旧链接：tts 已合并到语音服务
+function normalizeTabParam(tab: string): SettingsTab | null {
+  if (tab === "tts") return "voice";
+  const validTab = tabs.find((t) => t.id === tab);
+  return validTab ? (tab as SettingsTab) : null;
+}
+
 // 监听路由变化，更新选项卡
 watch(
   () => route.query.tab,
   (newTab) => {
     if (newTab && typeof newTab === "string") {
-      // 验证tab是否有效
-      const validTab = tabs.find((tab) => tab.id === newTab);
-      if (validTab) {
-        settingsStore.setActiveTab(newTab as SettingsTab);
-      }
+      const tab = normalizeTabParam(newTab);
+      if (tab) settingsStore.setActiveTab(tab);
     }
   },
   { immediate: true }
@@ -92,13 +86,11 @@ onMounted(async () => {
   // 加载所有设置（包含服务商配置、存储路径等）
   await settingsStore.loadSettings();
 
-  // 从URL获取tab参数
+  // 从URL获取tab参数（tts 重定向到 voice）
   const tabParam = route.query.tab;
   if (tabParam && typeof tabParam === "string") {
-    const validTab = tabs.find((tab) => tab.id === tabParam);
-    if (validTab) {
-      settingsStore.setActiveTab(tabParam as SettingsTab);
-    }
+    const tab = normalizeTabParam(tabParam);
+    if (tab) settingsStore.setActiveTab(tab);
   }
 });
 

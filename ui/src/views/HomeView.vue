@@ -41,9 +41,9 @@
           设置
         </h2>
         <div class="menu-blocks-grid">
-          <router-link to="/settings?tab=tts" class="menu-block">
-            <MicrophoneIcon class="menu-icon" />
-            <span>TTS</span>
+          <router-link to="/settings?tab=voice" class="menu-block">
+            <SpeakerWaveIcon class="menu-icon" />
+            <span>语音服务</span>
           </router-link>
           <router-link to="/settings?tab=llm" class="menu-block">
             <CubeTransparentIcon class="menu-icon" />
@@ -63,10 +63,6 @@
           系统
         </h2>
         <div class="menu-blocks-grid">
-          <router-link to="/settings?tab=voice" class="menu-block">
-            <SpeakerWaveIcon class="menu-icon" />
-            <span>语音模型</span>
-          </router-link>
           <router-link to="/about" class="menu-block">
             <InformationCircleIcon class="menu-icon" />
             <span>关于</span>
@@ -89,7 +85,6 @@ import {
   VideoCameraIcon,
   PuzzlePieceIcon,
   ServerIcon,
-  MicrophoneIcon,
   InformationCircleIcon,
 } from "@heroicons/vue/24/outline";
 
