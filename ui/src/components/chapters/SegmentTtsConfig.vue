@@ -1,6 +1,6 @@
 <template>
-  <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4 mb-4">
-    <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+  <div class="bg-surface-elevated rounded-lg shadow p-4 mb-4">
+    <h3 class="text-lg font-semibold text-ink mb-4">
       TTS 配置
     </h3>
 
@@ -8,13 +8,13 @@
       <!-- TTS 服务商 -->
       <div class="form-control">
         <label class="label">
-          <span class="label-text text-gray-700 dark:text-gray-300"
+          <span class="label-text text-ink"
             >TTS 服务商</span
           >
         </label>
         <select
           v-model="config.provider"
-          class="select select-bordered w-full bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+          class="select select-bordered w-full bg-surface-hover text-ink"
         >
           <option
             v-for="provider in ttsProviders"
@@ -29,13 +29,13 @@
       <!-- 语音模型 -->
       <div class="form-control">
         <label class="label">
-          <span class="label-text text-gray-700 dark:text-gray-300"
+          <span class="label-text text-ink"
             >语音模型</span
           >
         </label>
         <select
           v-model="config.model"
-          class="select select-bordered w-full bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+          class="select select-bordered w-full bg-surface-hover text-ink"
         >
           <option
             v-for="model in availableModels"
@@ -50,8 +50,8 @@
       <!-- 语速 -->
       <div class="form-control">
         <label class="label">
-          <span class="label-text text-gray-700 dark:text-gray-300">语速</span>
-          <span class="label-text-alt text-gray-500">{{ config.speed }}</span>
+          <span class="label-text text-ink">语速</span>
+          <span class="label-text-alt text-ink-muted">{{ config.speed }}</span>
         </label>
         <input
           v-model="config.speed"
@@ -60,7 +60,7 @@
           max="50"
           class="range range-sm"
         />
-        <div class="flex justify-between text-xs text-gray-500 px-1">
+        <div class="flex justify-between text-xs text-ink-muted px-1">
           <span>慢</span>
           <span>正常</span>
           <span>快</span>
@@ -70,8 +70,8 @@
       <!-- 音调 -->
       <div class="form-control">
         <label class="label">
-          <span class="label-text text-gray-700 dark:text-gray-300">音调</span>
-          <span class="label-text-alt text-gray-500">{{ config.pitch }}</span>
+          <span class="label-text text-ink">音调</span>
+          <span class="label-text-alt text-ink-muted">{{ config.pitch }}</span>
         </label>
         <input
           v-model="config.pitch"
@@ -80,7 +80,7 @@
           max="50"
           class="range range-sm"
         />
-        <div class="flex justify-between text-xs text-gray-500 px-1">
+        <div class="flex justify-between text-xs text-ink-muted px-1">
           <span>低</span>
           <span>正常</span>
           <span>高</span>
@@ -90,8 +90,8 @@
       <!-- 音量 -->
       <div class="form-control">
         <label class="label">
-          <span class="label-text text-gray-700 dark:text-gray-300">音量</span>
-          <span class="label-text-alt text-gray-500">{{ config.volume }}</span>
+          <span class="label-text text-ink">音量</span>
+          <span class="label-text-alt text-ink-muted">{{ config.volume }}</span>
         </label>
         <input
           v-model="config.volume"
@@ -100,7 +100,7 @@
           max="100"
           class="range range-sm"
         />
-        <div class="flex justify-between text-xs text-gray-500 px-1">
+        <div class="flex justify-between text-xs text-ink-muted px-1">
           <span>小</span>
           <span>中</span>
           <span>大</span>

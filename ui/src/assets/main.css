@@ -2,26 +2,50 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Custom styles can be added below */
+/* ========== 主题变量：亮色 白+蓝 / 暗色 自然黑+蓝 ========== */
+:root {
+  --color-surface: #ffffff;
+  --color-surface-elevated: #f8fafc;
+  --color-surface-hover: #f1f5f9;
+  --color-border: #e2e8f0;
+  --color-ink: #0f172a;
+  --color-ink-muted: #64748b;
+  --color-primary: #2563eb;
+  --color-primary-hover: #1d4ed8;
+  --color-primary-muted: #dbeafe;
+}
 
+.dark {
+  --color-surface: #0a0a0f;
+  --color-surface-elevated: #12121a;
+  --color-surface-hover: #1a1a24;
+  --color-border: #1e1e2e;
+  --color-ink: #f1f5f9;
+  --color-ink-muted: #94a3b8;
+  --color-primary: #60a5fa;
+  --color-primary-hover: #93c5fd;
+  --color-primary-muted: #1e2a47;
+}
+
+/* ========== 基础组件（使用语义色） ========== */
 .btn {
-  @apply px-2 py-1 rounded-md font-medium focus:outline-none focus:ring-2 focus:ring-offset-2;
-  user-select: none; /* Prevent text selection */
+  @apply px-2 py-1 rounded-md font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-surface;
+  user-select: none;
 }
 .btn-primary {
-  @apply bg-blue-500 text-white hover:bg-blue-600 focus:ring-blue-500;
+  @apply bg-primary text-white hover:bg-primary-hover focus:ring-primary;
 }
 .btn-secondary {
-  @apply bg-gray-200 text-gray-700 hover:bg-gray-300 focus:ring-gray-500;
+  @apply bg-surface-hover text-ink hover:bg-border focus:ring-ink-muted;
 }
 .btn-danger {
-  @apply bg-red-600 text-white hover:bg-red-700 focus:ring-red-500;
+  @apply bg-red-600 text-white hover:bg-red-700 focus:ring-red-500 focus:ring-offset-surface;
 }
 .card {
-  @apply bg-white dark:bg-gray-800 rounded-lg shadow p-6;
+  @apply bg-surface-elevated rounded-lg shadow p-6;
 }
 .input {
-  @apply block rounded-sm shadow-sm p-1 dark:text-white border outline-none bg-gray-200/50 dark:bg-gray-700/50 border-gray-300  dark:border-gray-600  focus:border-blue-500  hover:border-blue-500 dark:focus:border-blue-500  dark:hover:border-blue-500;
+  @apply block rounded-md shadow-sm p-2 text-ink border border-border outline-none bg-surface focus:border-primary hover:border-primary;
 }
 
 .drag-area {
@@ -39,6 +63,6 @@
 
 /* Hide scrollbar for IE, Edge and Firefox */
 * {
-  scrollbar-width: none; /* Firefox */
-  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none;
+  -ms-overflow-style: none;
 }

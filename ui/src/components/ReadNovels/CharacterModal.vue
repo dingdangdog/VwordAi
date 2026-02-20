@@ -6,7 +6,7 @@
       <!-- 背景遮罩 -->
       <div class="fixed inset-0 transition-opacity" aria-hidden="true">
         <div
-          class="absolute inset-0 bg-gray-500 dark:bg-gray-900 opacity-75"
+          class="absolute inset-0 bg-ink/60 opacity-75"
         ></div>
       </div>
 
@@ -19,7 +19,7 @@
 
       <!-- 模态框内容 -->
       <div
-        class="inline-block align-bottom bg-white dark:bg-gray-800 rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-2xl sm:w-full"
+        class="inline-block align-bottom bg-surface-elevated rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-2xl sm:w-full"
         role="dialog"
         aria-modal="true"
         aria-labelledby="modal-headline"
@@ -28,7 +28,7 @@
           <div class="sm:flex sm:items-start">
             <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left w-full">
               <h3
-                class="text-lg leading-6 font-medium text-gray-900 dark:text-white"
+                class="text-lg leading-6 font-medium text-ink"
                 id="modal-headline"
               >
                 {{ editingCharacter ? "编辑角色" : "角色管理" }}
@@ -38,18 +38,18 @@
                 <!-- 角色表单 -->
                 <div
                   v-if="showForm"
-                  class="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg"
+                  class="bg-surface-hover p-4 rounded-lg"
                 >
                   <div class="flex justify-between items-center mb-3">
                     <h4
-                      class="text-md font-medium text-gray-900 dark:text-white"
+                      class="text-md font-medium text-ink"
                     >
                       {{ editingCharacter ? "编辑角色信息" : "添加新角色" }}
                     </h4>
                     <button
                       v-if="editingCharacter"
                       @click="cancelEdit"
-                      class="text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                      class="text-sm text-ink-muted hover:text-ink"
                     >
                       取消编辑
                     </button>
@@ -105,13 +105,13 @@
                     <!-- TTS配置区域 -->
                     <div class="md:col-span-2">
                       <h5
-                        class="text-sm font-medium text-gray-900 dark:text-white mb-3"
+                        class="text-sm font-medium text-ink mb-3"
                       >
                         TTS语音配置
                       </h5>
 
                       <div
-                        class="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-gray-100 dark:bg-gray-600 rounded-lg"
+                        class="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-surface-hover rounded-lg"
                       >
                         <FormSelect
                           id="tts-provider"
@@ -134,7 +134,7 @@
                         <div>
                           <label
                             for="tts-speed"
-                            class="block text-sm font-medium text-gray-700 dark:text-gray-300"
+                            class="block text-sm font-medium text-ink"
                           >
                             语速 ({{ form.ttsConfig.speed }})
                           </label>
@@ -145,14 +145,14 @@
                             min="-50"
                             max="50"
                             step="5"
-                            class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700"
+                            class="w-full h-2 bg-border rounded-lg appearance-none cursor-pointer"
                           />
                         </div>
 
                         <div>
                           <label
                             for="tts-pitch"
-                            class="block text-sm font-medium text-gray-700 dark:text-gray-300"
+                            class="block text-sm font-medium text-ink"
                           >
                             音调 ({{ form.ttsConfig.pitch }})
                           </label>
@@ -163,14 +163,14 @@
                             min="-50"
                             max="50"
                             step="5"
-                            class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700"
+                            class="w-full h-2 bg-border rounded-lg appearance-none cursor-pointer"
                           />
                         </div>
 
                         <div>
                           <label
                             for="tts-volume"
-                            class="block text-sm font-medium text-gray-700 dark:text-gray-300"
+                            class="block text-sm font-medium text-ink"
                           >
                             音量 ({{ form.ttsConfig.volume }})
                           </label>
@@ -181,7 +181,7 @@
                             min="0"
                             max="100"
                             step="5"
-                            class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700"
+                            class="w-full h-2 bg-border rounded-lg appearance-none cursor-pointer"
                           />
                         </div>
 
@@ -223,7 +223,7 @@
                 <div v-if="!editingCharacter">
                   <div class="flex justify-between items-center mb-3">
                     <h4
-                      class="text-md font-medium text-gray-900 dark:text-white"
+                      class="text-md font-medium text-ink"
                     >
                       现有角色
                     </h4>
@@ -237,7 +237,7 @@
                   </div>
 
                   <div v-if="characters.length === 0" class="text-center py-4">
-                    <p class="text-gray-500 dark:text-gray-400">
+                    <p class="text-ink-muted">
                       暂无角色，请使用上方表单添加
                     </p>
                   </div>
@@ -246,13 +246,13 @@
                     <div
                       v-for="character in characters"
                       :key="character.id"
-                      class="p-4 border border-gray-200 dark:border-gray-700 rounded-md hover:border-gray-300 dark:hover:border-gray-600 transition-colors"
+                      class="p-4 border border-border rounded-md hover:border-primary/70 transition-colors"
                     >
                       <div class="flex justify-between items-start">
                         <div class="flex-1">
                           <div class="flex items-center space-x-3 mb-2">
                             <h5
-                              class="text-sm font-medium text-gray-900 dark:text-white"
+                              class="text-sm font-medium text-ink"
                             >
                               {{ character.name }}
                             </h5>
@@ -272,7 +272,7 @@
 
                           <p
                             v-if="character.description"
-                            class="text-xs text-gray-500 dark:text-gray-400 mb-2"
+                            class="text-xs text-ink-muted mb-2"
                           >
                             {{ character.description }}
                           </p>
@@ -280,7 +280,7 @@
                           <!-- TTS配置信息 -->
                           <div
                             v-if="character.ttsConfig?.provider"
-                            class="text-xs text-blue-600 dark:text-blue-400"
+                            class="text-xs text-primary"
                           >
                             <span class="font-medium">TTS:</span>
                             {{
@@ -306,7 +306,7 @@
                         <div class="flex items-center space-x-2 ml-4">
                           <button
                             @click="editCharacter(character)"
-                            class="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 text-sm"
+                            class="text-primary hover:text-primary-hover text-sm"
                             title="编辑角色"
                           >
                             编辑
@@ -329,11 +329,11 @@
         </div>
 
         <div
-          class="bg-gray-50 dark:bg-gray-700 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse"
+          class="bg-surface-hover px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse"
         >
           <button
             type="button"
-            class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:ml-3 sm:w-auto sm:text-sm"
+            class="btn btn-primary w-full inline-flex justify-center sm:ml-3 sm:w-auto sm:text-sm"
             @click="$emit('close')"
           >
             关闭

@@ -2,13 +2,13 @@
   <div class="container mx-auto p-4">
     <div v-if="loading" class="flex justify-center items-center py-4">
       <div
-        class="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 dark:border-white"
+        class="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"
       ></div>
     </div>
 
     <div v-else>
       <div class="flex justify-between items-center mb-4">
-        <h1 class="text-2xl font-bold text-gray-900 dark:text-white">
+        <h1 class="text-2xl font-bold text-ink">
           {{ isNewChapter ? "新建章节" : "编辑章节" }}
         </h1>
         <div class="flex space-x-4">
@@ -24,20 +24,20 @@
         </div>
       </div>
 
-      <div class="bg-white dark:bg-gray-800 rounded-lg shadow">
+      <div class="bg-surface-elevated rounded-lg shadow">
         <div class="p-2">
           <form @submit.prevent="submitForm">
             <div class="mb-4">
               <label
                 for="name"
-                class="block text-sm font-semibold text-gray-700 dark:text-gray-300"
+                class="block text-sm font-semibold text-ink"
                 >章节名称</label
               >
               <input
                 type="text"
                 id="name"
                 v-model="form.name"
-                class="mt-1 input dark:bg-gray-700 dark:border-gray-600 dark:text-white w-full"
+                class="mt-1 input bg-surface border-border text-ink w-full"
                 placeholder="请输入章节名称"
                 required
               />
@@ -52,14 +52,14 @@
             <div class="mb-4">
               <label
                 for="text"
-                class="block text-sm font-semibold text-gray-700 dark:text-gray-300"
+                class="block text-sm font-semibold text-ink"
                 >章节文本内容</label
               >
               <textarea
                 id="text"
                 v-model="form.text"
                 rows="12"
-                class="mt-1 input dark:bg-gray-700 dark:border-gray-600 dark:text-white w-full"
+                class="mt-1 input bg-surface border-border text-ink w-full"
                 placeholder="请输入需要转换为语音的文本内容"
               ></textarea>
             </div>
@@ -67,7 +67,7 @@
             <div class="mb-4">
               <div class="flex justify-between items-center mb-2">
                 <h4
-                  class="text-sm font-semibold text-gray-700 dark:text-gray-300"
+                  class="text-sm font-semibold text-ink"
                 >
                   章节语音设置
                 </h4>
@@ -85,13 +85,13 @@
                   <div class="flex justify-between items-center space-x-4">
                     <label
                       for="serviceProvider"
-                      class="w-24 text-right block text-sm font-medium text-gray-700 dark:text-gray-300"
+                      class="w-24 text-right block text-sm font-medium text-ink"
                       >服务商</label
                     >
                     <select
                       id="serviceProvider"
                       v-model="form.settings.serviceProvider"
-                      class="mt-1 input dark:bg-gray-700 dark:border-gray-600 dark:text-white w-full"
+                      class="mt-1 input bg-surface border-border text-ink w-full"
                     >
                       <option value="">未选择</option>
                       <option
@@ -107,14 +107,14 @@
                   <div class="flex justify-between items-center space-x-4">
                     <label
                       for="voice"
-                      class="w-24 text-right block text-sm font-medium text-gray-700 dark:text-gray-300"
+                      class="w-24 text-right block text-sm font-medium text-ink"
                       >声音角色</label
                     >
                     <div class="w-full">
                       <select
                         id="voice"
                         v-model="form.settings.voice"
-                        class="mt-1 input dark:bg-gray-700 dark:border-gray-600 dark:text-white w-full"
+                        class="mt-1 input bg-surface border-border text-ink w-full"
                         :disabled="
                           !form.settings.serviceProvider || isLoadingVoiceRoles
                         "
@@ -148,7 +148,7 @@
                   <div class="flex justify-between items-center space-x-4">
                     <label
                       for="speed"
-                      class="w-24 text-right block text-sm font-medium text-gray-700 dark:text-gray-300"
+                      class="w-24 text-right block text-sm font-medium text-ink"
                       >语速 ({{ form.settings.speed || 1 }})</label
                     >
                     <input
@@ -165,13 +165,13 @@
                   <div class="flex justify-between items-center space-x-4">
                     <label
                       for="emotion"
-                      class="w-24 text-right block text-sm font-medium text-gray-700 dark:text-gray-300"
+                      class="w-24 text-right block text-sm font-medium text-ink"
                       >情感</label
                     >
                     <select
                       id="emotion"
                       v-model="form.settings.emotion"
-                      class="mt-1 input dark:bg-gray-700 dark:border-gray-600 dark:text-white w-full"
+                      class="mt-1 input bg-surface border-border text-ink w-full"
                       :disabled="!form.settings.serviceProvider"
                     >
                       <option value="">未选择</option>

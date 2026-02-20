@@ -6,7 +6,7 @@
     <div v-if="$slots.prefix || $slots.suffix" class="form-input-wrap relative flex">
       <span
         v-if="$slots.prefix"
-        class="form-input-addon form-input-prefix absolute left-0 inset-y-0 flex items-center pl-3 pointer-events-none text-gray-500 dark:text-gray-400"
+        class="form-input-addon form-input-prefix absolute left-0 inset-y-0 flex items-center pl-3 pointer-events-none text-ink-muted"
       >
         <slot name="prefix" />
       </span>
@@ -27,7 +27,7 @@
       />
       <span
         v-if="$slots.suffix"
-        class="form-input-addon form-input-suffix absolute right-0 inset-y-0 flex items-center pr-1 text-gray-500 dark:text-gray-400"
+        class="form-input-addon form-input-suffix absolute right-0 inset-y-0 flex items-center pr-1 text-ink-muted"
       >
         <slot name="suffix" />
       </span>
@@ -110,20 +110,17 @@ function onFocus(e: FocusEvent) {
 
 <style scoped>
 .form-input-label {
-  @apply block text-sm font-medium text-gray-700 dark:text-gray-300;
+  @apply block text-sm font-medium text-ink;
 }
 .form-input {
-  @apply w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500;
+  @apply w-full rounded-md border border-border bg-surface text-ink placeholder-ink-muted;
   @apply outline-none transition-colors;
-  @apply focus:border-blue-500 dark:focus:border-blue-500 focus:shadow-[0_0_0_2px_rgba(59,130,246,0.2)];
-  @apply hover:border-gray-400 dark:hover:border-gray-500;
-  @apply disabled:opacity-60 disabled:cursor-not-allowed disabled:bg-gray-100 dark:disabled:bg-gray-700/50;
+  @apply focus:border-primary focus:ring-2 focus:ring-primary focus:ring-opacity-20;
+  @apply hover:border-primary;
+  @apply disabled:opacity-60 disabled:cursor-not-allowed disabled:bg-surface-hover;
   -webkit-appearance: none;
   appearance: none;
   box-shadow: none;
-}
-.form-input:focus {
-  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
 }
 .form-input-sm {
   @apply py-1.5 px-2.5 text-sm;
@@ -138,6 +135,6 @@ function onFocus(e: FocusEvent) {
   @apply text-sm text-red-500 dark:text-red-400;
 }
 .form-input-hint {
-  @apply text-sm text-gray-500 dark:text-gray-400;
+  @apply text-sm text-ink-muted;
 }
 </style>

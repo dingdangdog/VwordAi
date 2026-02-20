@@ -1,5 +1,5 @@
 <template>
-  <div class="min-h-screen flex flex-col bg-gradient-to-b from-blue-50 to-blue-400 dark:from-gray-900 dark:to-gray-600 duration-100 transition-colors">
+  <div class="min-h-screen flex flex-col bg-surface dark:bg-surface duration-100 transition-colors">
     <Navbar />
     <main class="p-2 flex-1 overflow-auto">
       <router-view />

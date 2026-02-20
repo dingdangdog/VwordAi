@@ -1,7 +1,7 @@
 <template>
-  <div class="novel-detail bg-white dark:bg-gray-800 rounded-lg shadow p-4">
+  <div class="novel-detail bg-surface-elevated rounded-lg shadow p-4">
     <div class="flex justify-between items-start">
-      <h2 class="text-xl font-semibold text-gray-900 dark:text-white">
+      <h2 class="text-xl font-semibold text-ink">
         {{ novel.title }}
       </h2>
       <div class="flex space-x-2">
@@ -27,9 +27,9 @@
     <div class="mt-4 grid grid-cols-1 md:grid-cols-4 gap-4">
       <!-- <div class="md:col-span-1">
         <div
-          class="bg-gray-200 dark:bg-gray-700 rounded-md aspect-[2/3] flex items-center justify-center"
+          class="bg-surface-hover rounded-md aspect-[2/3] flex items-center justify-center"
         >
-          <div v-if="!novel.cover" class="text-gray-400 dark:text-gray-500">
+          <div v-if="!novel.cover" class="text-ink-muted">
             <BookOpenIcon class="h-16 w-16 mx-auto" />
             <p class="text-center text-sm mt-2">暂无封面</p>
           </div>
@@ -45,40 +45,40 @@
       <div class="md:col-span-3">
         <div class="space-y-4">
           <div>
-            <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400">
+            <h3 class="text-sm font-medium text-ink-muted">
               作者
             </h3>
-            <p class="text-base text-gray-900 dark:text-white">
+            <p class="text-base text-ink">
               {{ novel.author }}
             </p>
           </div>
 
           <div v-if="novel.description">
-            <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400">
+            <h3 class="text-sm font-medium text-ink-muted">
               简介
             </h3>
             <p
-              class="text-base text-gray-900 dark:text-white whitespace-pre-wrap"
+              class="text-base text-ink whitespace-pre-wrap"
             >
               {{ novel.description }}
             </p>
           </div>
           <div>
-            <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400">
+            <h3 class="text-sm font-medium text-ink-muted">
               角色
             </h3>
             <p
               v-if="novel.characters?.length"
-              class="text-base text-gray-900 dark:text-white whitespace-pre-wrap"
+              class="text-base text-ink whitespace-pre-wrap"
             >
               {{
                 novel.characters?.map((character) => character.name).join(", ")
               }}
             </p>
-            <p v-else class="text-gray-500 dark:text-gray-400">暂无角色</p>
+            <p v-else class="text-ink-muted">暂无角色</p>
           </div>
 
-          <div class="flex space-x-4 text-sm text-gray-500 dark:text-gray-400">
+          <div class="flex space-x-4 text-sm text-ink-muted">
             <div>
               <span>创建于: {{ formatDate(novel.createdAt) }}</span>
             </div>

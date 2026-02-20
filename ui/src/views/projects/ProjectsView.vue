@@ -1,10 +1,10 @@
 <template>
   <div class="container mx-auto p-4">
     <div v-if="projects.length === 0" class="card text-center py-12">
-      <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-4">
+      <h2 class="text-xl font-semibold text-ink mb-4">
         暂无项目
       </h2>
-      <p class="text-gray-600 dark:text-gray-300 mb-6">
+      <p class="text-ink mb-6">
         您还没有创建任何项目，请点击上面的"新建项目"按钮开始使用。
       </p>
       <button
@@ -44,32 +44,32 @@
         <div
           v-for="project in projects"
           :key="project.id"
-          class="card transition-shadow duration-200 shadow hover:shadow-md shadow-blue-500 dark:shadow-gray-500"
+          class="card transition-shadow duration-200 shadow hover:shadow-md shadow-primary/20"
         >
           <div class="flex justify-between items-start mb-4">
-            <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
+            <h3 class="text-lg font-semibold text-ink">
               {{ project.title }}
             </h3>
             <div class="flex">
               <button
                 @click="openEditProjectModal(project)"
-                class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 p-1"
+                class="text-ink-muted hover:text-ink p-1"
               >
                 <PencilSquareIcon class="h-5 w-5" />
               </button>
               <button
                 @click="confirmDeleteProject(project)"
-                class="text-gray-500 hover:text-red-500 dark:text-gray-400 dark:hover:text-red-400 p-1"
+                class="text-ink-muted hover:text-red-500 p-1"
               >
                 <TrashIcon class="h-5 w-5" />
               </button>
             </div>
           </div>
-          <p class="text-gray-600 dark:text-gray-300 mb-4 line-clamp-2">
+          <p class="text-ink mb-4 line-clamp-2">
             {{ project.description || "无描述" }}
           </p>
           <div class="flex justify-between items-center mt-4">
-            <span class="text-sm text-gray-500 dark:text-gray-400">
+            <span class="text-sm text-ink-muted">
               {{ formatDate(project.updateAt) }}
             </span>
             <router-link

@@ -1,9 +1,9 @@
 <template>
   <div class="provider-form">
-    <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+    <h3 class="text-lg font-semibold text-ink mb-4">
       阿里云语音服务配置
     </h3>
-    <p class="text-gray-600 dark:text-gray-300 mb-2">
+    <p class="text-ink mb-2">
       配置你的阿里云智能语音服务相关信息。
     </p>
 
@@ -11,7 +11,7 @@
     <div v-if="providerStatus" class="mb-4 text-center">
       <div
         v-if="providerStatus === 'unconfigured'"
-        class="p-2 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-md"
+        class="p-2 bg-surface-hover text-ink rounded-md"
       >
         <span class="text-sm">未配置</span>
       </div>
@@ -56,8 +56,8 @@
       >
         <template #label>Token<span class="text-red-500">*</span></template>
         <template #suffix>
-          <button type="button" class="p-2 rounded hover:bg-gray-100 dark:hover:bg-gray-700" @click="showPassword = !showPassword" tabindex="-1">
-            <EyeIcon class="h-5 w-5 text-gray-500" :class="{ 'text-blue-500': showPassword }" />
+          <button type="button" class="p-2 rounded hover:bg-surface-hover" @click="showPassword = !showPassword" tabindex="-1">
+            <EyeIcon class="h-5 w-5 text-ink-muted" :class="{ 'text-primary': showPassword }" />
           </button>
         </template>
       </FormInput>

@@ -90,14 +90,14 @@ function onFocus(e: FocusEvent) {
 
 <style scoped>
 .form-select-label {
-  @apply block text-sm font-medium text-gray-700 dark:text-gray-300;
+  @apply block text-sm font-medium text-ink;
 }
 .form-select {
-  @apply w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white;
+  @apply w-full rounded-md border border-border bg-surface text-ink;
   @apply outline-none transition-colors;
-  @apply focus:border-blue-500 dark:focus:border-blue-500 focus:shadow-[0_0_0_2px_rgba(59,130,246,0.2)];
-  @apply hover:border-gray-400 dark:hover:border-gray-500;
-  @apply disabled:opacity-60 disabled:cursor-not-allowed disabled:bg-gray-100 dark:disabled:bg-gray-700/50;
+  @apply focus:border-primary focus:ring-2 focus:ring-primary focus:ring-opacity-20;
+  @apply hover:border-primary;
+  @apply disabled:opacity-60 disabled:cursor-not-allowed disabled:bg-surface-hover;
   -webkit-appearance: none;
   appearance: none;
   box-shadow: none;
@@ -112,7 +112,7 @@ function onFocus(e: FocusEvent) {
   background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%239ca3af' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
 }
 .form-select:focus {
-  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+  @apply ring-2 ring-primary ring-opacity-20;
 }
 .form-select-sm {
   @apply py-1.5 pl-2.5 pr-7 text-sm;
@@ -127,6 +127,6 @@ function onFocus(e: FocusEvent) {
   @apply text-sm text-red-500 dark:text-red-400;
 }
 .form-select-hint {
-  @apply text-sm text-gray-500 dark:text-gray-400;
+  @apply text-sm text-ink-muted;
 }
 </style>

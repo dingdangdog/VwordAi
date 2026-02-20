@@ -1,7 +1,7 @@
 <template>
   <div class="settings-view">
     <!-- 设置选项卡 -->
-    <div class="border-b border-gray-200 dark:border-gray-700">
+    <div class="border-b border-border">
       <nav class="flex -mb-px">
         <button
           v-for="tab in tabs"
@@ -10,8 +10,8 @@
           class="py-2 pl-3 pr-4 text-center border-b-2 font-medium text-sm whitespace-nowrap duration-200 transition-all"
           :class="
             activeTab === tab.id
-              ? 'border-blue-500 text-blue-600  dark:text-blue-400'
-              : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
+              ? 'border-primary text-primary'
+              : 'border-transparent text-ink-muted hover:text-ink hover:border-border'
           "
         >
           <component :is="tab.icon" class="h-5 w-5 inline-block mr-1" />

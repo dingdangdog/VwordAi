@@ -1,9 +1,9 @@
 <template>
   <div class="provider-form">
-    <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+    <h3 class="text-lg font-semibold text-ink mb-4">
       腾讯云 TTS 配置
     </h3>
-    <p class="text-gray-600 dark:text-gray-300 mb-6">
+    <p class="text-ink mb-6">
       配置腾讯云语音服务以使用腾讯云 TTS。请确保您已在腾讯云开通语音合成服务。
     </p>
 
@@ -28,8 +28,8 @@
       >
         <template #label>SecretKey<span class="text-red-500">*</span></template>
         <template #suffix>
-          <button type="button" class="p-2 rounded hover:bg-gray-100 dark:hover:bg-gray-700" @click="showPassword = !showPassword" tabindex="-1">
-            <EyeIcon class="h-5 w-5 text-gray-500" :class="{ 'text-blue-500': showPassword }" />
+          <button type="button" class="p-2 rounded hover:bg-surface-hover" @click="showPassword = !showPassword" tabindex="-1">
+            <EyeIcon class="h-5 w-5 text-ink-muted" :class="{ 'text-primary': showPassword }" />
           </button>
         </template>
       </FormInput>

@@ -1,7 +1,7 @@
 <template>
   <div class="chapter-list">
     <div v-if="chapters.length === 0" class="text-center py-8">
-      <p class="text-gray-500 dark:text-gray-400">
+      <p class="text-ink-muted">
         暂无章节，请点击"新建章节"按钮创建
       </p>
     </div>
@@ -11,17 +11,17 @@
         v-for="chapter in sortedChapters"
         :key="chapter.id"
         @click="navigateToChapter(chapter.id)"
-        class="p-2 border border-gray-200 dark:border-gray-700 rounded-md cursor-pointer transition-colors duration-200"
+        class="p-2 border border-border rounded-md cursor-pointer transition-colors duration-200"
         :class="
           chapter.id === selectedChapterId
             ? 'bg-blue-50 border-blue-300 dark:bg-blue-900 dark:border-blue-700'
-            : 'hover:bg-gray-50 dark:hover:bg-gray-700'
+            : 'hover:bg-surface-hover'
         "
       >
         <div class="flex flex-col items-center">
           <div class="w-full flex items-center justify-between">
             <h3
-              class="text-sm font-medium text-gray-900 dark:text-white truncate"
+              class="text-sm font-medium text-ink truncate"
               :title="chapter.title"
             >
               {{ chapter.title }}
@@ -36,7 +36,7 @@
             </div>
           </div>
           <div
-            class="flex mt-1 items-center text-xs text-gray-500 dark:text-gray-400"
+            class="flex mt-1 items-center text-xs text-ink-muted"
           >
             <span class="w-16">{{ formatDate(chapter.updatedAt) }}</span>
             <span class="mx-2">·</span>

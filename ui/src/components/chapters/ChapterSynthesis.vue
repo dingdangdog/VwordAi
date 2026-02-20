@@ -1,6 +1,6 @@
 <template>
   <div class="p-2 flex flex-col space-y-4">
-    <h3 class="text-base font-semibold text-gray-900 dark:text-white">
+    <h3 class="text-base font-semibold text-ink">
       语音合成
     </h3>
 
@@ -8,8 +8,8 @@
       v-if="!chapter.settings.serviceProvider || !chapter.settings.voice"
       class="text-center"
     >
-      <!-- <p class="text-gray-600 dark:text-gray-400">缺少语音配置</p> -->
-      <p class="text-sm text-gray-500 dark:text-gray-500 mt-2 mb-4">
+      <!-- <p class="text-ink-muted">缺少语音配置</p> -->
+      <p class="text-sm text-ink-muted mt-2 mb-4">
         请先配置服务商和声音角色
       </p>
       <button @click="$emit('edit-settings')" class="btn btn-primary">
@@ -22,34 +22,34 @@
       <div v-if="showVoiceSettings" class="mb-3 text-sm">
         <div class="flex flex-wrap gap-3">
           <span>
-            <span class="text-gray-500 dark:text-gray-400">服务商:</span>
-            <span class="ml-1 text-gray-900 dark:text-white">{{
+            <span class="text-ink-muted">服务商:</span>
+            <span class="ml-1 text-ink">{{
               getProviderName(chapter.settings.serviceProvider)
             }}</span>
           </span>
           <span>
-            <span class="text-gray-500 dark:text-gray-400">声音角色:</span>
-            <span class="ml-1 text-gray-900 dark:text-white">{{
+            <span class="text-ink-muted">声音角色:</span>
+            <span class="ml-1 text-ink">{{
               getVoiceRoleName(chapter.settings.voice) || chapter.settings.voice
             }}</span>
           </span>
           <span>
-            <span class="text-gray-500 dark:text-gray-400">语速:</span>
-            <span class="ml-1 text-gray-900 dark:text-white">{{
+            <span class="text-ink-muted">语速:</span>
+            <span class="ml-1 text-ink">{{
               chapter.settings.speed || 1
             }}</span>
           </span>
           <!-- <div>
-              <span class="text-sm text-gray-500 dark:text-gray-400">音调:</span>
-              <span class="ml-2 text-gray-900 dark:text-white">{{ chapter.settings.pitch || 0 }}</span>
+              <span class="text-sm text-ink-muted">音调:</span>
+              <span class="ml-2 text-ink">{{ chapter.settings.pitch || 0 }}</span>
             </div>
             <div>
-              <span class="text-sm text-gray-500 dark:text-gray-400">音量:</span>
-              <span class="ml-2 text-gray-900 dark:text-white">{{ chapter.settings.volume || 100 }}</span>
+              <span class="text-sm text-ink-muted">音量:</span>
+              <span class="ml-2 text-ink">{{ chapter.settings.volume || 100 }}</span>
             </div> -->
           <span v-if="chapter.settings.emotion">
-            <span class="text-gray-500 dark:text-gray-400">情感:</span>
-            <span class="ml-1 text-gray-900 dark:text-white">{{
+            <span class="text-ink-muted">情感:</span>
+            <span class="ml-1 text-ink">{{
               getEmotionName(chapter.settings.emotion)
             }}</span>
           </span>
@@ -78,7 +78,7 @@
               <p>{{ audioError }}</p>
               <button
                 @click="retryAudioLoad"
-                class="text-blue-500 hover:underline mt-1"
+                class="text-primary hover:underline mt-1"
               >
                 重试加载
               </button>
@@ -129,9 +129,9 @@
       <!-- Loading state -->
       <div v-else-if="synthesisStatus === 'loading'" class="text-center py-4">
         <div
-          class="animate-spin h-8 w-8 border-4 border-blue-500 border-t-transparent rounded-full mx-auto mb-2"
+          class="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full mx-auto mb-2"
         ></div>
-        <p class="text-gray-600 dark:text-gray-400">正在合成...</p>
+        <p class="text-ink-muted">正在合成...</p>
       </div>
 
       <!-- Error state -->

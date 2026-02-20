@@ -1,7 +1,7 @@
 <template>
-  <div class="chapter-processor bg-white dark:bg-gray-800 rounded-lg shadow">
+  <div class="chapter-processor bg-surface-elevated rounded-lg shadow">
     <!-- 标签切换 -->
-    <div class="border-b border-gray-200 dark:border-gray-700">
+    <div class="border-b border-border">
       <nav class="flex -mb-px">
         <button
           v-for="tab in tabs"
@@ -11,7 +11,7 @@
           :class="
             activeTab === tab.id
               ? 'border-blue-500 text-blue-600 dark:text-blue-400'
-              : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
+              : 'border-transparent text-ink-muted hover:text-ink hover:border-border'
           "
         >
           <component :is="tab.icon" class="h-5 w-5 inline-block mr-1" />
@@ -25,7 +25,7 @@
       <!-- 编辑章节 -->
       <div v-if="activeTab === 'edit'" class="space-y-4">
         <div class="flex justify-between items-center">
-          <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
+          <h2 class="text-lg font-semibold text-ink">
             {{ chapter.title }}
           </h2>
           <div class="flex space-x-2">
@@ -41,19 +41,19 @@
 
         <textarea
           v-model="editedContent"
-          class="w-full h-96 p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-white resize-none"
+          class="w-full h-96 p-2 border border-border rounded-md bg-surface-elevated text-ink resize-none"
           placeholder="请输入章节内容..."
           @input="contentChanged = true"
         ></textarea>
 
         <div class="flex justify-between items-center">
           <div class="flex items-center space-x-2">
-            <label class="text-sm text-gray-700 dark:text-gray-300"
+            <label class="text-sm text-ink"
               >LLM服务商:</label
             >
             <select
               v-model="selectedLLMProvider"
-              class="select select-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+              class="select select-sm border border-border rounded-md bg-surface-elevated text-ink"
             >
               <option value="" disabled>请先配置 LLM 服务商</option>
               <option
@@ -87,7 +87,7 @@
       <!-- 查看解析结果 -->
       <div v-else-if="activeTab === 'parsed'" class="space-y-4">
         <div v-if="!parsedChapter" class="py-8 text-center">
-          <p class="text-gray-500 dark:text-gray-400 mb-4">
+          <p class="text-ink-muted mb-4">
             该章节尚未解析，请先在"编辑章节"选项卡中进行LLM解析
           </p>
           <button @click="activeTab = 'edit'" class="btn btn-primary">
@@ -97,7 +97,7 @@
 
         <template v-else>
           <div class="flex justify-between items-center">
-            <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
+            <h2 class="text-lg font-semibold text-ink">
               {{ parsedChapter.title }}
             </h2>
             <div class="flex space-x-2">
@@ -124,10 +124,10 @@
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <!-- 旁白部分 -->
             <div
-              class="border border-gray-200 dark:border-gray-700 rounded-md p-4"
+              class="border border-border rounded-md p-4"
             >
               <h3
-                class="text-md font-semibold text-gray-900 dark:text-white mb-3"
+                class="text-md font-semibold text-ink mb-3"
               >
                 旁白文本
               </h3>
@@ -135,15 +135,15 @@
                 <div
                   v-for="(narration, index) in parsedChapter.narration"
                   :key="`narration-${index}`"
-                  class="bg-gray-50 dark:bg-gray-700 p-3 rounded-md"
+                  class="bg-surface-hover p-3 rounded-md"
                 >
-                  <p class="text-gray-900 dark:text-white text-sm">
+                  <p class="text-ink text-sm">
                     {{ narration.text }}
                   </p>
                   <div class="mt-2 flex justify-between items-center">
                     <select
                       v-model="narration.voice"
-                      class="text-xs py-1 px-2 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                      class="text-xs py-1 px-2 rounded border border-border bg-surface-elevated text-ink"
                     >
                       <option value="">默认旁白音</option>
                       <option value="narrator-1">旁白音 1</option>
@@ -156,10 +156,10 @@
 
             <!-- 对话部分 -->
             <div
-              class="border border-gray-200 dark:border-gray-700 rounded-md p-4"
+              class="border border-border rounded-md p-4"
             >
               <h3
-                class="text-md font-semibold text-gray-900 dark:text-white mb-3"
+                class="text-md font-semibold text-ink mb-3"
               >
                 对话内容
               </h3>
@@ -167,7 +167,7 @@
                 <div
                   v-for="(dialogue, index) in parsedChapter.dialogues"
                   :key="`dialogue-${index}`"
-                  class="bg-gray-50 dark:bg-gray-700 p-3 rounded-md"
+                  class="bg-surface-hover p-3 rounded-md"
                 >
                   <div class="flex justify-between items-start">
                     <span
@@ -182,13 +182,13 @@
                       {{ dialogue.tone }}
                     </span>
                   </div>
-                  <p class="text-gray-900 dark:text-white text-sm mt-2">
+                  <p class="text-ink text-sm mt-2">
                     {{ dialogue.text }}
                   </p>
                   <div class="mt-2 flex justify-between items-center">
                     <select
                       v-model="dialogue.voice"
-                      class="text-xs py-1 px-2 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                      class="text-xs py-1 px-2 rounded border border-border bg-surface-elevated text-ink"
                     >
                       <option value="">自动选择</option>
                       <option
@@ -206,7 +206,7 @@
                     </select>
                     <select
                       v-model="dialogue.tone"
-                      class="text-xs py-1 px-2 ml-2 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                      class="text-xs py-1 px-2 ml-2 rounded border border-border bg-surface-elevated text-ink"
                     >
                       <option value="">无语气</option>
                       <option value="平静">平静</option>
@@ -236,7 +236,7 @@
       <!-- 播放TTS结果 -->
       <div v-else-if="activeTab === 'tts'" class="space-y-4">
         <div v-if="!ttsResults.length" class="py-8 text-center">
-          <p class="text-gray-500 dark:text-gray-400 mb-4">
+          <p class="text-ink-muted mb-4">
             该章节尚未生成TTS，请先在"解析结果"选项卡中生成TTS
           </p>
           <button @click="activeTab = 'parsed'" class="btn btn-primary">
@@ -246,7 +246,7 @@
 
         <template v-else>
           <div class="flex justify-between items-center">
-            <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
+            <h2 class="text-lg font-semibold text-ink">
               TTS音频播放
             </h2>
             <div>
@@ -262,7 +262,7 @@
           </div>
 
           <div
-            class="mt-4 p-4 border border-gray-200 dark:border-gray-700 rounded-md"
+            class="mt-4 p-4 border border-border rounded-md"
           >
             <div
               v-for="(result, index) in ttsResults"
@@ -270,13 +270,13 @@
               class="mb-4 last:mb-0"
             >
               <h3
-                class="text-sm font-medium text-gray-900 dark:text-white mb-2"
+                class="text-sm font-medium text-ink mb-2"
               >
                 音频 {{ index + 1 }}
               </h3>
               <audio :src="result.audioUrl" controls class="w-full"></audio>
               <div
-                class="text-xs text-gray-500 dark:text-gray-400 mt-1 flex justify-between"
+                class="text-xs text-ink-muted mt-1 flex justify-between"
               >
                 <span>时长: {{ formatDuration(result.duration) }}</span>
                 <span>生成时间: {{ formatDate(result.createdAt) }}</span>

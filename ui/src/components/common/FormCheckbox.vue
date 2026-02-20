@@ -15,7 +15,7 @@
         @change="onChange"
       />
       <span
-        class="form-checkbox-dummy relative block w-[1.125rem] h-[1.125rem] rounded border-2 border-gray-400 dark:border-gray-500 bg-white dark:bg-gray-800 transition-colors peer-focus:outline-none peer-focus:shadow-[0_0_0_2px_rgba(59,130,246,0.35)] peer-checked:border-blue-500 peer-checked:bg-blue-500 dark:peer-checked:bg-blue-500 dark:peer-checked:border-blue-500"
+        class="form-checkbox-dummy relative block w-[1.125rem] h-[1.125rem] rounded border-2 border-border bg-surface transition-colors peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-primary/30 peer-checked:border-primary peer-checked:bg-primary"
       >
         <CheckIcon
           v-if="modelValue"
@@ -26,7 +26,7 @@
     </span>
     <span
       v-if="$slots.default || label"
-      class="form-checkbox-label text-sm text-gray-700 dark:text-gray-300"
+      class="form-checkbox-label text-sm text-ink"
     >
       <slot>{{ label }}</slot>
     </span>

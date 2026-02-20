@@ -7,35 +7,35 @@
         <img class="h-full w-auto" src="@/assets/logo.svg" alt="Logo" />
       </div>
 
-      <h1 class="text-2xl font-bold text-gray-900 dark:text-white">
+      <h1 class="text-2xl font-bold text-ink">
         {{ appConfig.name }}
       </h1>
-      <p class="text-gray-500 dark:text-gray-400 mb-12">
+      <p class="text-ink-muted mb-12">
         {{ appConfig.nameEn }} {{ appConfig.version }}
       </p>
 
       <div
-        class="max-w-md w-full bg-gray-50 dark:bg-gray-700 rounded-lg p-4 mb-12"
+        class="max-w-md w-full bg-surface-hover rounded-lg p-4 mb-12"
       >
         <h3
-          class="font-medium text-gray-900 dark:text-white mb-2 border-b text-center border-gray-200 dark:border-gray-600"
+          class="font-medium text-ink mb-2 border-b text-center border-border"
         >
           软件信息
         </h3>
         <div class="space-y-2 text-sm">
           <div class="flex justify-between">
-            <span class="text-gray-500 dark:text-gray-400">版本</span>
-            <span class="text-gray-900 dark:text-white">{{
+            <span class="text-ink-muted">版本</span>
+            <span class="text-ink">{{
               appConfig.version
             }}</span>
           </div>
           <div class="flex justify-between">
-            <span class="text-gray-500 dark:text-gray-400">平台</span>
-            <span class="text-gray-900 dark:text-white">{{ platform }}</span>
+            <span class="text-ink-muted">平台</span>
+            <span class="text-ink">{{ platform }}</span>
           </div>
           <div class="flex justify-between">
-            <span class="text-gray-500 dark:text-gray-400">更新日期</span>
-            <span class="text-gray-900 dark:text-white">{{
+            <span class="text-ink-muted">更新日期</span>
+            <span class="text-ink">{{
               appConfig.releaseDate
             }}</span>
           </div>
@@ -43,7 +43,7 @@
       </div>
 
       <div class="max-w-md w-full mb-12">
-        <p class="text-center text-gray-600 dark:text-gray-300">
+        <p class="text-center text-ink">
           {{ appConfig.description }}
         </p>
       </div>
@@ -73,7 +73,7 @@
     </div>
 
     <div class="mt-12 text-center">
-      <p class="text-sm text-gray-500 dark:text-gray-400">
+      <p class="text-sm text-ink-muted">
         {{ appConfig.copyright }}
       </p>
     </div>
@@ -97,17 +97,17 @@
       class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50"
     >
       <div
-        class="bg-white dark:bg-gray-800 rounded-lg shadow-lg w-11/12 max-w-4xl max-h-[80vh] overflow-auto"
+        class="bg-surface-elevated rounded-lg shadow-lg w-11/12 max-w-4xl max-h-[80vh] overflow-auto"
       >
         <div
-          class="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center"
+          class="p-4 border-b border-border flex justify-between items-center"
         >
-          <h3 class="text-lg font-medium text-gray-900 dark:text-white">
+          <h3 class="text-lg font-medium text-ink">
             应用调试面板
           </h3>
           <button
             @click="showDebugPanel = false"
-            class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+            class="text-ink-muted hover:text-ink"
           >
             <svg
               class="w-5 h-5"
@@ -127,31 +127,31 @@
         </div>
         <div class="p-4 max-h-[65vh] overflow-auto">
           <div class="mb-4">
-            <h4 class="font-medium text-gray-900 dark:text-white mb-2">
+            <h4 class="font-medium text-ink mb-2">
               应用信息
             </h4>
             <div
-              class="bg-gray-100 dark:bg-gray-700 p-2 rounded text-gray-700 dark:text-gray-200"
+              class="bg-surface-hover p-2 rounded text-ink"
             >
               <pre class="whitespace-pre-wrap text-sm">{{ appDebugInfo }}</pre>
             </div>
           </div>
           <div class="mb-4">
-            <h4 class="font-medium text-gray-900 dark:text-white mb-2">
+            <h4 class="font-medium text-ink mb-2">
               存储路径
             </h4>
             <div
-              class="bg-gray-100 dark:bg-gray-700 p-2 rounded text-gray-700 dark:text-gray-200"
+              class="bg-surface-hover p-2 rounded text-ink"
             >
               <pre class="whitespace-pre-wrap text-sm">{{ storagePaths }}</pre>
             </div>
           </div>
           <div class="mb-4">
-            <h4 class="font-medium text-gray-900 dark:text-white mb-2">
+            <h4 class="font-medium text-ink mb-2">
               系统环境
             </h4>
             <div
-              class="bg-gray-100 dark:bg-gray-700 p-2 rounded text-gray-700 dark:text-gray-200"
+              class="bg-surface-hover p-2 rounded text-ink"
             >
               <pre class="whitespace-pre-wrap text-sm">{{ systemInfo }}</pre>
             </div>

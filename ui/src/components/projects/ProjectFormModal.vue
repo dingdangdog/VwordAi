@@ -10,25 +10,25 @@
     >
       <!-- Background overlay -->
       <div
-        class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"
+        class="fixed inset-0 bg-ink/60 transition-opacity"
         @click="close"
       ></div>
 
       <!-- Modal panel -->
       <div class="w-full h-full align-bottom flex justify-center items-center">
         <div
-          class="text-left bg-white dark:bg-gray-800 rounded-lg px-4 pt-5 pb-4 sm:p-6 shadow-xl transform transition-all"
+          class="text-left bg-surface-elevated rounded-lg px-4 pt-5 pb-4 sm:p-6 shadow-xl transform transition-all"
         >
           <div class="flex justify-between items-center mb-4">
             <h3
-              class="text-lg leading-6 font-medium text-gray-900 dark:text-white"
+              class="text-lg leading-6 font-medium text-ink"
               id="modal-title"
             >
               {{ title }}
             </h3>
             <button
               @click="close"
-              class="text-gray-400 hover:text-gray-500 focus:outline-none"
+              class="text-ink-muted hover:text-ink focus:outline-none"
             >
               <XMarkIcon class="h-6 w-6" />
             </button>
@@ -58,11 +58,11 @@
 
             <div class="mb-4">
               <h4
-                class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2"
+                class="block text-sm font-semibold text-ink mb-2"
               >
                 默认语音设置 (可选)
               </h4>
-              <p class="text-xs text-gray-500 dark:text-gray-400 mb-4">
+              <p class="text-xs text-ink-muted mb-4">
                 这些设置将作为新建章节的默认值，您可以在创建章节后单独修改每个章节的设置。
               </p>
 
@@ -89,7 +89,7 @@
                 <div>
                   <label
                     for="speed"
-                    class="block text-sm font-medium text-gray-700 dark:text-gray-300"
+                    class="block text-sm font-medium text-ink"
                     >语速 ({{ form.defaultVoiceSettings.speed || 1 }})</label
                   >
                   <input

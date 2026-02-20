@@ -5,10 +5,10 @@
       <div class="w-full md:w-64 flex-shrink-0">
         <div class="card p-4">
           <div class="flex items-center justify-between mb-3">
-            <span class="text-sm font-medium text-gray-700 dark:text-gray-300">LLM 服务商</span>
+            <span class="text-sm font-medium text-ink">LLM 服务商</span>
             <button
               type="button"
-              class="text-sm text-blue-600 dark:text-blue-400 hover:underline"
+              class="text-sm text-primary hover:underline"
               @click="startAddNew"
             >
               + 添加
@@ -21,8 +21,8 @@
                 class="w-full flex items-center px-3 py-2 rounded-md transition-colors text-left"
                 :class="
                   selectedId === p.id
-                    ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300'
-                    : 'hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-800 dark:text-gray-200'
+                    ? 'bg-primary-muted text-primary'
+                    : 'hover:bg-surface-hover text-ink'
                 "
                 @click="selectProvider(p.id)"
               >
@@ -30,8 +30,8 @@
                   class="h-5 w-5 mr-2 flex-shrink-0"
                   :class="
                     selectedId === p.id
-                      ? 'text-blue-600 dark:text-blue-400'
-                      : 'text-gray-500 dark:text-gray-400'
+                      ? 'text-primary'
+                      : 'text-ink-muted'
                   "
                 />
                 <span class="truncate">{{ p.name || p.id }}</span>
@@ -43,7 +43,7 @@
               </button>
             </li>
           </ul>
-          <p v-if="providersList.length === 0" class="text-sm text-gray-500 mt-2">
+          <p v-if="providersList.length === 0" class="text-sm text-ink-muted mt-2">
             暂无服务商，点击「添加」创建
           </p>
         </div>
@@ -65,8 +65,8 @@
             v-else
             class="flex flex-col items-center justify-center text-center py-12"
           >
-            <ServerIcon class="h-16 w-16 text-gray-400 mb-4" />
-            <p class="text-lg text-gray-700 dark:text-gray-300">
+            <ServerIcon class="h-16 w-16 text-ink-muted mb-4" />
+            <p class="text-lg text-ink">
               请从左侧选择一个服务商，或点击「添加」新建
             </p>
           </div>
@@ -112,7 +112,7 @@ function statusDotClass(status: string) {
     case "untested":
       return "bg-yellow-500";
     default:
-      return "bg-gray-400";
+      return "bg-border";
   }
 }
 

@@ -27,13 +27,13 @@
 
     <!-- 标题区域 -->
     <div
-      class="flex justify-between items-center px-4 py-2 border-b border-gray-50 dark:border-gray-300"
+      class="flex justify-between items-center px-4 py-2 border-b border-border"
     >
       <div class="flex items-center space-x-4">
         <h1 class="text-xl font-bold dark:text-white">BiliBili 直播助手</h1>
 
         <!-- 房间人气 -->
-        <div v-if="isConnected" class="p-2 text-sm dark:text-gray-200">
+        <div v-if="isConnected" class="p-2 text-sm text-ink">
           <span>人气值: {{ popularity }}</span>
         </div>
       </div>
@@ -44,11 +44,11 @@
           ></span>
           已连接到房间: {{ currentRoomId }}
         </span>
-        <span v-else class="text-gray-500">未连接</span>
+        <span v-else class="text-ink-muted">未连接</span>
         <!-- <button
             v-if="!isConnected"
             @click="connectToRoom"
-            class="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600"
+            class="px-3 py-1 bg-primary text-white rounded hover:bg-primary-hover"
           >
             连接
           </button> -->
@@ -67,7 +67,7 @@
     <!-- 左侧：消息显示区域 -->
     <div class="flex-1 flex flex-col overflow-hidden">
       <!-- 选项卡标签 -->
-      <div class="flex border-b border-gray-100 dark:border-gray-400">
+      <div class="flex border-b border-border">
         <div
           v-for="tab in tabs"
           :key="tab.id"
@@ -75,8 +75,8 @@
           class="px-4 py-2 cursor-pointer"
           :class="[
             currentTab === tab.id
-              ? 'border-b-2 border-blue-500 text-blue-500'
-              : 'hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-white',
+              ? 'border-b-2 border-primary text-primary'
+              : 'hover:bg-surface-hover text-ink',
           ]"
         >
           {{ tab.name }}
@@ -85,7 +85,7 @@
 
       <!-- 消息显示区域 -->
       <div
-        class="flex-1 overflow-auto p-4 max-h-[calc(100vh-13rem)] bg-gray-100/10"
+        class="flex-1 overflow-auto p-4 max-h-[calc(100vh-13rem)] bg-surface-hover/10"
         ref="messageContainer"
       >
         <!-- 弹幕 -->
@@ -95,14 +95,14 @@
             :key="index"
             class="flex items-start"
           >
-            <span class="text-blue-500 font-semibold mr-2"
+            <span class="text-primary font-semibold mr-2"
               >{{ msg.uname }}:</span
             >
-            <span class="text-gray-500 dark:text-gray-200">{{ msg.msg }}</span>
+            <span class="text-ink-muted">{{ msg.msg }}</span>
           </div>
           <div
             v-if="messages.danmaku.length === 0"
-            class="text-gray-500 dark:text-gray-200 text-center py-8"
+            class="text-ink-muted text-center py-8"
           >
             暂无弹幕消息
           </div>
@@ -125,24 +125,24 @@
           <div
             v-for="(msg, index) in messages.debug"
             :key="index"
-            class="border p-2 mb-2 rounded text-xs font-mono bg-gray-50 break-all"
+            class="border p-2 mb-2 rounded text-xs font-mono bg-surface-hover break-all"
           >
             <div class="flex justify-between mb-1">
               <span class="font-bold text-purple-600">{{
                 msg.cmd || "Unknown"
               }}</span>
-              <span class="text-gray-500">{{
+              <span class="text-ink-muted">{{
                 new Date(msg.timestamp).toLocaleTimeString()
               }}</span>
             </div>
             <pre
-              class="whitespace-pre-wrap overflow-auto max-h-40 bg-gray-200"
+              class="whitespace-pre-wrap overflow-auto max-h-40 bg-border"
               >{{ JSON.stringify(msg.data, null, 2) }}</pre
             >
           </div>
           <div
             v-if="messages.debug.length === 0"
-            class="text-gray-500 text-center py-8"
+            class="text-ink-muted text-center py-8"
           >
             暂无调试消息
           </div>
@@ -156,13 +156,13 @@
             class="flex items-start text-pink-500"
           >
             <span class="font-semibold mr-2">{{ msg.uname }}</span>
-            <span class="text-gray-500 dark:text-gray-200"
+            <span class="text-ink-muted"
               >赠送了 {{ msg.num }} 个 {{ msg.giftName }}</span
             >
           </div>
           <div
             v-if="messages.gift.length === 0"
-            class="text-gray-500 dark:text-gray-200 text-center py-8"
+            class="text-ink-muted text-center py-8"
           >
             暂无礼物消息
           </div>
@@ -182,7 +182,7 @@
           </div>
           <div
             v-if="messages.like.length === 0"
-            class="text-gray-500 dark:text-gray-200 text-center py-8"
+            class="text-ink-muted text-center py-8"
           >
             暂无点赞消息
           </div>
@@ -198,14 +198,14 @@
             <span class="text-green-500 font-semibold mr-2">{{
               msg.uname
             }}</span>
-            <span class="text-gray-500 dark:text-gray-200">进入了直播间</span>
-            <span v-if="msg.medalLevel > 0" class="ml-2 text-sm text-gray-500">
+            <span class="text-ink-muted">进入了直播间</span>
+            <span v-if="msg.medalLevel > 0" class="ml-2 text-sm text-ink-muted">
               (粉丝牌等级: {{ msg.medalLevel }})
             </span>
           </div>
           <div
             v-if="messages.enter.length === 0"
-            class="text-gray-500 dark:text-gray-200 text-center py-8"
+            class="text-ink-muted text-center py-8"
           >
             暂无进场消息
           </div>
@@ -228,7 +228,7 @@
               <span
                 class="mr-2 text-sm font-semibold"
                 :class="{
-                  'text-blue-500': msg.type === 'info',
+                  'text-primary': msg.type === 'info',
                   'text-yellow-500': msg.type === 'warning',
                   'text-red-500': msg.type === 'error',
                   'text-purple-500': msg.type === 'notice',
@@ -246,13 +246,13 @@
               </span>
               <span>{{ msg.content }}</span>
             </div>
-            <div v-if="msg.timestamp" class="text-xs text-gray-500 mt-1">
+            <div v-if="msg.timestamp" class="text-xs text-ink-muted mt-1">
               {{ new Date(msg.timestamp).toLocaleString() }}
             </div>
           </div>
           <div
             v-if="messages.system.length === 0"
-            class="text-gray-500 dark:text-gray-200 text-center py-8"
+            class="text-ink-muted text-center py-8"
           >
             暂无系统消息
           </div>
@@ -266,14 +266,14 @@
     >
       <div class="space-y-2">
         <!-- 连接配置 -->
-        <div class="shadow-sm rounded p-2 bg-gray-50 dark:bg-gray-600">
+        <div class="shadow-sm rounded p-2 bg-surface-hover">
           <h2 class="text-base font-semibold mb-1.5 dark:text-white">
             连接设置
           </h2>
           <div class="space-y-2">
             <div>
               <label
-                class="block text-xs font-medium text-gray-700 mb-0.5 dark:text-gray-200"
+                class="block text-xs font-medium text-ink mb-0.5 text-ink"
                 >房间ID</label
               >
               <div class="flex">
@@ -285,7 +285,7 @@
                 />
                 <button
                   @click="connectToRoom"
-                  class="ml-2 px-3 py-1 bg-blue-500 text-white text-sm rounded disabled:bg-gray-300"
+                  class="ml-2 px-3 py-1 bg-primary text-white text-sm rounded disabled:opacity-50"
                   :disabled="isConnected || !roomIdInput"
                 >
                   连接
@@ -295,7 +295,7 @@
 
             <div>
               <label
-                class="block text-xs font-medium text-gray-700 mb-0.5 dark:text-gray-200"
+                class="block text-xs font-medium text-ink mb-0.5 text-ink"
                 >SESSDATA</label
               >
               <div class="flex relative">
@@ -308,7 +308,7 @@
                 <div class="absolute inset-y-0 right-0 flex items-center pr-2">
                   <button
                     @click="showSessdataHelp = !showSessdataHelp"
-                    class="text-gray-400 hover:text-gray-600"
+                    class="text-ink-muted hover:text-ink-muted"
                     type="button"
                   >
                     <svg
@@ -330,7 +330,7 @@
               </div>
               <div
                 v-if="showSessdataHelp"
-                class="mt-1 text-xs text-gray-600 bg-gray-100 p-1.5 rounded dark:bg-gray-700 dark:text-gray-300"
+                class="mt-1 text-xs text-ink-muted bg-surface-hover p-1.5 rounded dark:bg-gray-700 dark:text-gray-300"
               >
                 <p>SESSDATA是B站登录后cookie中的一个字段，获取方法：</p>
                 <ol class="list-decimal list-inside pl-2 mt-0.5">
@@ -346,7 +346,7 @@
 
             <div>
               <label
-                class="block text-xs font-medium text-gray-700 mb-0.5 dark:text-gray-200"
+                class="block text-xs font-medium text-ink mb-0.5 text-ink"
                 >历史房间</label
               >
               <div class="flex flex-wrap gap-1">
@@ -354,13 +354,13 @@
                   v-for="room in config.room_ids"
                   :key="room.id"
                   @click="selectRoom(room)"
-                  class="px-1.5 py-0.5 bg-gray-200 rounded text-xs hover:bg-gray-300"
+                  class="px-1.5 py-0.5 bg-border rounded text-xs hover:bg-surface-hover"
                 >
                   {{ room.name || room.id }}
                 </button>
                 <div
                   v-if="config.room_ids.length === 0"
-                  class="text-gray-500 text-xs py-0.5"
+                  class="text-ink-muted text-xs py-0.5"
                 >
                   暂无历史记录
                 </div>
@@ -370,7 +370,7 @@
         </div>
 
         <!-- TTS设置 -->
-        <div class="shadow-sm rounded p-2 bg-gray-50 dark:bg-gray-600">
+        <div class="shadow-sm rounded p-2 bg-surface-hover">
           <div class="flex justify-between items-center mb-1.5">
             <h2 class="text-base font-semibold dark:text-white">
               语音设置 (TTS)
@@ -383,7 +383,7 @@
                 @change="saveConfig(false)"
               />
               <div
-                class="w-8 h-4 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-blue-600"
+                class="w-8 h-4 bg-border peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary/30 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-border after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-primary"
               ></div>
             </label>
           </div>
@@ -392,7 +392,7 @@
             <!-- TTS 引擎选择和测试放在同一行 -->
             <div class="flex space-x-2 items-center">
               <label
-                class="block text-xs font-medium text-gray-700 mb-0.5 dark:text-gray-200"
+                class="block text-xs font-medium text-ink mb-0.5 text-ink"
                 >TTS 引擎</label
               >
               <select
@@ -413,7 +413,7 @@
 
             <div class="flex space-x-2 items-center">
               <label
-                class="block text-xs font-medium text-gray-700 mb-0.5 dark:text-gray-200"
+                class="block text-xs font-medium text-ink mb-0.5 text-ink"
                 >测试文本</label
               >
               <input
@@ -427,7 +427,7 @@
             <!-- 消息类型开关 -->
             <div class="flex space-x-2 items-center py-1">
               <label
-                class="block text-xs font-medium text-gray-700 mb-0.5 dark:text-gray-200"
+                class="block text-xs font-medium text-ink mb-0.5 text-ink"
                 >播报消息类型</label
               >
               <div class="flex space-x-2">
@@ -436,12 +436,12 @@
                     type="checkbox"
                     id="readDanmaku"
                     v-model="config.readDanmaku"
-                    class="w-3 h-3 text-blue-600 rounded focus:ring-blue-500"
+                    class="w-3 h-3 text-primary rounded focus:ring-primary"
                     @change="saveConfig(false)"
                   />
                   <label
                     for="readDanmaku"
-                    class="ml-1 text-xs text-gray-700 dark:text-gray-200"
+                    class="ml-1 text-xs text-ink"
                     >弹幕</label
                   >
                 </div>
@@ -451,12 +451,12 @@
                     type="checkbox"
                     id="readGift"
                     v-model="config.readGift"
-                    class="w-3 h-3 text-blue-600 rounded focus:ring-blue-500"
+                    class="w-3 h-3 text-primary rounded focus:ring-primary"
                     @change="saveConfig(false)"
                   />
                   <label
                     for="readGift"
-                    class="ml-1 text-xs text-gray-700 dark:text-gray-200"
+                    class="ml-1 text-xs text-ink"
                     >礼物</label
                   >
                 </div>
@@ -466,12 +466,12 @@
                     type="checkbox"
                     id="readEnter"
                     v-model="config.readEnter"
-                    class="w-3 h-3 text-blue-600 rounded focus:ring-blue-500"
+                    class="w-3 h-3 text-primary rounded focus:ring-primary"
                     @change="saveConfig(false)"
                   />
                   <label
                     for="readEnter"
-                    class="ml-1 text-xs text-gray-700 dark:text-gray-200"
+                    class="ml-1 text-xs text-ink"
                     >进场</label
                   >
                 </div>
@@ -481,12 +481,12 @@
                     type="checkbox"
                     id="readLike"
                     v-model="config.readLike"
-                    class="w-3 h-3 text-blue-600 rounded focus:ring-blue-500"
+                    class="w-3 h-3 text-primary rounded focus:ring-primary"
                     @change="saveConfig(false)"
                   />
                   <label
                     for="readLike"
-                    class="ml-1 text-xs text-gray-700 dark:text-gray-200"
+                    class="ml-1 text-xs text-ink"
                     >点赞</label
                   >
                 </div>
@@ -497,7 +497,7 @@
             <div>
               <button
                 @click="showAdvancedSettings = !showAdvancedSettings"
-                class="w-full px-3 py-1 text-xs bg-gray-200 hover:bg-gray-300 rounded flex justify-between items-center"
+                class="w-full px-3 py-1 text-xs bg-border hover:bg-surface-hover rounded flex justify-between items-center"
               >
                 <span>高级设置</span>
                 <span>{{ showAdvancedSettings ? "▲" : "▼" }}</span>
@@ -508,7 +508,7 @@
               <div v-if="ttsMode === 'azure'" class="space-y-1.5">
                 <div>
                   <label
-                    class="block text-xs font-medium text-gray-700 dark:text-gray-200 mb-0.5"
+                    class="block text-xs font-medium text-ink mb-0.5"
                     >API Key</label
                   >
                   <input
@@ -520,7 +520,7 @@
                 <div class="flex space-x-2">
                   <div class="flex-1">
                     <label
-                      class="block text-xs font-medium text-gray-700 dark:text-gray-200 mb-0.5"
+                      class="block text-xs font-medium text-ink mb-0.5"
                       >区域</label
                     >
                     <input
@@ -532,7 +532,7 @@
                   </div>
                   <div class="flex-1">
                     <label
-                      class="block text-xs font-medium text-gray-700 dark:text-gray-200 mb-0.5"
+                      class="block text-xs font-medium text-ink mb-0.5"
                       >语音模型</label
                     >
                     <input
@@ -546,7 +546,7 @@
                 <div class="pt-1.5">
                   <button
                     @click="saveAzureConfig"
-                    class="px-3 py-1 bg-blue-500 text-white text-xs rounded hover:bg-blue-600"
+                    class="px-3 py-1 bg-primary text-white text-xs rounded hover:bg-primary-hover"
                   >
                     保存Azure配置
                   </button>
@@ -557,7 +557,7 @@
                 <div class="flex space-x-2">
                   <div class="flex-1">
                     <label
-                      class="block text-xs font-medium text-gray-700 mb-0.5"
+                      class="block text-xs font-medium text-ink mb-0.5"
                       >AppKey</label
                     >
                     <input
@@ -568,7 +568,7 @@
                   </div>
                   <div class="flex-1">
                     <label
-                      class="block text-xs font-medium text-gray-700 mb-0.5"
+                      class="block text-xs font-medium text-ink mb-0.5"
                       >Token</label
                     >
                     <input
@@ -579,7 +579,7 @@
                   </div>
                 </div>
                 <div>
-                  <label class="block text-xs font-medium text-gray-700 mb-0.5"
+                  <label class="block text-xs font-medium text-ink mb-0.5"
                     >语音模型</label
                   >
                   <select
@@ -595,7 +595,7 @@
                 <div class="pt-1.5">
                   <button
                     @click="saveAlibabaConfig"
-                    class="px-3 py-1 bg-blue-500 text-white text-xs rounded hover:bg-blue-600"
+                    class="px-3 py-1 bg-primary text-white text-xs rounded hover:bg-primary-hover"
                   >
                     保存阿里云配置
                   </button>
@@ -604,7 +604,7 @@
 
               <div v-if="ttsMode === 'sovits'" class="space-y-1.5">
                 <div>
-                  <label class="block text-xs font-medium text-gray-700 mb-0.5"
+                  <label class="block text-xs font-medium text-ink mb-0.5"
                     >API地址</label
                   >
                   <input
@@ -617,7 +617,7 @@
                 <div class="flex space-x-2">
                   <div class="flex-1">
                     <label
-                      class="block text-xs font-medium text-gray-700 mb-0.5"
+                      class="block text-xs font-medium text-ink mb-0.5"
                       >模型</label
                     >
                     <input
@@ -628,7 +628,7 @@
                   </div>
                   <div class="flex-1">
                     <label
-                      class="block text-xs font-medium text-gray-700 mb-0.5"
+                      class="block text-xs font-medium text-ink mb-0.5"
                       >语言</label
                     >
                     <select
@@ -643,7 +643,7 @@
                   </div>
                 </div>
                 <div>
-                  <label class="block text-xs font-medium text-gray-700 mb-0.5">
+                  <label class="block text-xs font-medium text-ink mb-0.5">
                     语速 ({{ sovitsConfig.sovits_speed }})
                   </label>
                   <input
@@ -658,7 +658,7 @@
                 <div class="pt-1.5">
                   <button
                     @click="saveSovitsConfig"
-                    class="px-3 py-1 bg-blue-500 text-white text-xs rounded hover:bg-blue-600"
+                    class="px-3 py-1 bg-primary text-white text-xs rounded hover:bg-primary-hover"
                   >
                     保存SoVITS配置
                   </button>
@@ -666,7 +666,7 @@
               </div>
 
               <div v-if="ttsMode === 'local'" class="space-y-1.5">
-                <p class="text-xs text-gray-500 dark:text-gray-400">
+                <p class="text-xs text-ink-muted dark:text-ink-muted">
                   本地语音无需配置
                 </p>
               </div>
@@ -675,7 +675,7 @@
         </div>
 
         <!-- 数据记录设置 -->
-        <div class="shadow-sm rounded p-2 bg-gray-50 dark:bg-gray-600">
+        <div class="shadow-sm rounded p-2 bg-surface-hover">
           <div class="flex justify-between items-center mb-1.5">
             <h2 class="text-base font-semibold dark:text-white">数据记录</h2>
           </div>
@@ -683,7 +683,7 @@
           <div class="space-y-2">
             <div>
               <label
-                class="block text-xs font-medium text-gray-700 mb-0.5 dark:text-gray-200"
+                class="block text-xs font-medium text-ink mb-0.5 text-ink"
                 >记录类型</label
               >
               <div class="flex space-x-3">
@@ -692,12 +692,12 @@
                     type="checkbox"
                     id="recordDanmaku"
                     v-model="config.recordDanmaku"
-                    class="w-3 h-3 text-blue-600 rounded focus:ring-blue-500"
+                    class="w-3 h-3 text-primary rounded focus:ring-primary"
                     @change="saveConfig(false)"
                   />
                   <label
                     for="recordDanmaku"
-                    class="ml-1 text-xs text-gray-700 dark:text-gray-200"
+                    class="ml-1 text-xs text-ink"
                     >弹幕</label
                   >
                 </div>
@@ -707,12 +707,12 @@
                     type="checkbox"
                     id="recordGift"
                     v-model="config.recordGift"
-                    class="w-3 h-3 text-blue-600 rounded focus:ring-blue-500"
+                    class="w-3 h-3 text-primary rounded focus:ring-primary"
                     @change="saveConfig(false)"
                   />
                   <label
                     for="recordGift"
-                    class="ml-1 text-xs text-gray-700 dark:text-gray-200"
+                    class="ml-1 text-xs text-ink"
                     >礼物</label
                   >
                 </div>
@@ -722,12 +722,12 @@
                     type="checkbox"
                     id="recordVisitor"
                     v-model="config.recordVisitor"
-                    class="w-3 h-3 text-blue-600 rounded focus:ring-blue-500"
+                    class="w-3 h-3 text-primary rounded focus:ring-primary"
                     @change="saveConfig(false)"
                   />
                   <label
                     for="recordVisitor"
-                    class="ml-1 text-xs text-gray-700 dark:text-gray-200"
+                    class="ml-1 text-xs text-ink"
                     >访客</label
                   >
                 </div>
@@ -737,10 +737,10 @@
         </div>
 
         <!-- 保存设置按钮 -->
-        <div class="flex justify-center p-2 bg-gray-50 dark:bg-gray-600">
+        <div class="flex justify-center p-2 bg-surface-hover">
           <button
             @click="saveConfig(true)"
-            class="px-3 py-1 bg-green-500 hover:bg-green-600 dark:bg-green-600 dark:hover:bg-green-700 text-white text-sm rounded disabled:bg-gray-300"
+            class="px-3 py-1 bg-green-500 hover:bg-green-600 dark:bg-green-600 dark:hover:bg-green-700 text-white text-sm rounded disabled:opacity-50"
             :disabled="isSaving"
           >
             <span v-if="isSaving"> 正在保存... </span>

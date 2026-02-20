@@ -1,6 +1,6 @@
 <template>
   <div class="card p-2 m-2">
-    <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+    <h2 class="text-lg font-semibold text-ink mb-4">
       本地存储
     </h2>
 
@@ -16,12 +16,12 @@
         />
         <button
           @click="selectExportPath"
-          class="btn text-black dark:text-white bg-green-100 hover:bg-green-200 dark:bg-green-700 dark:hover:bg-green-600 ml-2"
+          class="btn text-ink bg-green-500/20 hover:bg-green-500/30 text-green-700 dark:text-green-300 ml-2"
         >
           选择路径
         </button>
       </div>
-      <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
+      <p class="text-sm text-ink-muted mt-1">
         选择一个路径，用于保存系统数据
       </p>
 
@@ -38,25 +38,25 @@
   </div>
 
   <div class="card p-2 m-2">
-    <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+    <h2 class="text-lg font-semibold text-ink mb-4">
       数据备份
     </h2>
 
     <div class="px-4">
-      <p class="text-gray-600 dark:text-gray-300 mb-2">
+      <p class="text-ink mb-2">
         您可以导出所有系统数据，包括项目、章节、服务商设置和系统配置，以便备份或迁移到其他设备。
       </p>
 
       <div class="grid sm:grid-cols-2 gap-6">
         <div
-          class="shadow-lg bg-gray-100 dark:bg-gray-700 rounded-sm p-2 text-center"
+          class="shadow-lg bg-surface-hover rounded-sm p-2 text-center"
         >
           <h3
-            class="text-base font-semibold text-gray-900 dark:text-white mb-2"
+            class="text-base font-semibold text-ink mb-2"
           >
             导出系统数据
           </h3>
-          <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">
+          <p class="text-sm text-ink-muted mb-4">
             导出全部系统数据为单个JSON文件，包含所有配置和内容。
           </p>
 
@@ -75,14 +75,14 @@
         </div>
 
         <div
-          class="shadow-lg bg-gray-100 dark:bg-gray-700 rounded-sm p-2 text-center"
+          class="shadow-lg bg-surface-hover rounded-sm p-2 text-center"
         >
           <h3
-            class="text-base font-semibold text-gray-900 dark:text-white mb-3"
+            class="text-base font-semibold text-ink mb-3"
           >
             导入系统数据
           </h3>
-          <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">
+          <p class="text-sm text-ink-muted mb-4">
             从之前导出的JSON文件中恢复所有系统数据。将替换当前的所有设置和数据。
           </p>
 
@@ -112,11 +112,11 @@
   </div>
 
   <!-- <div class="card p-2 m-2">
-    <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+    <h2 class="text-lg font-semibold text-ink mb-2">
       重置系统数据
     </h2>
     <div class="px-4">
-      <p class="text-gray-600 dark:text-gray-300 mb-4">
+      <p class="text-ink mb-4">
         危险操作：重置将清除所有项目、章节、设置和配置。这个操作无法撤销。
       </p>
 

@@ -6,7 +6,7 @@
       <!-- 背景遮罩 -->
       <div class="fixed inset-0 transition-opacity" aria-hidden="true">
         <div
-          class="absolute inset-0 bg-gray-500 dark:bg-gray-900 opacity-75"
+          class="absolute inset-0 bg-ink/60 opacity-75"
         ></div>
       </div>
 
@@ -19,7 +19,7 @@
 
       <!-- 模态框内容 -->
       <div
-        class="inline-block align-bottom bg-white dark:bg-gray-800 rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full"
+        class="inline-block align-bottom bg-surface-elevated rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full"
         role="dialog"
         aria-modal="true"
         aria-labelledby="modal-headline"
@@ -28,7 +28,7 @@
           <div class="sm:flex sm:items-start">
             <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left w-full">
               <h3
-                class="text-lg leading-6 font-medium text-gray-900 dark:text-white"
+                class="text-lg leading-6 font-medium text-ink"
                 id="modal-headline"
               >
                 新建章节
@@ -63,7 +63,7 @@
         </div>
 
         <div
-          class="bg-gray-50 dark:bg-gray-700 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse"
+          class="bg-surface-hover px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse"
         >
           <button
             type="button"
@@ -75,7 +75,7 @@
           </button>
           <button
             type="button"
-            class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm dark:bg-gray-800 dark:text-gray-200 dark:border-gray-600 dark:hover:bg-gray-700"
+            class="mt-3 w-full inline-flex justify-center rounded-md border border-border shadow-sm px-4 py-2 bg-surface-elevated text-base font-medium text-ink hover:bg-surface-hover focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
             @click="$emit('close')"
           >
             取消

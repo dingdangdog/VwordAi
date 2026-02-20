@@ -1,24 +1,22 @@
 <template>
   <nav
-    class="bg-white dark:bg-gray-800 shadow sticky top-0 left-0 w-full z-50 drag-area"
+    class="bg-surface-elevated shadow sticky top-0 left-0 w-full z-50 drag-area"
   >
     <div class="px-4">
       <div class="flex justify-between h-12">
         <div class="flex items-center">
           <div class="flex-shrink-0 flex items-center">
             <img class="h-8 w-auto" src="@/assets/logo.svg" alt="Logo" />
-            <span class="ml-2 text-xl font-bold text-gray-900 dark:text-white"
-              >VwordAi</span
-            >
+            <span class="ml-2 text-xl font-bold text-ink">VwordAi</span>
           </div>
           <div class="ml-10 flex items-baseline space-x-4 no-drag">
             <a
               href="#/"
-              class="px-3 py-2 text-sm font-semibold"
+              class="px-3 py-2 text-sm font-semibold rounded-md transition-colors"
               :class="[
                 $route.path === '/'
-                  ? 'bg-gradient-to-b from-blue-100/10 via-blue-500 to-blue-100/10 text-white'
-                  : 'text-gray-700 hover:bg-gradient-to-b hover:from-gray-100 hover:via-gray-200 hover:to-gray-100 dark:text-gray-300 dark:hover:from-gray-800 dark:hover:via-gray-700 dark:hover:to-gray-800',
+                  ? 'bg-primary text-white'
+                  : 'text-ink hover:bg-surface-hover',
               ]"
               @click.prevent="navigateTo('/')"
             >
@@ -30,7 +28,7 @@
               :class="[
                 $route.path.startsWith('/projects')
                   ? 'bg-gradient-to-b from-blue-100/10 via-blue-500 to-blue-100/10 text-white'
-                  : 'text-gray-700 hover:bg-gradient-to-b hover:from-gray-100 hover:via-gray-200 hover:to-gray-100 dark:text-gray-300 dark:hover:from-gray-800 dark:hover:via-gray-700 dark:hover:to-gray-800',
+                  : 'text-ink hover:bg-surface-hover',
               ]"
               @click.prevent="navigateTo('/projects')"
             >
@@ -38,11 +36,11 @@
             </a> -->
             <a
               href="#/settings"
-              class="px-3 py-2 text-sm font-semibold"
+              class="px-3 py-2 text-sm font-semibold rounded-md transition-colors"
               :class="[
                 $route.path === '/settings'
-                  ? 'bg-gradient-to-b from-blue-100/10 via-blue-500 to-blue-100/10 text-white'
-                  : 'text-gray-700 hover:bg-gradient-to-b hover:from-gray-100 hover:via-gray-200 hover:to-gray-100 dark:text-gray-300 dark:hover:from-gray-800 dark:hover:via-gray-700 dark:hover:to-gray-800',
+                  ? 'bg-primary text-white'
+                  : 'text-ink hover:bg-surface-hover',
               ]"
               @click.prevent="navigateTo('/settings')"
             >
@@ -54,7 +52,7 @@
               :class="[
                 $route.path === '/bililive'
                   ? 'bg-gradient-to-b from-blue-100/10 via-blue-500 to-blue-100/10 text-white'
-                  : 'text-gray-700 hover:bg-gradient-to-b hover:from-gray-100 hover:via-gray-200 hover:to-gray-100 dark:text-gray-300 dark:hover:from-gray-800 dark:hover:via-gray-700 dark:hover:to-gray-800',
+                  : 'text-ink hover:bg-surface-hover',
               ]"
               @click.prevent="navigateTo('/bililive')"
             >
@@ -66,7 +64,7 @@
           <!-- Theme Toggle Button -->
           <button
             @click="toggleTheme"
-            class="p-2 rounded-full text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 mr-4"
+            class="p-2 rounded-full text-ink-muted hover:text-ink mr-4 transition-colors"
             title="切换主题"
           >
             <SunIcon v-if="isDarkMode" class="h-6 w-6" />
@@ -75,14 +73,14 @@
 
           <!-- Window Control Buttons -->
           <button
-            class="h-6 w-6 rounded-sm text-black dark:text-white hover:bg-gray-200 dark:hover:bg-gray-700 flex items-center justify-center cursor-pointer mr-2"
+            class="h-6 w-6 rounded-sm text-ink hover:bg-surface-hover flex items-center justify-center cursor-pointer mr-2 transition-colors"
             @click="minimizeWindow"
             title="最小化"
           >
             <MinusIcon />
           </button>
           <button
-            class="h-6 w-6 rounded-sm text-black dark:text-white hover:bg-gray-200 dark:hover:bg-gray-700 flex items-center justify-center cursor-pointer mr-2"
+            class="h-6 w-6 rounded-sm text-ink hover:bg-surface-hover flex items-center justify-center cursor-pointer mr-2 transition-colors"
             @click="maximizeWindow"
             title="最大化"
             v-show="!isMax"
@@ -90,7 +88,7 @@
             <WindowIcon />
           </button>
           <button
-            class="h-6 w-6 rounded-sm text-black dark:text-white hover:bg-gray-200 dark:hover:bg-gray-700 flex items-center justify-center cursor-pointer mr-2"
+            class="h-6 w-6 rounded-sm text-ink hover:bg-surface-hover flex items-center justify-center cursor-pointer mr-2 transition-colors"
             @click="maximizeWindow"
             title="还原"
             v-show="isMax"
@@ -98,7 +96,7 @@
             <ComputerDesktopIcon />
           </button>
           <button
-            class="h-6 w-6 rounded-sm text-black dark:text-white hover:bg-gray-200 dark:hover:bg-gray-700 flex items-center justify-center cursor-pointer"
+            class="h-6 w-6 rounded-sm text-ink hover:bg-surface-hover flex items-center justify-center cursor-pointer transition-colors"
             @click="closeWindow"
             title="关闭"
           >

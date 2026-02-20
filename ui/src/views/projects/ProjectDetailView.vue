@@ -2,15 +2,15 @@
   <div class="container mx-auto">
     <div v-if="loading" class="flex justify-center items-center py-4">
       <div
-        class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"
+        class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"
       ></div>
     </div>
 
     <div v-else-if="!project" class="text-center py-12">
-      <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-4">
+      <h2 class="text-xl font-semibold text-ink mb-4">
         项目不存在
       </h2>
-      <p class="text-gray-600 dark:text-gray-300 mb-6">
+      <p class="text-ink mb-6">
         您请求的项目不存在或已被删除。
       </p>
       <router-link to="/projects" class="btn btn-primary">
@@ -24,27 +24,27 @@
         class="flex flex-col md:flex-row justify-between items-start md:items-center mb-2"
       >
         <div class="flex items-center space-x-2">
-          <h1 class="text-xl font-bold text-gray-900 dark:text-white">
+          <h1 class="text-xl font-bold text-ink">
             {{ project.title }}
           </h1>
 
           <button
             @click="openEditProjectModal"
-            class="btn text-sm text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 flex items-center"
+            class="btn text-sm text-ink hover:text-primary flex items-center"
           >
             <PencilSquareIcon class="h-5 w-5 mr-2" />
             编辑项目
           </button>
           <button
             @click="exportProject"
-            class="btn text-sm text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 flex items-center"
+            class="btn text-sm text-ink hover:text-primary flex items-center"
           >
             <ArrowUpTrayIcon class="h-5 w-5 mr-2" />
             导出项目
           </button>
         </div>
         <div class="flex mt-4 md:mt-0 space-x-4">
-          <router-link to="/projects" class="btn text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400">
+          <router-link to="/projects" class="btn text-ink hover:text-primary">
             返回
           </router-link>
         </div>
@@ -52,7 +52,7 @@
 
       <!-- Project Settings Summary -->
       <div class="card mb-6 p-4">
-        <h3 class="text-md font-medium text-gray-900 dark:text-white mb-2">
+        <h3 class="text-md font-medium text-ink mb-2">
           项目默认语音设置
         </h3>
         <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -60,43 +60,43 @@
             v-if="project.defaultVoiceSettings?.serviceProvider"
             class="text-sm"
           >
-            <span class="text-gray-500 dark:text-gray-400">服务商：</span>
-            <span class="text-gray-900 dark:text-white">{{
+            <span class="text-ink-muted">服务商：</span>
+            <span class="text-ink">{{
               getServiceProviderName(
                 project.defaultVoiceSettings?.serviceProvider
               )
             }}</span>
           </div>
           <div v-if="project.defaultVoiceSettings?.voice" class="text-sm">
-            <span class="text-gray-500 dark:text-gray-400">声音角色：</span>
-            <span class="text-gray-900 dark:text-white">{{
+            <span class="text-ink-muted">声音角色：</span>
+            <span class="text-ink">{{
               getVoiceRoleName(project.defaultVoiceSettings?.voice)
             }}</span>
           </div>
           <div v-if="project.defaultVoiceSettings?.speed" class="text-sm">
-            <span class="text-gray-500 dark:text-gray-400">语速：</span>
-            <span class="text-gray-900 dark:text-white">{{
+            <span class="text-ink-muted">语速：</span>
+            <span class="text-ink">{{
               project.defaultVoiceSettings?.speed
             }}</span>
           </div>
           <!-- <div v-if="project.defaultVoiceSettings?.pitch" class="text-sm">
-            <span class="text-gray-500 dark:text-gray-400">音调：</span>
-            <span class="text-gray-900 dark:text-white">{{ project.defaultVoiceSettings?.pitch }}</span>
+            <span class="text-ink-muted">音调：</span>
+            <span class="text-ink">{{ project.defaultVoiceSettings?.pitch }}</span>
           </div>
           <div v-if="project.defaultVoiceSettings?.volume" class="text-sm">
-            <span class="text-gray-500 dark:text-gray-400">音量：</span>
-            <span class="text-gray-900 dark:text-white">{{ project.defaultVoiceSettings?.volume }}</span>
+            <span class="text-ink-muted">音量：</span>
+            <span class="text-ink">{{ project.defaultVoiceSettings?.volume }}</span>
           </div> -->
           <div v-if="project.defaultVoiceSettings?.emotion" class="text-sm">
-            <span class="text-gray-500 dark:text-gray-400">情感：</span>
-            <span class="text-gray-900 dark:text-white">{{
+            <span class="text-ink-muted">情感：</span>
+            <span class="text-ink">{{
               getEmotionName(project.defaultVoiceSettings?.emotion)
             }}</span>
           </div>
         </div>
         <div
           v-if="!hasDefaultSettings"
-          class="text-sm text-gray-500 dark:text-gray-400"
+          class="text-sm text-ink-muted"
         >
           未设置默认语音参数，请在编辑项目中设置默认参数或在创建章节时单独设置。
         </div>
@@ -104,7 +104,7 @@
 
       <!-- Add Chapter Button -->
       <div class="flex justify-between mb-2 sticky top-16">
-        <h2 class="text-base font-semibold text-gray-900 dark:text-white">
+        <h2 class="text-base font-semibold text-ink">
           章节列表
         </h2>
         <button
@@ -119,10 +119,10 @@
       <!-- Chapters List -->
       <div class="mb-6 max-h-[60vh] overflow-y-auto rounded-md shadow-sm shadow-black dark:shadow-white">
         <div v-if="chapters.length === 0" class="card text-center py-8">
-          <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-3">
+          <h3 class="text-lg font-medium text-ink mb-3">
             暂无章节
           </h3>
-          <p class="text-lg text-gray-600 dark:text-gray-300 mb-4">
+          <p class="text-lg text-ink mb-4">
             还没有章节，点击下方按钮创建第一个章节吧！
           </p>
           <button
@@ -135,12 +135,12 @@
 
         <div v-else>
           <div
-            class="overflow-hidden bg-white dark:bg-gray-800 shadow sm:rounded-md"
+            class="overflow-hidden bg-surface-elevated shadow sm:rounded-md"
           >
-            <ul class="divide-y divide-gray-200 dark:divide-gray-700">
+            <ul class="divide-y divide-border">
               <li v-for="chapter in chapters" :key="chapter.id">
                 <div
-                  class="block hover:bg-gray-50 dark:hover:bg-gray-700 duration-200 transition-all"
+                  class="block hover:bg-surface-hover duration-200 transition-all"
                 >
                   <div class="p-4">
                     <div
@@ -150,7 +150,7 @@
                       <div class="min-w-0 flex-1 cursor-pointer">
                         <div class="flex items-center">
                           <p
-                            class="text-md font-medium text-blue-600 dark:text-blue-400 truncate"
+                            class="text-md font-medium text-primary truncate"
                           >
                             {{ chapter.name }}
                           </p>
@@ -166,7 +166,7 @@
                           </span>
                           <span
                             v-else-if="chapter.status === 'processing'"
-                            class="ml-2 px-2 py-0.5 text-xs font-medium rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300"
+                            class="ml-2 px-2 py-0.5 text-xs font-medium rounded-full bg-primary-muted text-primary"
                           >
                             处理中
                           </span>
@@ -178,7 +178,7 @@
                           </span>
                         </div>
                         <div class="">
-                          <div class="text-sm text-gray-500 dark:text-gray-400">
+                          <div class="text-sm text-ink-muted">
                             <p class="mt-1 line-clamp-1">
                               {{ chapter.text || "暂无内容" }}
                             </p>
@@ -195,7 +195,7 @@
                               `/projects/${projectId}/chapters/${chapter.id}`
                             )
                           "
-                          class="mr-2 text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
+                          class="mr-2 text-primary hover:text-primary-hover"
                         >
                           编辑
                         </button>
@@ -208,11 +208,11 @@
                         <div class="ml-5 flex-shrink-0 cursor-pointer">
                           <ChevronDownIcon
                             v-if="expandedChapters[chapter.id]"
-                            class="h-5 w-5 text-gray-400"
+                            class="h-5 w-5 text-ink-muted"
                           />
                           <ChevronRightIcon
                             v-else
-                            class="h-5 w-5 text-gray-400"
+                            class="h-5 w-5 text-ink-muted"
                           />
                         </div>
                       </div>
@@ -221,7 +221,7 @@
                     <!-- Expanded Chapter Content -->
                     <div
                       v-if="expandedChapters[chapter.id]"
-                      class="mt-2 border-t border-gray-200 dark:border-gray-600"
+                      class="mt-2 border-t border-border"
                     >
                       <!-- Chapter Synthesis Component -->
                       <ChapterSynthesis

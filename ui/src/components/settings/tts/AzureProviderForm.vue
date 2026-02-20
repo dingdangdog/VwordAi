@@ -1,9 +1,9 @@
 <template>
   <div class="provider-form">
-    <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+    <h3 class="text-lg font-semibold text-ink mb-4">
       Azure TTS 配置
     </h3>
-    <p class="text-gray-600 dark:text-gray-300 mb-2">
+    <p class="text-ink mb-2">
       配置你的 Azure 语音服务相关信息。
     </p>
 
@@ -40,8 +40,8 @@
       >
         <template #label>key<span class="text-red-500">*</span></template>
         <template #suffix>
-          <button type="button" class="p-2 rounded hover:bg-gray-100 dark:hover:bg-gray-700" @click="showPassword = !showPassword" tabindex="-1">
-            <EyeIcon class="h-5 w-5 text-gray-500" :class="{ 'text-blue-500': showPassword }" />
+          <button type="button" class="p-2 rounded hover:bg-surface-hover" @click="showPassword = !showPassword" tabindex="-1">
+            <EyeIcon class="h-5 w-5 text-ink-muted" :class="{ 'text-primary': showPassword }" />
           </button>
         </template>
       </FormInput>
@@ -59,7 +59,7 @@
       <!-- <div class="flex items-center space-x-2">
         <label
           for="endpoint"
-          class="block text-sm font-medium text-gray-700 dark:text-gray-300 w-20"
+          class="block text-sm font-medium text-ink w-20"
         >
           endpoint(optional)
         </label>

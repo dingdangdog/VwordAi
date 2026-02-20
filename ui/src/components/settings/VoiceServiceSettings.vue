@@ -6,23 +6,29 @@
         <div class="card p-4">
           <ul class="space-y-2">
             <li v-for="provider in providers" :key="provider.id">
-              <button class="w-full flex items-center px-3 py-2 rounded-md transition-colors text-left" :class="selectedProviderType === provider.type
-                  ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300'
-                  : 'hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-800 dark:text-gray-200'
-                " @click="selectProvider(provider.type)">
-                <CloudIcon class="h-5 w-5 mr-2" :class="selectedProviderType === provider.type
-                    ? 'text-blue-600 dark:text-blue-400'
-                    : 'text-gray-500 dark:text-gray-400'
-                  " />
+              <button
+                class="w-full flex items-center px-3 py-2 rounded-md transition-colors text-left"
+                :class="
+                  selectedProviderType === provider.type
+                    ? 'bg-primary-muted text-primary'
+                    : 'hover:bg-surface-hover text-ink'
+                "
+                @click="selectProvider(provider.type)"
+              >
+                <CloudIcon
+                  class="h-5 w-5 mr-2"
+                  :class="
+                    selectedProviderType === provider.type
+                      ? 'text-primary'
+                      : 'text-ink-muted'
+                  "
+                />
                 <span>{{ provider.name }}</span>
                 <span class="ml-auto">
-                  <span v-if="provider.status === 'success'"
-                    class="w-3 h-3 rounded-full bg-green-500 inline-block"></span>
-                  <span v-else-if="provider.status === 'failure'"
-                    class="w-3 h-3 rounded-full bg-red-500 inline-block"></span>
-                  <span v-else-if="provider.status === 'untested'"
-                    class="w-3 h-3 rounded-full bg-yellow-500 inline-block"></span>
-                  <span v-else class="w-3 h-3 rounded-full bg-gray-300 dark:bg-gray-600 inline-block"></span>
+                  <span v-if="provider.status === 'success'" class="w-3 h-3 rounded-full bg-green-500 inline-block"></span>
+                  <span v-else-if="provider.status === 'failure'" class="w-3 h-3 rounded-full bg-red-500 inline-block"></span>
+                  <span v-else-if="provider.status === 'untested'" class="w-3 h-3 rounded-full bg-yellow-500 inline-block"></span>
+                  <span v-else class="w-3 h-3 rounded-full bg-border inline-block"></span>
                 </span>
               </button>
             </li>
@@ -34,13 +40,19 @@
       <div class="flex-1">
         <div class="card p-4 md:p-6">
           <!-- 子 Tab -->
-          <div class="border-b border-gray-200 dark:border-gray-700 mb-4">
+          <div class="border-b border-border mb-4">
             <nav class="flex -mb-px">
-              <button v-for="t in subTabs" :key="t.id" @click="subTab = t.id"
-                class="py-2 px-4 border-b-2 font-medium text-sm whitespace-nowrap transition-colors" :class="subTab === t.id
-                    ? 'border-blue-500 text-blue-600 dark:text-blue-400'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'
-                  ">
+              <button
+                v-for="t in subTabs"
+                :key="t.id"
+                @click="subTab = t.id"
+                class="py-2 px-4 border-b-2 font-medium text-sm whitespace-nowrap transition-colors"
+                :class="
+                  subTab === t.id
+                    ? 'border-primary text-primary'
+                    : 'border-transparent text-ink-muted hover:text-ink'
+                "
+              >
                 <component :is="t.icon" class="h-4 w-4 inline-block mr-1.5" />
                 {{ t.name }}
               </button>
@@ -58,8 +70,8 @@
             <OpenaiTTSProviderForm v-else-if="selectedProviderType === 'openai'" :provider="providerData"
               @update="updateProviderField" @save="saveCurrentProvider" @test="testCurrentProvider" />
             <div v-else class="flex flex-col items-center justify-center text-center py-12">
-              <ServerIcon class="h-16 w-16 text-gray-400 mb-4" />
-              <p class="text-lg text-gray-700 dark:text-gray-300">
+              <ServerIcon class="h-16 w-16 text-ink-muted mb-4" />
+              <p class="text-lg text-ink">
                 请从左侧选择一个服务商进行配置
               </p>
             </div>
@@ -67,85 +79,112 @@
 
           <!-- 语音模型 -->
           <div v-show="subTab === 'models'" class="sub-panel">
-            <div v-if="!selectedProviderType" class="text-center py-12 text-gray-500">
+            <div v-if="!selectedProviderType" class="text-center py-12 text-ink-muted">
               请从左侧选择一个服务商查看语音模型
             </div>
             <template v-else>
               <div class="flex flex-wrap justify-between items-center gap-4 mb-4">
-                <h2 class="text-lg font-semibold dark:text-gray-200">
+                <h2 class="text-lg font-semibold text-ink">
                   语音模型 ({{ filteredModels.length }})
                 </h2>
                 <div class="relative">
-                  <input type="text" v-model="searchQuery" placeholder="搜索模型..."
-                    class="px-3 py-2 bg-white dark:bg-gray-800 dark:text-white border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                  <input
+                    type="text"
+                    v-model="searchQuery"
+                    placeholder="搜索模型..."
+                    class="input px-3 py-2 w-full"
+                  />
                 </div>
               </div>
               <div class="flex flex-wrap gap-2 mb-4">
                 <div class="inline-flex rounded-md shadow-sm">
-                  <button @click="filterGender = ''" :class="filterGender === ''
-                      ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300'
-                      : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200'
+                  <button
+                    @click="filterGender = ''"
+                    :class="
+                      filterGender === ''
+                        ? 'bg-primary-muted text-primary'
+                        : 'bg-surface-elevated text-ink border-border hover:bg-surface-hover'
                     "
-                    class="px-3 py-1 text-sm font-medium border border-gray-300 dark:border-gray-600 rounded-l-md hover:bg-gray-50 dark:hover:bg-gray-600">
+                    class="px-3 py-1 text-sm font-medium border border-border rounded-l-md transition-colors"
+                  >
                     全部
                   </button>
-                  <button @click="filterGender = '0'" :class="filterGender === '0'
-                      ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300'
-                      : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200'
+                  <button
+                    @click="filterGender = '0'"
+                    :class="
+                      filterGender === '0'
+                        ? 'bg-primary-muted text-primary'
+                        : 'bg-surface-elevated text-ink border-border hover:bg-surface-hover'
                     "
-                    class="px-3 py-1 text-sm font-medium border-t border-b border-r border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600">
+                    class="px-3 py-1 text-sm font-medium border border-border border-l-0 transition-colors"
+                  >
                     女声
                   </button>
-                  <button @click="filterGender = '1'" :class="filterGender === '1'
-                      ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300'
-                      : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200'
+                  <button
+                    @click="filterGender = '1'"
+                    :class="
+                      filterGender === '1'
+                        ? 'bg-primary-muted text-primary'
+                        : 'bg-surface-elevated text-ink border-border hover:bg-surface-hover'
                     "
-                    class="px-3 py-1 text-sm font-medium border-t border-b border-r border-gray-300 dark:border-gray-600 rounded-r-md hover:bg-gray-50 dark:hover:bg-gray-600">
+                    class="px-3 py-1 text-sm font-medium border border-border border-l-0 rounded-r-md transition-colors"
+                  >
                     男声
                   </button>
                 </div>
               </div>
               <div v-if="isLoadingModels" class="flex justify-center py-6">
-                <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 dark:border-gray-100"></div>
+                <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
               </div>
-              <div v-else-if="filteredModels.length === 0" class="text-center py-6 text-gray-500 dark:text-gray-400">
+              <div v-else-if="filteredModels.length === 0" class="text-center py-6 text-ink-muted">
                 没有找到符合条件的语音模型
               </div>
-              <div v-else
-                class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 max-h-[calc(100vh-18rem)] overflow-y-auto">
-                <div v-for="model in filteredModels" :key="model.code"
-                  class="border rounded-lg overflow-hidden bg-white dark:bg-gray-800 dark:border-gray-700 hover:shadow-md transition-shadow">
+              <div
+                v-else
+                class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 max-h-[calc(100vh-18rem)] overflow-y-auto"
+              >
+                <div
+                  v-for="model in filteredModels"
+                  :key="model.code"
+                  class="border border-border rounded-lg overflow-hidden bg-surface-elevated hover:shadow-md transition-shadow"
+                >
                   <div class="p-3">
                     <div class="flex justify-between items-center">
-                      <h3 class="font-semibold text-gray-900 dark:text-white">
+                      <h3 class="font-semibold text-ink">
                         {{ model.name }}
                       </h3>
-                      <span :class="model.gender === '0'
-                          ? 'bg-pink-100 text-pink-800 dark:bg-pink-900 dark:text-pink-200'
-                          : 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'
-                        " class="px-2 py-0.5 text-xs rounded-full">
+                      <span
+                        :class="
+                          model.gender === '0'
+                            ? 'bg-pink-500/20 text-pink-600 dark:text-pink-300'
+                            : 'bg-primary-muted text-primary'
+                        "
+                        class="px-2 py-0.5 text-xs rounded-full"
+                      >
                         {{ model.gender === "0" ? "女声" : "男声" }}
                       </span>
                     </div>
-                    <p class="text-sm text-gray-600 dark:text-gray-300 mt-1">
-                      {{ model.lang }}
-                    </p>
+                    <p class="text-sm text-ink-muted mt-1">{{ model.lang }}</p>
                     <div class="mt-3 flex justify-between items-center">
-                      <div class="text-xs text-gray-500 dark:text-gray-400">
-                        {{ model.code }}
-                      </div>
-                      <button @click="playTest(model)" :disabled="isTestingModel[model.code]"
-                        class="px-3 py-1 text-xs font-medium text-blue-700 bg-blue-100 rounded hover:bg-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:hover:bg-blue-800/50">
+                      <div class="text-xs text-ink-muted">{{ model.code }}</div>
+                      <button
+                        @click="playTest(model)"
+                        :disabled="isTestingModel[model.code]"
+                        class="px-3 py-1 text-xs font-medium text-primary bg-primary-muted rounded hover:opacity-90 transition-opacity"
+                      >
                         <span v-if="isTestingModel[model.code]">测试中...</span>
                         <span v-else>试听</span>
                       </button>
                     </div>
                     <div v-if="model.emotions && model.emotions.length > 0" class="flex flex-wrap gap-1 mt-1">
-                      <span v-for="emotion in model.emotions.slice(0, 3)" :key="emotion.code"
-                        class="bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 text-xs px-2 py-0.5 rounded">
+                      <span
+                        v-for="emotion in model.emotions.slice(0, 3)"
+                        :key="emotion.code"
+                        class="bg-surface-hover text-ink text-xs px-2 py-0.5 rounded"
+                      >
                         {{ emotion.name }}
                       </span>
-                      <span v-if="model.emotions.length > 3" class="text-xs text-gray-500 dark:text-gray-400">
+                      <span v-if="model.emotions.length > 3" class="text-xs text-ink-muted">
                         +{{ model.emotions.length - 3 }}
                       </span>
                     </div>

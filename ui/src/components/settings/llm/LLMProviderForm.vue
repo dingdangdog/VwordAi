@@ -1,6 +1,6 @@
 <template>
   <div class="provider-form">
-    <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+    <h3 class="text-lg font-semibold text-ink mb-4">
       {{ isNew ? "添加 LLM 服务商" : "编辑 LLM 配置" }}
     </h3>
 
@@ -29,8 +29,8 @@
         >
           <template #label>API Key<span class="text-red-500">*</span></template>
           <template #suffix>
-            <button type="button" class="p-2 rounded hover:bg-gray-100 dark:hover:bg-gray-700" @click="showKey = !showKey" tabindex="-1">
-              <EyeIcon class="h-5 w-5 text-gray-500" />
+            <button type="button" class="p-2 rounded hover:bg-surface-hover" @click="showKey = !showKey" tabindex="-1">
+              <EyeIcon class="h-5 w-5 text-ink-muted" />
             </button>
           </template>
         </FormInput>
@@ -56,8 +56,8 @@
         >
           <template #label>Key<span class="text-red-500">*</span></template>
           <template #suffix>
-            <button type="button" class="p-2 rounded hover:bg-gray-100 dark:hover:bg-gray-700" @click="showKey = !showKey" tabindex="-1">
-              <EyeIcon class="h-5 w-5 text-gray-500" />
+            <button type="button" class="p-2 rounded hover:bg-surface-hover" @click="showKey = !showKey" tabindex="-1">
+              <EyeIcon class="h-5 w-5 text-ink-muted" />
             </button>
           </template>
         </FormInput>
@@ -90,8 +90,8 @@
         >
           <template #label>Token<span class="text-red-500">*</span></template>
           <template #suffix>
-            <button type="button" class="p-2 rounded hover:bg-gray-100 dark:hover:bg-gray-700" @click="showKey = !showKey" tabindex="-1">
-              <EyeIcon class="h-5 w-5 text-gray-500" />
+            <button type="button" class="p-2 rounded hover:bg-surface-hover" @click="showKey = !showKey" tabindex="-1">
+              <EyeIcon class="h-5 w-5 text-ink-muted" />
             </button>
           </template>
         </FormInput>
@@ -108,7 +108,7 @@
       </template>
 
       <!-- 通用参数 -->
-      <div class="border-t border-gray-200 dark:border-gray-700 pt-4 mt-4 space-y-4">
+      <div class="border-t border-border pt-4 mt-4 space-y-4">
         <FormInput
           v-model.number="form.temperature"
           type="number"

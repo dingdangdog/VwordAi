@@ -1,7 +1,7 @@
 <template>
   <div class="read-novels-view">
     <div class="flex justify-between mb-4">
-      <h1 class="text-2xl font-bold text-gray-900 dark:text-white">
+      <h1 class="text-2xl font-bold text-ink">
         AI自动读小说系统
       </h1>
       <div>
@@ -19,7 +19,7 @@
     <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
       <!-- 左侧小说列表 -->
       <div
-        class="md:col-span-1 bg-white dark:bg-gray-800 rounded-lg shadow p-4"
+        class="md:col-span-1 bg-surface-elevated rounded-lg shadow p-4"
       >
         <NovelList
           :novels="novels"
@@ -41,10 +41,10 @@
         <!-- 章节列表 -->
         <div
           v-if="currentNovel"
-          class="bg-white dark:bg-gray-800 rounded-lg shadow p-4"
+          class="bg-surface-elevated rounded-lg shadow p-4"
         >
           <div class="flex justify-between items-center mb-4">
-            <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
+            <h2 class="text-lg font-semibold text-ink">
               章节列表
             </h2>
             <button

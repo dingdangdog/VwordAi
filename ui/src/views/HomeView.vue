@@ -97,11 +97,11 @@ onMounted(() => {
 
 <style scoped>
 .menu-category {
-  @apply bg-white/50 dark:bg-blue-800/20 rounded-lg p-4 shadow-sm;
+  @apply bg-surface-elevated rounded-lg p-4 shadow-sm border border-border;
 }
 
 .menu-category-title {
-  @apply text-xl font-semibold text-gray-900 dark:text-white mb-4 flex items-center;
+  @apply text-xl font-semibold text-ink mb-4 flex items-center;
 }
 
 .menu-blocks-grid {
@@ -109,14 +109,14 @@ onMounted(() => {
 }
 
 .menu-block {
-  @apply flex flex-col items-center justify-center p-4 w-28 h-24 rounded-lg bg-gray-50 dark:bg-blue-800/30 hover:bg-blue-50 dark:hover:bg-gray-600 transition-colors duration-200 text-center;
+  @apply flex flex-col items-center justify-center p-4 w-28 h-24 rounded-lg bg-surface-elevated hover:bg-surface-hover border border-border transition-colors duration-200 text-center;
 }
 
 .menu-icon {
-  @apply h-7 w-14 text-blue-500 mb-2;
+  @apply h-7 w-14 text-primary mb-2;
 }
 
 .menu-block span {
-  @apply font-medium text-gray-800 dark:text-gray-200;
+  @apply font-medium text-ink;
 }
 </style>

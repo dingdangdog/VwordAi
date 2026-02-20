@@ -10,18 +10,18 @@
           <ArrowLeftIcon class="h-4 w-4 mr-1" />
           返回
         </button>
-        <h1 class="text-2xl font-bold text-gray-900 dark:text-white">
+        <h1 class="text-2xl font-bold text-ink">
           {{ chapterTitle }}
         </h1>
       </div>
       <div class="flex items-center space-x-2">
         <div class="flex items-center mr-2">
-          <label class="text-sm text-gray-700 dark:text-gray-300 mr-1"
+          <label class="text-sm text-ink mr-1"
             >LLM服务商:</label
           >
           <select
             v-model="selectedLLMProvider"
-            class="input select select-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+            class="input select select-sm border border-border rounded-md bg-surface-elevated text-ink"
           >
             <option value="" disabled>请先配置 LLM 服务商</option>
             <option
@@ -62,9 +62,9 @@
     <div class="flex-1 flex items-center">
       <!-- 左侧 - 原文编辑 -->
       <div
-        class="bg-white dark:bg-gray-800 rounded-lg shadow p-4 flex-1 h-full flex flex-col"
+        class="bg-surface-elevated rounded-lg shadow p-4 flex-1 h-full flex flex-col"
       >
-        <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-3">
+        <h2 class="text-lg font-semibold text-ink mb-3">
           章节原文
         </h2>
         <textarea
@@ -76,15 +76,15 @@
       </div>
 
       <div class="mx-2 flex flex-col justify-center items-center">
-        <ArrowRightIcon class="h-6 w-6 text-gray-600 dark:text-gray-400" />
+        <ArrowRightIcon class="h-6 w-6 text-ink-muted" />
       </div>
 
       <!-- 右侧 - 解析结果编辑 -->
       <div
-        class="bg-white dark:bg-gray-800 rounded-lg shadow p-4 flex-1 h-full flex flex-col"
+        class="bg-surface-elevated rounded-lg shadow p-4 flex-1 h-full flex flex-col"
       >
         <div class="flex justify-between items-center mb-3">
-          <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
+          <h2 class="text-lg font-semibold text-ink">
             解析结果
           </h2>
           <div class="flex space-x-2">
@@ -119,7 +119,7 @@
         </div>
 
         <div v-if="!parsedChapter" class="text-center py-8">
-          <p class="text-gray-500 dark:text-gray-400 mb-4">
+          <p class="text-ink-muted mb-4">
             该章节尚未解析，请点击"解析"按钮进行LLM解析
           </p>
         </div>
@@ -131,7 +131,7 @@
             <div
               v-for="(segment, index) in parsedChapter.segments"
               :key="`segment-${index}`"
-              class="bg-gray-50 dark:bg-gray-700 p-3 rounded-md"
+              class="bg-surface-hover p-3 rounded-md"
             >
               <div
                 v-if="segment.character"
@@ -157,7 +157,7 @@
                   <!-- TTS服务商选择 -->
                   <select
                     v-model="segment.ttsConfig.provider"
-                    class="input text-xs py-0.5 px-1 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white flex-1"
+                    class="input text-xs py-0.5 px-1 rounded border border-border bg-surface-elevated text-ink flex-1"
                     @change="onProviderChange(segment, index)"
                   >
                     <option value="">选择服务商</option>
@@ -173,7 +173,7 @@
                   <!-- 语音模型选择 -->
                   <select
                     v-model="segment.voice"
-                    class="input text-xs py-0.5 px-1 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white flex-1"
+                    class="input text-xs py-0.5 px-1 rounded border border-border bg-surface-elevated text-ink flex-1"
                     :disabled="!segment.ttsConfig?.provider"
                     @change="onVoiceChange(segment, index)"
                   >
@@ -205,7 +205,7 @@
                   <!-- 情感选择 -->
                   <select
                     v-model="segment.ttsConfig.emotion"
-                    class="input text-xs py-0.5 px-1 ml-1 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white flex-1"
+                    class="input text-xs py-0.5 px-1 ml-1 rounded border border-border bg-surface-elevated text-ink flex-1"
                     :disabled="!segment.voice || !segment.ttsConfig?.provider"
                   >
                     <option value="">无情感</option>
@@ -290,10 +290,10 @@
     <!-- TTS播放区域（下部分） -->
     <div
       v-if="ttsResults.length > 0"
-      class="bg-white dark:bg-gray-800 rounded-lg shadow p-4"
+      class="bg-surface-elevated rounded-lg shadow p-4"
     >
       <div class="flex justify-between items-center mb-2">
-        <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
+        <h2 class="text-lg font-semibold text-ink">
           整章音频
         </h2>
         <div>
@@ -309,7 +309,7 @@
       </div>
 
       <div
-        class="mt-4 p-4 border border-gray-200 dark:border-gray-700 rounded-md"
+        class="mt-4 p-4 border border-border rounded-md"
       >
         <div
           v-for="(result, index) in ttsResults"
@@ -318,7 +318,7 @@
         >
           <audio :src="result.audioUrl" controls class="w-full"></audio>
           <div
-            class="text-xs text-gray-500 dark:text-gray-400 mt-1 flex justify-between items-center"
+            class="text-xs text-ink-muted mt-1 flex justify-between items-center"
           >
             <div class="flex flex-col">
               <span>时长: {{ formatDuration(result.duration) }}</span>
@@ -343,9 +343,9 @@
       class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
     >
       <div
-        class="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-2xl mx-4"
+        class="bg-surface-elevated rounded-lg shadow-xl p-6 w-full max-w-2xl mx-4"
       >
-        <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+        <h3 class="text-lg font-semibold text-ink mb-4">
           TTS 详细配置 - 段落 {{ currentConfigSegmentIndex + 1 }}
         </h3>
 
@@ -353,13 +353,13 @@
           <!-- TTS 服务商 -->
           <div class="form-control">
             <label class="label">
-              <span class="label-text text-gray-700 dark:text-gray-300"
+              <span class="label-text text-ink"
                 >TTS 服务商</span
               >
             </label>
             <select
               v-model="currentTtsConfig.provider"
-              class="select select-bordered w-full bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+              class="select select-bordered w-full bg-surface-hover text-ink"
               @change="onConfigProviderChange"
             >
               <option value="">选择服务商</option>
@@ -376,13 +376,13 @@
           <!-- 语音模型 -->
           <div class="form-control">
             <label class="label">
-              <span class="label-text text-gray-700 dark:text-gray-300"
+              <span class="label-text text-ink"
                 >语音模型</span
               >
             </label>
             <select
               v-model="currentTtsConfig.model"
-              class="select select-bordered w-full bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+              class="select select-bordered w-full bg-surface-hover text-ink"
               :disabled="!currentTtsConfig.provider"
             >
               <option value="">选择模型</option>
@@ -401,13 +401,13 @@
           <!-- 情感 -->
           <div class="form-control">
             <label class="label">
-              <span class="label-text text-gray-700 dark:text-gray-300"
+              <span class="label-text text-ink"
                 >情感</span
               >
             </label>
             <select
               v-model="currentTtsConfig.emotion"
-              class="select select-bordered w-full bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+              class="select select-bordered w-full bg-surface-hover text-ink"
               :disabled="!currentTtsConfig.model"
             >
               <option value="">无情感</option>
@@ -427,10 +427,10 @@
           <!-- 语速 -->
           <div class="form-control">
             <label class="label">
-              <span class="label-text text-gray-700 dark:text-gray-300"
+              <span class="label-text text-ink"
                 >语速</span
               >
-              <span class="label-text-alt text-gray-500">{{
+              <span class="label-text-alt text-ink-muted">{{
                 currentTtsConfig.speed
               }}</span>
             </label>
@@ -441,7 +441,7 @@
               max="50"
               class="range range-sm"
             />
-            <div class="flex justify-between text-xs text-gray-500 px-1">
+            <div class="flex justify-between text-xs text-ink-muted px-1">
               <span>慢</span>
               <span>正常</span>
               <span>快</span>
@@ -451,10 +451,10 @@
           <!-- 音调 -->
           <div class="form-control">
             <label class="label">
-              <span class="label-text text-gray-700 dark:text-gray-300"
+              <span class="label-text text-ink"
                 >音调</span
               >
-              <span class="label-text-alt text-gray-500">{{
+              <span class="label-text-alt text-ink-muted">{{
                 currentTtsConfig.pitch
               }}</span>
             </label>
@@ -465,7 +465,7 @@
               max="50"
               class="range range-sm"
             />
-            <div class="flex justify-between text-xs text-gray-500 px-1">
+            <div class="flex justify-between text-xs text-ink-muted px-1">
               <span>低</span>
               <span>正常</span>
               <span>高</span>
@@ -475,10 +475,10 @@
           <!-- 音量 -->
           <div class="form-control">
             <label class="label">
-              <span class="label-text text-gray-700 dark:text-gray-300"
+              <span class="label-text text-ink"
                 >音量</span
               >
-              <span class="label-text-alt text-gray-500">{{
+              <span class="label-text-alt text-ink-muted">{{
                 currentTtsConfig.volume
               }}</span>
             </label>
@@ -489,7 +489,7 @@
               max="100"
               class="range range-sm"
             />
-            <div class="flex justify-between text-xs text-gray-500 px-1">
+            <div class="flex justify-between text-xs text-ink-muted px-1">
               <span>小</span>
               <span>中</span>
               <span>大</span>

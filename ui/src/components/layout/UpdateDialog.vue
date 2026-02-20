@@ -5,12 +5,12 @@
     @click="$emit('close')"
   >
     <div
-      class="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-md mx-4 overflow-hidden"
+      class="bg-surface-elevated rounded-lg shadow-xl w-full max-w-md mx-4 overflow-hidden"
       @click.stop
     >
       <!-- 标题栏 -->
       <div
-        class="bg-blue-500 dark:bg-blue-600 text-white py-4 px-6 flex justify-between items-center"
+        class="bg-primary text-white py-4 px-6 flex justify-between items-center"
       >
         <h2 class="text-xl font-bold flex items-center">
           <ArrowUpCircleIcon class="h-6 w-6 mr-2" />
@@ -18,7 +18,7 @@
         </h2>
         <button
           @click="$emit('close')"
-          class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+          class="text-white/80 hover:text-white"
         >
           <svg
             class="w-5 h-5"
@@ -40,15 +40,15 @@
       <div class="py-6 px-6">
         <div class="mb-4">
           <div class="flex space-x-2 mb-1">
-            <span class="text-gray-700 dark:text-gray-300 font-medium"
+            <span class="text-ink font-medium"
               >当前版本:</span
             >
-            <span class="text-gray-600 dark:text-gray-400">{{
+            <span class="text-ink-muted">{{
               currentVersion
             }}</span>
           </div>
           <div class="flex space-x-2">
-            <span class="text-gray-700 dark:text-gray-300 font-medium"
+            <span class="text-ink font-medium"
               >最新版本:</span
             >
             <span class="text-green-600 dark:text-green-400 font-medium">{{
@@ -58,20 +58,20 @@
         </div>
 
         <div class="flex space-x-2">
-          <span class="text-gray-700 dark:text-gray-300 font-medium"
+          <span class="text-ink font-medium"
             >发布日期:</span
           >
-          <span class="text-gray-600 dark:text-gray-400">{{
+          <span class="text-ink-muted">{{
             updateInfo.releaseDate
           }}</span>
         </div>
 
         <div v-if="updateInfo.releaseNotes" class="mb-4">
-          <div class="text-gray-700 dark:text-gray-300 font-medium mb-2">
+          <div class="text-ink font-medium mb-2">
             更新内容:
           </div>
           <div
-            class="bg-gray-50 dark:bg-gray-700 p-3 rounded-md text-sm text-gray-600 dark:text-gray-300 whitespace-pre-line overflow-y-auto max-h-48"
+            class="bg-surface-hover p-3 rounded-md text-sm text-ink whitespace-pre-line overflow-y-auto max-h-48"
             v-html="formattedReleaseNotes"
           ></div>
         </div>
@@ -79,7 +79,7 @@
         <!-- 下载进度 -->
         <div v-if="downloadState === 'downloading'" class="mb-4">
           <div class="flex justify-between mb-1">
-            <span class="text-sm font-medium text-blue-700 dark:text-blue-400"
+            <span class="text-sm font-medium text-primary"
               >正在下载更新 {{ Math.round(downloadProgress || 0) }}%</span
             >
             <button
@@ -90,9 +90,9 @@
               取消
             </button>
           </div>
-          <div class="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700">
+          <div class="w-full bg-border rounded-full h-2.5">
             <div
-              class="bg-blue-600 h-2.5 rounded-full"
+              class="bg-primary h-2.5 rounded-full"
               :style="{ width: `${downloadProgress || 0}%` }"
             ></div>
           </div>
