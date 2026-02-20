@@ -2,11 +2,8 @@
   <div class="flex flex-col h-[calc(100vh-4rem)] max-w-[1600px] mx-auto p-2">
     <div class="flex justify-between items-center mb-4">
       <div class="flex items-center">
-        <button
-          @click="goBack"
-          class="btn btn-sm flex items-center mr-2 text-blue-500 hover:text-blue-400"
-          title="返回小说"
-        >
+        <button @click="goBack" class="btn btn-sm flex items-center mr-2 text-blue-500 hover:text-blue-400"
+          title="返回小说">
           <ArrowLeftIcon class="h-4 w-4 mr-1" />
           返回
         </button>
@@ -16,43 +13,21 @@
       </div>
       <div class="flex items-center space-x-2">
         <div class="flex items-center mr-2">
-          <label class="text-sm text-ink mr-1"
-            >LLM服务商:</label
-          >
-          <select
-            v-model="selectedLLMProvider"
-            class="input select select-sm border border-border rounded-md bg-surface-elevated text-ink"
-          >
+          <label class="text-sm text-ink mr-1">LLM服务商:</label>
+          <select v-model="selectedLLMProvider"
+            class="input select select-sm border border-border rounded-md bg-surface-elevated text-ink">
             <option value="" disabled>请先配置 LLM 服务商</option>
-            <option
-              v-for="provider in llmProviders"
-              :key="provider.id"
-              :value="provider.id"
-            >
+            <option v-for="provider in llmProviders" :key="provider.id" :value="provider.id">
               {{ provider.name || provider.id }}
             </option>
           </select>
         </div>
-        <button
-          @click="parseChapter"
-          class="btn btn-sm btn-primary flex items-center"
-          :disabled="isProcessing"
-        >
-          <DocumentMagnifyingGlassIcon
-            v-if="!isProcessing"
-            class="h-4 w-4 mr-1"
-          />
-          <div
-            v-else
-            class="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full mr-1"
-          ></div>
+        <button @click="parseChapter" class="btn btn-sm btn-primary flex items-center" :disabled="isProcessing">
+          <DocumentMagnifyingGlassIcon v-if="!isProcessing" class="h-4 w-4 mr-1" />
+          <div v-else class="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full mr-1"></div>
           {{ isProcessing ? "解析中..." : "解析" }}
         </button>
-        <button
-          @click="saveChapterContent"
-          class="btn btn-sm btn-primary"
-          :disabled="isSaving"
-        >
+        <button @click="saveChapterContent" class="btn btn-sm btn-primary" :disabled="isSaving">
           {{ isSaving ? "保存中..." : "保存修改" }}
         </button>
       </div>
@@ -61,18 +36,12 @@
     <!-- 主编辑区域（上部分） -->
     <div class="flex-1 flex items-center">
       <!-- 左侧 - 原文编辑 -->
-      <div
-        class="bg-surface-elevated rounded-lg shadow p-4 flex-1 h-full flex flex-col"
-      >
+      <div class="bg-surface-elevated rounded-lg shadow p-4 flex-1 h-full flex flex-col">
         <h2 class="text-lg font-semibold text-ink mb-3">
           章节原文
         </h2>
-        <textarea
-          v-model="editedContent"
-          class="input w-full flex-1 resize-none"
-          placeholder="请输入章节内容..."
-          @input="contentChanged = true"
-        ></textarea>
+        <textarea v-model="editedContent" class="input w-full flex-1 resize-none" placeholder="请输入章节内容..."
+          @input="contentChanged = true"></textarea>
       </div>
 
       <div class="mx-2 flex flex-col justify-center items-center">
@@ -80,39 +49,24 @@
       </div>
 
       <!-- 右侧 - 解析结果编辑 -->
-      <div
-        class="bg-surface-elevated rounded-lg shadow p-4 flex-1 h-full flex flex-col"
-      >
+      <div class="bg-surface-elevated rounded-lg shadow p-4 flex-1 h-full flex flex-col">
         <div class="flex justify-between items-center mb-3">
           <h2 class="text-lg font-semibold text-ink">
             解析结果
           </h2>
           <div class="flex space-x-2">
-            <button
-              v-if="parsedChapter && parsedChapter.segments.length > 0"
-              @click="autoConfigureTts"
-              class="btn btn-sm btn-secondary flex items-center"
-              :disabled="isAutoConfiguring"
-              title="自动检测并应用角色的TTS配置"
-            >
+            <button v-if="parsedChapter && parsedChapter.segments.length > 0" @click="autoConfigureTts"
+              class="btn btn-sm btn-secondary flex items-center" :disabled="isAutoConfiguring" title="自动检测并应用角色的TTS配置">
               <CogIcon v-if="!isAutoConfiguring" class="h-4 w-4 mr-1" />
-              <div
-                v-else
-                class="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full mr-1"
-              ></div>
+              <div v-else class="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full mr-1">
+              </div>
               {{ isAutoConfiguring ? "配置中..." : "自动配置" }}
             </button>
-            <button
-              v-if="parsedChapter && parsedChapter.segments.length > 0"
-              @click="generateAllSegmentTts"
-              class="btn btn-sm btn-primary flex items-center"
-              :disabled="isGeneratingAll"
-            >
+            <button v-if="parsedChapter && parsedChapter.segments.length > 0" @click="generateAllSegmentTts"
+              class="btn btn-sm btn-primary flex items-center" :disabled="isGeneratingAll">
               <SpeakerWaveIcon v-if="!isGeneratingAll" class="h-4 w-4 mr-1" />
-              <div
-                v-else
-                class="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full mr-1"
-              ></div>
+              <div v-else class="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full mr-1">
+              </div>
               {{ isGeneratingAll ? "合成中..." : "全部合成" }}
             </button>
           </div>
@@ -125,77 +79,47 @@
         </div>
 
         <template v-else>
-          <div
-            class="space-y-3 max-h-[calc(100vh-18rem)] overflow-y-auto flex-1"
-          >
-            <div
-              v-for="(segment, index) in parsedChapter.segments"
-              :key="`segment-${index}`"
-              class="bg-surface-hover p-3 rounded-md"
-            >
-              <div
-                v-if="segment.character"
-                class="flex justify-between items-start mb-1"
-              ></div>
+          <div class="space-y-3 max-h-[calc(100vh-18rem)] overflow-y-auto flex-1">
+            <div v-for="(segment, index) in parsedChapter.segments" :key="`segment-${index}`"
+              class="bg-surface-hover p-3 rounded-md">
+              <div v-if="segment.character" class="flex justify-between items-start mb-1"></div>
 
               <div class="mt-2">
-                <textarea
-                  v-model="segment.text"
-                  class="input w-full py-1 px-2 text-sm resize-none min-h-6 max-h-12"
-                ></textarea>
+                <textarea v-model="segment.text"
+                  class="input w-full py-1 px-2 text-sm resize-none min-h-6 max-h-12"></textarea>
               </div>
 
-              <div
-                class="mt-2 flex flex-wrap gap-2 justify-between items-center"
-              >
+              <div class="mt-2 flex flex-wrap gap-2 justify-between items-center">
                 <span
-                  class="inline-flex items-center rounded-full bg-blue-100 dark:bg-blue-900 px-2 py-0.5 text-xs font-medium text-blue-800 dark:text-blue-200"
-                >
+                  class="inline-flex items-center rounded-full bg-blue-100 dark:bg-blue-900 px-2 py-0.5 text-xs font-medium text-blue-800 dark:text-blue-200">
                   {{ segment.character }}
                 </span>
                 <div class="flex gap-2 flex-1 min-w-[200px]">
                   <!-- TTS服务商选择 -->
-                  <select
-                    v-model="segment.ttsConfig.provider"
+                  <select v-model="segment.ttsConfig.provider"
                     class="input text-xs py-0.5 px-1 rounded border border-border bg-surface-elevated text-ink flex-1"
-                    @change="onProviderChange(segment, index)"
-                  >
+                    @change="onProviderChange(segment, index)">
                     <option value="">选择服务商</option>
-                    <option
-                      v-for="provider in ttsProviders"
-                      :key="provider.type"
-                      :value="provider.type"
-                    >
+                    <option v-for="provider in ttsProviders" :key="provider.type" :value="provider.type">
                       {{ provider.name }}
                     </option>
                   </select>
 
                   <!-- 语音模型选择 -->
-                  <select
-                    v-model="segment.voice"
+                  <select v-model="segment.voice"
                     class="input text-xs py-0.5 px-1 rounded border border-border bg-surface-elevated text-ink flex-1"
-                    :disabled="!segment.ttsConfig?.provider"
-                    @change="onVoiceChange(segment, index)"
-                  >
+                    :disabled="!segment.ttsConfig?.provider" @change="onVoiceChange(segment, index)">
                     <option value="">
                       {{ segment.character ? "自动选择" : "默认旁白音" }}
                     </option>
-                    <option
-                      v-if="segment.character"
-                      v-for="character in matchingCharacters(segment.character)"
-                      :key="character.id"
-                      :value="character.voiceModel"
-                    >
+                    <option v-if="segment.character" v-for="character in matchingCharacters(segment.character)"
+                      :key="character.id" :value="character.voiceModel">
                       {{ character.name }} -
                       {{ characterVoiceLabel(character) }}
                     </option>
-                    <option
-                      v-for="model in getAvailableVoiceModels(
-                        segment.ttsConfig?.provider
-                      )"
-                      :key="model.code"
-                      :value="model.code"
-                    >
+                    <option v-for="model in getAvailableVoiceModels(
+                      segment.ttsConfig?.provider
+                    )" :key="model.code" :value="model.code">
                       {{ model.name }} ({{
                         model.gender === "0" ? "女" : "男"
                       }})
@@ -203,48 +127,29 @@
                   </select>
 
                   <!-- 情感选择 -->
-                  <select
-                    v-model="segment.ttsConfig.emotion"
+                  <select v-model="segment.ttsConfig.emotion"
                     class="input text-xs py-0.5 px-1 ml-1 rounded border border-border bg-surface-elevated text-ink flex-1"
-                    :disabled="!segment.voice || !segment.ttsConfig?.provider"
-                  >
+                    :disabled="!segment.voice || !segment.ttsConfig?.provider">
                     <option value="">无情感</option>
-                    <option
-                      v-for="emotion in getAvailableEmotions(
-                        segment.voice,
-                        segment.ttsConfig?.provider
-                      )"
-                      :key="emotion.code"
-                      :value="emotion.code"
-                    >
+                    <option v-for="emotion in getAvailableEmotions(
+                      segment.voice,
+                      segment.ttsConfig?.provider
+                    )" :key="emotion.code" :value="emotion.code">
                       {{ emotion.name }}
                     </option>
                   </select>
                 </div>
 
                 <div class="flex gap-2 text-sm">
-                  <button
-                    @click="showTtsConfig(index)"
-                    class="btn btn-xs btn-outline flex items-center"
-                    title="详细配置"
-                  >
+                  <button @click="showTtsConfig(index)" class="btn btn-xs btn-outline flex items-center" title="详细配置">
                     <CogIcon class="h-3 w-3" />
                   </button>
-                  <button
-                    @click="generateSegmentTts(index)"
-                    class="btn btn-xs btn-secondary flex items-center"
-                    :disabled="
-                      isProcessingSegment[index] || !segment.ttsConfig?.provider
-                    "
-                  >
-                    <SpeakerWaveIcon
-                      v-if="!isProcessingSegment[index]"
-                      class="h-3 w-3 mr-1"
-                    />
-                    <div
-                      v-else
-                      class="animate-spin h-3 w-3 border-2 border-white border-t-transparent rounded-full mr-1"
-                    ></div>
+                  <button @click="generateSegmentTts(index)" class="btn btn-xs btn-secondary flex items-center"
+                    :disabled="isProcessingSegment[index] || !segment.ttsConfig?.provider
+                      ">
+                    <SpeakerWaveIcon v-if="!isProcessingSegment[index]" class="h-3 w-3 mr-1" />
+                    <div v-else
+                      class="animate-spin h-3 w-3 border-2 border-white border-t-transparent rounded-full mr-1"></div>
                     {{ isProcessingSegment[index] ? "合成中" : "合成" }}
                   </button>
                 </div>
@@ -252,11 +157,7 @@
 
               <!-- 单个段落的音频播放器 -->
               <div v-if="segmentAudios[index]" class="mt-2">
-                <audio
-                  :src="segmentAudios[index]"
-                  controls
-                  class="w-full h-8"
-                ></audio>
+                <audio :src="segmentAudios[index]" controls class="w-full h-8"></audio>
               </div>
             </div>
           </div>
@@ -266,69 +167,41 @@
 
     <!-- 中间连接按钮 - 生成TTS -->
     <div class="flex flex-col items-center my-2">
-      <button
-        v-if="parsedChapter"
-        @click="generateTts"
-        class="btn btn-primary flex items-center"
-        :disabled="isProcessing || !allSegmentsHaveAudio"
-      >
+      <button v-if="parsedChapter" @click="generateTts" class="btn btn-primary flex items-center"
+        :disabled="isProcessing || !allSegmentsHaveAudio">
         <SpeakerWaveIcon v-if="!isProcessing" class="h-5 w-5 mr-2" />
-        <div
-          v-else
-          class="animate-spin h-5 w-5 border-2 border-white border-t-transparent rounded-full mr-2"
-        ></div>
+        <div v-else class="animate-spin h-5 w-5 border-2 border-white border-t-transparent rounded-full mr-2"></div>
         {{ isProcessing ? "生成中..." : "合成整章音频" }}
       </button>
-      <div
-        v-if="parsedChapter && !allSegmentsHaveAudio"
-        class="mt-2 text-sm text-yellow-400"
-      >
+      <div v-if="parsedChapter && !allSegmentsHaveAudio" class="mt-2 text-sm text-yellow-400">
         请先为所有段落生成TTS，再合成整章音频
       </div>
     </div>
 
     <!-- TTS播放区域（下部分） -->
-    <div
-      v-if="ttsResults.length > 0"
-      class="bg-surface-elevated rounded-lg shadow p-4"
-    >
+    <div v-if="ttsResults.length > 0" class="bg-surface-elevated rounded-lg shadow p-4">
       <div class="flex justify-between items-center mb-2">
         <h2 class="text-lg font-semibold text-ink">
           整章音频
         </h2>
         <div>
-          <button
-            @click="generateTts"
-            class="btn btn-sm btn-primary flex items-center"
-            :disabled="isProcessing"
-          >
+          <button @click="generateTts" class="btn btn-sm btn-primary flex items-center" :disabled="isProcessing">
             <ArrowPathIcon class="h-4 w-4 mr-1" />
             重新生成
           </button>
         </div>
       </div>
 
-      <div
-        class="mt-4 p-4 border border-border rounded-md"
-      >
-        <div
-          v-for="(result, index) in ttsResults"
-          :key="`tts-${index}`"
-          class="mb-4 last:mb-0"
-        >
+      <div class="mt-4 p-4 border border-border rounded-md">
+        <div v-for="(result, index) in ttsResults" :key="`tts-${index}`" class="mb-4 last:mb-0">
           <audio :src="result.audioUrl" controls class="w-full"></audio>
-          <div
-            class="text-xs text-ink-muted mt-1 flex justify-between items-center"
-          >
+          <div class="text-xs text-ink-muted mt-1 flex justify-between items-center">
             <div class="flex flex-col">
               <span>时长: {{ formatDuration(result.duration) }}</span>
               <span>生成时间: {{ formatDate(result.createdAt) }}</span>
             </div>
-            <button
-              @click="openAudioFolder(result.audioUrl)"
-              class="btn btn-xs btn-outline flex items-center"
-              title="打开文件夹"
-            >
+            <button @click="openAudioFolder(result.audioUrl)" class="btn btn-xs btn-outline flex items-center"
+              title="打开文件夹">
               <FolderOpenIcon class="h-3 w-3 mr-1" />
               打开文件夹
             </button>
@@ -338,13 +211,8 @@
     </div>
 
     <!-- TTS详细配置弹窗 -->
-    <div
-      v-if="showTtsConfigModal"
-      class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
-    >
-      <div
-        class="bg-surface-elevated rounded-lg shadow-xl p-6 w-full max-w-2xl mx-4"
-      >
+    <div v-if="showTtsConfigModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div class="bg-surface-elevated rounded-lg shadow-xl p-6 w-full max-w-2xl mx-4">
         <h3 class="text-lg font-semibold text-ink mb-4">
           TTS 详细配置 - 段落 {{ currentConfigSegmentIndex + 1 }}
         </h3>
@@ -353,21 +221,12 @@
           <!-- TTS 服务商 -->
           <div class="form-control">
             <label class="label">
-              <span class="label-text text-ink"
-                >TTS 服务商</span
-              >
+              <span class="label-text text-ink">TTS 服务商</span>
             </label>
-            <select
-              v-model="currentTtsConfig.provider"
-              class="select select-bordered w-full bg-surface-hover text-ink"
-              @change="onConfigProviderChange"
-            >
+            <select v-model="currentTtsConfig.provider" class="select select-bordered w-full bg-surface-hover text-ink"
+              @change="onConfigProviderChange">
               <option value="">选择服务商</option>
-              <option
-                v-for="provider in ttsProviders"
-                :key="provider.type"
-                :value="provider.type"
-              >
+              <option v-for="provider in ttsProviders" :key="provider.type" :value="provider.type">
                 {{ provider.name }}
               </option>
             </select>
@@ -376,23 +235,14 @@
           <!-- 语音模型 -->
           <div class="form-control">
             <label class="label">
-              <span class="label-text text-ink"
-                >语音模型</span
-              >
+              <span class="label-text text-ink">语音模型</span>
             </label>
-            <select
-              v-model="currentTtsConfig.model"
-              class="select select-bordered w-full bg-surface-hover text-ink"
-              :disabled="!currentTtsConfig.provider"
-            >
+            <select v-model="currentTtsConfig.model" class="select select-bordered w-full bg-surface-hover text-ink"
+              :disabled="!currentTtsConfig.provider">
               <option value="">选择模型</option>
-              <option
-                v-for="model in getAvailableVoiceModels(
-                  currentTtsConfig.provider
-                )"
-                :key="model.code"
-                :value="model.code"
-              >
+              <option v-for="model in getAvailableVoiceModels(
+                currentTtsConfig.provider
+              )" :key="model.code" :value="model.code">
                 {{ model.name }} ({{ model.gender === "0" ? "女" : "男" }})
               </option>
             </select>
@@ -401,24 +251,15 @@
           <!-- 情感 -->
           <div class="form-control">
             <label class="label">
-              <span class="label-text text-ink"
-                >情感</span
-              >
+              <span class="label-text text-ink">情感</span>
             </label>
-            <select
-              v-model="currentTtsConfig.emotion"
-              class="select select-bordered w-full bg-surface-hover text-ink"
-              :disabled="!currentTtsConfig.model"
-            >
+            <select v-model="currentTtsConfig.emotion" class="select select-bordered w-full bg-surface-hover text-ink"
+              :disabled="!currentTtsConfig.model">
               <option value="">无情感</option>
-              <option
-                v-for="emotion in getAvailableEmotions(
-                  currentTtsConfig.model,
-                  currentTtsConfig.provider
-                )"
-                :key="emotion.code"
-                :value="emotion.code"
-              >
+              <option v-for="emotion in getAvailableEmotions(
+                currentTtsConfig.model,
+                currentTtsConfig.provider
+              )" :key="emotion.code" :value="emotion.code">
                 {{ emotion.name }}
               </option>
             </select>
@@ -427,20 +268,12 @@
           <!-- 语速 -->
           <div class="form-control">
             <label class="label">
-              <span class="label-text text-ink"
-                >语速</span
-              >
+              <span class="label-text text-ink">语速</span>
               <span class="label-text-alt text-ink-muted">{{
                 currentTtsConfig.speed
               }}</span>
             </label>
-            <input
-              v-model="currentTtsConfig.speed"
-              type="range"
-              min="-50"
-              max="50"
-              class="range range-sm"
-            />
+            <input v-model="currentTtsConfig.speed" type="range" min="-50" max="50" class="range range-sm" />
             <div class="flex justify-between text-xs text-ink-muted px-1">
               <span>慢</span>
               <span>正常</span>
@@ -451,20 +284,12 @@
           <!-- 音调 -->
           <div class="form-control">
             <label class="label">
-              <span class="label-text text-ink"
-                >音调</span
-              >
+              <span class="label-text text-ink">音调</span>
               <span class="label-text-alt text-ink-muted">{{
                 currentTtsConfig.pitch
               }}</span>
             </label>
-            <input
-              v-model="currentTtsConfig.pitch"
-              type="range"
-              min="-50"
-              max="50"
-              class="range range-sm"
-            />
+            <input v-model="currentTtsConfig.pitch" type="range" min="-50" max="50" class="range range-sm" />
             <div class="flex justify-between text-xs text-ink-muted px-1">
               <span>低</span>
               <span>正常</span>
@@ -475,20 +300,12 @@
           <!-- 音量 -->
           <div class="form-control">
             <label class="label">
-              <span class="label-text text-ink"
-                >音量</span
-              >
+              <span class="label-text text-ink">音量</span>
               <span class="label-text-alt text-ink-muted">{{
                 currentTtsConfig.volume
               }}</span>
             </label>
-            <input
-              v-model="currentTtsConfig.volume"
-              type="range"
-              min="0"
-              max="100"
-              class="range range-sm"
-            />
+            <input v-model="currentTtsConfig.volume" type="range" min="0" max="100" class="range range-sm" />
             <div class="flex justify-between text-xs text-ink-muted px-1">
               <span>小</span>
               <span>中</span>
@@ -991,8 +808,39 @@ async function parseChapter() {
       chapter.value.llmProvider = selectedLLMProvider.value;
     }
 
+    // 解析请求日志
+    const requestPayload = {
+      chapterId: chapter.value.id,
+      chapterTitle: chapter.value.title,
+      llmProvider: selectedLLMProvider.value,
+      contentLength: chapter.value.content?.length ?? 0,
+      contentPreview:
+        chapter.value.content?.slice(0, 500) ?? "(无内容)",
+    };
+    console.log("[解析-请求]", requestPayload);
+    if (chapter.value.content && chapter.value.content.length > 500) {
+      console.log("[解析-请求] 完整正文(供后端使用)", chapter.value.content);
+    }
+
     // 调用解析API
     const response = await novelApi.parseChapter(chapter.value.id);
+
+    // 解析响应日志
+    console.log("[解析-响应] success:", response.success, "message:", response.message);
+    console.log("[解析-响应] data:", response.data);
+    if (response.data?.segments) {
+      console.log(
+        "[解析-响应] segments 数量:",
+        response.data.segments.length,
+        "segments 详情:",
+        response.data.segments
+      );
+      console.log(
+        "[解析-响应] segments JSON:",
+        JSON.stringify(response.data.segments, null, 2)
+      );
+    }
+
     if (response.success && response.data) {
       // 初始化每个段落的TTS配置和合成状态，优先使用角色的TTS配置
       response.data.segments = response.data.segments.map((segment) => {
@@ -1100,9 +948,11 @@ async function parseChapter() {
 
       toast.success("章节解析成功");
     } else {
+      console.warn("[解析-响应] 业务失败:", response.message, response);
       throw new Error(response.message || "解析失败");
     }
   } catch (error) {
+    console.error("[解析-失败]", error);
     toast.error(
       `解析失败: ${error instanceof Error ? error.message : String(error)}`
     );
@@ -1723,9 +1573,9 @@ async function openAudioFolder(audioUrl: string) {
   try {
     // 从音频URL中提取文件路径
     let filePath = audioUrl.replace(/^file:\/\//, "")
-                           .replace(/%23/g, "#")
-                           .replace(/%3F/g, "?")
-                           .replace(/%20/g, " ");
+      .replace(/%23/g, "#")
+      .replace(/%3F/g, "?")
+      .replace(/%20/g, " ");
 
     // 标准化路径
     filePath = filePath.replace(/\//g, "\\");

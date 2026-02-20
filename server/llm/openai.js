@@ -28,50 +28,24 @@ class OpenAIClient {
    * @returns {string} 提示模板
    */
   createPrompt() {
-    return `### 指令 ###
-分析以下小说文本，识别每句话的说话者和语气或情绪。请按照以下要求进行分析：
+    return `你是一个小说文本分析助手，目标是将整段文字转成「按句拆分、并标注说话角色与语气」的结构化结果，用于后续为不同角色配音，制作有声书。
 
-1. 将文本分解为单独的句子。
-2. 对于每个句子，确定：
-   - 说话者是谁（如果是对话，'dft'表示旁白叙述）
-   - 特殊语气或情绪（从以下选项中选择：快乐、悲伤、愤怒、恐惧、好奇、紧张、平静、兴奋、惊讶、失望、羞愧、嫌恶、喜爱、骄傲、讽刺、严肃、轻松、'dft'表示默认无特殊情感）
-   - 特殊模仿声音（从以下选项中选择：女孩、男孩、年轻女性、年轻男性、年长女性、年长男性、年老女性、年老男性、'dft'表示默认无特殊模仿）
-   
-3. 如果说话者没有明确提及，请从上下文中推断。'dft'表示旁白叙述。如果确实无法确定，请使用"未知"。
+## 必须遵守的规则
+1. **逐句拆分**：对下面「待分析文本」中的**每一句话**都输出一个独立对象，**不能漏句、不能多句合并为一个对象**。
+2. **分句方式**：按句号、问号、感叹号、省略号、换行等切分；对话中每个引号内的话单独成一句；旁白与对话交替时，每段旁白、每句对话各占一个对象。
+3. **只输出一个合法 JSON 数组**：不要输出任何解释、markdown 代码块标记或其它文字，仅输出一个 JSON 数组。
 
-4. 仅输出JSON格式的结果，不要包含任何其他解释或附加文本。
+## 每个对象字段说明
+- **t**：该句的原文（一字不改）
+- **s**：说话者。旁白/叙述用 "dft"，对话从上下文推断人名
+- **e**：语气/情绪。可选：快乐、悲伤、愤怒、恐惧、好奇、紧张、平静、兴奋、惊讶、失望、羞愧、嫌恶、喜爱、骄傲、讽刺、严肃、轻松 等，无特殊用 "dft"
+- **m**：模仿声音。可选：女孩、男孩、年轻女性、年轻男性、年长女性、年长男性、年老女性、年老男性，默认用 "dft"
 
-### 文本 ###
+## 待分析文本
 {{text}}
 
-### 输出格式 ###
-请以有效的JSON格式输出分析结果，格式为句子对象的数组。每个对象应包含以下字段：
-- "t": 原始句子文本
-- "s": 已识别的说话者，'dft'表示旁白叙述
-- "e": 已识别的语气或情绪，'dft'表示默认
-- "m": 已识别的模仿声音，'dft'表示默认
-
-### 示例输出 ###
-[
-  {
-    "t": "在风和日丽的下午，小明和小红在公园里散步。",
-    "s": "dft",
-    "e": "dft",
-    "m": "dft" 
-  },
-  {
-    "t": "你好吗？",
-    "s": "小红",
-    "e": "友好",
-    "m": "dft" 
-  },
-  {
-    "t": "我很好，谢谢。",
-    "s": "小明",
-    "e": "中性",
-    "m": "dft"
-  }
-]`;
+## 输出要求
+请直接输出一个 JSON 数组，数组长度 = 上述文本中的句子数量，每个元素形如：{"t":"句子原文","s":"说话者","e":"语气","m":"模仿声音"}。确保覆盖原文中的每一句。`;
   }
 
   /**
@@ -178,7 +152,7 @@ class OpenAIClient {
           {
             role: "system",
             content:
-              "You are an expert at literary analysis. Your task is to identify speakers and tone/mood in narrative text and output results in valid JSON format only.",
+              "你只输出一个合法的 JSON 数组，用于有声书分句与角色标注。数组中每个元素对应输入中的一句话，包含 t(原文)、s(说话者)、e(语气)、m(模仿声音)。不要输出任何非 JSON 内容。",
           },
           {
             role: "user",
@@ -190,31 +164,38 @@ class OpenAIClient {
         response_format: { type: "json_object" },
       });
 
-      const responseText = completion.choices[0].message.content;
+      const responseText = this._getReplyText(completion);
+      if (typeof responseText !== "string" || !responseText.trim()) {
+        throw new Error("Empty or invalid response from AI service");
+      }
+
       let responseData;
 
       try {
-        // 响应应该是一个包含单个数组属性的JSON对象
-        // 我们需要从对象中获取数组
+        // 响应应该是一个包含单个数组属性的JSON对象，或直接为数组
         const parsedResponse = JSON.parse(responseText);
 
-        // 检查响应是否包含数组属性
-        const arrayKey = Object.keys(parsedResponse).find((key) =>
-          Array.isArray(parsedResponse[key])
-        );
-
-        if (arrayKey) {
-          responseData = parsedResponse[arrayKey];
-        } else {
-          // 如果找不到数组属性，使用整个响应
+        if (Array.isArray(parsedResponse)) {
           responseData = parsedResponse;
+        } else {
+          // 检查响应是否包含数组属性
+          const arrayKey = Object.keys(parsedResponse).find((key) =>
+            Array.isArray(parsedResponse[key])
+          );
+
+          if (arrayKey) {
+            responseData = parsedResponse[arrayKey];
+          } else {
+            responseData = parsedResponse;
+          }
         }
+
+        // 保证始终返回数组，避免 processLongText 中 ...chunkResults 报错
+        return Array.isArray(responseData) ? responseData : [responseData];
       } catch (e) {
         console.error("Failed to parse JSON response:", e);
         throw new Error("Invalid JSON response from AI service");
       }
-
-      return responseData;
     } catch (error) {
       console.error("Error calling OpenAI API:", error);
       throw error;
@@ -240,7 +221,8 @@ class OpenAIClient {
     const results = [];
     for (const chunk of chunks) {
       const chunkResults = await this.analyzeText(chunk);
-      results.push(...chunkResults);
+      const list = Array.isArray(chunkResults) ? chunkResults : [chunkResults];
+      results.push(...list);
     }
 
     return results;

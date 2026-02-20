@@ -142,13 +142,46 @@ function formatResults(results, providerType = "volcengine") {
       voice = "";
 
     // 根据提供商类型处理不同的响应格式
+    // 注意：openai.js 的 prompt 要求返回 t/s/e/m，与 volcengine 一致，故 openai 也需兼容 t/s/e/m
     switch (providerType) {
       case "openai":
-        text = item.text || "";
-        character = item.character || "";
-        tone = item.tone || "";
-        // OpenAI没有模仿声音字段，根据角色性别推断
-        if (character) {
+      case "azure":
+      case "gemini":
+      case "claude":
+        text = item.text ?? item.t ?? "";
+        character = item.character ?? item.s ?? "";
+        tone = item.tone ?? item.e ?? "";
+        // 若有 m（模仿声音）则与 volcengine 一致做映射
+        if (item.m && item.m !== "dft") {
+          switch (item.m) {
+            case "女孩":
+              voice = "female-child";
+              break;
+            case "男孩":
+              voice = "male-child";
+              break;
+            case "年轻女性":
+              voice = "female-youth";
+              break;
+            case "年轻男性":
+              voice = "male-youth";
+              break;
+            case "年长女性":
+              voice = "female-middle";
+              break;
+            case "年长男性":
+              voice = "male-middle";
+              break;
+            case "年老女性":
+              voice = "female-elder";
+              break;
+            case "年老男性":
+              voice = "male-elder";
+              break;
+          }
+        }
+        // 未指定 m 时根据角色性别推断
+        if (!voice && character) {
           if (
             character.includes("女") ||
             character.includes("妹") ||
