@@ -1439,7 +1439,6 @@ function getAvailableVoices() {
     log.debug("(BiliLive Service) Getting installed voices...");
 
     try {
-      // 直接调用local.js中的方法
       const localProvider = require("../tts/local");
       localProvider
         .getAvailableVoices()
@@ -1463,6 +1462,20 @@ function getAvailableVoices() {
       resolve([]);
     }
   });
+}
+
+/**
+ * 检测本地 TTS 是否支持中文（Windows 下是否有中文语音）
+ * @returns {Promise<{ supported: boolean, voiceName?: string }>}
+ */
+async function checkChineseSupport() {
+  try {
+    const localProvider = require("../tts/local");
+    return await localProvider.checkChineseSupport();
+  } catch (err) {
+    log.error("(BiliLive Service) checkChineseSupport error:", err);
+    return { supported: false };
+  }
 }
 
 /**

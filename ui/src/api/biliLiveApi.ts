@@ -217,6 +217,25 @@ export const biliLiveApi = {
   },
 
   /**
+   * 检测本地 TTS 是否支持中文（Windows 下是否有中文语音）
+   */
+  checkChineseSupport: (): Promise<
+    Result<{ supported: boolean; voiceName?: string }>
+  > => {
+    try {
+      return invoke<Result<{ supported: boolean; voiceName?: string }>>(
+        "bililive:check-chinese-support"
+      );
+    } catch (error) {
+      return Promise.resolve({
+        success: false,
+        error: error instanceof Error ? error.message : "检测失败",
+        data: { supported: false },
+      });
+    }
+  },
+
+  /**
    * 保存本地TTS配置
    * @param {string} voice 声音名称
    * @returns {Promise<Result<any>>} 保存结果

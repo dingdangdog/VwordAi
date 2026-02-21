@@ -163,6 +163,8 @@ contextBridge.exposeInMainWorld("api", {
     testTTS: (text) => ipcRenderer.invoke("bililive:test-tts", text),
     getAvailableVoices: () =>
       ipcRenderer.invoke("bililive:get-available-voices"),
+    checkChineseSupport: () =>
+      ipcRenderer.invoke("bililive:check-chinese-support"),
     saveLocalConfig: (voice) =>
       ipcRenderer.invoke("bililive:save-local-config", voice),
   },

@@ -167,6 +167,12 @@ const biliLiveService = {
     return biliLiveApi.getAvailableVoices();
   },
 
+  checkChineseSupport: async (): Promise<
+    Result<{ supported: boolean; voiceName?: string }>
+  > => {
+    return biliLiveApi.checkChineseSupport();
+  },
+
   /**
    * 保存本地TTS配置
    * @param {string} voice 声音名称

@@ -6,6 +6,16 @@ const { ipcMain } = require("electron");
 const BiliLiveService = require("../services/BiliLiveService");
 const { success, error } = require("../utils/result");
 
+async function checkChineseSupport() {
+  try {
+    const result = await BiliLiveService.checkChineseSupport();
+    return success(result);
+  } catch (err) {
+    console.error("[BiliLiveController] Check Chinese support error:", err);
+    return success({ supported: false });
+  }
+}
+
 /**
  * 初始化BiliLive控制器
  */
@@ -58,6 +68,11 @@ function init() {
   // 获取可用的TTS声音列表
   ipcMain.handle("bililive:get-available-voices", async () => {
     return await getAvailableVoices();
+  });
+
+  // 检测本地 TTS 是否支持中文（Windows 下是否有中文语音）
+  ipcMain.handle("bililive:check-chinese-support", async () => {
+    return await checkChineseSupport();
   });
 
   // 保存本地TTS配置
@@ -228,5 +243,6 @@ module.exports = {
   saveSovitsConfig,
   testTTS,
   getAvailableVoices,
+  checkChineseSupport,
   saveLocalConfig,
 };
