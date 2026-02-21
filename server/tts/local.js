@@ -58,7 +58,8 @@ function playWin32Utf8(text, voice, speed, callback) {
 
   child.stderr.once("data", (data) => callback(new Error(String(data))));
   child.on("exit", (code, signal) => {
-    if (code !== null || signal !== null) {
+    // 仅当退出码非 0 或异常信号时视为失败；code===0 且 signal===null 为正常结束
+    if (code !== 0 || signal !== null) {
       return callback(new Error(`PowerShell exit code: ${code}, signal: ${signal}`));
     }
     callback(null);
@@ -141,7 +142,8 @@ function exportWin32Utf8(text, voice, speed, fileName, callback) {
 
   child.stderr.once("data", (data) => callback(new Error(String(data))));
   child.on("exit", (code, signal) => {
-    if (code !== null || signal !== null) {
+    // 仅当退出码非 0 或异常信号时视为失败；code===0 且 signal===null 为正常结束
+    if (code !== 0 || signal !== null) {
       return callback(new Error(`PowerShell exit code: ${code}, signal: ${signal}`));
     }
     callback(null);

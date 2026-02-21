@@ -761,6 +761,14 @@ async function loadConfig() {
         console.log("Loaded TTS config:", response.data.tts);
       }
 
+      // 同步 TTS 模式到 store，保证下拉框回显与后端一致
+      const mode = response.data.tts?.mode;
+      if (mode && ["local", "azure", "aliyun", "sovits"].includes(mode)) {
+        biliLiveStore.setTTSModeLocal(mode);
+      } else {
+        biliLiveStore.setTTSModeLocal("local");
+      }
+
       // 加载阿里云和SoVITS配置（保持原样）
       if (response.data.tts && response.data.tts.alibaba) {
         alibabaConfig.value = response.data.tts.alibaba;
@@ -791,6 +799,11 @@ async function loadConfig() {
 const saveConfig = async (showToast = true) => {
   try {
     isSaving.value = true;
+
+    // 保存前将当前选中的 TTS 模式同步到 config，确保写入后端一致
+    const currentMode = biliLiveStore.getTTSMode();
+    if (!(config.value as any).tts) (config.value as any).tts = {};
+    (config.value as any).tts.mode = currentMode;
 
     // 记录SESSDATA长度（不记录具体内容以避免敏感信息泄露）
     const sessdataLength = config.value.SESSDATA

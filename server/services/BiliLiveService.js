@@ -1089,18 +1089,8 @@ async function processSpeechQueue() {
   isSpeaking = true;
   const text = speechQueue.shift();
 
-  // 获取TTS模式
-  let ttsMode = biliveConfig.tts?.mode || "local";
-
-  // 检查是否使用settings中的配置
-  const settings = Settings.getTTSSettings();
-  const useAzure =
-    settings.azure && settings.azure.enabled && settings.azure.key;
-
-  // 优先使用settings中的设置决定TTS模式
-  if (useAzure) {
-    ttsMode = "azure";
-  }
+  // 获取TTS模式：仅使用 B 站直播配置中的 tts.mode，不再被全局语音设置覆盖
+  const ttsMode = biliveConfig.tts?.mode || "local";
 
   // log.info(
   //   `(BiliLive Service) Starting TTS playback (Engine: ${ttsMode}): "${text}"`
@@ -1129,10 +1119,11 @@ async function processSpeechQueue() {
     //   `(BiliLive Service) TTS playback completed, time taken: ${elapsedTime}ms, remaining queue: ${speechQueue.length}`
     // );
   } catch (err) {
+    const msg = err && (err.message || err.error) ? (err.message || err.error) : "TTS playback failed";
     log.error(`(BiliLive Service) TTS playback error (${ttsMode}):`, err);
     sendToRenderer("bililive-message", {
       type: "error",
-      content: `TTS (${ttsMode}) playback failed: ${err.message}`,
+      content: `TTS (${ttsMode}) playback failed: ${msg}`,
     });
   } finally {
     // Wait interval
