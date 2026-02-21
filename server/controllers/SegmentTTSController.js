@@ -84,16 +84,17 @@ async function synthesizeSegment(chapterId, segmentData) {
     fs.ensureDirSync(tempDir);
     const tempFilePath = path.join(tempDir, `segment_${Date.now()}_${uuidv4()}.wav`);
 
-    // Prepare synthesis settings - use segment TTS configuration
+    // 语音模型以 ttsConfig.model 为准，与 voice 统一，避免前端传了 model 却被 voice 覆盖
+    const voiceModel = segmentData.ttsConfig?.model || segmentData.voice || "zh-CN-XiaoxiaoNeural";
     const synthesisSettings = {
-      voice: segmentData.voice || "zh-CN-XiaoxiaoNeural",
+      voice: voiceModel,
+      model: voiceModel,
       tone: segmentData.tone || "平静",
-      volume: segmentData.ttsConfig?.volume || 100,
-      speed: segmentData.ttsConfig?.speed || 0,
-      pitch: segmentData.ttsConfig?.pitch || 0,
+      volume: segmentData.ttsConfig?.volume ?? 100,
+      speed: segmentData.ttsConfig?.speed ?? 0,
+      pitch: segmentData.ttsConfig?.pitch ?? 0,
       emotion: segmentData.ttsConfig?.emotion || "",
       style: segmentData.ttsConfig?.style || "",
-      model: segmentData.ttsConfig?.model || segmentData.voice || "zh-CN-XiaoxiaoNeural"
     };
 
     console.log(`[SegmentTTS] Synthesis settings:`, JSON.stringify(synthesisSettings, null, 2));

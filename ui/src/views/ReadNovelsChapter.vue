@@ -1,60 +1,54 @@
 <template>
-  <div class="flex flex-col h-[calc(100vh-4rem)] max-w-[1600px] mx-auto p-2">
-    <div class="flex justify-between items-center mb-4">
-      <div class="flex items-center">
-        <button @click="goBack" class="btn btn-sm flex items-center mr-2 text-blue-500 hover:text-blue-400"
+  <div class="flex flex-col h-[calc(100vh-4rem)] max-w-[1600px] mx-auto overflow-hidden">
+    <!-- 顶栏：固定高度，不滚动 -->
+    <header class="flex-shrink-0 flex justify-between items-center px-2 py-1.5 border-b border-border">
+      <div class="flex items-center min-w-0">
+        <button @click="goBack" class="btn btn-sm flex items-center shrink-0 mr-2 text-blue-500 hover:text-blue-400"
           title="返回小说">
           <ArrowLeftIcon class="h-4 w-4 mr-1" />
           返回
         </button>
-        <h1 class="text-2xl font-bold text-ink">
+        <h1 class="text-lg font-bold text-ink truncate">
           {{ chapterTitle }}
         </h1>
       </div>
-      <div class="flex items-center space-x-2">
-        <div class="flex items-center mr-2">
-          <label class="text-sm text-ink mr-1">LLM服务商:</label>
-          <select v-model="selectedLLMProvider"
-            class="input select select-sm border border-border rounded-md bg-surface-elevated text-ink">
-            <option value="" disabled>请先配置 LLM 服务商</option>
-            <option v-for="provider in llmProviders" :key="provider.id" :value="provider.id">
-              {{ provider.name || provider.id }}
-            </option>
-          </select>
-        </div>
+      <div class="flex items-center gap-2 shrink-0">
         <button @click="parseChapter" class="btn btn-sm btn-primary flex items-center" :disabled="isProcessing">
           <DocumentMagnifyingGlassIcon v-if="!isProcessing" class="h-4 w-4 mr-1" />
           <div v-else class="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full mr-1"></div>
           {{ isProcessing ? "解析中..." : "解析" }}
         </button>
         <button @click="saveChapterContent" class="btn btn-sm btn-primary" :disabled="isSaving">
-          {{ isSaving ? "保存中..." : "保存修改" }}
+          {{ isSaving ? "保存中..." : "保存" }}
         </button>
       </div>
-    </div>
+    </header>
 
-    <!-- 主编辑区域（上部分） -->
-    <div class="flex-1 flex items-center">
-      <!-- 左侧 - 原文编辑 -->
-      <div class="bg-surface-elevated rounded-lg shadow p-4 flex-1 h-full flex flex-col">
-        <h2 class="text-lg font-semibold text-ink mb-3">
+    <!-- 主内容：两列，占满剩余高度，内部滚动 -->
+    <div class="flex-1 min-h-0 flex gap-2 p-2">
+      <!-- 左侧 - 章节原文 -->
+      <div class="w-1/2 min-w-0 flex flex-col bg-surface-elevated rounded-md shadow overflow-hidden">
+        <h2 class="flex-shrink-0 text-sm font-semibold text-ink px-3 py-2 border-b border-border">
           章节原文
         </h2>
-        <textarea v-model="editedContent" class="input w-full flex-1 resize-none" placeholder="请输入章节内容..."
-          @input="contentChanged = true"></textarea>
+        <div class="flex-1 min-h-0 relative flex flex-col">
+          <textarea v-model="editedContent"
+            class="input w-full flex-1 min-h-0 resize-none overflow-auto text-sm py-2 px-3 rounded-none border-0 focus:ring-0"
+            placeholder="请输入章节内容..." @input="contentChanged = true"></textarea>
+          <span class="absolute bottom-2 right-3 text-xs text-ink-muted pointer-events-none">
+            {{ editedContentLength }} 字
+          </span>
+        </div>
       </div>
 
-      <div class="mx-2 flex flex-col justify-center items-center">
-        <ArrowRightIcon class="h-6 w-6 text-ink-muted" />
-      </div>
-
-      <!-- 右侧 - 解析结果编辑 -->
-      <div class="bg-surface-elevated rounded-lg shadow p-4 flex-1 h-full flex flex-col">
-        <div class="flex justify-between items-center mb-3">
-          <h2 class="text-lg font-semibold text-ink">
-            解析结果
-          </h2>
-          <div class="flex space-x-2">
+      <!-- 右侧 - 解析结果 + 整章音频 -->
+      <div class="w-1/2 min-w-0 flex flex-col gap-2 min-h-0">
+        <!-- 解析结果 -->
+        <div class="flex-1 min-h-0 flex flex-col bg-surface-elevated rounded-lg shadow overflow-hidden">
+          <div class="flex-shrink-0 flex justify-between items-center px-3 py-2 border-b border-border">
+            <h2 class="text-sm font-semibold text-ink">
+              解析结果
+            </h2>
             <button v-if="parsedChapter && parsedChapter.segments.length > 0" @click="generateAllSegmentTts"
               class="btn btn-sm btn-primary flex items-center" :disabled="isGeneratingAll">
               <SpeakerWaveIcon v-if="!isGeneratingAll" class="h-4 w-4 mr-1" />
@@ -63,35 +57,24 @@
               {{ isGeneratingAll ? "合成中..." : "全部合成" }}
             </button>
           </div>
-        </div>
-
-        <div v-if="!parsedChapter" class="text-center py-8">
-          <p class="text-ink-muted mb-4">
-            该章节尚未解析，请点击"解析"按钮进行LLM解析
-          </p>
-        </div>
-
-        <template v-else>
-          <div class="space-y-3 max-h-[calc(100vh-18rem)] overflow-y-auto flex-1">
+          <div v-if="!parsedChapter" class="flex-1 flex items-center justify-center p-4">
+            <p class="text-sm text-ink-muted text-center">
+              该章节尚未解析，请点击「解析」进行 LLM 解析
+            </p>
+          </div>
+          <div v-else class="flex-1 min-h-0 overflow-y-auto p-2 space-y-2">
             <div v-for="(segment, index) in displaySegments" :key="`segment-${index}`"
-              class="bg-surface-hover p-3 rounded-md">
-              <div v-if="segment.character" class="flex justify-between items-start mb-1"></div>
-
-              <div class="mt-2">
+              class="bg-surface-hover p-2 rounded-md">
+              <div class="mt-1">
                 <textarea v-model="segment.text"
-                  class="input w-full py-1 px-2 text-sm resize-none min-h-6 max-h-12"></textarea>
+                  class="input w-full py-1 px-2 text-sm resize-none min-h-[2.5rem] max-h-24 overflow-auto" />
               </div>
-
               <div class="mt-2 flex flex-wrap gap-2 justify-between items-center">
                 <span
                   class="inline-flex items-center rounded-full bg-blue-100 dark:bg-blue-900 px-2 py-0.5 text-xs font-medium text-blue-800 dark:text-blue-200">
                   {{ segment.character == "dft" ? "旁白" : segment.character }}
                 </span>
-                <!-- <span class="text-xs text-ink-muted">
-                  {{ segment.character && segment.character !== "旁白" ? "语音沿用角色" : "旁白默认" }}
-                </span> -->
-                <div class="flex gap-2 flex-1 min-w-[200px] flex-wrap items-center">
-                  <!-- 情感：根据当前段落生效的语音模型动态选项 -->
+                <div class="flex gap-2 flex-1 min-w-[180px] flex-wrap items-center">
                   <select v-model="segment.ttsConfig.emotion"
                     class="input text-xs py-0.5 px-1 rounded border border-border bg-surface-elevated text-ink w-24">
                     <option value="">无情感</option>
@@ -102,8 +85,7 @@
                   <span class="text-xs text-ink-muted">语速 {{ segment.ttsConfig.speed ?? 0 }}</span>
                   <span class="text-xs text-ink-muted">音量 {{ segment.ttsConfig.volume ?? 100 }}</span>
                 </div>
-
-                <div class="flex gap-2 text-sm">
+                <div class="flex gap-1 text-sm">
                   <button @click="showTtsConfig(index)" class="btn btn-xs btn-outline flex items-center"
                     title="语速/情感/音量">
                     <CogIcon class="h-3 w-3" />
@@ -117,57 +99,57 @@
                   </button>
                 </div>
               </div>
-
-              <!-- 单个段落的音频播放器 -->
               <div v-if="segmentAudios[index]" class="mt-2">
-                <audio :src="segmentAudios[index]" controls class="w-full h-8"></audio>
+                <audio :key="segmentAudios[index]" :src="segmentAudios[index]" controls class="w-full h-8"></audio>
               </div>
             </div>
           </div>
-        </template>
-      </div>
-    </div>
-
-    <!-- 中间连接按钮 - 生成TTS -->
-    <div class="flex flex-col items-center my-2">
-      <button v-if="parsedChapter" @click="generateTts" class="btn btn-primary flex items-center"
-        :disabled="isProcessing || !allSegmentsHaveAudio">
-        <SpeakerWaveIcon v-if="!isProcessing" class="h-5 w-5 mr-2" />
-        <div v-else class="animate-spin h-5 w-5 border-2 border-white border-t-transparent rounded-full mr-2"></div>
-        {{ isProcessing ? "生成中..." : "合成整章音频" }}
-      </button>
-      <div v-if="parsedChapter && !allSegmentsHaveAudio" class="mt-2 text-sm text-yellow-400">
-        请先为所有段落生成TTS，再合成整章音频
-      </div>
-    </div>
-
-    <!-- TTS播放区域（下部分） -->
-    <div v-if="ttsResults.length > 0" class="bg-surface-elevated rounded-lg shadow p-4">
-      <div class="flex justify-between items-center mb-2">
-        <h2 class="text-lg font-semibold text-ink">
-          整章音频
-        </h2>
-        <div>
-          <button @click="generateTts" class="btn btn-sm btn-primary flex items-center" :disabled="isProcessing">
-            <ArrowPathIcon class="h-4 w-4 mr-1" />
-            重新生成
-          </button>
         </div>
-      </div>
 
-      <div class="mt-4 p-4 border border-border rounded-md">
-        <div v-for="(result, index) in ttsResults" :key="`tts-${index}`" class="mb-4 last:mb-0">
-          <audio :src="result.audioUrl" controls class="w-full"></audio>
-          <div class="text-xs text-ink-muted mt-1 flex justify-between items-center">
-            <div class="flex flex-col">
-              <span>时长: {{ formatDuration(result.duration) }}</span>
-              <span>生成时间: {{ formatDate(result.createdAt) }}</span>
+        <!-- 整章音频：输出区，用左侧色条+标题样式与上方「解析结果」区分 -->
+        <div
+          class="flex-shrink-0 flex flex-col rounded-lg overflow-hidden max-h-[180px] border border-emerald-200 dark:border-emerald-800 border-l-4 border-l-emerald-500 bg-emerald-50/50 dark:bg-emerald-950/30"
+        >
+          <div
+            class="flex-shrink-0 flex justify-between items-center px-3 py-2 bg-emerald-100/80 dark:bg-emerald-900/40"
+          >
+            <h2 class="text-sm font-semibold text-emerald-800 dark:text-emerald-200 flex items-center gap-1.5">
+              <SpeakerWaveIcon class="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+              整章音频
+            </h2>
+            <div class="flex items-center gap-2">
+              <span v-if="parsedChapter && !allSegmentsHaveAudio" class="text-xs text-amber-600 dark:text-amber-400">
+                需先为所有段落合成
+              </span>
+              <button v-if="parsedChapter" @click="generateTts" class="btn btn-xs btn-primary flex items-center"
+                :disabled="isProcessing || !allSegmentsHaveAudio">
+                <SpeakerWaveIcon v-if="!isProcessing" class="h-3.5 w-3.5 mr-1" />
+                <div v-else
+                  class="animate-spin h-3.5 w-3.5 border-2 border-white border-t-transparent rounded-full mr-1"></div>
+                {{ isProcessing ? "生成中..." : "合成整章" }}
+              </button>
+              <button v-if="ttsResults.length > 0" @click="generateTts" class="btn btn-xs btn-outline flex items-center"
+                :disabled="isProcessing">
+                <ArrowPathIcon class="h-3.5 w-3.5 mr-1" />
+                重新生成
+              </button>
             </div>
-            <button @click="openAudioFolder(result.audioUrl)" class="btn btn-xs btn-outline flex items-center"
-              title="打开文件夹">
-              <FolderOpenIcon class="h-3 w-3 mr-1" />
-              打开文件夹
-            </button>
+          </div>
+          <div class="flex-1 min-h-0 overflow-y-auto p-2 bg-white/50 dark:bg-black/20">
+            <template v-if="ttsResults.length === 0">
+              <p class="text-xs text-ink-muted py-2">暂无整章音频，合成所有段落后可生成</p>
+            </template>
+            <template v-else>
+              <div v-for="(result, index) in ttsResults" :key="`tts-${index}`" class="mb-2 last:mb-0">
+                <audio :src="result.audioUrl" controls class="w-full h-8"></audio>
+                <div class="text-xs text-ink-muted mt-0.5 flex justify-between items-center">
+                  <span>{{ formatDuration(result.duration) }} · {{ formatDate(result.createdAt) }}</span>
+                  <button @click="openAudioFolder(result.audioUrl)" class="btn btn-xs btn-ghost py-0" title="打开文件夹">
+                    <FolderOpenIcon class="h-3 w-3" />
+                  </button>
+                </div>
+              </div>
+            </template>
           </div>
         </div>
       </div>
@@ -325,6 +307,7 @@ type SegmentWithTts = ParsedSegment & { ttsConfig: NonNullable<ParsedSegment["tt
 
 // 计算属性
 const chapterTitle = computed(() => chapter.value?.title || "章节编辑");
+const editedContentLength = computed(() => (editedContent.value || "").length);
 const allSegmentsHaveAudio = computed(() => {
   if (!parsedChapter.value || parsedChapter.value.segments.length === 0)
     return false;
@@ -369,25 +352,25 @@ function matchingCharacters(characterName: string): Character[] {
   );
 }
 
-/** 段落当前生效的 TTS 来源：角色管理中的配置（或旁白默认），不在此页编辑 */
+/** 段落当前生效的 TTS 来源：严格沿用角色管理中维护的 provider + 语音模型，不在此页编辑 */
 function getEffectiveTtsForSegment(segment: SegmentWithTts): { provider: TTSProviderType; modelCode: string } {
   const provider = (settingsStore.activeTTSProviderType as TTSProviderType) || "azure";
   const defaultVoice = "zh-CN-XiaoxiaoNeural";
 
   if (segment.character && segment.character.trim() && segment.character !== "旁白") {
     const matched = matchingCharacters(segment.character);
-    if (matched.length > 0 && matched[0].ttsConfig?.provider && matched[0].ttsConfig?.model) {
-      return {
-        provider: matched[0].ttsConfig.provider as TTSProviderType,
-        modelCode: matched[0].ttsConfig.model,
-      };
+    if (matched.length > 0) {
+      const c = matched[0];
+      const modelCode = c.ttsConfig?.model || c.voiceModel || "";
+      const prov = (c.ttsConfig?.provider as TTSProviderType) || provider;
+      if (modelCode) return { provider: prov, modelCode };
     }
   }
 
-  if (segment.ttsConfig?.provider && segment.ttsConfig?.model) {
+  if (segment.ttsConfig?.provider && (segment.ttsConfig?.model || segment.voice)) {
     return {
       provider: segment.ttsConfig.provider as TTSProviderType,
-      modelCode: segment.ttsConfig.model,
+      modelCode: segment.ttsConfig.model || segment.voice || defaultVoice,
     };
   }
   return { provider, modelCode: defaultVoice };
@@ -572,6 +555,12 @@ onMounted(async () => {
         .llmProvider as LLMProviderType;
     }
 
+    // 先加载小说角色，再加载解析结果，这样 ensureAllSegmentsTtsFromCharacters 才能正确应用角色声音
+    const charactersResponse = await novelApi.getCharacters(chapterResponse.data.novelId);
+    if (charactersResponse.success && charactersResponse.data) {
+      characters.value = charactersResponse.data;
+    }
+
     // 加载解析结果（如果已处理）
     if (chapterResponse.data.processed) {
       const parsedResponse = await novelApi.getParsedChapter(chapterId);
@@ -626,14 +615,6 @@ onMounted(async () => {
           ttsResults.value = [];
         }
       }
-    }
-
-    // 加载小说角色
-    const charactersResponse = await novelApi.getCharacters(
-      chapterResponse.data.novelId
-    );
-    if (charactersResponse.success && charactersResponse.data) {
-      characters.value = charactersResponse.data;
     }
   } catch (error) {
     toast.error(
@@ -1147,7 +1128,7 @@ async function updateParsedChapter() {
   }
 }
 
-// 生成单个段落的TTS
+// 生成单个段落的TTS（再次点击时先清除原语音，再按当前配置重新生成）
 async function generateSegmentTts(index: number) {
   if (
     !parsedChapter.value ||
@@ -1158,10 +1139,17 @@ async function generateSegmentTts(index: number) {
     return;
   }
 
+  const segment = parsedChapter.value.segments[index];
+  // 先删除原有语音引用与状态并落盘，再按新配置生成
+  delete segmentAudios[index];
+  segment.audioUrl = undefined;
+  segment.audioPath = undefined;
+  segment.synthesisStatus = "unsynthesized";
+  await updateParsedChapter();
+
   isProcessingSegment[index] = true;
 
   try {
-    const segment = parsedChapter.value.segments[index];
     ensureSegmentTtsFromCharacter(segment as SegmentWithTts);
 
     if (!segment.voice || !segment.ttsConfig) {
@@ -1215,10 +1203,11 @@ async function generateSegmentTts(index: number) {
       }
     }
 
-    // 调用API生成TTS
+    // voice 与 ttsConfig.model 保持一致，以角色/段落选定的模型为准
+    const voiceModel = segment.ttsConfig?.model || segment.voice || "zh-CN-XiaoxiaoNeural";
     const response = await novelApi.generateSegmentTts(chapter.value.id, {
       text: segment.text,
-      voice: segment.voice || "zh-CN-XiaoxiaoNeural",
+      voice: voiceModel,
       tone: segment.tone || "平静",
       ttsConfig: segment.ttsConfig,
     });
@@ -1248,7 +1237,7 @@ async function generateSegmentTts(index: number) {
   }
 }
 
-// 生成所有段落的TTS（后端角色映射 + 逐段合成，一键完成）
+// 生成所有段落的TTS（再次点击时先清除所有原语音，再按当前配置逐段重新生成）
 async function generateAllSegmentTts() {
   if (
     !parsedChapter.value ||
@@ -1258,6 +1247,14 @@ async function generateAllSegmentTts() {
     toast.error("无可用的段落");
     return;
   }
+
+  // 先删除所有段落的原有语音引用与状态
+  parsedChapter.value.segments.forEach((seg, i) => {
+    delete segmentAudios[i];
+    seg.audioUrl = undefined;
+    seg.audioPath = undefined;
+    seg.synthesisStatus = "unsynthesized";
+  });
 
   isGeneratingAll.value = true;
 
