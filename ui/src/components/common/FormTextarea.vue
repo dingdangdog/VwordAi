@@ -3,21 +3,9 @@
     <label v-if="label || $slots.label" class="form-textarea-label">
       <slot name="label">{{ label }}</slot>
     </label>
-    <textarea
-      :value="modelValue"
-      :placeholder="placeholder"
-      :disabled="disabled"
-      :readonly="readonly"
-      :name="name"
-      :rows="rows"
-      class="form-textarea"
-      :class="textareaClass"
-      v-bind="$attrs"
-      @input="onInput"
-      @change="onChange"
-      @blur="onBlur"
-      @focus="onFocus"
-    />
+    <textarea :value="modelValue" :placeholder="placeholder" :disabled="disabled" :readonly="readonly" :name="name"
+      :rows="rows" class="form-textarea" :class="textareaClass" v-bind="$attrs" @input="onInput" @change="onChange"
+      @blur="onBlur" @focus="onFocus"></textarea>
     <p v-if="error" class="form-textarea-error">{{ error }}</p>
     <p v-else-if="hint || $slots.hint" class="form-textarea-hint">
       <slot name="hint">{{ hint }}</slot>
@@ -77,6 +65,7 @@ function onFocus(e: FocusEvent) {
 .form-textarea-label {
   @apply block text-sm font-medium text-ink;
 }
+
 .form-textarea {
   @apply w-full rounded-md border border-border bg-surface text-ink placeholder-ink-muted resize-y min-h-[4.5rem];
   @apply outline-none transition-colors;
@@ -87,18 +76,23 @@ function onFocus(e: FocusEvent) {
   appearance: none;
   box-shadow: none;
 }
+
 .form-textarea-sm {
   @apply py-1.5 px-2.5 text-sm;
 }
+
 .form-textarea:not(.form-textarea-sm):not(.form-textarea-lg) {
   @apply py-2 px-3 text-sm;
 }
+
 .form-textarea-lg {
   @apply py-2.5 px-3.5 text-base;
 }
+
 .form-textarea-error {
   @apply text-sm text-red-500 dark:text-red-400;
 }
+
 .form-textarea-hint {
   @apply text-sm text-ink-muted;
 }

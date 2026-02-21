@@ -1,103 +1,37 @@
 <template>
-  <div class="novel-detail bg-surface-elevated rounded-lg shadow p-4">
-    <div class="flex justify-between items-start">
-      <h2 class="text-xl font-semibold text-ink">
+  <div class="novel-detail bg-surface-elevated rounded-lg shadow p-3">
+    <!-- 一行：标题 + 编辑 -->
+    <div class="flex justify-between items-center gap-3">
+      <h2 class="text-lg font-semibold text-ink truncate flex-1 min-w-0">
         {{ novel.title }}
       </h2>
-      <div class="flex space-x-2">
-        <button
-          @click="$emit('manage-characters')"
-          class="btn btn-sm flex items-center"
-          title="管理角色"
-        >
-          <UsersIcon class="h-4 w-4 mr-1" />
-          管理角色
-        </button>
-        <button
-          @click="$emit('edit-novel', novel)"
-          class="btn btn-sm flex items-center"
-          title="编辑小说信息"
-        >
-          <PencilSquareIcon class="h-4 w-4 mr-1" />
-          编辑
-        </button>
-      </div>
+      <button
+        @click="$emit('edit-novel', novel)"
+        class="btn btn-sm flex items-center shrink-0"
+        title="编辑小说信息"
+      >
+        <PencilSquareIcon class="h-4 w-4 mr-1" />
+        编辑
+      </button>
     </div>
-
-    <div class="mt-4 grid grid-cols-1 md:grid-cols-4 gap-4">
-      <!-- <div class="md:col-span-1">
-        <div
-          class="bg-surface-hover rounded-md aspect-[2/3] flex items-center justify-center"
-        >
-          <div v-if="!novel.cover" class="text-ink-muted">
-            <BookOpenIcon class="h-16 w-16 mx-auto" />
-            <p class="text-center text-sm mt-2">暂无封面</p>
-          </div>
-          <img
-            v-else
-            :src="novel.cover"
-            :alt="novel.title"
-            class="w-full h-full object-cover rounded-md"
-          />
-        </div>
-      </div> -->
-
-      <div class="md:col-span-3">
-        <div class="space-y-4">
-          <div>
-            <h3 class="text-sm font-medium text-ink-muted">
-              作者
-            </h3>
-            <p class="text-base text-ink">
-              {{ novel.author }}
-            </p>
-          </div>
-
-          <div v-if="novel.description">
-            <h3 class="text-sm font-medium text-ink-muted">
-              简介
-            </h3>
-            <p
-              class="text-base text-ink whitespace-pre-wrap"
-            >
-              {{ novel.description }}
-            </p>
-          </div>
-          <div>
-            <h3 class="text-sm font-medium text-ink-muted">
-              角色
-            </h3>
-            <p
-              v-if="novel.characters?.length"
-              class="text-base text-ink whitespace-pre-wrap"
-            >
-              {{
-                novel.characters?.map((character) => character.name).join(", ")
-              }}
-            </p>
-            <p v-else class="text-ink-muted">暂无角色</p>
-          </div>
-
-          <div class="flex space-x-4 text-sm text-ink-muted">
-            <div>
-              <span>创建于: {{ formatDate(novel.createdAt) }}</span>
-            </div>
-            <div>
-              <span>更新于: {{ formatDate(novel.updatedAt) }}</span>
-            </div>
-          </div>
-        </div>
-      </div>
+    <!-- 一行：作者 + 日期 -->
+    <div class="mt-1.5 flex flex-wrap items-center gap-x-4 gap-y-0.5 text-sm">
+      <span class="text-ink"><span class="text-ink-muted">作者</span> {{ novel.author }}</span>
+      <span class="text-ink-muted">创建于 {{ formatDate(novel.createdAt) }}</span>
+      <span class="text-ink-muted">更新于 {{ formatDate(novel.updatedAt) }}</span>
     </div>
+    <!-- 一行：简介（可选，最多两行省略） -->
+    <p
+      v-if="novel.description"
+      class="mt-1.5 text-sm text-ink-muted line-clamp-2"
+    >
+      {{ novel.description }}
+    </p>
   </div>
 </template>
 
 <script setup lang="ts">
-import {
-  BookOpenIcon,
-  PencilSquareIcon,
-  UsersIcon,
-} from "@heroicons/vue/24/outline";
+import { PencilSquareIcon } from "@heroicons/vue/24/outline";
 import type { Novel } from "@/types/ReadNovels";
 
 defineProps<{
@@ -106,18 +40,14 @@ defineProps<{
 
 defineEmits<{
   (e: "edit-novel", novel: Novel): void;
-  (e: "manage-characters"): void;
 }>();
 
-// 格式化日期
 function formatDate(dateString: string) {
   const date = new Date(dateString);
   return new Intl.DateTimeFormat("zh-CN", {
     year: "numeric",
     month: "short",
     day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
   }).format(date);
 }
 </script>

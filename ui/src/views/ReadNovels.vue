@@ -5,10 +5,7 @@
         AI自动读小说系统
       </h1>
       <div>
-        <button
-          @click="openNovelModal()"
-          class="btn btn-primary flex items-center"
-        >
+        <button @click="openNovelModal()" class="btn btn-primary flex items-center">
           <PlusIcon class="h-5 w-5 mr-1" />
           新建小说
         </button>
@@ -18,49 +15,33 @@
     <!-- 主界面布局 -->
     <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
       <!-- 左侧小说列表 -->
-      <div
-        class="md:col-span-1 bg-surface-elevated rounded-lg shadow p-4"
-      >
-        <NovelList
-          :novels="novels"
-          :selected-novel-id="currentNovel?.id"
-          @select-novel="selectNovel"
-        />
+      <div class="md:col-span-1 bg-surface-elevated rounded-lg shadow p-4">
+        <NovelList :novels="novels" :selected-novel-id="currentNovel?.id" @select-novel="selectNovel" />
       </div>
 
-      <!-- 右侧内容区域 -->
-      <div class="md:col-span-3 grid grid-cols-1 gap-4">
-        <!-- 小说详情 -->
-        <NovelDetail
-          v-if="currentNovel"
-          :novel="currentNovel"
-          @edit-novel="editNovel"
-          @manage-characters="openCharacterModal"
-        />
+      <!-- 右侧：基本信息、角色、章节 三区域 -->
+      <div v-if="currentNovel" class="md:col-span-3 grid grid-cols-1 gap-3">
+        <!-- 1. 小说基本信息 -->
+        <NovelDetail :novel="currentNovel" @edit-novel="editNovel" />
 
-        <!-- 章节列表 -->
-        <div
-          v-if="currentNovel"
-          class="bg-surface-elevated rounded-lg shadow p-4"
-        >
-          <div class="flex justify-between items-center mb-4">
+        <!-- 2. 角色管理（wrap 卡片 + 添加/编辑弹窗/删除） -->
+        <div class="bg-surface-elevated rounded-lg shadow p-3">
+          <CharacterListInline :characters="characters" @add="openCharacterModal()" @edit="openCharacterModal($event)"
+            @delete="deleteCharacter" />
+        </div>
+
+        <!-- 3. 章节列表 -->
+        <div class="bg-surface-elevated rounded-lg shadow p-4 flex flex-col min-h-0">
+          <div class="flex justify-between items-center mb-3">
             <h2 class="text-lg font-semibold text-ink">
               章节列表
             </h2>
-            <button
-              @click="openChapterModal"
-              class="btn btn-sm btn-primary flex items-center"
-            >
+            <button @click="openChapterModal" class="btn btn-sm btn-primary flex items-center">
               <PlusIcon class="h-4 w-4 mr-1" />
               新建章节
             </button>
           </div>
-
-          <ChapterList
-            :chapters="chapters"
-            :selected-chapter-id="currentChapter?.id"
-            @select-chapter="selectChapter"
-          />
+          <ChapterList :chapters="chapters" :selected-chapter-id="currentChapter?.id" @select-chapter="selectChapter" />
         </div>
 
         <!-- 章节编辑/处理区域 -->
@@ -79,29 +60,13 @@
     </div>
 
     <!-- 模态框 -->
-    <NovelModal
-      v-if="showNovelModal"
-      :novel="editingNovel"
-      @close="closeNovelModal"
-      @save="saveNovel"
-    />
+    <NovelModal v-if="showNovelModal" :novel="editingNovel" @close="closeNovelModal" @save="saveNovel" />
 
-    <CharacterModal
-      v-if="showCharacterModal"
-      :novel-id="currentNovel?.id"
-      :characters="characters"
-      @close="closeCharacterModal"
-      @save="saveCharacter"
-      @update="updateCharacter"
-      @delete="deleteCharacter"
-    />
+    <!-- 添加/编辑角色弹窗（仅表单） -->
+    <CharacterModal v-if="showCharacterModal" :novel-id="currentNovel?.id" :character="characterToEdit"
+      @close="closeCharacterModal" @save="saveCharacter" @update="updateCharacter" />
 
-    <ChapterModal
-      v-if="showChapterModal"
-      :novel-id="currentNovel?.id"
-      @close="closeChapterModal"
-      @save="saveChapter"
-    />
+    <ChapterModal v-if="showChapterModal" :novel-id="currentNovel?.id" @close="closeChapterModal" @save="saveChapter" />
   </div>
 </template>
 
@@ -119,6 +84,7 @@ import NovelDetail from "@/components/ReadNovels/NovelDetail.vue";
 import ChapterList from "@/components/ReadNovels/ChapterList.vue";
 import ChapterProcessor from "@/components/ReadNovels/ChapterProcessor.vue";
 import NovelModal from "@/components/ReadNovels/NovelModal.vue";
+import CharacterListInline from "@/components/ReadNovels/CharacterListInline.vue";
 import CharacterModal from "@/components/ReadNovels/CharacterModal.vue";
 import ChapterModal from "@/components/ReadNovels/ChapterModal.vue";
 
@@ -129,6 +95,7 @@ const novelsStore = useNovelsStore();
 const showNovelModal = ref(false);
 const showCharacterModal = ref(false);
 const showChapterModal = ref(false);
+const characterToEdit = ref<Character | null>(null);
 const editingNovel = ref<Novel | null>(null);
 
 // 计算属性从store获取数据
@@ -216,14 +183,15 @@ async function saveNovel(novelData: Partial<Novel>) {
   }
 }
 
-// 打开角色管理模态框
-function openCharacterModal() {
+// 打开角色弹窗（添加或编辑）
+function openCharacterModal(character?: Character) {
+  characterToEdit.value = character ?? null;
   showCharacterModal.value = true;
 }
 
-// 关闭角色管理模态框
 function closeCharacterModal() {
   showCharacterModal.value = false;
+  characterToEdit.value = null;
 }
 
 // 保存角色
