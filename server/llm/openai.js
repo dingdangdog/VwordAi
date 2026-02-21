@@ -31,9 +31,9 @@ class OpenAIClient {
     return `你是一个小说文本分析助手，目标是将整段文字转成「按句拆分、并标注说话角色与语气」的结构化结果，用于后续为不同角色配音，制作有声书。
 
 ## 必须遵守的规则
-1. **逐句拆分**：对下面「待分析文本」中的**每一句话**都输出一个独立对象，**不能漏句、不能多句合并为一个对象**。
+1. **逐句拆分**：对下面「待分析文本」中的**每一句话**都输出一个独立对象，**不能漏句、不能多句合并为一个对象**。必须覆盖原文的每一句，不得只输出第一句或摘要。
 2. **分句方式**：按句号、问号、感叹号、省略号、换行等切分；对话中每个引号内的话单独成一句；旁白与对话交替时，每段旁白、每句对话各占一个对象。
-3. **只输出一个合法 JSON 数组**：不要输出任何解释、markdown 代码块标记或其它文字，仅输出一个 JSON 数组。
+3. **只输出一个合法 JSON 数组**：不要输出任何解释、markdown 代码块标记或其它文字，仅输出一个 JSON 数组。若 API 要求 JSON 对象，请用键 "segments" 或 "items" 包裹该数组。
 
 ## 每个对象字段说明
 - **t**：该句的原文（一字不改）
@@ -45,7 +45,7 @@ class OpenAIClient {
 {{text}}
 
 ## 输出要求
-请直接输出一个 JSON 数组，数组长度 = 上述文本中的句子数量，每个元素形如：{"t":"句子原文","s":"说话者","e":"语气","m":"模仿声音"}。确保覆盖原文中的每一句。`;
+请直接输出一个 JSON 数组，数组长度必须等于上述文本中的句子数量。每个元素形如：{"t":"句子原文","s":"说话者","e":"语气","m":"模仿声音"}。必须覆盖原文中的每一句，不得只输出一句或前几句。`;
   }
 
   /**
@@ -172,22 +172,30 @@ class OpenAIClient {
       let responseData;
 
       try {
-        // 响应应该是一个包含单个数组属性的JSON对象，或直接为数组
+        // 响应可能是：直接数组、或对象内嵌数组(segments/items/data/result)、或单句对象(t/s/e/m)
         const parsedResponse = JSON.parse(responseText);
 
         if (Array.isArray(parsedResponse)) {
           responseData = parsedResponse;
-        } else {
-          // 检查响应是否包含数组属性
-          const arrayKey = Object.keys(parsedResponse).find((key) =>
-            Array.isArray(parsedResponse[key])
-          );
-
+        } else if (parsedResponse && typeof parsedResponse === "object") {
+          const arrayKeys = ["segments", "items", "data", "result"];
+          const arrayKey = arrayKeys.find((k) => Array.isArray(parsedResponse[k]))
+            || Object.keys(parsedResponse).find((key) =>
+              Array.isArray(parsedResponse[key])
+            );
           if (arrayKey) {
             responseData = parsedResponse[arrayKey];
+          } else if (
+            "t" in parsedResponse ||
+            ("s" in parsedResponse && "e" in parsedResponse)
+          ) {
+            // 单句对象被误返回时包装成单元素数组
+            responseData = [parsedResponse];
           } else {
             responseData = parsedResponse;
           }
+        } else {
+          responseData = parsedResponse;
         }
 
         // 保证始终返回数组，避免 processLongText 中 ...chunkResults 报错

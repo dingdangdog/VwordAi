@@ -43,6 +43,19 @@ function registerLLMProcessingHandlers() {
 
       const chapter = chapterResult.data;
 
+      // ---------- LLM 请求前日志（含 ASCII 汇总，避免终端编码导致中文乱码） ----------
+      const contentLen = (chapter.content || "").length;
+      const contentPreview = (chapter.content || "").slice(0, 400);
+      log.info(
+        `[ChapterProcessingController] Before LLM: chapterId=${chapterId} contentLength=${contentLen}`
+      );
+      log.info(
+        `[ChapterProcessingController] llm:parse-chapter Before chapterId=${chapterId} title=${chapter.title || chapter.name} contentLength=${contentLen}`
+      );
+      log.info(
+        `[ChapterProcessingController] Content preview (first 400 chars): ${contentPreview}${contentLen > 400 ? "..." : ""}`
+      );
+
       // 调用LLM服务进行文本解析
       const LLMService = require("../services/LLMService");
       const Settings = require("../models/Settings");
@@ -64,17 +77,77 @@ function registerLLMProcessingHandlers() {
         );
       }
 
+      log.info(
+        `[ChapterProcessingController] Call LLM provider=${providerId} protocol=${providerConfig.protocol || "openai"}`
+      );
+
       const parseResult = await LLMService.parseText(
         chapter.content,
         providerId,
         providerConfig
       );
 
+      // ---------- LLM 响应后日志（首行 ASCII 汇总，避免终端乱码） ----------
+      const rawSegments = parseResult.success ? (parseResult.data.segments || []) : [];
+      log.info(
+        `[ChapterProcessingController] After LLM: success=${parseResult.success} segmentsCount=${rawSegments.length} contentLength=${contentLen}`
+      );
+      log.info(
+        `[ChapterProcessingController] llm:parse-chapter After success=${parseResult.success} segmentsCount=${rawSegments.length}`
+      );
+      if (parseResult.success && rawSegments.length > 0) {
+        const firstT = (rawSegments[0] && (rawSegments[0].t ?? rawSegments[0].text)) || "";
+        const lastT = (rawSegments[rawSegments.length - 1] && (rawSegments[rawSegments.length - 1].t ?? rawSegments[rawSegments.length - 1].text)) || "";
+        log.info(
+          `[ChapterProcessingController] firstSegmentLen=${firstT.length} lastSegmentLen=${lastT.length}`
+        );
+        log.info(
+          `[ChapterProcessingController] First segment preview: ${String(firstT).slice(0, 80)}${firstT.length > 80 ? "..." : ""}`
+        );
+        log.info(
+          `[ChapterProcessingController] Last segment preview: ${String(lastT).slice(0, 80)}${lastT.length > 80 ? "..." : ""}`
+        );
+      }
+      if (parseResult.success && rawSegments.length <= 1 && contentLen > 100) {
+        log.warn(
+          `[ChapterProcessingController] Possible incomplete parse: contentLength=${contentLen} but segmentsCount=${rawSegments.length}. Check LLM prompt or max_tokens.`
+        );
+      }
+      if (!parseResult.success) {
+        log.error(
+          `[ChapterProcessingController] Parse failed: ${parseResult.error}`
+        );
+      }
+
       if (parseResult.success) {
-        // 保存解析结果到章节的内嵌数据中
+        // 规范为中间通用数据（剧本）格式并写入章节
+        const segments = rawSegments.map((seg, i) => ({
+          index: i,
+          text: seg.text || "",
+          character: seg.character || "旁白",
+          emotion: seg.tone,
+          tone: seg.tone,
+          speed: typeof seg.speed === "number" ? seg.speed : 0,
+          mimicry: seg.mimicry || (seg.voice && seg.voice !== "narrator-1" ? seg.voice : undefined),
+          voice: seg.voice,
+          ttsConfig: {
+            provider: "",
+            model: "",
+            speed: 0,
+            pitch: 0,
+            volume: 100,
+            emotion: "",
+            style: "",
+          },
+          synthesisStatus: "unsynthesized",
+        }));
+
         const parsedData = {
           title: chapter.title || chapter.name,
-          ...parseResult.data,
+          segments,
+          processedAt: parseResult.data.processedAt,
+          provider: parseResult.data.provider,
+          llmProvider: providerId,
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
         };

@@ -43,9 +43,18 @@ async function parseText(
     // 处理文本
     const results = await llmClient.client.processLongText(text);
 
+    const rawCount = Array.isArray(results) ? results.length : (results ? 1 : 0);
+    const inputLen = (text || "").length;
+    log.info(
+      `[LLMService] parseText done: rawCount=${rawCount} inputLength=${inputLen}`
+    );
+
     // 将结果转换为标准格式
+    const segments = formatResults(results, providerConfig.protocol || "volcengine");
+    log.info(`[LLMService] formatResults done: segmentsCount=${segments.length}`);
+
     const parsedResults = {
-      segments: formatResults(results, providerConfig.protocol || "volcengine"),
+      segments,
       processedAt: new Date().toISOString(),
       provider: providerConfig.id || providerId,
     };

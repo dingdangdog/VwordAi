@@ -469,6 +469,30 @@ export const novelApi = {
   },
 
   /**
+   * 全部分段合成（后端角色映射 + 逐段 TTS，写回 parsedData）
+   * @param {string} chapterId 章节ID
+   * @returns {Promise<ApiResponse<{ segments, audioUrls }>>} 更新后的段落与音频 URL 列表
+   */
+  synthesizeAllSegments: async (chapterId: string): Promise<ApiResponse<{ segments: any[]; audioUrls: string[] }>> => {
+    try {
+      // @ts-ignore - window.api.tts由preload.js提供
+      const response = await window.api.tts.synthesizeAllSegments(chapterId);
+      return {
+        success: response.success,
+        data: response.data,
+        message: response.error
+      };
+    } catch (error) {
+      console.error("全部分段合成失败:", error);
+      return {
+        success: false,
+        message: error instanceof Error ? error.message : "全部分段合成失败",
+        data: undefined
+      };
+    }
+  },
+
+  /**
    * 通过合并段落音频生成整章TTS
    * @param {string} chapterId 章节ID
    * @param {string[]} audioUrls 音频URL列表
@@ -476,10 +500,11 @@ export const novelApi = {
    */
   generateFullChapterTts: async (chapterId: string, audioUrls: string[]): Promise<ApiResponse<TtsResult[]>> => {
     try {
-      // 调用真实的TTS API合并音频文件
+      // 调用真实的TTS API合并音频文件（第二参可为占位，第三参为 URL 列表；若只传两参则第二参为 URL 列表）
       // @ts-ignore - window.api.tts由preload.js提供
       const response = await window.api.tts.synthesizeFullChapter(
         chapterId,
+        undefined,
         audioUrls
       );
 

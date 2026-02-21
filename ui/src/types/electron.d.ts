@@ -68,7 +68,8 @@ interface ApiInterface {
     synthesize: (chapterId: string) => Promise<any>;
     synthesizeMultiple: (chapterIds: string[]) => Promise<any>;
     synthesizeSegment: (chapterId: string, segmentData: { text: string, voice: string, tone?: string }) => Promise<any>;
-    synthesizeFullChapter: (chapterId: string, parsedChapterId: string, audioUrls: string[]) => Promise<any>;
+    synthesizeAllSegments: (chapterId: string) => Promise<any>;
+    synthesizeFullChapter: (chapterId: string, parsedChapterId?: string, audioUrls?: string[]) => Promise<any>;
     getEmotions: (providerId: string) => Promise<any>;
     testProviderConnection: (type: string) => Promise<any>;
     testAzureTTS: (data: any) => Promise<any>;

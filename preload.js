@@ -121,6 +121,8 @@ contextBridge.exposeInMainWorld("api", {
       ipcRenderer.invoke("tts:synthesize-multiple", chapterIds),
     synthesizeSegment: (chapterId, segmentData) =>
       ipcRenderer.invoke("tts:synthesize-segment", chapterId, segmentData),
+    synthesizeAllSegments: (chapterId) =>
+      ipcRenderer.invoke("tts:synthesize-all-segments", chapterId),
     synthesizeFullChapter: (chapterId, parsedChapterId, audioUrls) =>
       ipcRenderer.invoke("tts:synthesize-full-chapter", chapterId, parsedChapterId, audioUrls),
     testProviderConnection: (type) =>

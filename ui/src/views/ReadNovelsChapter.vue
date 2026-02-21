@@ -1348,7 +1348,7 @@ async function generateSegmentTts(index: number) {
   }
 }
 
-// 生成所有段落的TTS
+// 生成所有段落的TTS（后端角色映射 + 逐段合成，一键完成）
 async function generateAllSegmentTts() {
   if (
     !parsedChapter.value ||
@@ -1362,109 +1362,22 @@ async function generateAllSegmentTts() {
   isGeneratingAll.value = true;
 
   try {
-    // 对所有段落依次生成TTS
-    for (let i = 0; i < parsedChapter.value.segments.length; i++) {
-      // 如果段落已经合成过，则跳过
-      if (
-        parsedChapter.value.segments[i].synthesisStatus === "synthesized" &&
-        parsedChapter.value.segments[i].audioUrl
-      ) {
-        segmentAudios[i] = parsedChapter.value.segments[i].audioUrl || "";
-        continue;
-      }
-
-      isProcessingSegment[i] = true;
-      const segment = parsedChapter.value.segments[i];
-
-      // 确保段落有声音设置和TTS配置
-      if (!segment.voice || !segment.ttsConfig) {
-        // 如果是角色对话，尝试根据角色名称匹配声音和TTS配置
-        if (segment.character) {
-          const matchedCharacters = matchingCharacters(segment.character);
-          if (matchedCharacters.length > 0) {
-            const character = matchedCharacters[0];
-
-            // 使用角色的TTS配置
-            if (!segment.ttsConfig && character.ttsConfig) {
-              segment.ttsConfig = {
-                provider:
-                  character.ttsConfig.provider ||
-                  settingsStore.activeTTSProviderType ||
-                  "azure",
-                model: character.ttsConfig.model || "",
-                speed: character.ttsConfig.speed || 0,
-                pitch: character.ttsConfig.pitch || 0,
-                volume: character.ttsConfig.volume || 100,
-                emotion: character.ttsConfig.emotion || "",
-                style: character.ttsConfig.style || "",
-              };
-
-              // 使用角色TTS配置中的语音模型
-              if (!segment.voice && character.ttsConfig.model) {
-                segment.voice = character.ttsConfig.model;
-              }
-            }
-          }
-
-          // 如果仍然没有配置，使用默认配置
-          if (!segment.voice) {
-            segment.voice = segment.character.includes("女")
-              ? "zh-CN-XiaoxiaoNeural"
-              : "zh-CN-YunxiNeural";
-          }
-        } else {
-          // 旁白使用默认旁白声音
-          if (!segment.voice) {
-            segment.voice = "zh-CN-XiaoxiaoNeural";
-          }
-        }
-
-        // 确保有TTS配置
-        if (!segment.ttsConfig) {
-          segment.ttsConfig = {
-            provider: settingsStore.activeTTSProviderType || "azure",
-            model: segment.voice,
-            speed: 0,
-            pitch: 0,
-            volume: 100,
-            emotion: "",
-            style: "",
-          };
-        }
-      }
-
-      try {
-        // 调用API生成TTS
-        const response = await novelApi.generateSegmentTts(chapter.value.id, {
-          text: segment.text,
-          voice: segment.voice || "zh-CN-XiaoxiaoNeural",
-          tone: segment.tone || "平静",
-          ttsConfig: segment.ttsConfig,
-        });
-
-        if (response.success && response.data) {
-          // 设置音频URL到对应的段落
-          segmentAudios[i] = response.data.audioUrl;
-
-          // 更新段落的合成状态和音频路径
-          segment.synthesisStatus = "synthesized";
-          segment.audioUrl = response.data.audioUrl;
-          segment.audioPath = response.data.audioPath;
-        } else {
-          throw new Error(response.message || "生成TTS失败");
-        }
-      } catch (error) {
-        toast.error(
-          `段落 ${i + 1} TTS生成失败: ${error instanceof Error ? error.message : String(error)}`
-        );
-      } finally {
-        isProcessingSegment[i] = false;
-      }
+    const response = await novelApi.synthesizeAllSegments(chapter.value.id);
+    if (!response.success || !response.data) {
+      throw new Error(response.message || "全部分段合成失败");
     }
-
-    // 保存更新后的解析结果
-    await updateParsedChapter();
-
+    const { segments: updatedSegments, audioUrls } = response.data;
+    if (updatedSegments && Array.isArray(updatedSegments)) {
+      parsedChapter.value.segments = updatedSegments;
+      updatedSegments.forEach((seg, i) => {
+        if (seg.audioUrl) segmentAudios[i] = seg.audioUrl;
+      });
+    }
+    if (audioUrls && audioUrls.length) {
+      audioUrls.forEach((url, i) => {
+        segmentAudios[i] = url;
+      });
+    }
     toast.success("所有段落TTS生成成功");
   } catch (error) {
     toast.error(

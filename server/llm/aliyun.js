@@ -29,49 +29,20 @@ class AliyunClient {
    */
   createPrompt() {
     return `### 指令 ###
-分析以下小说文本，识别每句话的说话者和语气或情绪。请按照以下要求进行分析：
+分析以下小说文本，识别每句话的说话者和语气或情绪。**必须覆盖输入文本的每一句，不得只输出第一句或摘要。**请按照以下要求进行分析：
 
-1. 将文本分解为单独的句子。
-2. 对于每个句子，确定：
-   - 说话者是谁（如果是对话，'dft'表示旁白叙述）
-   - 特殊语气或情绪（从以下选项中选择：快乐、悲伤、愤怒、恐惧、好奇、紧张、平静、兴奋、惊讶、失望、羞愧、嫌恶、喜爱、骄傲、讽刺、严肃、轻松、'dft'表示默认无特殊情感）
-   - 特殊模仿声音（从以下选项中选择：女孩、男孩、年轻女性、年轻男性、年长女性、年长男性、年老女性、年老男性、'dft'表示默认无特殊模仿）
-   
-3. 如果说话者没有明确提及，请从上下文中推断。'dft'表示旁白叙述。如果确实无法确定，请使用"未知"。
-
-4. 仅输出JSON格式的结果，不要包含任何其他解释或附加文本。
+1. 将文本分解为单独的句子（按句号、问号、感叹号、省略号、换行、引号内对话等切分）。
+2. 对于**每一句**都输出一个对象，确定：说话者(s)、语气(e)、模仿声音(m)。旁白用'dft'。
+3. 仅输出一个合法的 JSON 数组，不要任何解释。数组长度必须等于输入文本的句子数量。
 
 ### 文本 ###
 {{text}}
 
 ### 输出格式 ###
-请以有效的JSON格式输出分析结果，格式为句子对象的数组。每个对象应包含以下字段：
-- "t": 原始句子文本
-- "s": 已识别的说话者，'dft'表示旁白叙述
-- "e": 已识别的语气或情绪，'dft'表示默认
-- "m": 已识别的模仿声音，'dft'表示默认
+一个 JSON 数组，每个元素包含： "t"(原文)、"s"(说话者)、"e"(语气)、"m"(模仿声音)。必须覆盖原文每一句。
 
-### 示例输出 ###
-[
-  {
-    "t": "在风和日丽的下午，小明和小红在公园里散步。",
-    "s": "dft",
-    "e": "dft",
-    "m": "dft" 
-  },
-  {
-    "t": "你好吗？",
-    "s": "小红",
-    "e": "友好",
-    "m": "dft" 
-  },
-  {
-    "t": "我很好，谢谢。",
-    "s": "小明",
-    "e": "中性",
-    "m": "dft"
-  }
-]`;
+### 示例 ###
+[{"t":"在风和日丽的下午，小明和小红在公园里散步。","s":"dft","e":"dft","m":"dft"},{"t":"你好吗？","s":"小红","e":"友好","m":"dft"},{"t":"我很好，谢谢。","s":"小明","e":"中性","m":"dft"}]`;
   }
 
   /**
@@ -116,10 +87,16 @@ class AliyunClient {
 
       if (responseData.output && responseData.output.text) {
         try {
-          // 尝试解析返回的文本为JSON
           const content = responseData.output.text;
           const parsedContent = JSON.parse(content);
-          return Array.isArray(parsedContent) ? parsedContent : [parsedContent];
+          if (Array.isArray(parsedContent)) return parsedContent;
+          if (parsedContent && typeof parsedContent === "object") {
+            const arr = parsedContent.segments || parsedContent.items || parsedContent.data || parsedContent.result;
+            if (Array.isArray(arr)) return arr;
+            if ("t" in parsedContent || ("s" in parsedContent && "e" in parsedContent))
+              return [parsedContent];
+          }
+          return [parsedContent];
         } catch (e) {
           console.error("Failed to parse JSON response:", e);
           throw new Error("Invalid JSON response from AI service");

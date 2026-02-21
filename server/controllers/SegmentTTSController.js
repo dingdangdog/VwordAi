@@ -11,6 +11,8 @@ const audioUtils = require("../utils/audioUtils");
 const NovelChapter = require("../models/NovelChapter");
 const Novel = require("../models/Novel");
 const Settings = require("../models/Settings");
+const ScriptToTtsMapper = require("../services/ScriptToTtsMapper");
+const NovelService = require("../services/NovelService");
 const os = require("os");
 const { v4: uuidv4 } = require("uuid");
 
@@ -21,6 +23,11 @@ function init() {
   // 合成单个段落的语音
   ipcMain.handle("tts:synthesize-segment", async (event, chapterId, segmentData) => {
     return await synthesizeSegment(chapterId, segmentData);
+  });
+
+  // 全部分段合成：用角色映射层得到 TtsReadySegment[]，逐段合成并写回 parsedData
+  ipcMain.handle("tts:synthesize-all-segments", async (event, chapterId) => {
+    return await synthesizeAllSegments(chapterId);
   });
 
   // 合成整章语音（合并多个段落音频）
@@ -131,15 +138,138 @@ async function synthesizeSegment(chapterId, segmentData) {
 }
 
 /**
+ * 获取当前默认 TTS 服务商（第一个已配置的）
+ */
+function getDefaultTtsProvider() {
+  const ttsSettings = Settings.getTTSSettings();
+  const order = ["azure", "aliyun", "tencent", "baidu", "openai"];
+  for (const p of order) {
+    const c = ttsSettings[p];
+    if (c && (c.key || c.appkey || c.apiKey)) return p;
+  }
+  return "azure";
+}
+
+/**
+ * 全部分段合成：剧本 + 角色 → TtsReadySegment[] → 逐段 TTS，写回 parsedData
+ * @param {string} chapterId 章节ID
+ * @returns {Promise<Object>} { success, data: { segments, audioUrls }, error? }
+ */
+async function synthesizeAllSegments(chapterId) {
+  try {
+    const chapter = NovelChapter.getNovelChapterById(chapterId);
+    if (!chapter) return error("Chapter not found");
+
+    const novel = Novel.getNovelById(chapter.novelId);
+    if (!novel) return error("Novel not found");
+
+    const parsedData = chapter.parsedData;
+    if (!parsedData || !parsedData.segments || parsedData.segments.length === 0) {
+      return error("No parsed segments to synthesize");
+    }
+
+    const characters = novel.characters || [];
+    const defaultProvider = getDefaultTtsProvider();
+    const script = {
+      title: parsedData.title,
+      segments: parsedData.segments.map((s, i) => ({
+        index: s.index !== undefined ? s.index : i,
+        text: s.text,
+        character: s.character || "旁白",
+        emotion: s.emotion ?? s.tone,
+        speed: s.speed,
+        mimicry: s.mimicry ?? (s.voice && !(s.ttsConfig && s.ttsConfig.model) ? s.voice : undefined),
+      })),
+      createdAt: parsedData.createdAt,
+      updatedAt: parsedData.updatedAt,
+    };
+
+    const readyList = ScriptToTtsMapper.scriptToTtsReadySegments(
+      script,
+      characters,
+      parsedData.segments,
+      defaultProvider
+    );
+
+    const ttsSettings = Settings.getTTSSettings();
+    const tempDir = path.join(os.tmpdir(), `segment_tts_${chapterId}`);
+    fs.ensureDirSync(tempDir);
+
+    const audioUrls = [];
+    const updatedSegments = parsedData.segments.map((seg, i) => ({ ...seg }));
+
+    for (let i = 0; i < readyList.length; i++) {
+      const ready = readyList[i];
+      const providerConfig = ttsSettings[ready.provider];
+      if (!providerConfig) {
+        console.warn(`[SegmentTTS] Provider ${ready.provider} not configured, skipping segment ${i}`);
+        continue;
+      }
+
+      const tempFilePath = path.join(tempDir, `segment_${i}_${Date.now()}_${uuidv4()}.wav`);
+      const synthesisSettings = {
+        voice: ready.voice,
+        model: ready.voice,
+        volume: ready.volume,
+        speed: ready.speed,
+        pitch: ready.pitch,
+        emotion: ready.emotion || "",
+        style: ready.style || "",
+      };
+
+      const result = await TTSService.synthesizeWithProvider(
+        ready.text,
+        synthesisSettings,
+        tempFilePath,
+        providerConfig,
+        ready.provider
+      );
+
+      if (result.success && result.data && result.data.filePath && fs.existsSync(result.data.filePath)) {
+        const filePath = result.data.filePath;
+        const audioUrl = `file://${filePath.replace(/\\/g, "/").replace(/#/g, "%23").replace(/\?/g, "%3F")}`;
+        audioUrls.push(audioUrl);
+        if (updatedSegments[i]) {
+          updatedSegments[i].audioUrl = audioUrl;
+          updatedSegments[i].audioPath = filePath;
+          updatedSegments[i].synthesisStatus = "synthesized";
+          if (updatedSegments[i].ttsConfig) {
+            updatedSegments[i].ttsConfig = { ...updatedSegments[i].ttsConfig, provider: ready.provider, model: ready.voice };
+          }
+        }
+      }
+    }
+
+    const newParsedData = {
+      ...parsedData,
+      segments: updatedSegments,
+      updatedAt: new Date().toISOString(),
+    };
+    await NovelService.updateParsedChapter(chapterId, newParsedData);
+
+    return success({
+      segments: updatedSegments,
+      audioUrls,
+    });
+  } catch (err) {
+    console.error(`[SegmentTTS] Synthesize all segments failed:`, err);
+    return error(`Synthesize all segments failed: ${err.message}`);
+  }
+}
+
+/**
  * 合成整章语音（合并多个段落音频）
  * @param {string} chapterId 章节ID
+ * @param {string} [parsedChapterId] 解析章节ID（兼容参数，未使用）
  * @param {string[]} audioUrls 段落音频URL数组
  * @returns {Promise<Object>} 合成结果
  */
-async function synthesizeFullChapter(chapterId, audioUrls) {
+async function synthesizeFullChapter(chapterId, parsedChapterId, audioUrls) {
+  // 兼容前端只传 (chapterId, audioUrls) 时，第二参即为 audioUrls
+  const list = Array.isArray(audioUrls) ? audioUrls : (Array.isArray(parsedChapterId) ? parsedChapterId : []);
   try {
     console.log(`[SegmentTTS] Starting full chapter synthesis for chapter ID: ${chapterId}`);
-    console.log(`[SegmentTTS] Number of audio URLs: ${audioUrls.length}`);
+    console.log(`[SegmentTTS] Number of audio URLs: ${list.length}`);
 
     // Get chapter information
     const chapter = NovelChapter.getNovelChapterById(chapterId);
@@ -148,7 +278,7 @@ async function synthesizeFullChapter(chapterId, audioUrls) {
     }
 
     // Validate input parameters
-    if (!audioUrls || audioUrls.length === 0) {
+    if (!list || list.length === 0) {
       return error("No audio URLs provided");
     }
 
@@ -190,8 +320,8 @@ async function synthesizeFullChapter(chapterId, audioUrls) {
 
     // Prepare audio file paths
     const audioFiles = [];
-    for (let i = 0; i < audioUrls.length; i++) {
-      const url = audioUrls[i];
+    for (let i = 0; i < list.length; i++) {
+      const url = list[i];
       if (!url || url.trim() === "") {
         console.warn(`[SegmentTTS] Audio URL for segment ${i + 1} is empty, skipping`);
         continue;
