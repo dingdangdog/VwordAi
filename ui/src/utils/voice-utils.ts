@@ -1,11 +1,13 @@
 import { SUPPORTED_TTS_PROVIDERS } from "@/stores/settings";
 import type { TTSProviderType, VoiceModel } from "@/types";
-import { useProjectsStore } from "@/stores/projects";
-import modelsData from '@/assets/data/models.json';
-import rolesData from '@/assets/data/roles.json';
-import emotionsData from '@/assets/data/emotions.json';
+import modelsData from "@/assets/data/models.json";
+import rolesData from "@/assets/data/roles.json";
+import emotionsData from "@/assets/data/emotions.json";
 
-// Cache for processed voice models
+/** 按服务商缓存的语音模型（如从 API 同步得到） */
+export type VoiceModelsCache = Partial<Record<TTSProviderType, VoiceModel[]>>;
+
+// Cache for processed voice models (static only)
 let processedVoiceModels: VoiceModel[] = [];
 
 /**
@@ -97,23 +99,53 @@ export function getProcessedVoiceModels(): VoiceModel[] {
 }
 
 /**
+ * 合并静态数据与 API 同步的缓存：按服务商优先使用缓存，无缓存则用静态列表
+ */
+export function getMergedVoiceModels(cache: VoiceModelsCache | null | undefined): VoiceModel[] {
+  const staticList = getProcessedVoiceModels();
+  if (!cache || typeof cache !== "object") return staticList;
+  const result: VoiceModel[] = [];
+  const providers = new Set<string>([
+    ...staticList.map((m) => m.provider).filter(Boolean),
+    ...Object.keys(cache),
+  ]);
+  for (const provider of providers) {
+    const cached = cache[provider as TTSProviderType];
+    if (cached && cached.length > 0) {
+      result.push(...cached);
+    } else {
+      result.push(...staticList.filter((m) => m.provider === provider));
+    }
+  }
+  return result;
+}
+
+/**
  * Get voice models for a specific provider
  * @param provider Provider ID
+ * @param cache 可选：API 同步的模型缓存，传入时与静态数据合并后按 provider 过滤
  * @returns List of voice models for the provider
  */
-export function getVoiceModelsByProvider(provider: string): VoiceModel[] {
-  const models = getProcessedVoiceModels();
-  return models.filter(model => model.provider === provider);
+export function getVoiceModelsByProvider(
+  provider: string,
+  cache?: VoiceModelsCache | null
+): VoiceModel[] {
+  const models = cache != null ? getMergedVoiceModels(cache) : getProcessedVoiceModels();
+  return models.filter((model) => model.provider === provider);
 }
 
 /**
  * Get a voice model by its code
  * @param code Voice model code
+ * @param cache 可选：API 同步的模型缓存，传入时在合并列表中查找
  * @returns Voice model or undefined
  */
-export function getVoiceModelByCode(code: string): VoiceModel | undefined {
-  const models = getProcessedVoiceModels();
-  return models.find(model => model.code === code);
+export function getVoiceModelByCode(
+  code: string,
+  cache?: VoiceModelsCache | null
+): VoiceModel | undefined {
+  const models = cache != null ? getMergedVoiceModels(cache) : getProcessedVoiceModels();
+  return models.find((model) => model.code === code);
 }
 
 /**
@@ -143,21 +175,28 @@ export function getVoiceRoleName(roleId: string): string {
 }
 
 /**
- * Get the display name of an emotion
- * @param emotionId Emotion ID
- * @returns Name of the emotion
+ * Get the display name of an emotion by code (e.g. from API)
+ * 用于本地化显示：优先从 emotions.json 取中文名，否则返回原始 code
+ * @param emotionCode Emotion code (e.g. "cheerful", "sad")
+ * @returns Localized name of the emotion
  */
-export function getEmotionName(emotionId: string): string {
-  if (!emotionId) return "";
-  
-  // Check all providers' emotions
+export function getEmotionName(emotionCode: string): string {
+  if (!emotionCode) return "";
   for (const provider in emotionsData) {
     const emotions = emotionsData[provider as keyof typeof emotionsData];
-    const emotion = emotions.find(e => e.code === emotionId);
-    if (emotion) {
-      return emotion.name;
-    }
+    const emotion = emotions.find((e) => e.code === emotionCode);
+    if (emotion) return emotion.name;
   }
-  
-  return emotionId;
+  return emotionCode;
+}
+
+/**
+ * 情感展示用：对 API 返回的 { code, name } 做本地化，避免只显示英文 code
+ * @param emotion { code, name } 如模型 emotions 数组项
+ * @returns 本地化名称（有则用 emotions.json，否则用 name 或 code）
+ */
+export function getEmotionDisplayName(emotion: { code: string; name?: string }): string {
+  if (!emotion?.code) return emotion?.name ?? "";
+  const localized = getEmotionName(emotion.code);
+  return localized !== emotion.code ? localized : (emotion.name || emotion.code);
 } 

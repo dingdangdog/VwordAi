@@ -153,7 +153,7 @@
                     <div v-if="model.emotions && model.emotions.length > 0" class="flex flex-wrap gap-1 mt-1">
                       <span v-for="emotion in model.emotions.slice(0, 3)" :key="emotion.code"
                         class="bg-surface-hover text-ink text-xs px-2 py-0.5 rounded">
-                        {{ emotion.name }}
+                        {{ getEmotionDisplayName(emotion) }}
                       </span>
                       <span v-if="model.emotions.length > 3" class="text-xs text-ink-muted">
                         +{{ model.emotions.length - 3 }}
@@ -181,7 +181,7 @@ import AliyunTTSProviderForm from "./tts/AliyunProviderForm.vue";
 import AzureTTSProviderForm from "./tts/AzureProviderForm.vue";
 import OpenaiTTSProviderForm from "./tts/OpenaiProviderForm.vue";
 import TencentTTSProviderForm from "./tts/TencentProviderForm.vue";
-import { getProcessedVoiceModels } from "@/utils/voice-utils";
+import { getProcessedVoiceModels, getMergedVoiceModels, getEmotionDisplayName } from "@/utils/voice-utils";
 import { ttsApi } from "@/api/ttsApi";
 import type { VoiceModelsCache } from "@/api/ttsApi";
 
@@ -252,22 +252,7 @@ async function loadCachedVoiceModels() {
 }
 
 function mergeVoiceModels(): VoiceModel[] {
-  const staticList = getProcessedVoiceModels();
-  const cache = cachedVoiceModels.value;
-  const result: VoiceModel[] = [];
-  const providers = new Set<string>([
-    ...staticList.map((m) => m.provider).filter(Boolean),
-    ...Object.keys(cache || {}),
-  ]);
-  for (const provider of providers) {
-    const cached = cache?.[provider];
-    if (cached && cached.length > 0) {
-      result.push(...cached);
-    } else {
-      result.push(...staticList.filter((m) => m.provider === provider));
-    }
-  }
-  return result;
+  return getMergedVoiceModels(cachedVoiceModels.value);
 }
 
 async function loadVoiceModels() {

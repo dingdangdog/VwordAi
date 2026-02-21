@@ -26,8 +26,8 @@
 
         <!-- 2. 角色管理（wrap 卡片 + 添加/编辑弹窗/删除） -->
         <div class="bg-surface-elevated rounded-lg shadow p-3">
-          <CharacterListInline :characters="characters" @add="openCharacterModal()" @edit="openCharacterModal($event)"
-            @delete="deleteCharacter" />
+          <CharacterListInline :characters="characters" :get-model-display-name="getModelDisplayName"
+            @add="openCharacterModal()" @edit="openCharacterModal($event)" @delete="deleteCharacter" />
         </div>
 
         <!-- 3. 章节列表 -->
@@ -76,7 +76,9 @@ import { useToast } from "vue-toastification";
 import { useNovelsStore } from "@/stores/novels";
 import { PlusIcon } from "@heroicons/vue/24/outline";
 import type { Novel, Character } from "@/types/ReadNovels";
-import type { LLMProviderType } from "@/types";
+import type { LLMProviderType, TTSProviderType } from "@/types";
+import { ttsApi } from "@/api/ttsApi";
+import type { VoiceModelsCache } from "@/api/ttsApi";
 
 // 导入组件
 import NovelList from "@/components/ReadNovels/NovelList.vue";
@@ -97,6 +99,7 @@ const showCharacterModal = ref(false);
 const showChapterModal = ref(false);
 const characterToEdit = ref<Character | null>(null);
 const editingNovel = ref<Novel | null>(null);
+const cachedVoiceModels = ref<VoiceModelsCache>({});
 
 // 计算属性从store获取数据
 const novels = computed(() => novelsStore.novels);
@@ -108,6 +111,15 @@ const parsedChapter = computed(() => novelsStore.parsedChapter);
 const ttsResults = computed(() => novelsStore.ttsResults);
 const isLoading = computed(() => novelsStore.isLoading);
 
+/** 仅从同步缓存解析模型展示名，与角色可选列表一致 */
+function getModelDisplayName(provider: TTSProviderType | undefined, modelCode: string): string {
+  if (!provider || !modelCode) return modelCode || "";
+  const list = cachedVoiceModels.value[provider];
+  if (!Array.isArray(list)) return modelCode;
+  const m = list.find((x) => x.code === modelCode);
+  return m?.name ?? modelCode;
+}
+
 // 初始化
 onMounted(async () => {
   try {
@@ -116,6 +128,12 @@ onMounted(async () => {
     toast.error(
       `加载小说失败：${error instanceof Error ? error.message : String(error)}`
     );
+  }
+  try {
+    const res = await ttsApi.getVoiceModels();
+    if (res.success && res.data) cachedVoiceModels.value = res.data;
+  } catch (e) {
+    console.error("Load voice models cache failed:", e);
   }
 });
 

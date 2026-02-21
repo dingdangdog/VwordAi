@@ -32,7 +32,7 @@
             {{ c.description }}
           </p>
           <p v-if="c.ttsConfig?.provider" class="text-xs text-primary mt-0.5">
-            TTS: {{ ttsProviderName(c.ttsConfig.provider) }}{{ c.ttsConfig.model ? ` · ${c.ttsConfig.model}` : "" }}
+            TTS: {{ ttsProviderName(c.ttsConfig.provider) }}{{ c.ttsConfig.model ? ` · ${getModelDisplayName(c.ttsConfig.provider, c.ttsConfig.model)}` : "" }}
           </p>
         </div>
         <div class="flex items-center gap-1 shrink-0">
@@ -55,9 +55,15 @@ import { PlusIcon, PencilSquareIcon, TrashIcon } from "@heroicons/vue/24/outline
 import type { Character } from "@/types/ReadNovels";
 import type { TTSProviderType } from "@/types";
 
-defineProps<{
+const props = defineProps<{
   characters: Character[];
+  /** 根据服务商与模型 code 返回展示名称，用于显示语音名称而非 code */
+  getModelDisplayName?: (provider: TTSProviderType, modelCode: string) => string;
 }>();
+
+function getModelDisplayName(provider: TTSProviderType, modelCode: string): string {
+  return props.getModelDisplayName?.(provider, modelCode) ?? modelCode;
+}
 
 const emit = defineEmits<{
   (e: "add"): void;
