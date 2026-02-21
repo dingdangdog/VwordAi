@@ -255,14 +255,20 @@ async function testTTSProvider(provider, testData, providerConfig) {
         };
     }
 
-    // 准备测试设置
+    // 准备测试设置。前端传入的 model 即语音 code（与 voice 同义），必须优先使用
+    const voice =
+      testData.voice ||
+      testData.model ||
+      providerConfig.voice ||
+      providerConfig.model ||
+      getDefaultVoice(provider);
     const settings = {
-      voice: testData.voice || providerConfig.voice || getDefaultVoice(provider),
-      speed: testData.speed || providerConfig.speed || 1.0,
-      pitch: testData.pitch || providerConfig.pitch || 0,
-      volume: testData.volume || providerConfig.volume || 50,
-      emotion: testData.emotion || providerConfig.emotion || "general",
-      ...testData.settings
+      voice,
+      speed: testData.speed ?? providerConfig.speed ?? 1.0,
+      pitch: testData.pitch ?? providerConfig.pitch ?? 0,
+      volume: testData.volume ?? providerConfig.volume ?? 50,
+      emotion: testData.emotion ?? providerConfig.emotion ?? "general",
+      ...(testData.settings || {}),
     };
 
     console.log(`[TTSController] Test settings for ${provider}:`, settings);

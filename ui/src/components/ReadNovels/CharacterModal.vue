@@ -2,7 +2,7 @@
   <div class="fixed inset-0 z-50 overflow-y-auto">
     <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
       <!-- 仅作遮罩，不响应点击关闭（避免误触、提升编辑体验） -->
-      <div class="fixed inset-0 bg-ink/60 opacity-75" aria-hidden="true" />
+      <div class="fixed inset-0 bg-ink/60 opacity-75" aria-hidden="true"></div>
       <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
 
       <div
@@ -40,39 +40,27 @@
             </div>
 
             <div class="md:col-span-2">
-              <h5 class="text-sm font-medium text-ink mb-2">TTS 语音配置</h5>
+              <h5 class="text-sm font-medium text-ink mb-2">角色声音配置</h5>
+              <p class="text-xs text-ink-muted mb-2">仅绑定角色默认语音，情感、语速等请在具体对话段落中单独设置。</p>
               <div class="grid grid-cols-1 md:grid-cols-2 gap-4 p-3 bg-surface-hover rounded-lg">
                 <FormSelect id="tts-provider" v-model="form.ttsConfig.provider" label="TTS服务商"
                   :options="ttsProviderOptions" @change="onTtsProviderChange" />
-                <FormSelect id="tts-model" v-model="form.ttsConfig.model" label="语音模型" :options="ttsModelOptions"
-                  :disabled="!form.ttsConfig.provider" @change="onTtsModelChange" />
+                <div class="flex flex-col gap-1">
+                  <FormSelect id="tts-model" v-model="form.ttsConfig.model" label="语音模型" :options="ttsModelOptions"
+                    :disabled="!form.ttsConfig.provider" />
+                  <button
+                    type="button"
+                    :disabled="!form.ttsConfig.provider || !form.ttsConfig.model || isTestingVoice"
+                    class="self-start px-3 py-1 text-xs font-medium text-primary bg-primary-muted rounded hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
+                    @click="playTestVoice"
+                  >
+                    {{ isTestingVoice ? "试听中..." : "试听" }}
+                  </button>
+                </div>
                 <p v-if="form.ttsConfig.provider && availableVoiceModels.length === 0"
                   class="text-sm text-ink-muted col-span-2">
                   请先在 设置 → 语音服务 → 语音模型 中同步该服务商的模型
                 </p>
-                <!-- 情感/风格：仅当当前模型支持时展示，选项完全来自该模型的可选项 -->
-                <div v-if="hasEmotionOrStyle" class="md:col-span-2">
-                  <FormSelect id="tts-emotion" v-model="form.ttsConfig.emotion" label="情感 / 风格"
-                    :options="emotionStyleOptions" placeholder="默认" />
-                </div>
-                <div>
-                  <label for="tts-speed" class="block text-sm font-medium text-ink">语速 ({{ form.ttsConfig.speed
-                  }})</label>
-                  <input id="tts-speed" v-model.number="form.ttsConfig.speed" type="range" min="-50" max="50" step="5"
-                    class="w-full h-2 bg-border rounded-lg" />
-                </div>
-                <div>
-                  <label for="tts-pitch" class="block text-sm font-medium text-ink">音调 ({{ form.ttsConfig.pitch
-                  }})</label>
-                  <input id="tts-pitch" v-model.number="form.ttsConfig.pitch" type="range" min="-50" max="50" step="5"
-                    class="w-full h-2 bg-border rounded-lg" />
-                </div>
-                <div>
-                  <label for="tts-volume" class="block text-sm font-medium text-ink">音量 ({{ form.ttsConfig.volume
-                  }})</label>
-                  <input id="tts-volume" v-model.number="form.ttsConfig.volume" type="range" min="0" max="100" step="5"
-                    class="w-full h-2 bg-border rounded-lg" />
-                </div>
               </div>
             </div>
           </div>
@@ -99,8 +87,8 @@ import FormTextarea from "@/components/common/FormTextarea.vue";
 import FormSelect from "@/components/common/FormSelect.vue";
 import type { Character } from "@/types/ReadNovels";
 import type { TTSProviderType } from "@/types";
+import { useToast } from "vue-toastification";
 import { useSettingsStore } from "@/stores/settings";
-import { getEmotionDisplayName } from "@/utils/voice-utils";
 import { ttsApi } from "@/api/ttsApi";
 import type { VoiceModelsCache } from "@/api/ttsApi";
 
@@ -117,6 +105,8 @@ const emit = defineEmits<{
 }>();
 
 const isSaving = ref(false);
+const isTestingVoice = ref(false);
+const toast = useToast();
 const settingsStore = useSettingsStore();
 const cachedVoiceModels = ref<VoiceModelsCache>({});
 
@@ -131,11 +121,6 @@ const form = reactive({
   ttsConfig: {
     provider: "" as TTSProviderType | "",
     model: "",
-    speed: 0,
-    pitch: 0,
-    volume: 100,
-    emotion: "",
-    style: "",
   },
 });
 
@@ -160,7 +145,7 @@ const ageOptions = [
 const ttsProviderOptions = computed(() =>
   settingsStore.getTTSProviders().map((p) => ({ value: p.type, label: p.name }))
 );
-/** 仅使用同步缓存（config/tts.json 的 voiceModelsCache），不做任何静态兜底 */
+/** 与设置页一致：模型列表来自 tts:get-voice-models，即设置里「同步模型」写入的 voiceModelsCache（按服务商 key 如 azure） */
 const availableVoiceModels = computed(() => {
   if (!form.ttsConfig.provider) return [];
   const list = cachedVoiceModels.value[form.ttsConfig.provider as keyof VoiceModelsCache];
@@ -180,27 +165,6 @@ const ttsModelOptions = computed(() =>
     label: `${m.name} (${m.gender === "0" ? "女" : "男"})`,
   }))
 );
-/** 当前选中的语音模型（情感/风格选项完全由此模型决定） */
-const selectedVoiceModel = computed(() =>
-  availableVoiceModels.value.find((m) => m.code === form.ttsConfig.model)
-);
-/** 当前模型是否支持情感或风格（仅此时展示情感选择，避免无效输入） */
-const hasEmotionOrStyle = computed(() => {
-  const m = selectedVoiceModel.value;
-  const list = m?.emotions ?? m?.styles;
-  return Array.isArray(list) && list.length > 0;
-});
-/** 情感/风格下拉选项：仅来自当前模型的可选项，展示名本地化 */
-const emotionStyleOptions = computed(() => {
-  const m = selectedVoiceModel.value;
-  const list = m?.emotions ?? m?.styles;
-  if (!Array.isArray(list) || list.length === 0) return [];
-  const opts = list.map((e) => ({
-    value: e.code,
-    label: getEmotionDisplayName(e),
-  }));
-  return [{ value: "", label: "默认" }, ...opts];
-});
 
 const isFormValid = computed(() => !!form.name.trim() && !!props.novelId);
 
@@ -213,19 +177,9 @@ function fillForm(c: Character) {
   if (c.ttsConfig) {
     form.ttsConfig.provider = (c.ttsConfig.provider as TTSProviderType) || "";
     form.ttsConfig.model = c.ttsConfig.model || "";
-    form.ttsConfig.speed = c.ttsConfig.speed ?? 0;
-    form.ttsConfig.pitch = c.ttsConfig.pitch ?? 0;
-    form.ttsConfig.volume = c.ttsConfig.volume ?? 100;
-    form.ttsConfig.emotion = c.ttsConfig.emotion || "";
-    form.ttsConfig.style = c.ttsConfig.style || "";
   } else {
     form.ttsConfig.provider = (settingsStore.activeTTSProviderType as TTSProviderType) || "";
     form.ttsConfig.model = "";
-    form.ttsConfig.speed = 0;
-    form.ttsConfig.pitch = 0;
-    form.ttsConfig.volume = 100;
-    form.ttsConfig.emotion = "";
-    form.ttsConfig.style = "";
   }
 }
 
@@ -236,11 +190,6 @@ function resetForm() {
   form.gender = "male";
   form.age = "youth";
   form.ttsConfig.model = "";
-  form.ttsConfig.emotion = "";
-  form.ttsConfig.style = "";
-  form.ttsConfig.speed = 0;
-  form.ttsConfig.pitch = 0;
-  form.ttsConfig.volume = 100;
   form.ttsConfig.provider = (settingsStore.activeTTSProviderType as TTSProviderType) || "";
 }
 
@@ -253,33 +202,42 @@ watch(
   { immediate: true }
 );
 
-/** 编辑时或模型列表加载后：若当前情感不在该模型支持列表中则清空 */
-watch(
-  [() => form.ttsConfig.model, () => selectedVoiceModel.value, () => form.ttsConfig.emotion],
-  () => {
-    const m = selectedVoiceModel.value;
-    const list = m?.emotions ?? m?.styles;
-    if (!form.ttsConfig.emotion || !Array.isArray(list) || list.length === 0) return;
-    const valid = list.some((e) => e.code === form.ttsConfig.emotion);
-    if (!valid) form.ttsConfig.emotion = "";
-  }
-);
-
 function onTtsProviderChange() {
   form.ttsConfig.model = "";
-  form.ttsConfig.emotion = "";
 }
 
-/** 切换语音模型后：若当前情感不在新模型支持列表中则清空，保证选项与数据一致 */
-function onTtsModelChange() {
-  const m = availableVoiceModels.value.find((x) => x.code === form.ttsConfig.model);
-  const list = m?.emotions ?? m?.styles;
-  if (!Array.isArray(list) || list.length === 0) {
-    form.ttsConfig.emotion = "";
-    return;
+async function playTestVoice() {
+  const provider = form.ttsConfig.provider as TTSProviderType;
+  const modelCode = form.ttsConfig.model;
+  if (!provider || !modelCode) return;
+  isTestingVoice.value = true;
+  try {
+    const modelName =
+      availableVoiceModels.value.find((m) => m.code === modelCode)?.name ?? "当前语音";
+    const testText = `你好，我是${modelName}。`;
+    const result = await settingsStore.testTTSProviderConnection(provider, {
+      text: testText,
+      model: modelCode,
+    });
+    if (result.success && result.data?.audioData) {
+      const audioBlob = new Blob(
+        [new Uint8Array(result.data.audioData).buffer],
+        { type: "audio/wav" }
+      );
+      const audioUrl = URL.createObjectURL(audioBlob);
+      const audio = new Audio(audioUrl);
+      audio.onended = () => URL.revokeObjectURL(audioUrl);
+      audio.play();
+      toast.success("试听成功");
+    } else {
+      toast.error(`试听失败: ${result?.message || "未能获取音频数据"}`);
+    }
+  } catch (error) {
+    console.error("CharacterModal playTestVoice error:", error);
+    toast.error(`试听失败: ${error instanceof Error ? error.message : "未知错误"}`);
+  } finally {
+    isTestingVoice.value = false;
   }
-  const valid = list.some((e) => e.code === form.ttsConfig.emotion);
-  if (!valid) form.ttsConfig.emotion = "";
 }
 
 function submit() {
@@ -297,11 +255,6 @@ function submit() {
           ? {
             provider: form.ttsConfig.provider as TTSProviderType,
             model: form.ttsConfig.model,
-            speed: form.ttsConfig.speed,
-            pitch: form.ttsConfig.pitch,
-            volume: form.ttsConfig.volume,
-            emotion: form.ttsConfig.emotion,
-            style: form.ttsConfig.style,
           }
           : undefined,
         updatedAt: new Date().toISOString(),
@@ -317,11 +270,6 @@ function submit() {
           ? {
             provider: form.ttsConfig.provider as TTSProviderType,
             model: form.ttsConfig.model,
-            speed: form.ttsConfig.speed,
-            pitch: form.ttsConfig.pitch,
-            volume: form.ttsConfig.volume,
-            emotion: form.ttsConfig.emotion,
-            style: form.ttsConfig.style,
           }
           : undefined,
         createdAt: new Date().toISOString(),
