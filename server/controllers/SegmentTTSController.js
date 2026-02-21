@@ -176,7 +176,7 @@ async function synthesizeAllSegments(chapterId) {
       segments: parsedData.segments.map((s, i) => ({
         index: s.index !== undefined ? s.index : i,
         text: s.text,
-        character: s.character || "旁白",
+        character: (s.character === "dft" || !s.character) ? "旁白" : (s.character || "旁白"),
         emotion: s.emotion ?? s.tone,
         speed: s.speed,
         mimicry: s.mimicry ?? (s.voice && !(s.ttsConfig && s.ttsConfig.model) ? s.voice : undefined),

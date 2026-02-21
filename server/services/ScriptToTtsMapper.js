@@ -15,8 +15,8 @@ function matchCharacter(segmentCharacter, characters) {
   if (!segmentCharacter || !characters || characters.length === 0) return null;
   const name = String(segmentCharacter).trim();
   if (!name) return null;
-  // 旁白不匹配角色
-  if (name === "旁白") return null;
+  // 旁白不匹配角色（LLM 可能返回 "dft" 表示旁白）
+  if (name === "旁白" || name === "dft") return null;
   // 精确匹配
   const exact = characters.find(
     (c) => c.name === name || (c.aliases && c.aliases.includes(name))

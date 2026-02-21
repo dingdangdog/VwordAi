@@ -207,3 +207,33 @@ interface ParsedSegmentDisplay {
 6. **前端简化**：ReadNovelsChapter 保留「解析 → 应用角色 TTS → 全部分段合成 → 合成整章」主流程，列表展示与 per-segment 覆盖与现有 ParsedSegmentDisplay 一致。
 
 按此设计，大模型、中间数据、各家 TTS 转换与合并均解耦，通过固定数据格式传递，用户操作集中在「解析 → 应用角色 → 合成」少量步骤。
+
+---
+
+## 八、问题与修复：角色声音未正确应用
+
+### 8.1 根因
+
+- **旁白标识不一致**：LLM 各厂商（如火山、阿里、OpenAI）对「旁白/叙述」返回的说话者字段为 `"dft"`，而角色映射与前端判断旁白时只判断 `character === "旁白"`。因此：
+  - 后端保存的 `segment.character` 为 `"dft"`；
+  - 前端 `getEffectiveTtsForSegment` 中 `segment.character !== "旁白"` 为 true，会把 `"dft"` 当角色名去匹配；
+  - 后端 `ScriptToTtsMapper.matchCharacter("dft")` 也未将 `"dft"` 视为旁白，可能错误参与匹配。
+- 结果是：旁白段可能被误用默认男声或错误逻辑；若存在其它命名/时序问题，也会导致**角色维护的语音模型在合成时未正确应用**。
+
+### 8.2 修复要点
+
+1. **统一旁白语义**：凡表示「旁白/叙述」的，在存储与计算中统一视为 `"旁白"`。
+2. **持久化时归一化**（后端）  
+   - 在 **ChapterProcessingController** 写入解析结果时：  
+     `character: (seg.character === "dft" || !seg.character) ? "旁白" : (seg.character || "旁白")`  
+   - 在 **SegmentTTSController** 构建 script 时：  
+     `character: (s.character === "dft" || !s.character) ? "旁白" : (s.character || "旁白")`
+3. **角色匹配层**（后端 **ScriptToTtsMapper.matchCharacter**）：  
+   `if (name === "旁白" || name === "dft") return null;`  
+   旁白不匹配任何角色，使用默认旁白音。
+4. **前端**（**ReadNovelsChapter.vue**）：  
+   - 抽 `isNarrator(character)`：`c === "旁白" || c === "dft" || !c`。  
+   - 所有「是否旁白」判断（getEffectiveTtsForSegment、匹配角色、默认声音）均用 `isNarrator(segment.character)`，不再单独判断 `!== "旁白"`。  
+   - 展示时：`isNarrator(segment.character) ? "旁白" : segment.character`。
+
+按上述修改后，旁白与角色段区分明确，角色维护的语音模型会在「角色映射层」和单段/全段合成时被正确应用。

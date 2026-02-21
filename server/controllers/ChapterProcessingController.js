@@ -124,7 +124,7 @@ function registerLLMProcessingHandlers() {
         const segments = rawSegments.map((seg, i) => ({
           index: i,
           text: seg.text || "",
-          character: seg.character || "旁白",
+          character: (seg.character === "dft" || !seg.character) ? "旁白" : (seg.character || "旁白"),
           emotion: seg.tone,
           tone: seg.tone,
           speed: typeof seg.speed === "number" ? seg.speed : 0,

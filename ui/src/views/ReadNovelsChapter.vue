@@ -72,7 +72,7 @@
               <div class="mt-2 flex flex-wrap gap-2 justify-between items-center">
                 <span
                   class="inline-flex items-center rounded-full bg-blue-100 dark:bg-blue-900 px-2 py-0.5 text-xs font-medium text-blue-800 dark:text-blue-200">
-                  {{ segment.character == "dft" ? "旁白" : segment.character }}
+                  {{ isNarrator(segment.character) ? "旁白" : segment.character }}
                 </span>
                 <div class="flex gap-2 flex-1 min-w-[180px] flex-wrap items-center">
                   <select v-model="segment.ttsConfig.emotion"
@@ -352,12 +352,18 @@ function matchingCharacters(characterName: string): Character[] {
   );
 }
 
+/** 旁白标识：LLM 可能返回 "dft"，存储或展示统一按 "旁白" 判断 */
+function isNarrator(character: string | undefined): boolean {
+  const c = (character || "").trim();
+  return c === "旁白" || c === "dft" || !c;
+}
+
 /** 段落当前生效的 TTS 来源：严格沿用角色管理中维护的 provider + 语音模型，不在此页编辑 */
 function getEffectiveTtsForSegment(segment: SegmentWithTts): { provider: TTSProviderType; modelCode: string } {
   const provider = (settingsStore.activeTTSProviderType as TTSProviderType) || "azure";
   const defaultVoice = "zh-CN-XiaoxiaoNeural";
 
-  if (segment.character && segment.character.trim() && segment.character !== "旁白") {
+  if (!isNarrator(segment.character)) {
     const matched = matchingCharacters(segment.character);
     if (matched.length > 0) {
       const c = matched[0];
@@ -732,12 +738,8 @@ async function parseChapter() {
         let voice = segment.voice || "";
 
         // 如果是角色对话，尝试应用角色的TTS配置
-        if (
-          segment.character &&
-          segment.character.trim() &&
-          segment.character !== "旁白"
-        ) {
-          const matchedCharacters = matchingCharacters(segment.character);
+        if (!isNarrator(segment.character)) {
+          const matchedCharacters = matchingCharacters(segment.character!);
           if (matchedCharacters.length > 0) {
             const character = matchedCharacters[0];
 
@@ -855,12 +857,8 @@ async function extractAndAddCharacters() {
 
   const characterNames = new Set<string>();
   parsedChapter.value.segments.forEach((segment) => {
-    if (
-      segment.character &&
-      segment.character.trim() &&
-      segment.character !== "旁白"
-    ) {
-      characterNames.add(segment.character.trim());
+    if (!isNarrator(segment.character)) {
+      characterNames.add((segment.character || "").trim());
     }
   });
 
@@ -926,13 +924,9 @@ async function reapplyCharacterTtsConfigs() {
   console.log("Reapplying character TTS configs to parsed segments");
 
   // 遍历所有段落，重新应用角色TTS配置
-  parsedChapter.value.segments.forEach((segment, index) => {
-    if (
-      segment.character &&
-      segment.character.trim() &&
-      segment.character !== "旁白"
-    ) {
-      const matchedCharacters = matchingCharacters(segment.character);
+    parsedChapter.value.segments.forEach((segment, index) => {
+      if (!isNarrator(segment.character)) {
+        const matchedCharacters = matchingCharacters(segment.character!);
       if (matchedCharacters.length > 0) {
         const character = matchedCharacters[0];
 
@@ -984,14 +978,10 @@ async function autoConfigureTts() {
 
     // 遍历所有段落，为角色对话应用TTS配置
     parsedChapter.value.segments.forEach((segment, index) => {
-      if (
-        segment.character &&
-        segment.character.trim() &&
-        segment.character !== "旁白"
-      ) {
+      if (!isNarrator(segment.character)) {
         totalCharacterSegments++;
 
-        const matchedCharacters = matchingCharacters(segment.character);
+        const matchedCharacters = matchingCharacters(segment.character!);
         if (matchedCharacters.length > 0) {
           const character = matchedCharacters[0];
 
@@ -1153,9 +1143,9 @@ async function generateSegmentTts(index: number) {
     ensureSegmentTtsFromCharacter(segment as SegmentWithTts);
 
     if (!segment.voice || !segment.ttsConfig) {
-      // 如果是角色对话，尝试根据角色名称匹配声音和TTS配置
-      if (segment.character) {
-        const matchedCharacters = matchingCharacters(segment.character);
+      // 如果是角色对话，尝试根据角色名称匹配声音和TTS配置；旁白（含 dft）用默认
+      if (!isNarrator(segment.character)) {
+        const matchedCharacters = matchingCharacters(segment.character!);
         if (matchedCharacters.length > 0) {
           const character = matchedCharacters[0];
 
@@ -1178,12 +1168,13 @@ async function generateSegmentTts(index: number) {
 
         // 如果仍然没有配置，使用默认配置
         if (!segment.voice) {
-          segment.voice = segment.character.includes("女")
+          const charName = segment.character || "";
+          segment.voice = charName.includes("女")
             ? "zh-CN-XiaoxiaoNeural"
             : "zh-CN-YunxiNeural";
         }
       } else {
-        // 旁白使用默认旁白声音
+        // 旁白（含 dft）使用默认旁白声音
         if (!segment.voice) {
           segment.voice = "zh-CN-XiaoxiaoNeural";
         }
