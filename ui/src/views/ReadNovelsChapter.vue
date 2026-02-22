@@ -13,6 +13,13 @@
         </h1>
       </div>
       <div class="flex items-center gap-2 shrink-0">
+        <select v-if="llmProviders.length > 0" v-model="selectedLLMProvider"
+          class="input input-sm py-1.5 px-2 rounded border border-border bg-surface-elevated text-ink text-sm min-w-[120px] max-w-[180px]"
+          title="选择解析使用的 LLM 服务商">
+          <option v-for="p in llmProviders" :key="p.id" :value="p.id">
+            {{ p.name || p.id }}
+          </option>
+        </select>
         <button @click="parseChapter" class="btn btn-sm btn-primary flex items-center" :disabled="isProcessing">
           <DocumentMagnifyingGlassIcon v-if="!isProcessing" class="h-4 w-4 mr-1" />
           <div v-else class="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full mr-1"></div>
@@ -108,11 +115,9 @@
 
         <!-- 整章音频：输出区，用左侧色条+标题样式与上方「解析结果」区分 -->
         <div
-          class="flex-shrink-0 flex flex-col rounded-lg overflow-hidden max-h-[180px] border border-emerald-200 dark:border-emerald-800 border-l-4 border-l-emerald-500 bg-emerald-50/50 dark:bg-emerald-950/30"
-        >
+          class="flex-shrink-0 flex flex-col rounded-lg overflow-hidden max-h-[180px] border border-emerald-200 dark:border-emerald-800 border-l-4 border-l-emerald-500 bg-emerald-50/50 dark:bg-emerald-950/30">
           <div
-            class="flex-shrink-0 flex justify-between items-center px-3 py-2 bg-emerald-100/80 dark:bg-emerald-900/40"
-          >
+            class="flex-shrink-0 flex justify-between items-center px-3 py-2 bg-emerald-100/80 dark:bg-emerald-900/40">
             <h2 class="text-sm font-semibold text-emerald-800 dark:text-emerald-200 flex items-center gap-1.5">
               <SpeakerWaveIcon class="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
               整章音频
@@ -643,21 +648,31 @@ function goBack() {
 
 // 保存章节内容
 async function saveChapterContent() {
-  if (!chapter.value || !contentChanged.value) return;
+  if (!chapter.value) {
+    toast.warning("无法保存：章节未加载");
+    return;
+  }
+  if (!contentChanged.value) {
+    toast.info("无修改内容，无需保存");
+    return;
+  }
 
   isSaving.value = true;
 
   try {
-    await novelApi.updateChapter(chapter.value.id, {
+    const response = await novelApi.updateChapter(chapter.value.id, {
       content: editedContent.value,
     });
 
-    if (chapter.value) {
-      chapter.value.content = editedContent.value;
+    if (response.success) {
+      if (chapter.value) {
+        chapter.value.content = editedContent.value;
+      }
+      contentChanged.value = false;
+      toast.success("章节内容已保存");
+    } else {
+      toast.error(response.message || "保存失败");
     }
-
-    contentChanged.value = false;
-    toast.success("章节内容已保存");
   } catch (error) {
     toast.error(
       `保存失败: ${error instanceof Error ? error.message : String(error)}`
@@ -924,9 +939,9 @@ async function reapplyCharacterTtsConfigs() {
   console.log("Reapplying character TTS configs to parsed segments");
 
   // 遍历所有段落，重新应用角色TTS配置
-    parsedChapter.value.segments.forEach((segment, index) => {
-      if (!isNarrator(segment.character)) {
-        const matchedCharacters = matchingCharacters(segment.character!);
+  parsedChapter.value.segments.forEach((segment, index) => {
+    if (!isNarrator(segment.character)) {
+      const matchedCharacters = matchingCharacters(segment.character!);
       if (matchedCharacters.length > 0) {
         const character = matchedCharacters[0];
 
