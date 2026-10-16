@@ -294,7 +294,7 @@ async function synthesizeFullChapter(chapterId, parsedChapterId, audioUrls) {
 
     // Verify and prepare output directory
     let outputDir = globalSettings.defaultExportPath;
-    // 检查输出目录是否存在且可写，不存在则设为null
+    // 检查输出目录是否存在且可写，不存在或不可用时使用默认目录
     if (outputDir) {
       try {
         fs.ensureDirSync(outputDir);
@@ -304,7 +304,8 @@ async function synthesizeFullChapter(chapterId, parsedChapterId, audioUrls) {
         );
         outputDir = null;
       }
-    } else {
+    }
+    if (!outputDir) {
       outputDir = path.join(process.cwd(), "audio_output");
     }
 
