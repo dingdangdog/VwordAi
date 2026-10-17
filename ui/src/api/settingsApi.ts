@@ -1,7 +1,7 @@
 /**
  * 设置相关API模块
  */
-import type { Result, Settings, TTSProviderType } from "@/types";
+import type { LLMModelListResult, Result, Settings, TTSProviderType } from "@/types";
 import { invoke } from "@/utils/apiBase";
 
 /**
@@ -132,6 +132,17 @@ export const settingsApi = {
       providerId,
       data
     ),
+
+  /**
+   * 按当前填写的协议和密钥获取模型列表
+   */
+  listLLMModels: (draft: {
+    protocol: string;
+    key?: string;
+    endpoint?: string;
+    appkey?: string;
+    token?: string;
+  }) => invoke<Result<LLMModelListResult>>("llm:list-models", { ...draft }),
 
   /**
    * 删除 LLM 服务商

@@ -58,6 +58,24 @@ function registerLLMConfigHandlers() {
     }
   });
 
+  // 按当前表单或已存配置拉取模型列表（不支持时由前端改为手动输入）
+  ipcMain.handle("llm:list-models", async (_, draft = {}) => {
+    try {
+      const { listModels } = require("../llm/listModels");
+      const result = await listModels({
+        protocol: draft.protocol,
+        key: draft.key,
+        endpoint: draft.endpoint,
+        appkey: draft.appkey,
+        token: draft.token,
+      });
+      return success(result);
+    } catch (err) {
+      console.error("[LLMController] Failed to list models:", err.message);
+      return error(err.message || "获取模型列表失败");
+    }
+  });
+
   // 更新LLM提供商配置
   ipcMain.handle("llm:update-provider-config", async (_, provider, providerData) => {
     try {

@@ -83,6 +83,17 @@ export interface LLMProviderConfig {
   [key: string]: any;
 }
 
+export interface LLMModelOption {
+  id: string;
+  name: string;
+}
+
+export interface LLMModelListResult {
+  supported: boolean;
+  models: LLMModelOption[];
+  message?: string;
+}
+
 // 兼容旧类型：章节等处的 llmProvider 存的是 providerId (string)
 export type LLMProviderType = string;
 

@@ -8,6 +8,7 @@ import type {
   LLMProviderType,
   LLMProviderConfig,
   LLMProtocol,
+  LLMModelListResult,
   ServiceProviderStatus,
   TTSProviderConfig,
 } from "@/types";
@@ -385,6 +386,34 @@ export const useSettingsStore = defineStore("settings", () => {
     }
   }
 
+  async function listLLMModels(draft: {
+    protocol: LLMProtocol;
+    key?: string;
+    endpoint?: string;
+    appkey?: string;
+    token?: string;
+  }): Promise<ConnectionTestResult & { data?: LLMModelListResult }> {
+    try {
+      const response = await settingsApi.listLLMModels(draft);
+      if (response.success && response.data) {
+        return {
+          success: true,
+          message: response.data.message || "",
+          data: response.data,
+        };
+      }
+      return {
+        success: false,
+        message: response.error || "获取模型列表失败",
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error instanceof Error ? error.message : "获取模型列表失败",
+      };
+    }
+  }
+
   // Update TTS service provider config
   async function updateTTSProvider(
     type: TTSProviderType,
@@ -712,6 +741,7 @@ export const useSettingsStore = defineStore("settings", () => {
     setActiveLLMProvider,
     testTTSProviderConnection,
     testLLMProviderConnection,
+    listLLMModels,
     getSettings,
     updateSettings,
     loadSettings,
