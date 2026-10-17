@@ -17,6 +17,7 @@ const SegmentTTSController = require("./server/controllers/SegmentTTSController"
 const LLMController = require("./server/controllers/LLMController");
 const NovelController = require("./server/controllers/NovelController");
 const ChapterProcessingController = require("./server/controllers/ChapterProcessingController");
+const CloudController = require("./server/controllers/CloudController");
 
 /**
  * 设置基础目录 (整合了server/index.js的initStorageDirs功能)
@@ -83,6 +84,9 @@ function init() {
     // 初始化章节处理控制器
     ChapterProcessingController.init();
     console.log("Chapter processing controller initialized");
+
+    CloudController.init();
+    console.log("Cloud controller initialized");
 
     console.log("All controllers initialized successfully");
   } catch (error) {

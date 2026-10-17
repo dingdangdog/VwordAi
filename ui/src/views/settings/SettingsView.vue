@@ -23,10 +23,7 @@
     <!-- 设置内容 -->
     <div class="tab-content">
       <!-- 语音服务（TTS 配置 + 语音模型） -->
-      <VoiceServiceSettings v-if="activeTab === 'voice'" />
-      <!-- LLM设置 -->
-      <LLMSettings v-else-if="activeTab === 'llm'" />
-      <!-- 系统数据 -->
+      <AccountSettings v-if="activeTab === 'account'" />
       <SystemSettings v-else-if="activeTab === 'system'" />
     </div>
   </div>
@@ -39,13 +36,10 @@ import type { SettingsTab } from "@/stores/settings";
 import { useRoute } from "vue-router";
 import {
   ServerIcon,
-  ArrowPathIcon,
-  SpeakerWaveIcon,
+  UserCircleIcon,
 } from "@heroicons/vue/24/outline";
 
-// 导入设置组件
-import VoiceServiceSettings from "@/components/settings/VoiceServiceSettings.vue";
-import LLMSettings from "@/components/settings/LLMSettings.vue";
+import AccountSettings from "@/components/settings/AccountSettings.vue";
 import SystemSettings from "@/components/settings/SystemSettings.vue";
 
 const settingsStore = useSettingsStore();
@@ -53,10 +47,8 @@ const route = useRoute();
 
 // 定义选项卡（语音服务 = TTS 配置 + 语音模型，同一页内 Tab 切换）
 const tabs = [
-  { id: "voice" as SettingsTab, name: "语音服务", icon: SpeakerWaveIcon },
-  { id: "llm" as SettingsTab, name: "LLM配置", icon: ArrowPathIcon },
+  { id: "account" as SettingsTab, name: "账号", icon: UserCircleIcon },
   { id: "system" as SettingsTab, name: "系统设置", icon: ServerIcon },
-  // { id: "about" as SettingsTab, name: "关于", icon: InformationCircleIcon },
 ];
 
 // 选项卡状态
@@ -64,7 +56,7 @@ const activeTab = computed(() => settingsStore.activeTab);
 
 // 兼容旧链接：tts 已合并到语音服务
 function normalizeTabParam(tab: string): SettingsTab | null {
-  if (tab === "tts") return "voice";
+  if (tab === "tts" || tab === "voice" || tab === "llm") return "account";
   const validTab = tabs.find((t) => t.id === tab);
   return validTab ? (tab as SettingsTab) : null;
 }

@@ -14,55 +14,25 @@ const log = require("electron-log");
  * @param {object} providerConfig 提供商配置（含 protocol，可选）
  * @returns {Promise<Object>} 解析结果
  */
-async function parseText(
-  text,
-  providerId = null,
-  providerConfig = null
-) {
+async function parseText(text) {
   try {
-    if (!providerConfig) {
-      const llmSettings = Settings.getLLMSettings();
-      const providers = llmSettings.providers || {};
-      providerConfig = providerId ? providers[providerId] : null;
-      if (!providerConfig) {
-        return error(`LLM Provider ${providerId || "?"} Not find Config`);
-      }
-    }
-    const hasKey = providerConfig.key || providerConfig.appkey;
-    if (!hasKey) {
-      return error(`LLM Provider Config Missing key/appkey`);
-    }
-
-    log.info(`[LLMService] Parse text using ${providerConfig.name || providerId} (${providerConfig.protocol})`);
-
-    const llmClient = createLLMClient(providerConfig);
-    if (!llmClient.success) {
-      return error(llmClient.error);
-    }
-
-    // 处理文本
-    const results = await llmClient.client.processLongText(text);
-
-    const rawCount = Array.isArray(results) ? results.length : (results ? 1 : 0);
-    const inputLen = (text || "").length;
-    log.info(
-      `[LLMService] parseText done: rawCount=${rawCount} inputLength=${inputLen}`
-    );
-
-    // 将结果转换为标准格式
-    const segments = formatResults(results, providerConfig.protocol || "volcengine");
-    log.info(`[LLMService] formatResults done: segmentsCount=${segments.length}`);
-
-    const parsedResults = {
+    const cloud = require("./cloudClient");
+    const result = await cloud.scriptSplit(text);
+    if (!result.success) return result;
+    const raw = (result.data?.segments || []).map((item) => ({
+      t: item.text,
+      s: item.speaker,
+      e: item.emotion,
+      m: item.mimic,
+    }));
+    const segments = formatResults(raw, "volcengine");
+    return success({
       segments,
       processedAt: new Date().toISOString(),
-      provider: providerConfig.id || providerId,
-    };
-
-    return success(parsedResults);
+    });
   } catch (err) {
-    log.error(`[LLMService] Parse text failed: ${err.message}`, err);
-    return error("Parse Text Failed: " + err.message);
+    log.error(`[LLMService] Parse text failed: ${err.message}`);
+    return error("文本处理失败，请稍后重试");
   }
 }
 

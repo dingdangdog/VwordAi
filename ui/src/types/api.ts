@@ -12,8 +12,9 @@ export interface Result<T> {
 
 // 语音设置类型
 export interface VoiceSettings {
-  serviceProvider: string | null;
-  voice: string | null;
+  voiceId?: string;
+  serviceProvider?: string | null;
+  voice?: string | null;
   speed: number;
   pitch: number;
   volume: number;

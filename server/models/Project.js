@@ -15,6 +15,10 @@ class Project {
    * @returns {Array} 项目列表
    */
   static getAllProjects() {
+    return storage.read(PROJECT_STORAGE_KEY, []).filter((project) => !project.deletedAt);
+  }
+
+  static getAllProjectsRaw() {
     return storage.read(PROJECT_STORAGE_KEY, []);
   }
 
@@ -24,7 +28,7 @@ class Project {
    * @returns {Object|null} 项目对象或null
    */
   static getProjectById(id) {
-    const projects = this.getAllProjects();
+    const projects = this.getAllProjectsRaw();
     return projects.find((project) => project.id === id) || null;
   }
 
@@ -34,7 +38,7 @@ class Project {
    * @returns {Object} 新创建的项目
    */
   static createProject(projectData) {
-    const projects = this.getAllProjects();
+    const projects = this.getAllProjectsRaw();
 
     const newProject = {
       id: uuidv4(),
@@ -48,13 +52,13 @@ class Project {
       wordCount: 0,
       chapterCount: 0,
       defaultVoiceSettings: projectData.defaultVoiceSettings || {
-        serviceProvider: "",
-        voice: "",
+        voiceId: "",
         speed: 1,
         pitch: 0,
         volume: 100,
-        emotion: "",
       },
+      revision: 0,
+      dirty: true,
     };
 
     projects.push(newProject);
@@ -70,7 +74,7 @@ class Project {
    * @returns {Object} 更新后的项目
    */
   static updateProject(id, projectData) {
-    const projects = this.getAllProjects();
+    const projects = this.getAllProjectsRaw();
     const index = projects.findIndex((project) => project.id === id);
 
     if (index === -1) {
@@ -80,6 +84,7 @@ class Project {
     const updatedProject = {
       ...projects[index],
       ...projectData,
+      dirty: projectData.dirty === false ? false : true,
       updateAt: new Date().toISOString(),
     };
 
@@ -95,14 +100,14 @@ class Project {
    * @returns {boolean} 是否成功删除
    */
   static deleteProject(id) {
-    const projects = this.getAllProjects();
-    const filteredProjects = projects.filter((project) => project.id !== id);
-
-    if (filteredProjects.length === projects.length) {
+    const projects = this.getAllProjectsRaw();
+    const project = projects.find((item) => item.id === id);
+    if (!project) {
       throw new Error("项目不存在");
     }
-
-    storage.save(PROJECT_STORAGE_KEY, filteredProjects);
+    project.deletedAt = new Date().toISOString();
+    project.dirty = true;
+    storage.save(PROJECT_STORAGE_KEY, projects);
     return true;
   }
 

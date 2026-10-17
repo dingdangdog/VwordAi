@@ -268,8 +268,8 @@
               <label class="block text-xs font-medium text-ink mb-0.5">TTS 引擎</label>
               <select v-model="ttsMode" class="border rounded px-2 py-1 text-sm">
                 <option value="local">本地默认语音</option>
-                <option value="azure">微软Azure</option>
-                <option value="aliyun">阿里云Aliyun</option>
+                <option value="cloud">官网语音</option>
+                <option value="sovits">本地 SoVITS</option>
               </select>
               <button @click="testTTS" class="ml-1 px-2 py-1 bg-green-500 text-white text-xs rounded">
                 测试
@@ -322,60 +322,13 @@
             </div>
             <div v-if="showAdvancedSettings" class="pt-1.5 border-t border-border">
               <!-- 根据选择的TTS类型显示不同的配置表单 -->
-              <div v-if="ttsMode === 'azure'" class="space-y-1.5">
-                <div>
-                  <label class="block text-xs font-medium text-ink mb-0.5">API Key</label>
-                  <input v-model="azureConfig.azure_key" type="password"
-                    class="w-full border rounded px-2 py-1 text-sm" />
-                </div>
-                <div class="flex space-x-2">
-                  <div class="flex-1">
-                    <label class="block text-xs font-medium text-ink mb-0.5">区域</label>
-                    <input v-model="azureConfig.azure_region" type="text"
-                      class="w-full border rounded px-2 py-1 text-sm" placeholder="例如: eastasia" />
-                  </div>
-                  <div class="flex-1">
-                    <label class="block text-xs font-medium text-ink mb-0.5">语音模型</label>
-                    <input v-model="azureConfig.azure_model" type="text" class="w-full border rounded px-2 py-1 text-sm"
-                      placeholder="例如: zh-CN-XiaoxiaoNeural" />
-                  </div>
-                </div>
-                <div class="pt-1.5">
-                  <button @click="saveAzureConfig"
-                    class="px-3 py-1 bg-primary text-white text-xs rounded hover:bg-primary-hover">
-                    保存Azure配置
-                  </button>
-                </div>
-              </div>
-
-              <div v-if="ttsMode === 'aliyun'" class="space-y-1.5">
-                <div class="flex space-x-2">
-                  <div class="flex-1">
-                    <label class="block text-xs font-medium text-ink mb-0.5">AppKey</label>
-                    <input v-model="alibabaConfig.alibaba_appkey" type="password"
-                      class="w-full border rounded px-2 py-1 text-sm" />
-                  </div>
-                  <div class="flex-1">
-                    <label class="block text-xs font-medium text-ink mb-0.5">Token</label>
-                    <input v-model="alibabaConfig.alibaba_token" type="password"
-                      class="w-full border rounded px-2 py-1 text-sm" />
-                  </div>
-                </div>
-                <div>
-                  <label class="block text-xs font-medium text-ink mb-0.5">语音模型</label>
-                  <select v-model="alibabaConfig.alibaba_model" class="w-full border rounded px-2 py-1 text-sm">
-                    <option value="xiaoyun">小云</option>
-                    <option value="xiaogang">小刚</option>
-                    <option value="ruoxi">若希</option>
-                    <option value="siqi">思琪</option>
-                  </select>
-                </div>
-                <div class="pt-1.5">
-                  <button @click="saveAlibabaConfig"
-                    class="px-3 py-1 bg-primary text-white text-xs rounded hover:bg-primary-hover">
-                    保存阿里云配置
-                  </button>
-                </div>
+              <div v-if="ttsMode === 'cloud'" class="space-y-1.5">
+                <label class="block text-xs font-medium text-ink mb-0.5">官网语音</label>
+                <select v-model="cloudVoiceId" class="w-full border rounded px-2 py-1 text-sm">
+                  <option value="">请选择语音</option>
+                  <option v-for="voice in cloudVoices" :key="voice.id" :value="voice.id">{{ voice.providerName ? `${voice.providerName} · ${voice.name}` : voice.name }}</option>
+                </select>
+                <button @click="saveCloudVoice" class="px-3 py-1 bg-primary text-white text-xs rounded">保存官网语音</button>
               </div>
 
               <div v-if="ttsMode === 'sovits'" class="space-y-1.5">
@@ -604,6 +557,29 @@ const config = ref<BiliLiveConfig>({
   recordVisitor: true, // 是否记录访客
 });
 
+const cloudVoices = ref<{ id: string; name: string; providerName?: string }[]>([]);
+const cloudVoiceId = ref("");
+
+async function loadCloudVoices() {
+  const result = await window.electron.invoke("cloud:voices");
+  if (result?.success) cloudVoices.value = result.data || [];
+  const configResult = await window.electron.invoke("bililive:get-config");
+  cloudVoiceId.value = configResult?.data?.tts?.cloud?.voiceId || "";
+}
+
+async function saveCloudVoice() {
+  const configResult = await window.electron.invoke("bililive:get-config");
+  const config = configResult?.data || {};
+  config.tts = config.tts || {};
+  config.tts.mode = "cloud";
+  config.tts.cloud = { voiceId: cloudVoiceId.value };
+  await window.electron.invoke("bililive:save-bili-config", config);
+}
+
+onMounted(() => {
+  loadCloudVoices();
+});
+
 // 获取TTS模式（从BiliLive store）
 const ttsMode = computed({
   get: () => {
@@ -612,7 +588,7 @@ const ttsMode = computed({
   },
   set: (value: string) => {
     // 确保值在允许的范围内
-    if (!["local", "azure", "aliyun", "sovits"].includes(value)) {
+    if (!["local", "cloud", "sovits"].includes(value)) {
       console.warn(`Invalid TTS mode: ${value}, defaulting to local`);
       value = "local";
     }

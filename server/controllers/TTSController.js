@@ -228,31 +228,14 @@ async function testTTSProvider(provider, testData, providerConfig) {
 
     // 根据提供商类型加载对应的客户端
     switch (provider) {
-      case 'azure':
-        ttsClient = require("../tts/azure");
-        break;
-      case 'aliyun':
-      case 'alibaba':
-        ttsClient = require("../tts/aliyun");
-        break;
-      case 'sovits':
+      case "sovits":
         ttsClient = require("../tts/sovits");
         break;
-      case 'local':
+      case "local":
         ttsClient = require("../tts/local");
         break;
-      case 'tencent':
-        ttsClient = require("../tts/tencent");
-        break;
-      case 'baidu':
-        ttsClient = require("../tts/baidu");
-        break;
       default:
-        console.error(`[TTSController] Unsupported TTS provider: ${provider}`);
-        return {
-          success: false,
-          message: `不支持的TTS提供商: ${provider}`
-        };
+        return error("请在官网语音列表中重新选择语音");
     }
 
     // 准备测试设置。前端传入的 model 即语音 code（与 voice 同义），必须优先使用

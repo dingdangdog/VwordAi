@@ -309,18 +309,22 @@ async function synthesizeSegmentText(segment, chapterId) {
     // 这里应该直接调用TTS客户端，而不是通过控制器
     const Settings = require("../models/Settings");
     const ttsSettings = Settings.getTTSSettings();
-    const providerType = ttsSettings.mode || "local";
+    const providerType = segment?.ttsConfig?.voiceId ? "cloud" : ttsSettings.mode || "local";
+    if (providerType === "cloud") {
+      const cloud = require("../services/cloudClient");
+      const outputPath = require("path").join(require("os").tmpdir(), `segment_${Date.now()}.wav`);
+      return cloud.synthesizeToFile({
+        text: segment.text || segment.t || "",
+        voiceId: segment.ttsConfig.voiceId,
+        speed: segment.ttsConfig.speed ?? 1,
+        pitch: segment.ttsConfig.pitch ?? 0,
+        volume: segment.ttsConfig.volume ?? 100,
+        outputPath,
+      });
+    }
 
-    // 根据提供商类型加载对应的客户端
     let ttsClient;
     switch (providerType) {
-      case "azure":
-        ttsClient = require("../tts/azure");
-        break;
-      case "aliyun":
-      case "alibaba":
-        ttsClient = require("../tts/aliyun");
-        break;
       case "sovits":
         ttsClient = require("../tts/sovits");
         break;
@@ -328,7 +332,7 @@ async function synthesizeSegmentText(segment, chapterId) {
         ttsClient = require("../tts/local");
         break;
       default:
-        throw new Error(`Unsupported TTS provider: ${providerType}`);
+        return error("请在官网语音列表中重新选择语音");
     }
 
     // 准备输出路径

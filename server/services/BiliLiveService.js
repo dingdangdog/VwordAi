@@ -1100,11 +1100,8 @@ async function processSpeechQueue() {
   try {
     const startTime = Date.now();
     switch (ttsMode) {
-      case "azure":
-        await azureTTS(text);
-        break;
-      case "aliyun":
-        await alibabaTTS(text);
+      case "cloud":
+        await cloudTTS(text);
         break;
       case "sovits":
         await sovitsTTS(text);
@@ -1177,6 +1174,33 @@ function localTTS(text) {
 
 /**
  * Azure TTS
+ * @param {string} text
+ */
+async function cloudTTS(text) {
+  const voiceId = biliveConfig.tts?.cloud?.voiceId;
+  if (!voiceId) throw new Error("请先选择官网语音");
+  const tempFile = path.join(os.tmpdir(), `cloud_tts_${Date.now()}.wav`);
+  const cloud = require("./cloudClient");
+  const result = await cloud.synthesizeToFile({
+    text,
+    voiceId,
+    speed: 1,
+    pitch: 0,
+    volume: 100,
+    outputPath: tempFile,
+  });
+  if (!result.success) throw new Error(result.error || "合成失败，请稍后重试");
+  const sound = require("sound-play");
+  await sound.play(tempFile);
+  try {
+    fs.unlinkSync(tempFile);
+  } catch (err) {
+    log.error("(BiliLive Service) Failed to delete temp file:", err);
+  }
+}
+
+/**
+ * Azure TTS kept only as an unused compatibility stub. Cloud playback uses cloudTTS.
  * @param {string} text
  */
 async function azureTTS(text) {

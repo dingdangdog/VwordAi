@@ -25,17 +25,26 @@ function init() {
 
   ipcMain.handle("project:create", async (_, data) => {
     console.log("Handling project:create with data:", data);
-    return await createProject(data);
+    return await createProject(data).then((result) => {
+      require("../services/cloudSync").syncSoon();
+      return result;
+    });
   });
 
   ipcMain.handle("project:update", async (_, id, data) => {
     console.log(`Handling project:update for id: ${id}`);
-    return await updateProject(id, data);
+    return await updateProject(id, data).then((result) => {
+      require("../services/cloudSync").syncSoon();
+      return result;
+    });
   });
 
   ipcMain.handle("project:delete", async (_, id) => {
     console.log(`Handling project:delete for id: ${id}`);
-    return await deleteProject(id);
+    return await deleteProject(id).then((result) => {
+      require("../services/cloudSync").syncSoon();
+      return result;
+    });
   });
 
   // 章节相关API
@@ -53,17 +62,26 @@ function init() {
 
   ipcMain.handle("project-chapter:create", async (_, data) => {
     console.log("Handling project-chapter:create");
-    return await createChapter(data);
+    return await createChapter(data).then((result) => {
+      require("../services/cloudSync").syncSoon();
+      return result;
+    });
   });
 
   ipcMain.handle("project-chapter:update", async (_, id, data) => {
     console.log(`Handling project-chapter:update for id: ${id}`);
-    return await updateChapter(id, data);
+    return await updateChapter(id, data).then((result) => {
+      require("../services/cloudSync").syncSoon();
+      return result;
+    });
   });
 
   ipcMain.handle("project-chapter:delete", async (_, id) => {
     console.log(`Handling project-chapter:delete for id: ${id}`);
-    return await deleteChapter(id);
+    return await deleteChapter(id).then((result) => {
+      require("../services/cloudSync").syncSoon();
+      return result;
+    });
   });
 
   console.log("Project controller IPC handlers registered successfully");

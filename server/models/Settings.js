@@ -23,6 +23,8 @@ const DEFAULT_SETTINGS = {
   fileNamingRule: "chapter_title",
   customNamingFormat: "{project}-{chapter}",
   outputFormat: "mp3",
+  apiBase: "https://vwordai.com",
+  apiToken: "",
 };
 
 // 新结构：providers 为 { [providerId]: { id, name, protocol, ...config, status } }

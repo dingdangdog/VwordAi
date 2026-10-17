@@ -12,8 +12,12 @@ const STORAGE_FILE = "chapters";
  * 获取所有章节
  * @returns {Array} 章节列表
  */
-function getAllChapters() {
+function getAllChaptersRaw() {
   return storage.readData(STORAGE_FILE, []);
+}
+
+function getAllChapters() {
+  return getAllChaptersRaw().filter((chapter) => !chapter.deletedAt);
 }
 
 /**
@@ -22,8 +26,8 @@ function getAllChapters() {
  * @returns {Array} 章节列表
  */
 function getChaptersByProjectId(projectId) {
-  const chapters = getAllChapters();
-  return chapters.filter((chapter) => chapter.projectId === projectId);
+  const chapters = getAllChaptersRaw();
+  return chapters.filter((chapter) => chapter.projectId === projectId && !chapter.deletedAt);
 }
 
 /**
@@ -32,7 +36,7 @@ function getChaptersByProjectId(projectId) {
  * @returns {Object|null} 章节对象或null
  */
 function getChapterById(id) {
-  const chapters = getAllChapters();
+  const chapters = getAllChaptersRaw();
   return chapters.find((chapter) => chapter.id === id) || null;
 }
 
@@ -42,7 +46,7 @@ function getChapterById(id) {
  * @returns {Object} 创建的章节
  */
 function createChapter(chapterData) {
-  const chapters = getAllChapters();
+  const chapters = getAllChaptersRaw();
 
   // 检查项目是否存在
   const project = Project.getProjectById(chapterData.projectId);
@@ -64,10 +68,11 @@ function createChapter(chapterData) {
     text: chapterData.text || "",
     settings: chapterData.settings || { ...project.defaultVoiceSettings },
     audioPath: chapterData.audioPath || "",
-    status: chapterData.status || "idle", // 'idle', 'processing', 'completed', 'error'
-    llmProvider: chapterData.llmProvider || "openai", // 默认使用OpenAI
+    status: chapterData.status || "idle",
     createAt: now,
     updateAt: now,
+    revision: 0,
+    dirty: true,
   };
 
   chapters.push(newChapter);
@@ -83,7 +88,7 @@ function createChapter(chapterData) {
  * @returns {Object|null} 更新后的章节或null
  */
 function updateChapter(id, chapterData) {
-  const chapters = getAllChapters();
+  const chapters = getAllChaptersRaw();
   const index = chapters.findIndex((chapter) => chapter.id === id);
 
   if (index === -1) {
@@ -119,10 +124,9 @@ function updateChapter(id, chapterData) {
       chapterData.status !== undefined
         ? chapterData.status
         : chapters[index].status || "idle",
-    llmProvider:
-      chapterData.llmProvider !== undefined
-        ? chapterData.llmProvider
-        : chapters[index].llmProvider || "openai",
+    llmProvider: undefined,
+    revision: chapters[index].revision || 0,
+    dirty: chapterData.dirty === false ? false : true,
     updateAt: new Date(),
   };
 
@@ -138,16 +142,12 @@ function updateChapter(id, chapterData) {
  * @returns {boolean} 是否删除成功
  */
 function deleteChapter(id) {
-  const chapters = getAllChapters();
-  const initialLength = chapters.length;
-
-  const filteredChapters = chapters.filter((chapter) => chapter.id !== id);
-
-  if (filteredChapters.length === initialLength) {
-    return false; // 没有删除任何章节
-  }
-
-  storage.saveData(STORAGE_FILE, filteredChapters);
+  const chapters = getAllChaptersRaw();
+  const chapter = chapters.find((item) => item.id === id);
+  if (!chapter) return false;
+  chapter.deletedAt = new Date().toISOString();
+  chapter.dirty = true;
+  storage.saveData(STORAGE_FILE, chapters);
   return true;
 }
 
@@ -157,19 +157,16 @@ function deleteChapter(id) {
  * @returns {number} 删除的章节数量
  */
 function deleteChaptersByProjectId(projectId) {
-  const chapters = getAllChapters();
-  const initialLength = chapters.length;
-
-  const filteredChapters = chapters.filter(
-    (chapter) => chapter.projectId !== projectId
-  );
-
-  const deletedCount = initialLength - filteredChapters.length;
-
-  if (deletedCount > 0) {
-    storage.saveData(STORAGE_FILE, filteredChapters);
+  const chapters = getAllChaptersRaw();
+  let deletedCount = 0;
+  for (const chapter of chapters) {
+    if (chapter.projectId === projectId && !chapter.deletedAt) {
+      chapter.deletedAt = new Date().toISOString();
+      chapter.dirty = true;
+      deletedCount += 1;
+    }
   }
-
+  if (deletedCount > 0) storage.saveData(STORAGE_FILE, chapters);
   return deletedCount;
 }
 

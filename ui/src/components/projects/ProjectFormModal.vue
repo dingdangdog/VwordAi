@@ -67,24 +67,11 @@
               </p>
 
               <div class="grid md:grid-cols-2 gap-4">
-                <FormSelect
-                  id="serviceProvider"
-                  v-model="form.defaultVoiceSettings.serviceProvider"
-                  label="服务商"
-                  placeholder="未选择"
-                  :options="serviceProviderOptions"
-                  @change="onProviderChange"
-                />
-
-                <FormSelect
-                  id="voice"
-                  v-model="form.defaultVoiceSettings.voice"
-                  label="声音角色"
-                  placeholder="未选择"
-                  :options="voiceRoleOptions"
-                  :disabled="!form.defaultVoiceSettings.serviceProvider"
-                  @change="onVoiceChange"
-                />
+                <label class="block text-sm font-medium text-ink" for="voiceId">官网语音</label>
+                <select id="voiceId" v-model="form.defaultVoiceSettings.voiceId" class="mt-1 w-full rounded border border-border px-2 py-2">
+                  <option value="">未选择</option>
+                  <option v-for="voice in cloudVoices" :key="voice.id" :value="voice.id">{{ voice.providerName ? `${voice.providerName} · ${voice.name}` : voice.name }}</option>
+                </select>
 
                 <div>
                   <label
@@ -144,7 +131,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, watchEffect, computed, watch } from "vue";
+import { ref, reactive, watchEffect, computed, watch, onMounted } from "vue";
 import { XMarkIcon } from "@heroicons/vue/24/outline";
 import FormInput from "@/components/common/FormInput.vue";
 import FormTextarea from "@/components/common/FormTextarea.vue";
@@ -172,6 +159,7 @@ const form = reactive({
   title: "",
   description: "",
   defaultVoiceSettings: {
+    voiceId: "",
     serviceProvider: "",
     voice: "",
     speed: 1,
@@ -179,6 +167,12 @@ const form = reactive({
     volume: 100,
     emotion: "",
   } as VoiceSettings,
+});
+
+const cloudVoices = ref<{ id: string; name: string; providerName?: string }[]>([]);
+onMounted(async () => {
+  const result = await window.electron.invoke("cloud:voices");
+  if (result?.success) cloudVoices.value = result.data || [];
 });
 
 // Watch for changes to service provider to update voice roles
@@ -294,6 +288,7 @@ watchEffect(() => {
     form.title = props.initialData.title || "";
     form.description = props.initialData.description || "";
     form.defaultVoiceSettings = {
+      voiceId: props.initialData.defaultVoiceSettings?.voiceId || "",
       serviceProvider:
         props.initialData.defaultVoiceSettings?.serviceProvider || "",
       voice: props.initialData.defaultVoiceSettings?.voice || "",

@@ -11,40 +11,6 @@ const audioUtils = require("../utils/audioUtils");
 const { success, error } = require("../utils/result");
 const Project = require("../models/Project");
 
-// Load voice service provider modules
-const azureProvider = require("../tts/azure");
-// Load other providers based on actual project situation
-let aliyunProvider;
-let tencentProvider;
-let baiduProvider;
-
-try {
-  aliyunProvider = require("../tts/aliyun");
-} catch (e) {
-  console.warn(
-    "Aliyun voice service module not found or failed to load",
-    e.message
-  );
-}
-
-try {
-  tencentProvider = require("../tts/tencent");
-} catch (e) {
-  console.warn(
-    "Tencent voice service module not found or failed to load",
-    e.message
-  );
-}
-
-try {
-  baiduProvider = require("../tts/baidu");
-} catch (e) {
-  console.warn(
-    "Baidu voice service module not found or failed to load",
-    e.message
-  );
-}
-
 // Load voice model data
 const MODELS_JSON_PATH = path.join(__dirname, "../assets/models.json");
 let voiceModels = [];
@@ -126,18 +92,9 @@ function splitTextIntoChunks(text, maxLength = 5000) {
  * @returns {Object|null} Provider object
  */
 function getProviderModule(providerType) {
-  switch (providerType) {
-    case "azure":
-      return azureProvider;
-    case "aliyun":
-      return aliyunProvider;
-    case "tencent":
-      return tencentProvider;
-    case "baidu":
-      return baiduProvider;
-    default:
-      return null;
-  }
+  if (providerType === "local") return require("../tts/local");
+  if (providerType === "sovits") return require("../tts/sovits");
+  return null;
 }
 
 /**
@@ -156,48 +113,24 @@ async function synthesizeWithProvider(
   providerConfig,
   providerType
 ) {
-  console.log("providerType", providerType);
-  const provider = getProviderModule(providerType);
-  if (!provider) {
-    throw new Error(`Provider module not found: ${providerType}`);
+  if (providerType === "local" || providerType === "sovits") {
+    const provider = getProviderModule(providerType);
+    if (!provider) throw new Error("本地语音不可用");
+    return provider.synthesize(chunk, outputPath, settings, providerConfig);
   }
 
-  try {
-    console.log(
-      `[TTS] Using ${providerType} to synthesize ${chunk.length} characters to ${outputPath}`
-    );
-
-    // For Aliyun provider, ensure the voice parameter is set correctly
-    if (providerType === "aliyun" && settings.model && !settings.voice) {
-      settings.voice = settings.model;
-    }
-
-    // Call the corresponding provider's synthesize method
-    const result = await provider.synthesize(
-      chunk,
-      outputPath,
-      settings,
-      providerConfig
-    );
-
-    if (
-      !result.success ||
-      !result.data ||
-      !result.data.filePath ||
-      !fs.existsSync(result.data.filePath)
-    ) {
-      throw new Error(
-        `Voice synthesis failed: ${
-          result.message || "Unable to generate audio file"
-        }`
-      );
-    }
-
-    return result;
-  } catch (err) {
-    console.error(`[TTS] ${providerType} synthesis failed:`, err);
-    throw new Error(`${providerType} voice synthesis failed: ${err.message}`);
+  if (!settings.voiceId) {
+    throw new Error("请在官网语音列表中重新选择语音");
   }
+  const cloud = require("./cloudClient");
+  return cloud.synthesizeToFile({
+    text: chunk,
+    voiceId: settings.voiceId,
+    speed: settings.speed ?? 1,
+    pitch: settings.pitch ?? 0,
+    volume: settings.volume ?? 100,
+    outputPath,
+  });
 }
 
 /**
@@ -241,24 +174,15 @@ async function synthesizeChapter(chapterId) {
       }
     }
 
-    const providerType = chapterSettings.serviceProvider;
-
-    if (
-      !providerType ||
-      !["azure", "aliyun", "tencent", "baidu"].includes(providerType)
-    ) {
-      throw new Error(
-        "No valid voice service provider specified in chapter or project settings"
-      );
+    const voiceId =
+      chapterSettings.voiceId ||
+      project?.defaultVoiceSettings?.voiceId ||
+      "";
+    if (!voiceId) {
+      throw new Error("请在官网语音列表中重新选择语音");
     }
-
-    // 2. Get Provider Configuration - 从TTS配置中获取服务商设置
-    const providerConfig = ttsSettings[providerType];
-    if (!isProviderConfigValid(providerType, providerConfig)) {
-      throw new Error(
-        `Provider '${providerType}' configuration is incomplete or invalid`
-      );
-    }
+    const providerType = "cloud";
+    const providerConfig = {};
 
     // 3. Generate filename and prepare output path
     const timestamp = Date.now();
@@ -294,6 +218,7 @@ async function synthesizeChapter(chapterId) {
     // Do not use globalSettings.defaultVoiceSettings
     const synthesisSettings = {
       ...chapterSettings,
+      voiceId,
       serviceProvider: providerType,
     };
 

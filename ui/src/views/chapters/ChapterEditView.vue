@@ -83,66 +83,11 @@
               <div v-if="showVoiceSettings" class="p-2 rounded-md">
                 <div class="grid md:grid-cols-2 gap-4">
                   <div class="flex justify-between items-center space-x-4">
-                    <label
-                      for="serviceProvider"
-                      class="w-24 text-right block text-sm font-medium text-ink"
-                      >服务商</label
-                    >
-                    <select
-                      id="serviceProvider"
-                      v-model="form.settings.serviceProvider"
-                      class="mt-1 input bg-surface border-border text-ink w-full"
-                    >
+                    <label class="w-24 text-right block text-sm font-medium text-ink" for="voiceId">官网语音</label>
+                    <select id="voiceId" v-model="form.settings.voiceId" class="mt-1 input bg-surface border-border text-ink w-full">
                       <option value="">未选择</option>
-                      <option
-                        v-for="provider in serviceProviders"
-                        :key="provider.id"
-                        :value="provider.id"
-                      >
-                        {{ provider.name }}
-                      </option>
+                      <option v-for="voice in cloudVoices" :key="voice.id" :value="voice.id">{{ voice.providerName ? `${voice.providerName} · ${voice.name}` : voice.name }}</option>
                     </select>
-                  </div>
-
-                  <div class="flex justify-between items-center space-x-4">
-                    <label
-                      for="voice"
-                      class="w-24 text-right block text-sm font-medium text-ink"
-                      >声音角色</label
-                    >
-                    <div class="w-full">
-                      <select
-                        id="voice"
-                        v-model="form.settings.voice"
-                        class="mt-1 input bg-surface border-border text-ink w-full"
-                        :disabled="
-                          !form.settings.serviceProvider || isLoadingVoiceRoles
-                        "
-                      >
-                        <option value="">未选择</option>
-                        <option
-                          v-for="role in voiceRoles"
-                          :key="role.id"
-                          :value="role.id"
-                        >
-                          {{ role.name }} ({{
-                            role.gender === "male"
-                              ? "男声"
-                              : role.gender === "female"
-                                ? "女声"
-                                : "中性"
-                          }})
-                        </option>
-                      </select>
-                      <div
-                        v-if="isLoadingVoiceRoles"
-                        class="absolute right-2 top-1/2 -translate-y-1/2"
-                      >
-                        <div
-                          class="animate-spin h-5 w-5 border-2 border-blue-500 border-t-transparent rounded-full"
-                        ></div>
-                      </div>
-                    </div>
                   </div>
 
                   <div class="flex justify-between items-center space-x-4">
@@ -218,6 +163,7 @@ const showVoiceSettings = ref(true);
 const isNewChapter = ref(true);
 
 // Refs for voice models and emotions
+const cloudVoices = ref<{ id: string; name: string; providerName?: string }[]>([]);
 const voiceRoleModels = ref<any[]>([]);
 const emotionModels = ref<any[]>([]);
 
@@ -226,6 +172,7 @@ const form = reactive({
   name: "",
   text: "",
   settings: {
+    voiceId: "",
     serviceProvider: "",
     voice: "",
     speed: 1,
@@ -324,6 +271,8 @@ const chapterId = computed(() => route.params.chapterId as string);
 
 // Load chapter data if editing
 onMounted(async () => {
+  const voices = await window.electron.invoke("cloud:voices");
+  if (voices?.success) cloudVoices.value = voices.data || [];
   try {
     // Make sure voice models are loaded
     if (projectsStore.voiceModels.length === 0) {
@@ -338,6 +287,7 @@ onMounted(async () => {
         form.name = chapter.name || "";
         form.text = chapter.text || "";
         form.settings = {
+          voiceId: chapter.settings?.voiceId || "",
           serviceProvider: chapter.settings?.serviceProvider || "",
           voice: chapter.settings?.voice || "",
           speed:
