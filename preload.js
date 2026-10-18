@@ -173,7 +173,7 @@ contextBridge.exposeInMainWorld("api", {
 
   // LLM 相关 API
   llm: {
-    parseChapter: (chapterId) => ipcRenderer.invoke("llm:parse-chapter", chapterId),
+    parseChapter: (chapterId, options) => ipcRenderer.invoke("llm:parse-chapter", chapterId, options || {}),
     testProviderConnection: (type, data) =>
       ipcRenderer.invoke("llm:test-provider-connection", type, data),
   },

@@ -384,11 +384,14 @@ export const novelApi = {
    * @param {string} chapterId 章节ID
    * @returns {Promise<ApiResponse<ParsedChapter>>} 解析结果
    */
-  parseChapter: async (chapterId: string): Promise<ApiResponse<ParsedChapter>> => {
+  parseChapter: async (
+    chapterId: string,
+    options?: { useLlm?: boolean; speaker?: string }
+  ): Promise<ApiResponse<ParsedChapter>> => {
     try {
-      // 调用LLM服务解析章节
+      // 调用LLM服务解析章节；useLlm 为 false 时全文不分析角色
       // @ts-ignore - window.api.llm由preload.js提供
-      const result = await window.api.llm.parseChapter(chapterId);
+      const result = await window.api.llm.parseChapter(chapterId, options);
 
       if (result.success && result.data) {
         // 如果解析成功，更新章节的处理状态

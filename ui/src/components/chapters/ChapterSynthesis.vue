@@ -4,16 +4,27 @@
       语音合成
     </h3>
 
+    <label class="flex items-start gap-2 text-sm text-ink">
+      <input v-model="skipLlm" type="checkbox" class="mt-1 rounded border-border" />
+      <span>
+        <span class="font-medium">不使用 AI 区分角色</span>
+        <span class="mt-1 block text-xs text-ink-muted">勾选后，全文按本章语音朗读，不分析角色。</span>
+      </span>
+    </label>
+
     <div
-      v-if="!chapter.settings.serviceProvider || !chapter.settings.voice"
+      v-if="!hasVoice"
       class="text-center"
     >
       <!-- <p class="text-ink-muted">缺少语音配置</p> -->
-      <p class="text-sm text-ink-muted mt-2 mb-4">
+      <p v-if="skipLlm" class="text-sm text-ink-muted mt-2 mb-4">
         请先配置服务商和声音角色
       </p>
-      <button @click="$emit('edit-settings')" class="btn btn-primary">
+      <button v-if="skipLlm" @click="$emit('edit-settings')" class="btn btn-primary">
         配置章节语音设置
+      </button>
+      <button v-else @click="analyzeRoles" class="btn btn-primary" :disabled="analyzing || !chapter.text">
+        {{ analyzing ? "分析中..." : "分析角色" }}
       </button>
     </div>
 
@@ -94,11 +105,20 @@
                 打开文件夹
               </button>
               <button
+                v-if="skipLlm"
                 @click="synthesize"
                 class="btn btn-primary btn-sm flex justify-center items-center"
               >
                 <ArrowPathIcon class="h-4 w-4 mr-1" />
-                {{ "重新合成" }}
+                重新合成
+              </button>
+              <button
+                v-else
+                @click="analyzeRoles"
+                class="btn btn-primary btn-sm flex justify-center items-center"
+                :disabled="analyzing || !chapter.text"
+              >
+                {{ analyzing ? "分析中..." : "分析角色" }}
               </button>
               <button
                 v-if="isPlaying"
@@ -117,12 +137,21 @@
       <!-- Synthesis Button - show only if no audio and idle state -->
       <div v-else-if="synthesisStatus === 'idle'" class="flex justify-end">
         <button
+          v-if="skipLlm"
           @click="synthesize"
           class="btn btn-primary flex justify-center items-center"
           :disabled="!canSynthesize"
         >
           <SpeakerWaveIcon class="h-5 w-5 mr-1" />
           合成语音
+        </button>
+        <button
+          v-else
+          @click="analyzeRoles"
+          class="btn btn-primary flex justify-center items-center"
+          :disabled="analyzing || !chapter.text"
+        >
+          {{ analyzing ? "分析中..." : "分析角色" }}
         </button>
       </div>
 
@@ -153,6 +182,13 @@
         </button>
       </div>
     </div>
+
+    <ul v-if="!skipLlm && analysis.length" class="space-y-2 text-sm">
+      <li v-for="(segment, index) in analysis" :key="index" class="rounded-md bg-surface-hover p-2">
+        <div class="text-xs text-ink-muted">{{ segment.speaker }}</div>
+        <div class="text-ink break-words">{{ segment.text }}</div>
+      </li>
+    </ul>
   </div>
 </template>
 
@@ -184,6 +220,9 @@ const toast = useToast();
 const projectsStore = useProjectsStore();
 
 const synthesisStatus = ref<"idle" | "loading" | "success" | "error">("idle");
+const skipLlm = ref(true);
+const analyzing = ref(false);
+const analysis = ref<Array<{ text: string; speaker: string }>>([]);
 const errorMessage = ref("");
 const audioUrl = ref("");
 const audioFilePath = ref("");
@@ -192,12 +231,13 @@ const audioPlayer = ref<HTMLAudioElement | null>(null);
 const audioError = ref<string | null>(null);
 const showVoiceSettings = ref(true);
 
+const hasVoice = computed(() => {
+  const settings = props.chapter.settings || {};
+  return Boolean(settings.voiceId || (settings.serviceProvider && settings.voice));
+});
+
 const canSynthesize = computed(() => {
-  return (
-    props.chapter.text &&
-    props.chapter.settings.serviceProvider &&
-    props.chapter.settings.voice
-  );
+  return Boolean(props.chapter.text && hasVoice.value);
 });
 
 // Initialize component
@@ -257,6 +297,29 @@ async function setupAudio(filePath: string) {
   } catch (err) {
     console.error("设置音频URL失败:", err);
     audioUrl.value = formatPathForElectron(filePath);
+  }
+}
+
+async function analyzeRoles() {
+  if (!props.chapter.text?.trim()) {
+    toast.error("章节文本为空");
+    return;
+  }
+  analyzing.value = true;
+  try {
+    const result = await window.electron.invoke("cloud:script-split", {
+      text: props.chapter.text,
+      useLlm: true,
+    });
+    if (!result?.success) {
+      toast.error(result?.error || "角色分析失败，请稍后重试");
+      return;
+    }
+    analysis.value = result.data?.segments || [];
+  } catch (error) {
+    toast.error(error instanceof Error ? error.message : "角色分析失败，请稍后重试");
+  } finally {
+    analyzing.value = false;
   }
 }
 

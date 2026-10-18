@@ -14,10 +14,14 @@ const log = require("electron-log");
  * @param {object} providerConfig 提供商配置（含 protocol，可选）
  * @returns {Promise<Object>} 解析结果
  */
-async function parseText(text) {
+async function parseText(text, options = {}) {
   try {
+    const request = typeof options === "string" ? {} : options || {};
     const cloud = require("./cloudClient");
-    const result = await cloud.scriptSplit(text);
+    const result = await cloud.scriptSplit(text, {
+      useLlm: request.useLlm !== false,
+      speaker: request.speaker,
+    });
     if (!result.success) return result;
     const raw = (result.data?.segments || []).map((item) => ({
       t: item.text,
@@ -28,6 +32,7 @@ async function parseText(text) {
     const segments = formatResults(raw, "volcengine");
     return success({
       segments,
+      useLlm: request.useLlm !== false,
       processedAt: new Date().toISOString(),
     });
   } catch (err) {

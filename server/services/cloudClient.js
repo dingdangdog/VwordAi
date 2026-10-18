@@ -64,9 +64,14 @@ async function synthesizeToFile({ text, voiceId, speed, pitch, volume, outputPat
   return error("合成仍在处理，请稍后重试");
 }
 
-async function scriptSplit(text) {
+async function scriptSplit(text, options = {}) {
   const http = client();
-  const response = await http.post("/text/tasks", { task: "script-split", input: text });
+  const body = { task: "script-split", input: text };
+  if (options.useLlm === false) {
+    body.useLlm = false;
+    if (options.speaker) body.speaker = String(options.speaker);
+  }
+  const response = await http.post("/text/tasks", body);
   if (!response.data?.ok) return error(response.data?.error?.message || "文本处理失败，请稍后重试");
   return success(response.data.data);
 }

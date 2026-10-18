@@ -87,7 +87,7 @@ interface ApiInterface {
 
   // LLM相关API
   llm: {
-    parseChapter: (chapterId: string) => Promise<any>;
+    parseChapter: (chapterId: string, options?: { useLlm?: boolean; speaker?: string }) => Promise<any>;
     testProviderConnection: (type: string, data?: any) => Promise<any>;
   };
 }

@@ -27,7 +27,7 @@ function init() {
  */
 function registerLLMProcessingHandlers() {
   // 解析章节 - 业务逻辑
-  ipcMain.handle("llm:parse-chapter", async (_, chapterId) => {
+  ipcMain.handle("llm:parse-chapter", async (_, chapterId, options = {}) => {
     try {
       log.info(
         `[ChapterProcessingController] Processing chapter: ${chapterId}`
@@ -42,6 +42,8 @@ function registerLLMProcessingHandlers() {
       }
 
       const chapter = chapterResult.data;
+      const useLlm = !options || options.useLlm !== false;
+      const speaker = options && options.speaker ? String(options.speaker) : "旁白";
 
       // ---------- LLM 请求前日志（含 ASCII 汇总，避免终端编码导致中文乱码） ----------
       const contentLen = (chapter.content || "").length;
@@ -60,32 +62,38 @@ function registerLLMProcessingHandlers() {
       const LLMService = require("../services/LLMService");
       const Settings = require("../models/Settings");
 
-      const llmSettings = Settings.getLLMSettings();
-      const providers = llmSettings.providers || {};
-      const providerId = chapter.llmProvider || Object.keys(providers)[0] || "volcengine";
-      const providerConfig = providers[providerId];
+      let providerId = chapter.llmProvider || "";
+      if (useLlm) {
+        const llmSettings = Settings.getLLMSettings();
+        const providers = llmSettings.providers || {};
+        providerId = chapter.llmProvider || Object.keys(providers)[0] || "volcengine";
+        const providerConfig = providers[providerId];
 
-      if (!providerConfig) {
-        return error(
-          `LLM provider ${providerId} not configured`
+        if (!providerConfig) {
+          return error(
+            `LLM provider ${providerId} not configured`
+          );
+        }
+        const hasKey = providerConfig.key || providerConfig.appkey;
+        if (!hasKey) {
+          return error(
+            `LLM provider ${providerId} missing key/appkey`
+          );
+        }
+
+        log.info(
+          `[ChapterProcessingController] Call LLM provider=${providerId} protocol=${providerConfig.protocol || "openai"}`
+        );
+      } else {
+        log.info(
+          `[ChapterProcessingController] Skip LLM chapterId=${chapterId} speaker=${speaker}`
         );
       }
-      const hasKey = providerConfig.key || providerConfig.appkey;
-      if (!hasKey) {
-        return error(
-          `LLM provider ${providerId} missing key/appkey`
-        );
-      }
 
-      log.info(
-        `[ChapterProcessingController] Call LLM provider=${providerId} protocol=${providerConfig.protocol || "openai"}`
-      );
-
-      const parseResult = await LLMService.parseText(
-        chapter.content,
-        providerId,
-        providerConfig
-      );
+      const parseResult = await LLMService.parseText(chapter.content, {
+        useLlm,
+        speaker,
+      });
 
       // ---------- LLM 响应后日志（首行 ASCII 汇总，避免终端乱码） ----------
       const rawSegments = parseResult.success ? (parseResult.data.segments || []) : [];
@@ -147,7 +155,8 @@ function registerLLMProcessingHandlers() {
           segments,
           processedAt: parseResult.data.processedAt,
           provider: parseResult.data.provider,
-          llmProvider: providerId,
+          llmProvider: useLlm ? providerId : "",
+          useLlm,
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
         };

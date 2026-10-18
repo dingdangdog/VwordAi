@@ -12,8 +12,15 @@
           {{ chapterTitle }}
         </h1>
       </div>
-      <div class="flex items-center gap-2 shrink-0">
-        <select v-if="llmProviders.length > 0" v-model="selectedLLMProvider"
+      <div class="flex items-center gap-2 shrink-0 flex-wrap justify-end">
+        <label class="flex items-center gap-1 text-xs text-ink whitespace-nowrap" title="全文不分析角色，说话者由你指定">
+          <input v-model="skipLlm" type="checkbox" class="rounded border-border" />
+          不使用 AI 区分角色
+        </label>
+        <input v-if="skipLlm" v-model="plainSpeaker" maxlength="80"
+          class="input input-sm py-1.5 px-2 rounded border border-border bg-surface-elevated text-ink text-sm w-24"
+          title="说话者" placeholder="说话者" />
+        <select v-if="!skipLlm && llmProviders.length > 0" v-model="selectedLLMProvider"
           class="input input-sm py-1.5 px-2 rounded border border-border bg-surface-elevated text-ink text-sm min-w-[120px] max-w-[180px]"
           title="选择解析使用的 LLM 服务商">
           <option v-for="p in llmProviders" :key="p.id" :value="p.id">
@@ -23,7 +30,7 @@
         <button @click="parseChapter" class="btn btn-sm btn-primary flex items-center" :disabled="isProcessing">
           <DocumentMagnifyingGlassIcon v-if="!isProcessing" class="h-4 w-4 mr-1" />
           <div v-else class="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full mr-1"></div>
-          {{ isProcessing ? "解析中..." : "解析" }}
+          {{ isProcessing ? (skipLlm ? "处理中..." : "解析中...") : (skipLlm ? "生成全文" : "解析") }}
         </button>
         <button @click="saveChapterContent" class="btn btn-sm btn-primary" :disabled="isSaving">
           {{ isSaving ? "保存中..." : "保存" }}
@@ -66,7 +73,7 @@
           </div>
           <div v-if="!parsedChapter" class="flex-1 flex items-center justify-center p-4">
             <p class="text-sm text-ink-muted text-center">
-              该章节尚未解析，请点击「解析」进行 LLM 解析
+              {{ skipLlm ? "全文尚未生成。指定说话者后，点击「生成全文」。" : "该章节尚未解析，请点击「解析」进行 LLM 解析" }}
             </p>
           </div>
           <div v-else class="flex-1 min-h-0 overflow-y-auto p-2 space-y-2">
@@ -304,6 +311,8 @@ const currentTtsConfig = reactive({
 // LLM服务商（使用 providerId）
 const llmProviders = computed(() => settingsStore.getLLMProviders());
 const selectedLLMProvider = ref<LLMProviderType>("");
+const skipLlm = ref(false);
+const plainSpeaker = ref("旁白");
 
 // 与 CharacterModal / 设置页一致：语音模型与情感选项来自 tts:get-voice-models 的 voiceModelsCache
 const voiceModelsCache = ref<VoiceModelsCache>({});
@@ -694,21 +703,25 @@ async function parseChapter() {
   isProcessing.value = true;
 
   try {
-    // 先更新章节的LLM提供商
-    await novelApi.updateChapter(chapter.value.id, {
-      llmProvider: selectedLLMProvider.value,
-    });
+    if (!skipLlm.value) {
+      // 先更新章节的LLM提供商
+      await novelApi.updateChapter(chapter.value.id, {
+        llmProvider: selectedLLMProvider.value,
+      });
 
-    // 更新本地章节对象
-    if (chapter.value) {
-      chapter.value.llmProvider = selectedLLMProvider.value;
+      // 更新本地章节对象
+      if (chapter.value) {
+        chapter.value.llmProvider = selectedLLMProvider.value;
+      }
     }
 
     // 解析请求日志
     const requestPayload = {
       chapterId: chapter.value.id,
       chapterTitle: chapter.value.title,
-      llmProvider: selectedLLMProvider.value,
+      useLlm: !skipLlm.value,
+      speaker: skipLlm.value ? plainSpeaker.value : undefined,
+      llmProvider: skipLlm.value ? undefined : selectedLLMProvider.value,
       contentLength: chapter.value.content?.length ?? 0,
       contentPreview:
         chapter.value.content?.slice(0, 500) ?? "(无内容)",
@@ -719,7 +732,10 @@ async function parseChapter() {
     }
 
     // 调用解析API
-    const response = await novelApi.parseChapter(chapter.value.id);
+    const response = await novelApi.parseChapter(
+      chapter.value.id,
+      skipLlm.value ? { useLlm: false, speaker: plainSpeaker.value.trim() || "旁白" } : undefined
+    );
 
     // 解析响应日志
     console.log("[解析-响应] success:", response.success, "message:", response.message);

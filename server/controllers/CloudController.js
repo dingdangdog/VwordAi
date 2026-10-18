@@ -10,6 +10,12 @@ function init() {
   ipcMain.handle("cloud:services", async (_, kind) => cloud.services(kind));
   ipcMain.handle("cloud:service-choices", async () => cloud.serviceChoices());
   ipcMain.handle("cloud:save-service-choice", async (_, choice) => cloud.saveServiceChoice(choice || {}));
+  ipcMain.handle("cloud:script-split", async (_, payload = {}) => {
+    return cloud.scriptSplit(String(payload.text || ""), {
+      useLlm: payload.useLlm !== false,
+      speaker: payload.speaker,
+    });
+  });
   ipcMain.handle("cloud:sync", async () => sync.syncNow());
   ipcMain.handle("cloud:set-base", async (_, apiBase) => {
     Settings.updateSettings({ apiBase: String(apiBase || "").replace(/\/$/, "") });
