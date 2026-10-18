@@ -5,14 +5,17 @@
 
 export interface ElectronAPI {
   // 窗口控制
-  closeApp: () => void;
-  minimizeApp: () => void;
-  maximizeApp: () => void;
+  isMaximized: () => Promise<boolean>;
+  minimize: () => void;
+  maximize: () => void;
+  close: () => void;
+  restoreWindow: () => void;
 
   // 文件系统相关
   selectFolder: () => Promise<string>;
   openFolder: (dir: string) => Promise<any>;
   openFile: () => Promise<string>;
+  showItemInFolder: (filePath: string) => Promise<any>;
 
   // 数据处理
   invoke: (channel: string, ...args: any[]) => Promise<any>;
@@ -25,6 +28,7 @@ export interface ElectronAPI {
   checkForUpdates: () => Promise<any>;
   downloadUpdate: () => Promise<any>;
   installUpdate: () => Promise<any>;
+  cancelUpdate: () => Promise<any>;
   onUpdateMessage: (callback: (data: any) => void) => void;
   removeUpdateListener: () => void;
 

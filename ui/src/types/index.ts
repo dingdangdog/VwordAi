@@ -107,7 +107,7 @@ export interface ConnectionTestResult {
 
 // 设置类型
 export interface Settings {
-  theme: "light" | "dark";
+  theme: "light" | "dark" | "system";
   defaultExportPath: string;
   language: string;
   azure: TTSProviderConfig;

@@ -1,159 +1,68 @@
 <template>
-  <div
-    v-if="show"
-    class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50"
-    @click="$emit('close')"
-  >
-    <div
-      class="bg-surface-elevated rounded-lg shadow-xl w-full max-w-md mx-4 overflow-hidden"
-      @click.stop
-    >
-      <!-- 标题栏 -->
-      <div
-        class="bg-primary text-white py-4 px-6 flex justify-between items-center"
-      >
-        <h2 class="text-xl font-bold flex items-center">
-          <ArrowUpCircleIcon class="h-6 w-6 mr-2" />
-          发现新版本
-        </h2>
-        <button
-          @click="$emit('close')"
-          class="text-white/80 hover:text-white"
-        >
-          <svg
-            class="w-5 h-5"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M6 18L18 6M6 6l12 12"
-            ></path>
-          </svg>
-        </button>
+  <VDialog :open="show" title="发现新版本" size="md" @close="emit('close')">
+    <div class="space-y-4">
+      <div class="flex items-center gap-3 rounded-md border border-line bg-surface p-3">
+        <ArrowUpCircleIcon class="h-8 w-8 shrink-0 text-accent" aria-hidden="true" />
+        <div class="grid flex-1 grid-cols-2 gap-x-4 gap-y-1 text-sm">
+          <span class="text-ink-muted">当前版本</span>
+          <span class="num text-ink">{{ currentVersion }}</span>
+          <span class="text-ink-muted">最新版本</span>
+          <span class="num font-medium text-success">{{ updateInfo.version }}</span>
+          <template v-if="updateInfo.releaseDate">
+            <span class="text-ink-muted">发布日期</span>
+            <span class="text-ink">{{ updateInfo.releaseDate }}</span>
+          </template>
+        </div>
       </div>
 
-      <!-- 内容区域 -->
-      <div class="py-6 px-6">
-        <div class="mb-4">
-          <div class="flex space-x-2 mb-1">
-            <span class="text-ink font-medium"
-              >当前版本:</span
-            >
-            <span class="text-ink-muted">{{
-              currentVersion
-            }}</span>
-          </div>
-          <div class="flex space-x-2">
-            <span class="text-ink font-medium"
-              >最新版本:</span
-            >
-            <span class="text-green-600 dark:text-green-400 font-medium">{{
-              updateInfo.version
-            }}</span>
-          </div>
-        </div>
+      <div v-if="updateInfo.releaseNotes">
+        <p class="field-label">更新内容</p>
+        <div
+          class="max-h-48 overflow-y-auto rounded-md bg-soft p-3 text-sm leading-6 text-ink"
+          v-html="formattedReleaseNotes"
+        />
+      </div>
 
-        <div class="flex space-x-2">
-          <span class="text-ink font-medium"
-            >发布日期:</span
-          >
-          <span class="text-ink-muted">{{
-            updateInfo.releaseDate
-          }}</span>
+      <div v-if="downloadState === 'downloading'" class="space-y-1.5">
+        <div class="flex items-center justify-between text-xs">
+          <span class="text-accent">正在下载更新 <span class="num">{{ Math.round(downloadProgress || 0) }}%</span></span>
+          <button type="button" class="text-danger hover:underline" @click="emit('cancel')">取消</button>
         </div>
+        <div class="h-1.5 overflow-hidden rounded-full bg-soft">
+          <div class="h-full rounded-full bg-accent transition-[width] duration-base" :style="{ width: `${downloadProgress || 0}%` }" />
+        </div>
+      </div>
 
-        <div v-if="updateInfo.releaseNotes" class="mb-4">
-          <div class="text-ink font-medium mb-2">
-            更新内容:
-          </div>
-          <div
-            class="bg-surface-hover p-3 rounded-md text-sm text-ink whitespace-pre-line overflow-y-auto max-h-48"
-            v-html="formattedReleaseNotes"
-          ></div>
-        </div>
-
-        <!-- 下载进度 -->
-        <div v-if="downloadState === 'downloading'" class="mb-4">
-          <div class="flex justify-between mb-1">
-            <span class="text-sm font-medium text-primary"
-              >正在下载更新 {{ Math.round(downloadProgress || 0) }}%</span
-            >
-            <button
-              @click="$emit('cancel')"
-              class="text-sm text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 font-medium"
-              title="取消下载"
-            >
-              取消
-            </button>
-          </div>
-          <div class="w-full bg-border rounded-full h-2.5">
-            <div
-              class="bg-primary h-2.5 rounded-full"
-              :style="{ width: `${downloadProgress || 0}%` }"
-            ></div>
-          </div>
-        </div>
-
-        <!-- 下载错误提示 -->
-        <div v-if="downloadState === 'error'" class="mb-4">
-          <div
-            class="bg-red-100 border-l-4 border-red-500 text-red-700 p-3 rounded-md"
-            role="alert"
-          >
-            <p class="font-medium">下载失败</p>
-            <p>更新下载过程中出现错误，请检查网络连接后重试。</p>
-          </div>
-        </div>
-
-        <!-- 按钮区域 -->
-        <div class="flex space-x-3 justify-end">
-          <button
-            v-if="downloadState === 'idle' || downloadState === 'error'"
-            @click="$emit('download')"
-            class="btn btn-primary"
-          >
-            <ArrowDownTrayIcon class="h-5 w-5 mr-1" />
-            {{ downloadState === "error" ? "重试下载" : "下载更新" }}
-          </button>
-          <button
-            v-if="downloadState === 'downloaded'"
-            @click="$emit('install')"
-            class="btn btn-primary"
-          >
-            <ArrowDownTrayIcon class="h-5 w-5 mr-1" />
-            立即安装
-          </button>
-          <button
-            @click="$emit('close')"
-            class="btn btn-secondary"
-            :class="{
-              'ml-auto':
-                downloadState !== 'idle' &&
-                downloadState !== 'downloaded' &&
-                downloadState !== 'error',
-            }"
-          >
-            {{ downloadState === "downloaded" ? "稍后安装" : "关闭" }}
-          </button>
-        </div>
+      <div v-if="downloadState === 'error'" class="rounded-md border-l-2 border-danger bg-danger/10 p-3 text-sm" role="alert">
+        <p class="font-medium text-danger">下载失败</p>
+        <p class="text-ink-muted">更新下载过程中出现错误，请检查网络连接后重试。</p>
       </div>
     </div>
-  </div>
+
+    <template #footer>
+      <VButton variant="ghost" @click="emit('close')">{{ downloadState === "downloaded" ? "稍后安装" : "关闭" }}</VButton>
+      <VButton
+        v-if="downloadState === 'idle' || downloadState === 'error'"
+        variant="primary"
+        :icon="ArrowDownTrayIcon"
+        @click="emit('download')"
+      >
+        {{ downloadState === "error" ? "重试下载" : "下载更新" }}
+      </VButton>
+      <VButton v-if="downloadState === 'downloaded'" variant="primary" :icon="ArrowPathIcon" @click="emit('install')">
+        立即安装并重启
+      </VButton>
+    </template>
+  </VDialog>
 </template>
 
 <script setup lang="ts">
 import { computed } from "vue";
-import {
-  ArrowDownTrayIcon,
-  ArrowUpCircleIcon,
-} from "@heroicons/vue/24/outline";
+import { ArrowDownTrayIcon, ArrowPathIcon, ArrowUpCircleIcon } from "@heroicons/vue/24/outline";
+import VButton from "@/components/ui/VButton.vue";
+import VDialog from "@/components/ui/VDialog.vue";
 import type { UpdateInfo } from "@/services/updateService";
 
-// Props
 const props = defineProps<{
   show: boolean;
   updateInfo: UpdateInfo;
@@ -162,7 +71,6 @@ const props = defineProps<{
   downloadState?: "idle" | "downloading" | "downloaded" | "error";
 }>();
 
-// Emits
 const emit = defineEmits<{
   (e: "close"): void;
   (e: "download"): void;
@@ -170,28 +78,21 @@ const emit = defineEmits<{
   (e: "cancel"): void;
 }>();
 
-// 格式化发布说明
+function escapeHtml(text: string) {
+  return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+}
+
 const formattedReleaseNotes = computed(() => {
   if (!props.updateInfo.releaseNotes) return "";
-
-  // 替换 Markdown 风格的标题和列表
-  return props.updateInfo.releaseNotes
+  const plain = props.updateInfo.releaseNotes
+    .replace(/<(br|\/p|\/li|\/h\d)\s*\/?>/gi, "\n")
+    .replace(/<li[^>]*>/gi, "\n- ")
+    .replace(/<[^>]+>/g, "")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+  return escapeHtml(plain)
     .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
     .replace(/\n- /g, "<br>• ")
-    .replace(/\n\n/g, "<br><br>");
+    .replace(/\n/g, "<br>");
 });
 </script>
-
-<style scoped>
-.btn {
-  @apply px-4 py-2 rounded-md font-medium transition-colors;
-}
-
-.btn-primary {
-  @apply bg-blue-500 text-white hover:bg-blue-600 flex items-center;
-}
-
-.btn-secondary {
-  @apply bg-gray-200 text-gray-800 hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600;
-}
-</style>

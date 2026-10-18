@@ -34,8 +34,13 @@ export const LLM_PROTOCOLS: { value: LLMProtocol; label: string }[] = [
   { value: "claude", label: "Anthropic Claude" },
 ];
 
+export type ThemeMode = "light" | "dark" | "system";
+
+const THEME_MODES: ThemeMode[] = ["light", "dark", "system"];
+
 export const useSettingsStore = defineStore("settings", () => {
-  const theme = ref<"light" | "dark">("light");
+  const theme = ref<ThemeMode>("system");
+  const isDark = ref(false);
   const defaultExportPath = ref<string>("");
   const activeTab = ref<SettingsTab>("account");
   const activeTTSProviderType = ref<TTSProviderType | null>(null);
@@ -46,31 +51,34 @@ export const useSettingsStore = defineStore("settings", () => {
   const bliveSettings = ref<any | null>(null);
   const isLoading = ref(false);
 
-  // Initialize theme based on localStorage or system preference
-  function initTheme() {
-    const savedTheme = localStorage.getItem("theme");
-    if (savedTheme === "dark" || savedTheme === "light") {
-      theme.value = savedTheme;
-    } else if (window.matchMedia("(prefers-color-scheme: dark)").matches) {
-      theme.value = "dark";
-    }
-    applyTheme();
+  const systemDarkQuery = window.matchMedia("(prefers-color-scheme: dark)");
+  systemDarkQuery.addEventListener("change", () => {
+    if (theme.value === "system") applyTheme();
+  });
+
+  function normalizeTheme(value: unknown): ThemeMode {
+    return THEME_MODES.includes(value as ThemeMode) ? (value as ThemeMode) : "system";
   }
 
-  // Toggle theme between light and dark
-  function toggleTheme() {
-    theme.value = theme.value === "light" ? "dark" : "light";
-    localStorage.setItem("theme", theme.value);
+  // Initialize theme based on localStorage, defaulting to system preference
+  function initTheme() {
+    theme.value = normalizeTheme(localStorage.getItem("theme"));
     applyTheme();
   }
 
   // Apply theme to document
   function applyTheme() {
-    if (theme.value === "dark") {
-      document.documentElement.classList.add("dark");
-    } else {
-      document.documentElement.classList.remove("dark");
-    }
+    isDark.value =
+      theme.value === "dark" || (theme.value === "system" && systemDarkQuery.matches);
+    document.documentElement.classList.toggle("dark", isDark.value);
+  }
+
+  // Set theme mode and persist it locally and in settings
+  async function setTheme(mode: ThemeMode) {
+    theme.value = normalizeTheme(mode);
+    localStorage.setItem("theme", theme.value);
+    applyTheme();
+    await updateSettings({ theme: theme.value });
   }
 
   // Set default export path
@@ -133,7 +141,8 @@ export const useSettingsStore = defineStore("settings", () => {
 
         // Update local values
         if (settings.value?.theme) {
-          theme.value = settings.value.theme;
+          theme.value = normalizeTheme(settings.value.theme);
+          localStorage.setItem("theme", theme.value);
           applyTheme();
         }
 
@@ -236,7 +245,7 @@ export const useSettingsStore = defineStore("settings", () => {
 
   // Get all LLM service providers（从配置的 providers 列表）
   function getLLMProviders(): (LLMProviderConfig & { config: LLMProviderConfig | null })[] {
-    const prov = llmSettings.value?.providers || {};
+    const prov = (llmSettings.value?.providers || {}) as Record<string, LLMProviderConfig>;
     return Object.entries(prov).map(([id, c]) => ({
       ...c,
       id,
@@ -632,7 +641,7 @@ export const useSettingsStore = defineStore("settings", () => {
 
         // Update local values for reactive UI elements
         if (settingsData.theme) {
-          theme.value = settingsData.theme;
+          theme.value = normalizeTheme(settingsData.theme);
           applyTheme();
         }
 
@@ -722,6 +731,7 @@ export const useSettingsStore = defineStore("settings", () => {
 
   return {
     theme,
+    isDark,
     defaultExportPath,
     activeTab,
     activeTTSProviderType,
@@ -732,7 +742,7 @@ export const useSettingsStore = defineStore("settings", () => {
     bliveSettings,
     isLoading,
     initTheme,
-    toggleTheme,
+    setTheme,
     applyTheme,
     setDefaultExportPath,
     loadDefaultExportPath,

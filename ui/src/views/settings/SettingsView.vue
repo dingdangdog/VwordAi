@@ -1,100 +1,74 @@
 <template>
-  <div class="settings-view">
-    <!-- 设置选项卡 -->
-    <div class="border-b border-border">
-      <nav class="flex -mb-px">
+  <div class="mx-auto flex max-w-5xl gap-8 px-6 py-6">
+    <nav class="w-48 shrink-0" aria-label="设置分类">
+      <h1 class="mb-4 px-2.5 text-lg font-semibold text-ink">设置</h1>
+      <div class="space-y-0.5 pl-2">
         <button
           v-for="tab in tabs"
           :key="tab.id"
+          type="button"
+          class="nav-item w-full"
+          :class="activeTab === tab.id && 'nav-item-active'"
+          :aria-current="activeTab === tab.id ? 'page' : undefined"
           @click="setActiveTab(tab.id)"
-          class="py-2 pl-3 pr-4 text-center border-b-2 font-medium text-sm whitespace-nowrap duration-200 transition-all"
-          :class="
-            activeTab === tab.id
-              ? 'border-primary text-primary'
-              : 'border-transparent text-ink-muted hover:text-ink hover:border-border'
-          "
         >
-          <component :is="tab.icon" class="h-5 w-5 inline-block mr-1" />
+          <component :is="tab.icon" aria-hidden="true" />
           {{ tab.name }}
         </button>
-      </nav>
-    </div>
+      </div>
+    </nav>
 
-    <!-- 设置内容 -->
-    <div class="tab-content">
-      <!-- 语音服务（TTS 配置 + 语音模型） -->
+    <div class="min-w-0 flex-1">
+      <header class="mb-5">
+        <h2 class="text-base font-semibold text-ink">{{ current.name }}</h2>
+        <p class="text-sm text-ink-muted">{{ current.description }}</p>
+      </header>
       <AccountSettings v-if="activeTab === 'account'" />
       <SystemSettings v-else-if="activeTab === 'system'" />
+      <AboutSettings v-else />
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, watch } from "vue";
-import { useSettingsStore } from "@/stores/settings";
-import type { SettingsTab } from "@/stores/settings";
-import { useRoute } from "vue-router";
-import {
-  ServerIcon,
-  UserCircleIcon,
-} from "@heroicons/vue/24/outline";
-
+import { computed, watch } from "vue";
+import { useRoute, useRouter } from "vue-router";
+import { InformationCircleIcon, ServerIcon, UserCircleIcon } from "@heroicons/vue/24/outline";
 import AccountSettings from "@/components/settings/AccountSettings.vue";
 import SystemSettings from "@/components/settings/SystemSettings.vue";
+import AboutSettings from "@/components/settings/AboutSettings.vue";
+import { useSettingsStore, type SettingsTab } from "@/stores/settings";
 
 const settingsStore = useSettingsStore();
 const route = useRoute();
+const router = useRouter();
 
-// 定义选项卡（语音服务 = TTS 配置 + 语音模型，同一页内 Tab 切换）
 const tabs = [
-  { id: "account" as SettingsTab, name: "账号", icon: UserCircleIcon },
-  { id: "system" as SettingsTab, name: "系统设置", icon: ServerIcon },
+  { id: "account" as SettingsTab, name: "账号与服务", description: "官网账号、额度、同步与云端服务选择。", icon: UserCircleIcon },
+  { id: "system" as SettingsTab, name: "外观与系统", description: "主题、导出目录与数据备份。", icon: ServerIcon },
+  { id: "about" as SettingsTab, name: "关于", description: "版本信息、更新与诊断。", icon: InformationCircleIcon },
 ];
 
-// 选项卡状态
 const activeTab = computed(() => settingsStore.activeTab);
+const current = computed(() => tabs.find((t) => t.id === activeTab.value) || tabs[0]);
 
-// 兼容旧链接：tts 已合并到语音服务
-function normalizeTabParam(tab: string): SettingsTab | null {
+/** 兼容旧链接：tts / voice / llm 已合并到账号与服务 */
+function normalizeTab(tab: string): SettingsTab | null {
   if (tab === "tts" || tab === "voice" || tab === "llm") return "account";
-  const validTab = tabs.find((t) => t.id === tab);
-  return validTab ? (tab as SettingsTab) : null;
+  return tabs.some((t) => t.id === tab) ? (tab as SettingsTab) : null;
 }
 
-// 监听路由变化，更新选项卡
 watch(
   () => route.query.tab,
-  (newTab) => {
-    if (newTab && typeof newTab === "string") {
-      const tab = normalizeTabParam(newTab);
-      if (tab) settingsStore.setActiveTab(tab);
-    }
+  (tab) => {
+    const next = typeof tab === "string" ? normalizeTab(tab) : null;
+    if (next) settingsStore.setActiveTab(next);
   },
   { immediate: true }
 );
 
-// 初始化
-onMounted(async () => {
-  // 加载所有设置（包含服务商配置、存储路径等）
-  await settingsStore.loadSettings();
-
-  // 从URL获取tab参数（tts 重定向到 voice）
-  const tabParam = route.query.tab;
-  if (tabParam && typeof tabParam === "string") {
-    const tab = normalizeTabParam(tabParam);
-    if (tab) settingsStore.setActiveTab(tab);
-  }
-});
-
-// 切换选项卡
 function setActiveTab(tab: SettingsTab) {
   settingsStore.setActiveTab(tab);
+  router.replace({ query: { tab } });
 }
 </script>
-
-<style scoped>
-.settings-view {
-  max-width: 1200px;
-  margin: 0 auto;
-}
-</style>

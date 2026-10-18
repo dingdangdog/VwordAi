@@ -1,508 +1,527 @@
 <template>
-  <div class="container mx-auto">
-    <div v-if="loading" class="flex justify-center items-center py-4">
-      <div
-        class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"
-      ></div>
-    </div>
-
-    <div v-else-if="!project" class="text-center py-12">
-      <h2 class="text-xl font-semibold text-ink mb-4">
-        项目不存在
-      </h2>
-      <p class="text-ink mb-6">
-        您请求的项目不存在或已被删除。
-      </p>
-      <router-link to="/projects" class="btn btn-primary">
-        返回项目列表
-      </router-link>
-    </div>
-
-    <div v-else>
-      <!-- Project Header -->
-      <div
-        class="flex flex-col md:flex-row justify-between items-start md:items-center mb-2"
-      >
-        <div class="flex items-center space-x-2">
-          <h1 class="text-xl font-bold text-ink">
-            {{ project.title }}
-          </h1>
-
-          <button
-            @click="openEditProjectModal"
-            class="btn text-sm text-ink hover:text-primary flex items-center"
-          >
-            <PencilSquareIcon class="h-5 w-5 mr-2" />
-            编辑项目
-          </button>
-          <button
-            @click="exportProject"
-            class="btn text-sm text-ink hover:text-primary flex items-center"
-          >
-            <ArrowUpTrayIcon class="h-5 w-5 mr-2" />
-            导出项目
-          </button>
-        </div>
-        <div class="flex mt-4 md:mt-0 space-x-4">
-          <router-link to="/projects" class="btn text-ink hover:text-primary">
-            返回
-          </router-link>
-        </div>
-      </div>
-
-      <!-- Project Settings Summary -->
-      <div class="card mb-6 p-4">
-        <h3 class="text-md font-medium text-ink mb-2">
-          项目默认语音设置
-        </h3>
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div
-            v-if="project.defaultVoiceSettings?.serviceProvider"
-            class="text-sm"
-          >
-            <span class="text-ink-muted">服务商：</span>
-            <span class="text-ink">{{
-              getServiceProviderName(
-                project.defaultVoiceSettings?.serviceProvider
-              )
-            }}</span>
-          </div>
-          <div v-if="project.defaultVoiceSettings?.voice" class="text-sm">
-            <span class="text-ink-muted">声音角色：</span>
-            <span class="text-ink">{{
-              getVoiceRoleName(project.defaultVoiceSettings?.voice)
-            }}</span>
-          </div>
-          <div v-if="project.defaultVoiceSettings?.speed" class="text-sm">
-            <span class="text-ink-muted">语速：</span>
-            <span class="text-ink">{{
-              project.defaultVoiceSettings?.speed
-            }}</span>
-          </div>
-          <!-- <div v-if="project.defaultVoiceSettings?.pitch" class="text-sm">
-            <span class="text-ink-muted">音调：</span>
-            <span class="text-ink">{{ project.defaultVoiceSettings?.pitch }}</span>
-          </div>
-          <div v-if="project.defaultVoiceSettings?.volume" class="text-sm">
-            <span class="text-ink-muted">音量：</span>
-            <span class="text-ink">{{ project.defaultVoiceSettings?.volume }}</span>
-          </div> -->
-          <div v-if="project.defaultVoiceSettings?.emotion" class="text-sm">
-            <span class="text-ink-muted">情感：</span>
-            <span class="text-ink">{{
-              getEmotionName(project.defaultVoiceSettings?.emotion)
-            }}</span>
-          </div>
-        </div>
-        <div
-          v-if="!hasDefaultSettings"
-          class="text-sm text-ink-muted"
-        >
-          未设置默认语音参数，请在编辑项目中设置默认参数或在创建章节时单独设置。
-        </div>
-      </div>
-
-      <!-- Add Chapter Button -->
-      <div class="flex justify-between mb-2 sticky top-16">
-        <h2 class="text-base font-semibold text-ink">
-          章节列表
-        </h2>
+  <div class="flex h-full flex-col">
+    <!-- 顶栏 -->
+    <header class="flex h-12 shrink-0 items-center gap-2 border-b border-line bg-surface px-3">
+      <VIconButton :icon="ArrowLeftIcon" label="返回项目列表" size="sm" @click="router.push('/projects')" />
+      <template v-if="project">
         <button
-          @click="router.push(`/projects/${projectId}/chapters/new`)"
-          class="btn btn-primary flex items-center"
+          type="button"
+          class="group flex min-w-0 items-center gap-1.5 rounded-md px-1.5 py-1 hover:bg-soft"
+          title="编辑项目"
+          @click="formOpen = true"
         >
-          <PlusIcon class="h-5 w-5 mr-2" />
-          新建章节
+          <h1 class="truncate text-sm font-semibold text-ink">{{ project.title }}</h1>
+          <PencilSquareIcon class="h-3.5 w-3.5 shrink-0 text-ink-subtle group-hover:text-ink" aria-hidden="true" />
         </button>
-      </div>
+        <VBadge>{{ chapters.length }} 章</VBadge>
+        <VBadge v-if="defaultVoiceId" tone="accent">
+          <SpeakerWaveIcon class="h-3 w-3" aria-hidden="true" />
+          {{ accountStore.voiceName(defaultVoiceId) }}
+        </VBadge>
+        <div class="ml-auto flex items-center gap-1">
+          <VButton variant="ghost" size="sm" :icon="ArrowUpTrayIcon" @click="exportProject">导出</VButton>
+          <VButton variant="ghost" size="sm" :icon="Cog6ToothIcon" @click="formOpen = true">项目设置</VButton>
+        </div>
+      </template>
+    </header>
 
-      <!-- Chapters List -->
-      <div class="mb-6 max-h-[60vh] overflow-y-auto rounded-md shadow-sm shadow-black dark:shadow-white">
-        <div v-if="chapters.length === 0" class="card text-center py-8">
-          <h3 class="text-lg font-medium text-ink mb-3">
+    <div v-if="loading" class="flex min-h-0 flex-1">
+      <div class="w-64 space-y-2 border-r border-line bg-surface p-3">
+        <VSkeleton v-for="i in 6" :key="i" class="h-9" />
+      </div>
+      <div class="flex-1 space-y-3 p-8">
+        <VSkeleton class="h-6 w-64" />
+        <VSkeleton class="h-4 w-full" />
+        <VSkeleton class="h-4 w-5/6" />
+        <VSkeleton class="h-4 w-4/6" />
+      </div>
+    </div>
+
+    <VEmptyState
+      v-else-if="!project"
+      class="flex-1"
+      :icon="FolderIcon"
+      title="项目不存在"
+      description="该项目可能已被删除。"
+    >
+      <VButton variant="primary" @click="router.push('/projects')">返回项目列表</VButton>
+    </VEmptyState>
+
+    <div v-else class="flex min-h-0 flex-1">
+      <!-- 左：章节列表 -->
+      <aside class="flex w-64 shrink-0 flex-col border-r border-line bg-surface">
+        <div class="flex items-center justify-between px-3 pb-2 pt-3">
+          <span class="section-title">章节</span>
+          <VIconButton :icon="PlusIcon" label="新建章节" size="sm" variant="secondary" @click="createChapterQuick" />
+        </div>
+        <div class="px-3 pb-2">
+          <VInput v-model="listKeyword" size="sm" :icon="MagnifyingGlassIcon" placeholder="筛选章节" aria-label="筛选章节" />
+        </div>
+        <ul class="min-h-0 flex-1 overflow-y-auto px-2 pb-2" role="listbox" aria-label="章节列表">
+          <li v-for="(chapter, index) in visibleChapters" :key="chapter.id">
+            <button
+              type="button"
+              role="option"
+              :aria-selected="chapter.id === selectedId"
+              class="group flex w-full items-center gap-2.5 rounded-md px-2 py-2 text-left transition-colors duration-fast"
+              :class="chapter.id === selectedId ? 'bg-accent/10' : 'hover:bg-soft'"
+              @click="selectChapter(chapter.id)"
+            >
+              <span class="num w-5 shrink-0 text-right text-2xs text-ink-subtle">{{ index + 1 }}</span>
+              <span class="min-w-0 flex-1">
+                <span class="block truncate text-sm" :class="chapter.id === selectedId ? 'font-medium text-ink' : 'text-ink'">
+                  {{ chapter.id === selectedId ? draft.name || "未命名章节" : chapter.name }}
+                </span>
+                <span class="num block text-2xs text-ink-subtle">{{ countChars(chapter.id === selectedId ? draft.text : chapter.text).toLocaleString() }} 字</span>
+              </span>
+              <span
+                class="status-dot"
+                :class="statusOf(chapter).dot"
+                :title="statusOf(chapter).label"
+                aria-hidden="true"
+              />
+              <span class="sr-only">{{ statusOf(chapter).label }}</span>
+            </button>
+          </li>
+          <li v-if="!chapters.length" class="px-2 py-8 text-center text-xs text-ink-subtle">
             暂无章节
-          </h3>
-          <p class="text-lg text-ink mb-4">
-            还没有章节，点击下方按钮创建第一个章节吧！
-          </p>
-          <button
-            @click="router.push(`/projects/${projectId}/chapters/new`)"
-            class="btn btn-primary mx-auto"
-          >
-            创建第一个章节
-          </button>
+          </li>
+        </ul>
+      </aside>
+
+      <!-- 中：章节编辑 -->
+      <section class="flex min-w-0 flex-1 flex-col bg-canvas">
+        <VEmptyState
+          v-if="!selected"
+          class="flex-1"
+          :icon="DocumentTextIcon"
+          title="选择或新建一个章节"
+          description="章节文本会按项目或章节音色合成为一个音频文件。"
+        >
+          <VButton variant="primary" :icon="PlusIcon" @click="createChapterQuick">新建章节</VButton>
+        </VEmptyState>
+
+        <template v-else>
+          <div class="flex items-center gap-3 border-b border-line px-6 py-2.5">
+            <input
+              v-model="draft.name"
+              class="min-w-0 flex-1 bg-transparent text-base font-semibold text-ink outline-none placeholder:text-ink-subtle focus-visible:outline-none"
+              placeholder="章节名称"
+              aria-label="章节名称"
+            />
+            <span class="flex items-center gap-1.5 text-2xs" :class="dirty ? 'text-warning' : 'text-ink-subtle'">
+              <span class="status-dot" :class="dirty ? 'bg-warning' : 'bg-success'" aria-hidden="true" />
+              {{ dirty ? "未保存" : "已保存" }}
+            </span>
+            <VButton size="sm" :loading="saving" :disabled="!dirty" @click="saveDraft()">
+              保存 <span class="kbd ml-1">Ctrl S</span>
+            </VButton>
+            <VIconButton :icon="TrashIcon" label="删除章节" size="sm" @click="deletingChapter = selected" />
+          </div>
+          <textarea
+            ref="textEl"
+            v-model="draft.text"
+            class="min-h-0 flex-1 resize-none bg-transparent px-8 py-6 text-[15px] leading-7 text-ink outline-none placeholder:text-ink-subtle focus-visible:outline-none"
+            placeholder="在此粘贴或输入要朗读的文本…"
+            aria-label="章节文本"
+          />
+          <div class="flex h-8 shrink-0 items-center gap-4 border-t border-line px-6 text-2xs text-ink-subtle">
+            <span class="num">{{ countChars(draft.text).toLocaleString() }} 字</span>
+            <span>预计 {{ estimateDuration(draft.text) }}</span>
+            <span class="ml-auto hidden lg:inline">
+              <span class="kbd">Ctrl Enter</span> 合成 · <span class="kbd">Space</span> 播放/暂停
+            </span>
+          </div>
+        </template>
+      </section>
+
+      <!-- 右：检查器 -->
+      <aside v-if="selected" class="flex w-72 shrink-0 flex-col overflow-y-auto border-l border-line bg-surface">
+        <div class="space-y-4 border-b border-line p-4">
+          <p class="section-title">本章声音</p>
+          <VoiceSelect
+            v-model="draft.voiceId"
+            label="音色"
+            :placeholder="defaultVoiceId ? `跟随项目（${accountStore.voiceName(defaultVoiceId)}）` : '请选择音色'"
+          />
+          <VSlider
+            v-model="draft.speed"
+            label="语速"
+            :min="0.5"
+            :max="2"
+            :step="0.05"
+            :default-value="1"
+            :format="(v) => `${v.toFixed(2)}×`"
+          />
         </div>
 
-        <div v-else>
-          <div
-            class="overflow-hidden bg-surface-elevated shadow sm:rounded-md"
+        <div class="space-y-3 border-b border-line p-4">
+          <VButton
+            variant="primary"
+            size="lg"
+            block
+            :icon="SparklesIcon"
+            :loading="synthesizing"
+            :disabled="!canSynthesize"
+            @click="synthesize"
           >
-            <ul class="divide-y divide-border">
-              <li v-for="chapter in chapters" :key="chapter.id">
-                <div
-                  class="block hover:bg-surface-hover duration-200 transition-all"
-                >
-                  <div class="p-4">
-                    <div
-                      class="flex items-center justify-between"
-                      @click="toggleExpandChapter(chapter.id)"
-                    >
-                      <div class="min-w-0 flex-1 cursor-pointer">
-                        <div class="flex items-center">
-                          <p
-                            class="text-md font-medium text-primary truncate"
-                          >
-                            {{ chapter.name }}
-                          </p>
-                          <!-- Audio status indicator -->
-                          <span
-                            v-if="
-                              chapter.audioPath &&
-                              chapter.status === 'completed'
-                            "
-                            class="ml-2 px-2 py-0.5 text-xs font-medium rounded-full bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300"
-                          >
-                            已合成
-                          </span>
-                          <span
-                            v-else-if="chapter.status === 'processing'"
-                            class="ml-2 px-2 py-0.5 text-xs font-medium rounded-full bg-primary-muted text-primary"
-                          >
-                            处理中
-                          </span>
-                          <span
-                            v-else-if="chapter.status === 'error'"
-                            class="ml-2 px-2 py-0.5 text-xs font-medium rounded-full bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300"
-                          >
-                            合成失败
-                          </span>
-                        </div>
-                        <div class="">
-                          <div class="text-sm text-ink-muted">
-                            <p class="mt-1 line-clamp-1">
-                              {{ chapter.text || "暂无内容" }}
-                            </p>
-                            <p class="mt-2">
-                              最后更新：{{ formatDate(chapter.updateAt) }}
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-                      <div class="ml-4 flex-shrink-0 flex">
-                        <button
-                          @click.stop="
-                            router.push(
-                              `/projects/${projectId}/chapters/${chapter.id}`
-                            )
-                          "
-                          class="mr-2 text-primary hover:text-primary-hover"
-                        >
-                          编辑
-                        </button>
-                        <button
-                          @click.stop="confirmDeleteChapter(chapter)"
-                          class="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300"
-                        >
-                          删除
-                        </button>
-                        <div class="ml-5 flex-shrink-0 cursor-pointer">
-                          <ChevronDownIcon
-                            v-if="expandedChapters[chapter.id]"
-                            class="h-5 w-5 text-ink-muted"
-                          />
-                          <ChevronRightIcon
-                            v-else
-                            class="h-5 w-5 text-ink-muted"
-                          />
-                        </div>
-                      </div>
-                    </div>
-
-                    <!-- Expanded Chapter Content -->
-                    <div
-                      v-if="expandedChapters[chapter.id]"
-                      class="mt-2 border-t border-border"
-                    >
-                      <!-- Chapter Synthesis Component -->
-                      <ChapterSynthesis
-                        :chapter="chapter"
-                        @edit-settings="
-                          router.push(
-                            `/projects/${projectId}/chapters/${chapter.id}`
-                          )
-                        "
-                        @synthesis-complete="handleSynthesisComplete"
-                      />
-                    </div>
-                  </div>
-                </div>
-              </li>
-            </ul>
+            {{ synthesizing ? "正在合成…" : selected.audioPath ? "重新合成本章" : "合成本章" }}
+          </VButton>
+          <p v-if="!effectiveVoiceId" class="text-xs text-warning">请先为本章或项目选择音色。</p>
+          <p v-else-if="!countChars(draft.text)" class="text-xs text-ink-subtle">输入文本后即可合成。</p>
+          <div v-else class="flex items-center gap-2 text-xs text-ink-muted">
+            <span class="status-dot" :class="statusOf(selected).dot" aria-hidden="true" />
+            {{ statusOf(selected).label }}
+            <span v-if="selected.status === 'completed'" class="text-ink-subtle">· {{ formatRelative(selected.updateAt) }}</span>
           </div>
         </div>
-      </div>
 
-      <!-- Edit Project Modal -->
-      <ProjectFormModal
-        v-if="showEditProjectModal"
-        title="编辑项目"
-        submitText="保存"
-        :initialData="project"
-        @close="showEditProjectModal = false"
-        @submit="updateProject"
-      />
-
-      <!-- Delete Confirmation Modal -->
-      <ConfirmationModal
-        v-if="showDeleteChapterModal"
-        title="删除章节"
-        :message="getDeleteMessage()"
-        confirmText="删除"
-        confirmButtonClass="btn-danger"
-        @close="showDeleteChapterModal = false"
-        @confirm="deleteChapter"
-      />
+        <div class="space-y-3 p-4">
+          <div class="flex items-center justify-between">
+            <p class="section-title">角色预览</p>
+            <VButton size="sm" variant="ghost" :loading="analyzing" :disabled="!countChars(draft.text)" @click="analyzeRoles">
+              分析
+            </VButton>
+          </div>
+          <p class="text-xs text-ink-subtle">
+            用 AI 识别文本中的说话人，便于检查分段。项目合成使用单一音色；需要多角色配音请使用「小说」工作台。
+          </p>
+          <ul v-if="analysis.length" class="space-y-1.5">
+            <li
+              v-for="(segment, index) in analysis"
+              :key="index"
+              class="rounded-md border-l-2 bg-raised px-2.5 py-1.5"
+              :class="roleTone(segment.speaker).border"
+            >
+              <p class="text-2xs font-medium" :class="roleTone(segment.speaker).text">{{ segment.speaker || "旁白" }}</p>
+              <p class="line-clamp-3 text-xs text-ink">{{ segment.text }}</p>
+            </li>
+          </ul>
+        </div>
+      </aside>
     </div>
+
+    <VAudioBar
+      v-if="project"
+      ref="audioBar"
+      :src="audioUrl"
+      :title="selected?.audioPath ? selected.name : undefined"
+      :subtitle="selected?.audioPath ? project.title : undefined"
+      :autoplay="autoplayNext"
+    >
+      <template #actions>
+        <VIconButton :icon="FolderOpenIcon" label="打开所在文件夹" size="sm" :disabled="!selected?.audioPath" @click="openAudioFolder" />
+      </template>
+    </VAudioBar>
+
+    <ProjectFormModal
+      :open="formOpen"
+      title="项目设置"
+      :initial-data="project"
+      :submitting="savingProject"
+      @close="formOpen = false"
+      @submit="updateProject"
+    />
+
+    <VConfirmDialog
+      :open="!!deletingChapter"
+      title="删除章节"
+      :message="`确定删除「${deletingChapter?.name}」吗？此操作无法恢复。`"
+      confirm-text="删除"
+      @close="deletingChapter = null"
+      @confirm="deleteChapter"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from "vue";
-import { useRoute, useRouter } from "vue-router";
-import { useProjectsStore } from "@/stores/projects";
+import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref, watch } from "vue";
+import { onBeforeRouteLeave, useRoute, useRouter } from "vue-router";
 import { useToast } from "vue-toastification";
-import type { Project, Chapter } from "@/types";
 import {
-  getProviderName as getProviderDisplayName,
-  getVoiceRoleName as getVoiceDisplayName,
-  getEmotionName as getEmotionDisplayName,
-} from "@/utils/voice-utils";
-import ProjectFormModal from "@/components/projects/ProjectFormModal.vue";
-import ConfirmationModal from "@/components/common/ConfirmationModal.vue";
-import ChapterSynthesis from "@/components/chapters/ChapterSynthesis.vue";
-import {
-  PlusIcon,
-  PencilSquareIcon,
-  ChevronRightIcon,
-  ChevronDownIcon,
+  ArrowLeftIcon,
   ArrowUpTrayIcon,
+  Cog6ToothIcon,
+  DocumentTextIcon,
+  FolderIcon,
+  FolderOpenIcon,
+  MagnifyingGlassIcon,
+  PencilSquareIcon,
+  PlusIcon,
+  SparklesIcon,
+  SpeakerWaveIcon,
+  TrashIcon,
 } from "@heroicons/vue/24/outline";
-import { formatDate } from "@/utils/common";
+import VAudioBar from "@/components/ui/VAudioBar.vue";
+import VBadge from "@/components/ui/VBadge.vue";
+import VButton from "@/components/ui/VButton.vue";
+import VConfirmDialog from "@/components/ui/VConfirmDialog.vue";
+import VEmptyState from "@/components/ui/VEmptyState.vue";
+import VIconButton from "@/components/ui/VIconButton.vue";
+import VInput from "@/components/ui/VInput.vue";
+import VSkeleton from "@/components/ui/VSkeleton.vue";
+import VSlider from "@/components/ui/VSlider.vue";
+import ProjectFormModal, { type ProjectFormData } from "@/components/projects/ProjectFormModal.vue";
+import VoiceSelect from "@/components/projects/VoiceSelect.vue";
+import { ttsApi } from "@/api";
+import { useAccountStore } from "@/stores/account";
+import { useProjectsStore } from "@/stores/projects";
+import type { Chapter } from "@/types";
+import { countChars, estimateDuration, folderOf, formatRelative, toMediaUrl } from "@/utils/format";
+import { roleTone } from "@/utils/roleColor";
 
 const route = useRoute();
 const router = useRouter();
 const toast = useToast();
 const projectsStore = useProjectsStore();
+const accountStore = useAccountStore();
 
 const loading = ref(true);
-const projectId = computed(() => route.params.id as string);
-const project = computed(
-  () => projectsStore.projects.find((p) => p.id === projectId.value) || null
-);
-const chapters = computed(() => {
-  if (!projectId.value) return [];
-  return projectsStore.chapters
-    .filter((c) => c.projectId === projectId.value)
-    .sort((a, b) => {
-      // 倒序排列：最新创建的章节在前面
-      return new Date(b.createAt).getTime() - new Date(a.createAt).getTime();
-    });
-});
+const selectedId = ref<string | null>(null);
+const listKeyword = ref("");
+const saving = ref(false);
+const savingProject = ref(false);
+const synthesizing = ref(false);
+const analyzing = ref(false);
+const analysis = ref<Array<{ text: string; speaker: string }>>([]);
+const formOpen = ref(false);
+const deletingChapter = ref<Chapter | null>(null);
+const audioUrl = ref("");
+const autoplayNext = ref(false);
+const textEl = ref<HTMLTextAreaElement | null>(null);
+const audioBar = ref<InstanceType<typeof VAudioBar> | null>(null);
 
-const hasDefaultSettings = computed(() => {
-  if (!project.value || !project.value.defaultVoiceSettings) return false;
-  const settings = project.value.defaultVoiceSettings;
-  return !!(
-    settings.serviceProvider ||
-    settings.voice ||
-    settings.speed ||
-    settings.pitch ||
-    settings.volume ||
-    settings.emotion
+const draft = reactive({ name: "", text: "", voiceId: "", speed: 1 });
+
+const projectId = computed(() => route.params.id as string);
+const project = computed(() => projectsStore.projects.find((p) => p.id === projectId.value) || null);
+const defaultVoiceId = computed<string>(() => project.value?.defaultVoiceSettings?.voiceId || "");
+
+const chapters = computed(() =>
+  projectsStore.chapters
+    .filter((c) => c.projectId === projectId.value)
+    .sort((a, b) => (a.order ?? 0) - (b.order ?? 0) || new Date(a.createAt).getTime() - new Date(b.createAt).getTime())
+);
+const visibleChapters = computed(() => {
+  const q = listKeyword.value.trim().toLowerCase();
+  return q ? chapters.value.filter((c) => c.name.toLowerCase().includes(q)) : chapters.value;
+});
+const selected = computed(() => chapters.value.find((c) => c.id === selectedId.value) || null);
+
+const effectiveVoiceId = computed(() => draft.voiceId || defaultVoiceId.value);
+const canSynthesize = computed(() => Boolean(selected.value && countChars(draft.text) && effectiveVoiceId.value));
+
+const dirty = computed(() => {
+  const c = selected.value;
+  if (!c) return false;
+  return (
+    draft.name !== (c.name || "") ||
+    draft.text !== (c.text || "") ||
+    draft.voiceId !== (c.settings?.voiceId || "") ||
+    draft.speed !== Number(c.settings?.speed ?? 1)
   );
 });
 
-// Modal states
-const showEditProjectModal = ref(false);
-const showDeleteChapterModal = ref(false);
+function statusOf(chapter: Chapter) {
+  if (chapter.status === "processing") return { label: "合成中", dot: "bg-warning animate-pulse-dot" };
+  if (chapter.status === "error") return { label: "上次合成失败", dot: "bg-danger" };
+  if (chapter.audioPath && chapter.status === "completed") return { label: "已合成", dot: "bg-success" };
+  return { label: "未合成", dot: "bg-line-strong" };
+}
 
-// Form data
-const editingChapter = ref<Chapter | null>(null);
-const deletingChapter = ref<Chapter | null>(null);
+function loadDraft(chapter: Chapter | null) {
+  draft.name = chapter?.name || "";
+  draft.text = chapter?.text || "";
+  draft.voiceId = chapter?.settings?.voiceId || "";
+  draft.speed = Number(chapter?.settings?.speed ?? 1) || 1;
+  analysis.value = [];
+}
 
-// For expanded chapters
-const expandedChapters = ref<Record<string, boolean>>({});
+async function refreshAudio(chapter: Chapter | null, autoplay = false) {
+  autoplayNext.value = autoplay;
+  audioUrl.value = chapter?.audioPath ? await toMediaUrl(chapter.audioPath) : "";
+}
 
-// Load data on mount and when project ID changes
-onMounted(() => {
-  loadData();
-});
+async function selectChapter(id: string | null) {
+  if (id === selectedId.value) return;
+  if (dirty.value) await saveDraft(true);
+  selectedId.value = id;
+  loadDraft(selected.value);
+  refreshAudio(selected.value);
+  router.replace({ query: id ? { ...route.query, chapter: id } : {} });
+}
 
-watch(
-  () => route.params.id,
-  () => {
-    loadData();
+async function saveDraft(silent = false) {
+  const chapter = selected.value;
+  if (!chapter || !dirty.value) return true;
+  saving.value = true;
+  try {
+    const result = await projectsStore.updateChapter(chapter.id, {
+      name: draft.name.trim() || "未命名章节",
+      text: draft.text,
+      settings: JSON.parse(JSON.stringify({ ...(chapter.settings || {}), voiceId: draft.voiceId, speed: draft.speed })),
+    });
+    if (!result) throw new Error("保存失败");
+    if (!draft.name.trim()) draft.name = result.name;
+    if (!silent) toast.success("已保存");
+    return true;
+  } catch (error) {
+    toast.error(error instanceof Error ? error.message : "保存失败");
+    return false;
+  } finally {
+    saving.value = false;
   }
-);
-
-function loadData() {
-  loading.value = true;
-  projectsStore.loadProjects();
-  projectsStore.loadChaptersByProjectId(projectId.value);
-
-  // Set current project
-  projectsStore.setCurrentProject(projectId.value);
-
-  setTimeout(() => {
-    loading.value = false;
-
-    // If project doesn't exist, show error
-    if (!project.value) {
-      toast.error("项目不存在或已被删除");
-    } else {
-      // Auto-expand chapters with audio
-      expandChaptersWithAudio();
-    }
-  }, 500);
 }
 
-// Automatically expand chapters that have completed audio
-function expandChaptersWithAudio() {
-  chapters.value.forEach((chapter) => {
-    expandedChapters.value[chapter.id] = false;
-  });
-}
-
-// Modal functions
-function openEditProjectModal() {
-  showEditProjectModal.value = true;
-}
-
-function confirmDeleteChapter(chapter: Chapter) {
-  deletingChapter.value = chapter;
-  showDeleteChapterModal.value = true;
-}
-
-// CRUD operations
-async function updateProject(projectData: {
-  title: string;
-  description: string;
-  defaultVoiceSettings: any;
-}) {
+async function createChapterQuick() {
   if (!project.value) return;
-
-  const result = await projectsStore.updateProject(project.value.id, {
-    title: projectData.title,
-    description: projectData.description,
-    defaultVoiceSettings: projectData.defaultVoiceSettings,
+  if (dirty.value) await saveDraft(true);
+  const chapter = await projectsStore.createChapter(project.value.id, `第 ${chapters.value.length + 1} 章`, "", {
+    voiceId: "",
+    speed: 1,
+    pitch: 0,
+    volume: 100,
   });
+  if (!chapter) {
+    toast.error("新建章节失败");
+    return;
+  }
+  selectedId.value = null;
+  await selectChapter(chapter.id);
+  await nextTick();
+  textEl.value?.focus();
+}
 
+async function synthesize() {
+  const chapter = selected.value;
+  if (!chapter || synthesizing.value) return;
+  if (!countChars(draft.text)) return toast.error("章节文本为空");
+  if (!effectiveVoiceId.value) return toast.error("请先选择音色");
+  if (dirty.value && !(await saveDraft(true))) return;
+
+  synthesizing.value = true;
+  try {
+    const response = await ttsApi.synthesize(chapter.id);
+    const outputPath = response.success ? response.data?.outputPath : "";
+    if (!outputPath) throw new Error(response.error || "合成失败，请稍后重试");
+    await projectsStore.updateChapter(chapter.id, { audioPath: outputPath, status: "completed" });
+    if (selectedId.value === chapter.id) await refreshAudio(selected.value, true);
+    toast.success(`「${chapter.name}」合成完成`);
+  } catch (error) {
+    toast.error(error instanceof Error ? error.message : "合成失败，请稍后重试");
+    await projectsStore.loadChaptersByProjectId(projectId.value);
+  } finally {
+    synthesizing.value = false;
+  }
+}
+
+async function analyzeRoles() {
+  if (!countChars(draft.text)) return;
+  analyzing.value = true;
+  try {
+    const result = await window.electron.invoke("cloud:script-split", { text: draft.text, useLlm: true });
+    if (!result?.success) throw new Error(result?.error || "角色分析失败，请稍后重试");
+    analysis.value = result.data?.segments || [];
+    if (!analysis.value.length) toast.info("没有识别到可分段的内容");
+  } catch (error) {
+    toast.error(error instanceof Error ? error.message : "角色分析失败，请稍后重试");
+  } finally {
+    analyzing.value = false;
+  }
+}
+
+async function openAudioFolder() {
+  const path = selected.value?.audioPath;
+  if (!path) return;
+  const result = await window.electron.openFolder(folderOf(path));
+  if (result && result.success === false) toast.error(`无法打开文件夹：${result.error || "未知错误"}`);
+}
+
+async function updateProject(data: ProjectFormData) {
+  if (!project.value) return;
+  savingProject.value = true;
+  const result = await projectsStore.updateProject(project.value.id, data);
+  savingProject.value = false;
   if (result) {
-    toast.success(`项目 "${projectData.title}" 更新成功！`);
-    showEditProjectModal.value = false;
+    toast.success("项目设置已保存");
+    formOpen.value = false;
   } else {
-    toast.error("更新项目失败！");
+    toast.error("保存项目失败");
   }
 }
 
 async function deleteChapter() {
-  if (!deletingChapter.value) return;
-
-  const result = await projectsStore.deleteChapter(deletingChapter.value.id);
-
-  if (result) {
-    toast.success(`章节 "${deletingChapter.value.name}" 已删除！`);
-    showDeleteChapterModal.value = false;
-  } else {
-    toast.error("删除章节失败！");
+  const target = deletingChapter.value;
+  deletingChapter.value = null;
+  if (!target) return;
+  const index = chapters.value.findIndex((c) => c.id === target.id);
+  const ok = await projectsStore.deleteChapter(target.id);
+  if (!ok) return toast.error("删除章节失败");
+  toast.success(`已删除「${target.name}」`);
+  if (selectedId.value === target.id) {
+    const next = chapters.value[Math.min(index, chapters.value.length - 1)] || null;
+    selectedId.value = null;
+    await selectChapter(next?.id || null);
   }
 }
 
-async function exportProject() {
-  if (!project.value) {
-    toast.error("项目不存在");
-    return;
-  }
+function exportProject() {
+  if (!project.value) return;
+  const data = { ...project.value, chapters: chapters.value };
+  const url = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], { type: "application/json" }));
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `${project.value.title}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+  toast.success("项目已导出为 JSON");
+}
 
-  try {
-    // 准备导出数据
-    const projectData = {
-      ...project.value,
-      chapters: chapters.value
-        .filter((c) => c.projectId === projectId.value)
-        .sort((a, b) => a.order - b.order),
-    };
+function isTyping(target: EventTarget | null) {
+  const el = target as HTMLElement | null;
+  return !!el && (el.tagName === "INPUT" || el.tagName === "TEXTAREA" || el.tagName === "SELECT" || el.isContentEditable);
+}
 
-    // 转换为JSON字符串
-    const jsonData = JSON.stringify(projectData, null, 2);
-
-    // 创建Blob
-    const blob = new Blob([jsonData], { type: "application/json" });
-
-    // 创建下载链接
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `${project.value.title}.json`;
-    document.body.appendChild(a);
-    a.click();
-
-    // 清理
-    URL.revokeObjectURL(url);
-    document.body.removeChild(a);
-
-    toast.success("项目配置导出成功");
-  } catch (error) {
-    console.error("导出项目失败:", error);
-    toast.error(
-      `导出失败: ${error instanceof Error ? error.message : "未知错误"}`
-    );
+function onKeydown(event: KeyboardEvent) {
+  if (formOpen.value || deletingChapter.value) return;
+  if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "s") {
+    event.preventDefault();
+    saveDraft();
+  } else if ((event.ctrlKey || event.metaKey) && event.key === "Enter") {
+    event.preventDefault();
+    synthesize();
+  } else if (event.key === " " && !isTyping(event.target) && audioUrl.value) {
+    event.preventDefault();
+    audioBar.value?.toggle();
   }
 }
 
-// Helper functions to get display names
-function getServiceProviderName(id: string): string {
-  return getProviderDisplayName(id);
-}
-
-function getVoiceRoleName(id: string): string {
-  return getVoiceDisplayName(id);
-}
-
-function getEmotionName(id: string): string {
-  return getEmotionDisplayName(id);
-}
-
-function getDeleteMessage(): string {
-  if (!deletingChapter.value) return "";
-  return `确定要删除章节 "${deletingChapter.value.name}" 吗？此操作无法恢复。`;
-}
-
-function toggleExpandChapter(chapterId: string) {
-  expandedChapters.value[chapterId] = !expandedChapters.value[chapterId];
-}
-
-// 合成完成处理
-async function handleSynthesisComplete(data: { chapterId: string; audioPath?: string; status: string }) {
-  // 刷新项目章节数据
+async function init() {
+  loading.value = true;
+  if (!projectsStore.projects.length) await projectsStore.loadProjects();
   await projectsStore.loadChaptersByProjectId(projectId.value);
+  projectsStore.currentProjectId = projectId.value;
+  loading.value = false;
 
-  // 更新UI显示
-  const chapter = chapters.value.find(c => c.id === data.chapterId);
-  if (chapter) {
-    // 自动展开刚刚合成完成的章节
-    if (data.status === 'completed') {
-      expandedChapters.value[data.chapterId] = true;
-      toast.success(`章节 "${chapter.name}" 合成成功`);
-    } else if (data.status === 'error') {
-      expandedChapters.value[data.chapterId] = true;
-      toast.error(`章节 "${chapter.name}" 合成失败`);
-    }
-  }
+  const wanted = route.query.chapter as string | undefined;
+  selectedId.value = null;
+  if (wanted === "new") await createChapterQuick();
+  else await selectChapter(chapters.value.find((c) => c.id === wanted)?.id || chapters.value[0]?.id || null);
 }
 
-// 确保模型数据已加载
-if (projectsStore.voiceModels.length === 0) {
-  projectsStore.loadVoiceModels();
-}
+watch(projectId, (id, old) => {
+  if (id && id !== old) init();
+});
+
+onMounted(() => {
+  init();
+  accountStore.loadVoices();
+  window.addEventListener("keydown", onKeydown);
+});
+
+onBeforeUnmount(() => window.removeEventListener("keydown", onKeydown));
+
+onBeforeRouteLeave(async () => {
+  if (dirty.value) await saveDraft(true);
+});
 </script>

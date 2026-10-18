@@ -1,207 +1,304 @@
 <template>
-  <div class="read-novels-view">
-    <div class="flex justify-between mb-4">
-      <h1 class="text-2xl font-bold text-ink">
-        AI自动读小说系统
-      </h1>
-      <div>
-        <button @click="openNovelModal()" class="btn btn-primary flex items-center">
-          <PlusIcon class="h-5 w-5 mr-1" />
-          新建小说
-        </button>
+  <div class="flex h-full">
+    <!-- 小说列表 -->
+    <aside class="flex w-64 shrink-0 flex-col border-r border-line bg-surface">
+      <div class="flex items-center justify-between px-3 pb-2 pt-3">
+        <span class="section-title">小说</span>
+        <VIconButton :icon="PlusIcon" label="新建小说" size="sm" variant="secondary" @click="openNovelModal()" />
       </div>
-    </div>
-
-    <!-- 主界面布局 -->
-    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-      <!-- 左侧小说列表 -->
-      <div class="md:col-span-1 bg-surface-elevated rounded-lg shadow p-4">
-        <NovelList :novels="novels" :selected-novel-id="currentNovel?.id" @select-novel="selectNovel" />
+      <div class="px-3 pb-2">
+        <VInput v-model="keyword" size="sm" :icon="MagnifyingGlassIcon" placeholder="搜索书名或作者" aria-label="搜索小说" />
       </div>
+      <ul class="min-h-0 flex-1 overflow-y-auto px-2 pb-2" role="listbox" aria-label="小说列表">
+        <template v-if="novelsStore.isLoading && !novels.length">
+          <li v-for="i in 4" :key="i" class="px-2 py-2"><VSkeleton class="h-9" /></li>
+        </template>
+        <li v-for="novel in filteredNovels" :key="novel.id">
+          <button
+            type="button"
+            role="option"
+            :aria-selected="novel.id === currentNovel?.id"
+            class="flex w-full items-center gap-2.5 rounded-md px-2 py-2 text-left transition-colors duration-fast"
+            :class="novel.id === currentNovel?.id ? 'bg-accent/10' : 'hover:bg-soft'"
+            @click="selectNovel(novel.id)"
+          >
+            <span class="flex h-9 w-7 shrink-0 items-center justify-center overflow-hidden rounded-sm bg-soft text-ink-subtle">
+              <img v-if="novel.cover" :src="novel.cover" alt="" class="h-full w-full object-cover" />
+              <BookOpenIcon v-else class="h-4 w-4" aria-hidden="true" />
+            </span>
+            <span class="min-w-0 flex-1">
+              <span class="block truncate text-sm text-ink" :class="novel.id === currentNovel?.id && 'font-medium'">{{ novel.title }}</span>
+              <span class="block truncate text-2xs text-ink-subtle">{{ novel.author || "佚名" }}</span>
+            </span>
+          </button>
+        </li>
+        <li v-if="!novelsStore.isLoading && !filteredNovels.length" class="px-2 py-8 text-center text-xs text-ink-subtle">
+          {{ novels.length ? "没有匹配的小说" : "还没有小说" }}
+        </li>
+      </ul>
+    </aside>
 
-      <!-- 右侧：基本信息、角色、章节 三区域 -->
-      <div v-if="currentNovel" class="md:col-span-3 grid grid-cols-1 gap-3">
-        <!-- 1. 小说基本信息 -->
-        <NovelDetail :novel="currentNovel" @edit-novel="editNovel" />
+    <!-- 详情 -->
+    <section class="min-w-0 flex-1 overflow-y-auto">
+      <VEmptyState
+        v-if="!currentNovel"
+        class="h-full"
+        :icon="BookOpenIcon"
+        title="选择或新建一部小说"
+        description="导入章节后，AI 会拆分旁白与角色对白，并为每个角色分配音色。"
+      >
+        <VButton variant="primary" :icon="PlusIcon" @click="openNovelModal()">新建小说</VButton>
+      </VEmptyState>
 
-        <!-- 2. 角色管理（wrap 卡片 + 添加/编辑弹窗/删除） -->
-        <div class="bg-surface-elevated rounded-lg shadow p-3">
-          <CharacterListInline :characters="characters" :get-model-display-name="getModelDisplayName"
-            @add="openCharacterModal()" @edit="openCharacterModal($event)" @delete="deleteCharacter" />
-        </div>
-
-        <!-- 3. 章节列表 -->
-        <div class="bg-surface-elevated rounded-lg shadow p-4 flex flex-col min-h-0">
-          <div class="flex justify-between items-center mb-3">
-            <h2 class="text-lg font-semibold text-ink">
-              章节列表
-            </h2>
-            <button @click="openChapterModal" class="btn btn-sm btn-primary flex items-center">
-              <PlusIcon class="h-4 w-4 mr-1" />
-              新建章节
-            </button>
+      <div v-else class="mx-auto max-w-5xl px-6 py-6">
+        <header class="flex items-start gap-4 pb-5">
+          <div class="flex h-24 w-[72px] shrink-0 items-center justify-center overflow-hidden rounded-md border border-line bg-soft text-ink-subtle">
+            <img v-if="currentNovel.cover" :src="currentNovel.cover" alt="" class="h-full w-full object-cover" />
+            <BookOpenIcon v-else class="h-6 w-6" aria-hidden="true" />
           </div>
-          <ChapterList :chapters="chapters" :selected-chapter-id="currentChapter?.id" @select-chapter="selectChapter" />
+          <div class="min-w-0 flex-1">
+            <h1 class="truncate text-lg font-semibold text-ink">{{ currentNovel.title }}</h1>
+            <p class="text-sm text-ink-muted">{{ currentNovel.author || "佚名" }}</p>
+            <p class="mt-2 line-clamp-2 text-sm text-ink-subtle">{{ currentNovel.description || "暂无简介" }}</p>
+          </div>
+          <VButton size="sm" :icon="PencilSquareIcon" @click="openNovelModal(currentNovel)">编辑</VButton>
+        </header>
+
+        <div class="flex items-center gap-5 border-b border-line" role="tablist">
+          <button
+            v-for="tab in tabs"
+            :key="tab.value"
+            type="button"
+            role="tab"
+            :aria-selected="activeTab === tab.value"
+            class="tab"
+            :class="activeTab === tab.value && 'tab-active'"
+            @click="activeTab = tab.value"
+          >
+            {{ tab.label }}
+            <span class="num text-2xs text-ink-subtle">{{ tab.count }}</span>
+          </button>
+          <VButton
+            class="ml-auto"
+            size="sm"
+            variant="primary"
+            :icon="PlusIcon"
+            @click="activeTab === 'chapters' ? (showChapterModal = true) : openCharacterModal()"
+          >
+            {{ activeTab === "chapters" ? "新建章节" : "添加角色" }}
+          </VButton>
         </div>
 
-        <!-- 章节编辑/处理区域 -->
-        <!-- <ChapterProcessor
-          v-if="currentChapter"
-          :chapter="currentChapter"
-          :parsed-chapter="parsedChapter"
-          :characters="characters"
-          :tts-results="ttsResults"
-          @parse-chapter="parseChapter"
-          @generate-tts="generateTts"
-          @update-parsed-chapter="updateParsedChapter"
-          @update-llm-provider="updateLLMProvider"
-        /> -->
+        <!-- 章节 -->
+        <div v-if="activeTab === 'chapters'" class="pt-3">
+          <VEmptyState
+            v-if="!sortedChapters.length"
+            :icon="DocumentTextIcon"
+            title="还没有章节"
+            description="新建章节并粘贴正文，进入工作台用 AI 拆分角色。"
+          />
+          <ul v-else class="panel overflow-hidden">
+            <li v-for="chapter in sortedChapters" :key="chapter.id">
+              <RouterLink :to="`/chapters/${chapter.id}`" class="list-row group">
+                <span class="num w-8 shrink-0 text-right text-2xs text-ink-subtle">{{ chapter.order }}</span>
+                <span class="min-w-0 flex-1">
+                  <span class="block truncate text-sm font-medium text-ink group-hover:text-accent">{{ chapter.title }}</span>
+                  <span class="block truncate text-xs text-ink-subtle">{{ preview(chapter.content) }}</span>
+                </span>
+                <span class="num hidden w-16 shrink-0 text-right text-2xs text-ink-subtle sm:block">
+                  {{ countChars(chapter.content).toLocaleString() }} 字
+                </span>
+                <span class="w-20 shrink-0 text-right">
+                  <VBadge v-if="chapter.ttsResults?.mergedAudioFile || chapter.ttsResults?.status === 'completed'" tone="success" dot>已成音</VBadge>
+                  <VBadge v-else-if="chapter.processed" tone="accent" dot>已解析</VBadge>
+                  <VBadge v-else>未解析</VBadge>
+                </span>
+                <span class="num hidden w-20 shrink-0 text-right text-2xs text-ink-subtle md:block">{{ formatRelative(chapter.updatedAt) }}</span>
+                <ChevronRightIcon class="h-4 w-4 shrink-0 text-ink-subtle" aria-hidden="true" />
+              </RouterLink>
+            </li>
+          </ul>
+        </div>
+
+        <!-- 角色阵容 -->
+        <div v-else class="pt-3">
+          <VEmptyState
+            v-if="!characters.length"
+            :icon="UserGroupIcon"
+            title="还没有角色"
+            description="解析章节时会自动提取角色，也可以手动添加。"
+          />
+          <ul v-else class="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+            <li v-for="character in characters" :key="character.id" class="panel group flex items-start gap-3 p-3">
+              <span
+                class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-semibold"
+                :class="[roleTone(character.name).bg, roleTone(character.name).text]"
+              >
+                {{ character.name.slice(0, 1) }}
+              </span>
+              <div class="min-w-0 flex-1">
+                <p class="flex items-center gap-1.5">
+                  <span class="truncate text-sm font-medium text-ink">{{ character.name }}</span>
+                  <span class="badge h-4 px-1 text-2xs">{{ typeLabel(character.type) }}</span>
+                </p>
+                <p class="text-2xs text-ink-subtle">{{ profile(character) }}</p>
+                <p class="mt-1 flex items-center gap-1 truncate text-xs text-ink-muted">
+                  <SpeakerWaveIcon class="h-3.5 w-3.5 shrink-0 text-ink-subtle" aria-hidden="true" />
+                  {{ voiceOf(character) || "未绑定音色" }}
+                </p>
+              </div>
+              <div class="flex shrink-0 flex-col gap-0.5 opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100">
+                <VIconButton :icon="PencilSquareIcon" label="编辑角色" size="sm" @click="openCharacterModal(character)" />
+                <VIconButton :icon="TrashIcon" label="删除角色" size="sm" @click="deletingCharacter = character" />
+              </div>
+            </li>
+          </ul>
+        </div>
       </div>
-    </div>
+    </section>
 
-    <!-- 模态框 -->
-    <NovelModal v-if="showNovelModal" :novel="editingNovel" @close="closeNovelModal" @save="saveNovel" />
-
-    <!-- 添加/编辑角色弹窗（仅表单） -->
-    <CharacterModal v-if="showCharacterModal" :novel-id="currentNovel?.id" :character="characterToEdit"
-      @close="closeCharacterModal" @save="saveCharacter" @update="updateCharacter" />
-
-    <ChapterModal v-if="showChapterModal" :novel-id="currentNovel?.id" @close="closeChapterModal" @save="saveChapter" />
+    <NovelModal :open="showNovelModal" :novel="editingNovel" @close="closeNovelModal" @save="saveNovel" />
+    <CharacterModal
+      :open="showCharacterModal"
+      :novel-id="currentNovel?.id"
+      :character="characterToEdit"
+      @close="closeCharacterModal"
+      @save="saveCharacter"
+      @update="updateCharacter"
+    />
+    <ChapterModal :open="showChapterModal" :novel-id="currentNovel?.id" @close="showChapterModal = false" @save="saveChapter" />
+    <VConfirmDialog
+      :open="!!deletingCharacter"
+      title="删除角色"
+      :message="`确定删除角色「${deletingCharacter?.name}」吗？已解析的段落会改用默认音色。`"
+      confirm-text="删除"
+      @close="deletingCharacter = null"
+      @confirm="deleteCharacter"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed } from "vue";
+import { computed, onMounted, ref } from "vue";
+import { useRoute, useRouter } from "vue-router";
 import { useToast } from "vue-toastification";
-import { useNovelsStore } from "@/stores/novels";
-import { PlusIcon } from "@heroicons/vue/24/outline";
-import type { Novel, Character } from "@/types/ReadNovels";
-import type { LLMProviderType, TTSProviderType } from "@/types";
-import { ttsApi } from "@/api/ttsApi";
-import type { VoiceModelsCache } from "@/api/ttsApi";
-
-// 导入组件
-import NovelList from "@/components/ReadNovels/NovelList.vue";
-import NovelDetail from "@/components/ReadNovels/NovelDetail.vue";
-import ChapterList from "@/components/ReadNovels/ChapterList.vue";
-import ChapterProcessor from "@/components/ReadNovels/ChapterProcessor.vue";
+import {
+  BookOpenIcon,
+  ChevronRightIcon,
+  DocumentTextIcon,
+  MagnifyingGlassIcon,
+  PencilSquareIcon,
+  PlusIcon,
+  SpeakerWaveIcon,
+  TrashIcon,
+  UserGroupIcon,
+} from "@heroicons/vue/24/outline";
+import VBadge from "@/components/ui/VBadge.vue";
+import VButton from "@/components/ui/VButton.vue";
+import VConfirmDialog from "@/components/ui/VConfirmDialog.vue";
+import VEmptyState from "@/components/ui/VEmptyState.vue";
+import VIconButton from "@/components/ui/VIconButton.vue";
+import VInput from "@/components/ui/VInput.vue";
+import VSkeleton from "@/components/ui/VSkeleton.vue";
 import NovelModal from "@/components/ReadNovels/NovelModal.vue";
-import CharacterListInline from "@/components/ReadNovels/CharacterListInline.vue";
 import CharacterModal from "@/components/ReadNovels/CharacterModal.vue";
 import ChapterModal from "@/components/ReadNovels/ChapterModal.vue";
+import { useNovelsStore } from "@/stores/novels";
+import { ttsApi, type VoiceModelsCache } from "@/api/ttsApi";
+import type { Character, Novel } from "@/types/ReadNovels";
+import { countChars, formatRelative } from "@/utils/format";
+import { roleTone } from "@/utils/roleColor";
 
+const route = useRoute();
+const router = useRouter();
 const toast = useToast();
 const novelsStore = useNovelsStore();
 
-// 组件状态
+const keyword = ref("");
+const activeTab = ref<"chapters" | "characters">("chapters");
 const showNovelModal = ref(false);
 const showCharacterModal = ref(false);
 const showChapterModal = ref(false);
-const characterToEdit = ref<Character | null>(null);
 const editingNovel = ref<Novel | null>(null);
-const cachedVoiceModels = ref<VoiceModelsCache>({});
+const characterToEdit = ref<Character | null>(null);
+const deletingCharacter = ref<Character | null>(null);
+const voiceModels = ref<VoiceModelsCache>({});
 
-// 计算属性从store获取数据
 const novels = computed(() => novelsStore.novels);
 const currentNovel = computed(() => novelsStore.currentNovel);
 const characters = computed(() => novelsStore.characters);
-const chapters = computed(() => novelsStore.chapters);
-const currentChapter = computed(() => novelsStore.currentChapter);
-const parsedChapter = computed(() => novelsStore.parsedChapter);
-const ttsResults = computed(() => novelsStore.ttsResults);
-const isLoading = computed(() => novelsStore.isLoading);
-
-/** 仅从同步缓存解析模型展示名，与角色可选列表一致 */
-function getModelDisplayName(provider: TTSProviderType | undefined, modelCode: string): string {
-  if (!provider || !modelCode) return modelCode || "";
-  const list = cachedVoiceModels.value[provider];
-  if (!Array.isArray(list)) return modelCode;
-  const m = list.find((x) => x.code === modelCode);
-  return m?.name ?? modelCode;
-}
-
-// 初始化
-onMounted(async () => {
-  try {
-    await novelsStore.loadNovels();
-  } catch (error) {
-    toast.error(
-      `加载小说失败：${error instanceof Error ? error.message : String(error)}`
-    );
-  }
-  try {
-    const res = await ttsApi.getVoiceModels();
-    if (res.success && res.data) cachedVoiceModels.value = res.data;
-  } catch (e) {
-    console.error("Load voice models cache failed:", e);
-  }
+const sortedChapters = computed(() => [...novelsStore.chapters].sort((a, b) => a.order - b.order));
+const filteredNovels = computed(() => {
+  const q = keyword.value.trim().toLowerCase();
+  if (!q) return novels.value;
+  return novels.value.filter((n) => n.title.toLowerCase().includes(q) || (n.author || "").toLowerCase().includes(q));
 });
 
-// 选择小说
-async function selectNovel(novelId: string) {
-  try {
-    await novelsStore.setCurrentNovel(novelId);
-  } catch (error) {
-    toast.error(
-      `加载小说详情失败：${error instanceof Error ? error.message : String(error)}`
-    );
-  }
+const tabs = computed(() => [
+  { value: "chapters" as const, label: "章节", count: novelsStore.chapters.length },
+  { value: "characters" as const, label: "角色阵容", count: characters.value.length },
+]);
+
+const TYPE_LABELS: Record<string, string> = { main: "主角", secondary: "配角", minor: "路人" };
+const GENDER_LABELS: Record<string, string> = { male: "男", female: "女", unknown: "性别未知" };
+const AGE_LABELS: Record<string, string> = { child: "儿童", youth: "青年", middle: "中年", elder: "老年", unknown: "" };
+
+function typeLabel(type: string) {
+  return TYPE_LABELS[type] || type;
 }
 
-// 选择章节
-async function selectChapter(chapterId: string) {
-  try {
-    await novelsStore.setCurrentChapter(chapterId);
-  } catch (error) {
-    toast.error(
-      `加载章节失败：${error instanceof Error ? error.message : String(error)}`
-    );
-  }
+function profile(character: Character) {
+  return [GENDER_LABELS[character.gender], AGE_LABELS[character.age]].filter(Boolean).join(" · ");
 }
 
-// 打开新建/编辑小说模态框
+function voiceOf(character: Character) {
+  const provider = character.ttsConfig?.provider;
+  const code = character.ttsConfig?.model || character.voiceModel || "";
+  if (!provider || !code) return code;
+  const list = voiceModels.value[provider];
+  return (Array.isArray(list) && list.find((m) => m.code === code)?.name) || code;
+}
+
+function preview(content: string) {
+  return (content || "").replace(/\s+/g, " ").trim().slice(0, 60);
+}
+
+function errorText(error: unknown) {
+  return error instanceof Error ? error.message : String(error);
+}
+
+async function selectNovel(id: string) {
+  await novelsStore.setCurrentNovel(id);
+  if (novelsStore.error) toast.error(`加载小说失败：${novelsStore.error}`);
+  router.replace({ query: { novel: id } });
+}
+
 function openNovelModal(novel?: Novel) {
   editingNovel.value = novel || null;
   showNovelModal.value = true;
 }
 
-// 关闭小说模态框
 function closeNovelModal() {
   showNovelModal.value = false;
-  editingNovel.value = null;
 }
 
-// 编辑小说
-function editNovel(novel: Novel) {
-  openNovelModal(novel);
-}
-
-// 保存小说
-async function saveNovel(novelData: Partial<Novel>) {
+async function saveNovel(data: Partial<Novel>) {
   try {
     if (editingNovel.value) {
-      // 更新现有小说
-      await novelsStore.updateNovel(editingNovel.value.id, novelData);
-      toast.success("小说更新成功");
+      await novelsStore.updateNovel(editingNovel.value.id, data);
+      toast.success("小说已更新");
     } else {
-      // 创建新小说
-      const novel = await novelsStore.createNovel(
-        novelData as Omit<Novel, "id" | "createdAt" | "updatedAt">
-      );
-      if (novel) {
-        toast.success("小说创建成功");
-        selectNovel(novel.id);
-      }
+      const novel = await novelsStore.createNovel(data as Omit<Novel, "id" | "createdAt" | "updatedAt">);
+      if (!novel) throw new Error(novelsStore.error || "创建失败");
+      toast.success("小说已创建");
+      await selectNovel(novel.id);
     }
     closeNovelModal();
   } catch (error) {
-    toast.error(
-      `保存小说失败：${error instanceof Error ? error.message : String(error)}`
-    );
+    toast.error(`保存小说失败：${errorText(error)}`);
   }
 }
 
-// 打开角色弹窗（添加或编辑）
 function openCharacterModal(character?: Character) {
   characterToEdit.value = character ?? null;
   showCharacterModal.value = true;
@@ -209,145 +306,54 @@ function openCharacterModal(character?: Character) {
 
 function closeCharacterModal() {
   showCharacterModal.value = false;
-  characterToEdit.value = null;
 }
 
-// 保存角色
-async function saveCharacter(characterData: Omit<Character, "id">) {
-  try {
-    const character = await novelsStore.createCharacter(characterData);
-    if (character) {
-      toast.success("角色创建成功");
-    }
-  } catch (error) {
-    toast.error(
-      `保存角色失败：${error instanceof Error ? error.message : String(error)}`
-    );
+async function saveCharacter(data: Omit<Character, "id">) {
+  const character = await novelsStore.createCharacter(data);
+  if (character) toast.success(`已添加角色「${character.name}」`);
+  else toast.error(`添加角色失败：${novelsStore.error || "未知错误"}`);
+}
+
+async function updateCharacter(id: string, data: Partial<Character>) {
+  const result = await novelsStore.updateCharacter(id, data);
+  if (result) toast.success("角色已更新");
+  else toast.error(`更新角色失败：${novelsStore.error || "未知错误"}`);
+}
+
+async function deleteCharacter() {
+  const target = deletingCharacter.value;
+  deletingCharacter.value = null;
+  if (!target) return;
+  const ok = await novelsStore.deleteCharacter(target.id);
+  if (ok) toast.success(`已删除角色「${target.name}」`);
+  else toast.error(`删除角色失败：${novelsStore.error || "未知错误"}`);
+}
+
+async function saveChapter(data: { title: string; content: string; novelId: string }) {
+  const chapter = await novelsStore.createChapter({
+    ...data,
+    order: novelsStore.chapters.length + 1,
+    llmProvider: "",
+  });
+  if (!chapter) {
+    toast.error(`创建章节失败：${novelsStore.error || "未知错误"}`);
+    return;
   }
-}
-
-// 更新角色
-async function updateCharacter(characterId: string, characterData: Partial<Character>) {
-  try {
-    await novelsStore.updateCharacter(characterId, characterData);
-    toast.success("角色更新成功");
-  } catch (error) {
-    toast.error(
-      `更新角色失败：${error instanceof Error ? error.message : String(error)}`
-    );
-  }
-}
-
-// 删除角色
-async function deleteCharacter(characterId: string) {
-  try {
-    await novelsStore.deleteCharacter(characterId);
-    toast.success("角色删除成功");
-  } catch (error) {
-    toast.error(
-      `删除角色失败：${error instanceof Error ? error.message : String(error)}`
-    );
-  }
-}
-
-// 打开新建章节模态框
-function openChapterModal() {
-  showChapterModal.value = true;
-}
-
-// 关闭章节模态框
-function closeChapterModal() {
   showChapterModal.value = false;
+  router.push(`/chapters/${chapter.id}`);
 }
 
-// 保存章节
-async function saveChapter(chapterData: any) {
+onMounted(async () => {
+  await novelsStore.loadNovels();
+  if (novelsStore.error) toast.error(`加载小说失败：${novelsStore.error}`);
+  const wanted = (route.query.novel || route.query.novelId) as string | undefined;
+  const target = novels.value.find((n) => n.id === wanted)?.id || currentNovel.value?.id || novels.value[0]?.id;
+  if (target) await selectNovel(target);
   try {
-    if (currentNovel.value) {
-      const chapterWithOrder = {
-        ...chapterData,
-        novelId: currentNovel.value.id,
-        order: chapters.value.length + 1,
-      };
-
-      const chapter = await novelsStore.createChapter(chapterWithOrder);
-      if (chapter) {
-        toast.success("章节创建成功");
-        selectChapter(chapter.id);
-      }
-    }
-    closeChapterModal();
+    const res = await ttsApi.getVoiceModels();
+    if (res.success && res.data) voiceModels.value = res.data;
   } catch (error) {
-    toast.error(
-      `保存章节失败：${error instanceof Error ? error.message : String(error)}`
-    );
+    console.error("Load voice models cache failed:", error);
   }
-}
-
-// 解析章节
-async function parseChapter() {
-  if (!currentChapter.value) return;
-
-  try {
-    await novelsStore.parseChapter(currentChapter.value.id);
-    toast.success("章节解析成功");
-  } catch (error) {
-    toast.error(
-      `解析章节失败：${error instanceof Error ? error.message : String(error)}`
-    );
-  }
-}
-
-// 更新解析后的章节数据
-async function updateParsedChapter(updatedData: any) {
-  if (!parsedChapter.value) return;
-
-  try {
-    // 在实际实现中，这里会调用API更新解析后的章节数据
-    // 暂时使用mock数据
-    toast.success("解析数据更新成功");
-  } catch (error) {
-    toast.error(
-      `更新解析数据失败：${error instanceof Error ? error.message : String(error)}`
-    );
-  }
-}
-
-// 生成TTS
-async function generateTts() {
-  if (!parsedChapter.value) return;
-
-  try {
-    await novelsStore.generateTts(parsedChapter.value.id);
-    toast.success("TTS生成成功");
-  } catch (error) {
-    toast.error(
-      `生成TTS失败：${error instanceof Error ? error.message : String(error)}`
-    );
-  }
-}
-
-// 更新LLM服务商
-async function updateLLMProvider(provider: LLMProviderType) {
-  if (!currentChapter.value) return;
-
-  try {
-    await novelsStore.updateChapter(currentChapter.value.id, {
-      llmProvider: provider
-    });
-    console.log(`LLM服务商已更新为: ${provider}`);
-  } catch (error) {
-    toast.error(
-      `更新LLM服务商失败：${error instanceof Error ? error.message : String(error)}`
-    );
-  }
-}
+});
 </script>
-
-<style scoped>
-.read-novels-view {
-  max-width: 1600px;
-  margin: 0 auto;
-  padding: 1rem;
-}
-</style>

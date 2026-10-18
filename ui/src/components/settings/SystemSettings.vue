@@ -1,256 +1,151 @@
 <template>
-  <div class="card p-2 m-2">
-    <h2 class="text-lg font-semibold text-ink mb-4">
-      本地存储
-    </h2>
-
-    <div class="px-4">
-      <div class="flex">
-        <input
-          type="text"
-          id="exportPath"
-          v-model="defaultExportPath"
-          class="input max-w-md"
-          readonly
-          placeholder="请选择默认的音频文件导出路径"
+  <div class="space-y-6">
+    <section class="panel">
+      <div class="panel-header">外观</div>
+      <div class="flex items-center justify-between gap-4 p-5">
+        <div>
+          <p class="text-sm font-medium text-ink">主题</p>
+          <p class="text-xs text-ink-subtle">跟随系统时会随操作系统的深浅色自动切换。</p>
+        </div>
+        <VSegmented
+          :model-value="settingsStore.theme"
+          :options="themeOptions"
+          label="主题"
+          @update:model-value="settingsStore.setTheme"
         />
-        <button
-          @click="selectExportPath"
-          class="btn text-ink bg-green-500/20 hover:bg-green-500/30 text-green-700 dark:text-green-300 ml-2"
-        >
-          选择路径
-        </button>
       </div>
-      <p class="text-sm text-ink-muted mt-1">
-        选择一个路径，用于保存系统数据
-      </p>
+    </section>
 
-      <div class="flex justify-center mt-2">
-        <button
-          @click="saveStorageSettings"
-          class="btn btn-primary"
-          :disabled="isSavingPath"
-        >
-          {{ isSavingPath ? "保存中..." : "保存设置" }}
-        </button>
-      </div>
-    </div>
-  </div>
-
-  <div class="card p-2 m-2">
-    <h2 class="text-lg font-semibold text-ink mb-4">
-      数据备份
-    </h2>
-
-    <div class="px-4">
-      <p class="text-ink mb-2">
-        您可以导出所有系统数据，包括项目、章节、服务商设置和系统配置，以便备份或迁移到其他设备。
-      </p>
-
-      <div class="grid sm:grid-cols-2 gap-6">
-        <div
-          class="shadow-lg bg-surface-hover rounded-sm p-2 text-center"
-        >
-          <h3
-            class="text-base font-semibold text-ink mb-2"
+    <section class="panel">
+      <div class="panel-header">存储</div>
+      <div class="space-y-3 p-5">
+        <label class="field-label" for="export-path">音频导出目录</label>
+        <div class="flex gap-2">
+          <input id="export-path" v-model="defaultExportPath" class="field font-mono" readonly placeholder="请选择目录" />
+          <VButton :icon="FolderIcon" @click="selectExportPath">选择</VButton>
+          <VButton
+            variant="ghost"
+            :icon="FolderOpenIcon"
+            :disabled="!defaultExportPath"
+            title="打开目录"
+            @click="defaultExportPath && openFolder(defaultExportPath)"
           >
-            导出系统数据
-          </h3>
-          <p class="text-sm text-ink-muted mb-4">
-            导出全部系统数据为单个JSON文件，包含所有配置和内容。
-          </p>
-
-          <button
-            @click="exportSystemData"
-            :disabled="isExporting"
-            class="btn btn-primary mt-2 flex mx-auto"
-          >
-            <ArrowUpTrayIcon v-if="!isExporting" class="h-5 w-5 mr-2" />
-            <div
-              v-else
-              class="animate-spin h-5 w-5 border-2 border-white border-t-transparent rounded-full mr-2"
-            ></div>
-            {{ isExporting ? "导出中..." : "导出全部系统数据" }}
-          </button>
+            打开
+          </VButton>
         </div>
-
-        <div
-          class="shadow-lg bg-surface-hover rounded-sm p-2 text-center"
-        >
-          <h3
-            class="text-base font-semibold text-ink mb-3"
-          >
-            导入系统数据
-          </h3>
-          <p class="text-sm text-ink-muted mb-4">
-            从之前导出的JSON文件中恢复所有系统数据。将替换当前的所有设置和数据。
-          </p>
-
-          <input
-            type="file"
-            ref="fileInput"
-            accept=".json"
-            class="hidden"
-            @change="handleFileImport"
-          />
-
-          <button
-            @click="triggerFileInput"
-            :disabled="isImporting"
-            class="btn btn-primary mt-2 flex mx-auto"
-          >
-            <ArrowDownTrayIcon v-if="!isImporting" class="h-5 w-5 mr-2" />
-            <div
-              v-else
-              class="animate-spin h-5 w-5 border-2 border-white border-t-transparent rounded-full mr-2"
-            ></div>
-            {{ isImporting ? "导入中..." : "导入系统数据" }}
-          </button>
+        <p class="field-hint">合成的音频文件会按项目保存在此目录下。</p>
+        <div class="flex justify-end">
+          <VButton variant="primary" :loading="isSavingPath" :disabled="defaultExportPath === savedPath" @click="saveStorageSettings">
+            保存
+          </VButton>
         </div>
       </div>
-    </div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-header">数据备份</div>
+      <div class="grid gap-4 p-5 sm:grid-cols-2">
+        <div class="rounded-md border border-line p-4">
+          <p class="text-sm font-medium text-ink">导出</p>
+          <p class="mt-1 text-xs text-ink-subtle">把项目、章节、服务设置与系统配置导出为单个 JSON 文件。</p>
+          <VButton class="mt-4" :icon="ArrowUpTrayIcon" :loading="isExporting" @click="exportSystemData">导出全部数据</VButton>
+        </div>
+        <div class="rounded-md border border-line p-4">
+          <p class="text-sm font-medium text-ink">导入</p>
+          <p class="mt-1 text-xs text-ink-subtle">从备份文件恢复，会替换当前全部项目与设置。</p>
+          <VButton class="mt-4" :icon="ArrowDownTrayIcon" :loading="isImporting" @click="fileInput?.click()">选择备份文件</VButton>
+          <input ref="fileInput" type="file" accept=".json" class="hidden" @change="handleFileImport" />
+        </div>
+      </div>
+    </section>
+
+    <VConfirmDialog
+      :open="!!pendingImport"
+      title="导入备份数据"
+      message="导入将替换当前系统中的全部项目、章节与设置，且无法撤销。确定继续吗？"
+      confirm-text="导入并替换"
+      :loading="isImporting"
+      @close="pendingImport = null"
+      @confirm="confirmImport"
+    />
   </div>
-
-  <!-- <div class="card p-2 m-2">
-    <h2 class="text-lg font-semibold text-ink mb-2">
-      重置系统数据
-    </h2>
-    <div class="px-4">
-      <p class="text-ink mb-4">
-        危险操作：重置将清除所有项目、章节、设置和配置。这个操作无法撤销。
-      </p>
-
-      <button @click="confirmReset" class="btn btn-danger flex">
-        <ExclamationTriangleIcon class="h-5 w-5 mr-2" />
-        重置所有数据
-      </button>
-    </div>
-  </div> -->
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from "vue";
+import { onMounted, ref, type Component } from "vue";
 import { useToast } from "vue-toastification";
+import {
+  ArrowDownTrayIcon,
+  ArrowUpTrayIcon,
+  ComputerDesktopIcon,
+  FolderIcon,
+  FolderOpenIcon,
+  MoonIcon,
+  SunIcon,
+} from "@heroicons/vue/24/outline";
+import VButton from "@/components/ui/VButton.vue";
+import VConfirmDialog from "@/components/ui/VConfirmDialog.vue";
+import VSegmented from "@/components/ui/VSegmented.vue";
 import { useProjectsStore } from "@/stores/projects";
-import { useSettingsStore } from "@/stores/settings";
-import { ArrowDownTrayIcon, ArrowUpTrayIcon } from "@heroicons/vue/24/outline";
-import { settingsApi, projectApi, chapterApi } from "@/api";
+import { useSettingsStore, type ThemeMode } from "@/stores/settings";
+import { chapterApi, projectApi, settingsApi } from "@/api";
 
 const toast = useToast();
 const projectsStore = useProjectsStore();
 const settingsStore = useSettingsStore();
 
+const themeOptions: { label: string; value: ThemeMode; icon: Component }[] = [
+  { label: "跟随系统", value: "system", icon: ComputerDesktopIcon },
+  { label: "浅色", value: "light", icon: SunIcon },
+  { label: "深色", value: "dark", icon: MoonIcon },
+];
+
 const fileInput = ref<HTMLInputElement | null>(null);
 const isExporting = ref(false);
 const isImporting = ref(false);
 const isSavingPath = ref(false);
-
-// 存储路径设置
 const defaultExportPath = ref("");
+const savedPath = ref("");
+const pendingImport = ref<any>(null);
 
-// 初始化
-onMounted(async () => {
-  await loadSettings();
-});
-
-// 加载设置
-async function loadSettings() {
-  try {
-    // 确保设置已加载
-    const settings =
-      settingsStore.settings || (await settingsStore.loadSettings());
-
-    if (settings) {
-      // 设置导出路径
-      defaultExportPath.value = settings.defaultExportPath || "";
-    }
-  } catch (error) {
-    toast.error(
-      `加载设置失败: ${error instanceof Error ? error.message : String(error)}`
-    );
-  }
+function errorText(error: unknown) {
+  return error instanceof Error ? error.message : String(error);
 }
+
+onMounted(async () => {
+  try {
+    const settings = settingsStore.settings || (await settingsStore.loadSettings());
+    defaultExportPath.value = settings?.defaultExportPath || "";
+    savedPath.value = defaultExportPath.value;
+  } catch (error) {
+    toast.error(`加载设置失败：${errorText(error)}`);
+  }
+});
 
 async function selectExportPath() {
   try {
-    // 使用electron API选择文件夹
     const path = await window.electron.selectFolder();
-    if (path) {
-      defaultExportPath.value = path;
-    }
-  } catch (err) {
-    toast.error(
-      `选择文件夹失败: ${err instanceof Error ? err.message : String(err)}`
-    );
+    if (path) defaultExportPath.value = path;
+  } catch (error) {
+    toast.error(`选择文件夹失败：${errorText(error)}`);
   }
+}
+
+function openFolder(path: string) {
+  window.electron.openFolder(path);
 }
 
 async function saveStorageSettings() {
   isSavingPath.value = true;
-
   try {
-    // 准备更新的设置数据
-    const settingsData = {
-      defaultExportPath: defaultExportPath.value,
-    };
-
-    // 使用设置存储更新设置
-    const updatedSettings = await settingsStore.updateSettings(settingsData);
-
-    if (updatedSettings) {
-      toast.success("存储路径设置已保存");
-    } else {
-      throw new Error("更新设置失败");
-    }
-  } catch (err) {
-    toast.error(
-      `保存设置失败: ${err instanceof Error ? err.message : String(err)}`
-    );
+    const updated = await settingsStore.updateSettings({ defaultExportPath: defaultExportPath.value });
+    if (!updated) throw new Error("更新设置失败");
+    savedPath.value = defaultExportPath.value;
+    toast.success("导出目录已保存");
+  } catch (error) {
+    toast.error(`保存失败：${errorText(error)}`);
   } finally {
     isSavingPath.value = false;
-  }
-}
-
-async function exportSystemData() {
-  isExporting.value = true;
-
-  try {
-    // 收集所有系统数据
-    const systemData = {
-      settings: await settingsStore.getSettings(),
-      ttsSettings: await settingsStore.loadTTSSettings(),
-      llmSettings: await settingsStore.loadLLMSettings(),
-      bliveSettings: await settingsStore.loadBliveSettings(),
-      projects: await getAllProjects(),
-      chapters: await getAllChapters(),
-      exportDate: new Date().toISOString(),
-      version: "1.0",
-    };
-
-    // 转换为JSON字符串
-    const jsonData = JSON.stringify(systemData, null, 2);
-
-    // 创建Blob并下载
-    const blob = new Blob([jsonData], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `system_data_${new Date().toISOString().slice(0, 10)}.json`;
-    document.body.appendChild(a);
-    a.click();
-
-    // 清理
-    URL.revokeObjectURL(url);
-    document.body.removeChild(a);
-
-    toast.success("系统数据导出成功");
-  } catch (error) {
-    console.error("导出系统数据失败:", error);
-    toast.error(
-      `导出失败: ${error instanceof Error ? error.message : "未知错误"}`
-    );
-  } finally {
-    isExporting.value = false;
   }
 }
 
@@ -260,160 +155,86 @@ async function getAllProjects() {
 }
 
 async function getAllChapters() {
-  const projects = await getAllProjects();
-  let allChapters: any[] = [];
-
-  for (const project of projects) {
+  const chapters: any[] = [];
+  for (const project of await getAllProjects()) {
     const response = await chapterApi.getByProjectId(project.id);
-    if (response.success && response.data) {
-      allChapters = [...allChapters, ...response.data];
-    }
+    if (response.success && response.data) chapters.push(...response.data);
   }
-
-  return allChapters;
+  return chapters;
 }
 
-function triggerFileInput() {
-  if (fileInput.value) {
-    fileInput.value.click();
+async function exportSystemData() {
+  isExporting.value = true;
+  try {
+    const data = {
+      settings: await settingsStore.getSettings(),
+      ttsSettings: await settingsStore.loadTTSSettings(),
+      llmSettings: await settingsStore.loadLLMSettings(),
+      bliveSettings: await settingsStore.loadBliveSettings(),
+      projects: await getAllProjects(),
+      chapters: await getAllChapters(),
+      exportDate: new Date().toISOString(),
+      version: "1.0",
+    };
+    const url = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], { type: "application/json" }));
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `vwordai_backup_${new Date().toISOString().slice(0, 10)}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success("数据已导出");
+  } catch (error) {
+    toast.error(`导出失败：${errorText(error)}`);
+  } finally {
+    isExporting.value = false;
   }
 }
 
 async function handleFileImport(event: Event) {
   const input = event.target as HTMLInputElement;
-  if (!input.files || input.files.length === 0) return;
-
-  const file = input.files[0];
-  isImporting.value = true;
-
+  const file = input.files?.[0];
+  input.value = "";
+  if (!file) return;
   try {
-    // 读取文件
-    const content = await readFile(file);
-    const systemData = JSON.parse(content);
-
-    // 验证数据结构
-    if (!systemData.version || !Array.isArray(systemData.projects)) {
-      throw new Error("无效的系统数据文件格式");
-    }
-
-    // 确认导入
-    if (
-      !confirm(
-        "导入将替换当前系统中的所有数据。这个操作无法撤销。确定要继续吗？"
-      )
-    ) {
-      input.value = "";
-      isImporting.value = false;
-      return;
-    }
-
-    // 导入数据
-    await importSystemData(systemData);
-
-    toast.success("系统数据导入成功");
-
-    await projectsStore.loadProjects();
-
-    // 重置文件输入
-    input.value = "";
+    const data = JSON.parse(await file.text());
+    if (!data.version || !Array.isArray(data.projects)) throw new Error("无效的备份文件格式");
+    pendingImport.value = data;
   } catch (error) {
-    console.error("导入系统数据失败:", error);
-    toast.error(
-      `导入失败: ${error instanceof Error ? error.message : "无效的文件格式"}`
-    );
+    toast.error(`导入失败：${errorText(error)}`);
+  }
+}
+
+async function confirmImport() {
+  const data = pendingImport.value;
+  if (!data) return;
+  isImporting.value = true;
+  try {
+    if (data.settings) {
+      await settingsApi.update(data.settings);
+      await settingsStore.loadSettings();
+    }
+    if (data.ttsSettings) {
+      await settingsApi.updateTTSSettings(data.ttsSettings);
+      await settingsStore.loadTTSSettings();
+    }
+    if (data.llmSettings) {
+      await settingsApi.updateLLMSettings(data.llmSettings);
+      await settingsStore.loadLLMSettings();
+    }
+    if (data.bliveSettings) {
+      await settingsApi.updateBliveSettings(data.bliveSettings);
+      await settingsStore.loadBliveSettings();
+    }
+    for (const project of await getAllProjects()) await projectApi.delete(project.id);
+    for (const project of data.projects) await projectApi.create(project);
+    for (const chapter of data.chapters || []) await chapterApi.create(chapter);
+    await projectsStore.loadProjects();
+    toast.success("数据已导入");
+  } catch (error) {
+    toast.error(`导入失败：${errorText(error)}`);
   } finally {
     isImporting.value = false;
-  }
-}
-
-// 读取文件内容
-function readFile(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      if (e.target?.result) {
-        resolve(e.target.result as string);
-      } else {
-        reject(new Error("读取文件失败"));
-      }
-    };
-    reader.onerror = () => reject(new Error("读取文件失败"));
-    reader.readAsText(file);
-  });
-}
-
-// 导入系统数据
-async function importSystemData(systemData: any) {
-  // 导入主设置
-  if (systemData.settings) {
-    await settingsApi.update(systemData.settings);
-    // 重新加载设置到 store
-    await settingsStore.loadSettings();
-  }
-
-  // 导入TTS设置
-  if (systemData.ttsSettings) {
-    await settingsApi.updateTTSSettings(systemData.ttsSettings);
-    await settingsStore.loadTTSSettings();
-  }
-
-  // 导入LLM设置
-  if (systemData.llmSettings) {
-    await settingsApi.updateLLMSettings(systemData.llmSettings);
-    await settingsStore.loadLLMSettings();
-  }
-
-  // 导入Blive设置
-  if (systemData.bliveSettings) {
-    await settingsApi.updateBliveSettings(systemData.bliveSettings);
-    await settingsStore.loadBliveSettings();
-  }
-
-  // 导入项目和章节
-  if (Array.isArray(systemData.projects)) {
-    // 先删除现有项目
-    const currentProjects = await getAllProjects();
-    for (const project of currentProjects) {
-      await projectApi.delete(project.id);
-    }
-
-    // 导入新项目
-    for (const project of systemData.projects) {
-      await projectApi.create(project);
-    }
-
-    // 导入章节
-    if (Array.isArray(systemData.chapters)) {
-      for (const chapter of systemData.chapters) {
-        await chapterApi.create(chapter);
-      }
-    }
-  }
-}
-
-// 确认重置系统数据
-function confirmReset() {
-  if (
-    confirm(
-      "警告：这将删除所有系统数据，包括项目、章节、设置和服务商配置。这个操作无法撤销。确定要继续吗？"
-    )
-  ) {
-    resetSystemData();
-  }
-}
-
-// 重置系统数据
-async function resetSystemData() {
-  try {
-    await settingsApi.reset();
-    toast.success("系统数据已重置");
-
-    await projectsStore.loadProjects();
-  } catch (error) {
-    console.error("重置系统数据失败:", error);
-    toast.error(
-      `重置失败: ${error instanceof Error ? error.message : "未知错误"}`
-    );
+    pendingImport.value = null;
   }
 }
 </script>

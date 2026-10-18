@@ -1,68 +1,94 @@
+@import "../../../../ui-theme/tokens.css";
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* ========== 主题变量：亮色 白+蓝 / 暗色 自然黑+蓝 ========== */
-:root {
-  --color-surface: #ffffff;
-  --color-surface-elevated: #f8fafc;
-  --color-surface-hover: #f1f5f9;
-  --color-border: #e2e8f0;
-  --color-ink: #0f172a;
-  --color-ink-muted: #64748b;
-  --color-primary: #2563eb;
-  --color-primary-hover: #1d4ed8;
-  --color-primary-muted: #dbeafe;
+@layer base {
+  html,
+  body,
+  #app {
+    height: 100%;
+    overflow: hidden;
+  }
 }
 
-.dark {
-  --color-surface: #0a0a0f;
-  --color-surface-elevated: #12121a;
-  --color-surface-hover: #1a1a24;
-  --color-border: #1e1e2e;
-  --color-ink: #f1f5f9;
-  --color-ink-muted: #94a3b8;
-  --color-primary: #60a5fa;
-  --color-primary-hover: #93c5fd;
-  --color-primary-muted: #1e2a47;
+@layer utilities {
+  .drag-area {
+    -webkit-app-region: drag;
+  }
+
+  .no-drag {
+    -webkit-app-region: no-drag;
+  }
 }
 
-/* ========== 基础组件（使用语义色） ========== */
-.btn {
-  @apply px-2 py-1 rounded-md font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-surface;
-  user-select: none;
-}
-.btn-primary {
-  @apply bg-primary text-white hover:bg-primary-hover focus:ring-primary;
-}
-.btn-secondary {
-  @apply bg-surface-hover text-ink hover:bg-border focus:ring-ink-muted;
-}
-.btn-danger {
-  @apply bg-red-600 text-white hover:bg-red-700 focus:ring-red-500 focus:ring-offset-surface;
-}
-.card {
-  @apply bg-surface-elevated rounded-lg shadow p-6;
-}
-.input {
-  @apply block rounded-md shadow-sm p-2 text-ink border border-border outline-none bg-surface focus:border-primary hover:border-primary;
+/* vue-toastification 使用令牌色 */
+.Vue-Toastification__toast {
+  min-height: 48px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  border: 1px solid rgb(var(--vw-line-strong));
+  background: rgb(var(--vw-raised));
+  color: rgb(var(--vw-ink));
+  font-family: inherit;
+  font-size: 13px;
+  box-shadow: 0 12px 32px -8px rgb(0 0 0 / 0.35);
 }
 
-.drag-area {
-  -webkit-app-region: drag;
+.Vue-Toastification__toast-body {
+  font-size: 13px;
+  line-height: 1.5;
 }
 
-.no-drag {
-  -webkit-app-region: no-drag;
+.Vue-Toastification__close-button {
+  color: rgb(var(--vw-ink-muted));
 }
 
-/* Hide scrollbar for Chrome, Safari and Opera */
-::-webkit-scrollbar {
-  display: none;
+.Vue-Toastification__progress-bar {
+  height: 2px;
+  background-color: rgb(var(--vw-ink-subtle) / 0.6);
 }
 
-/* Hide scrollbar for IE, Edge and Firefox */
-* {
-  scrollbar-width: none;
-  -ms-overflow-style: none;
+.Vue-Toastification__toast--success {
+  border-left: 3px solid rgb(var(--vw-success));
+}
+
+.Vue-Toastification__toast--error {
+  border-left: 3px solid rgb(var(--vw-danger));
+}
+
+.Vue-Toastification__toast--warning {
+  border-left: 3px solid rgb(var(--vw-warning));
+}
+
+.Vue-Toastification__toast--info,
+.Vue-Toastification__toast--default {
+  border-left: 3px solid rgb(var(--vw-info));
+}
+
+.Vue-Toastification__icon {
+  width: 16px;
+  margin-right: 10px;
+}
+
+.Vue-Toastification__toast--success .Vue-Toastification__icon {
+  color: rgb(var(--vw-success));
+}
+
+.Vue-Toastification__toast--error .Vue-Toastification__icon {
+  color: rgb(var(--vw-danger));
+}
+
+.Vue-Toastification__toast--warning .Vue-Toastification__icon {
+  color: rgb(var(--vw-warning));
+}
+
+.Vue-Toastification__toast--info .Vue-Toastification__icon,
+.Vue-Toastification__toast--default .Vue-Toastification__icon {
+  color: rgb(var(--vw-info));
+}
+
+audio {
+  color-scheme: inherit;
 }

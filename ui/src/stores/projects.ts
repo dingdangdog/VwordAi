@@ -219,8 +219,8 @@ export const useProjectsStore = defineStore("projects", () => {
         serviceProvider: null,
         voice: null,
         speed: 1.0,
-        pitch: 1.0,
-        volume: 1.0,
+        pitch: 0,
+        volume: 100,
         ...settings,
       };
 

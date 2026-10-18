@@ -55,7 +55,7 @@ export interface TTSSynthesisResponse {
 
 // 应用设置类型
 export interface Settings {
-  theme: "light" | "dark";
+  theme: "light" | "dark" | "system";
   defaultExportPath: string;
   azure?: AzureProviderSettings;
   aliyun?: AliyunProviderSettings;

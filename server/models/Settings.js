@@ -14,7 +14,7 @@ const BLIVE_CONFIG_KEY = "blive";
 
 // 默认设置
 const DEFAULT_SETTINGS = {
-  theme: "light",
+  theme: "system",
   defaultExportPath: path.join(os.homedir(), "Documents", "vwordai"),
   language: "zh_CN",
   autoSave: true,

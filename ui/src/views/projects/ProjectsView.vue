@@ -1,400 +1,271 @@
 <template>
-  <div class="container mx-auto p-4">
-    <div v-if="projects.length === 0" class="card text-center py-12">
-      <h2 class="text-xl font-semibold text-ink mb-4">
-        暂无项目
-      </h2>
-      <p class="text-ink mb-6">
-        您还没有创建任何项目，请点击上面的"新建项目"按钮开始使用。
-      </p>
-      <button
-        @click="openCreateProjectModal"
-        class="btn btn-primary mb-4 flex items-center mx-auto"
-      >
-        <PlusIcon class="h-5 w-5 mr-2" />
-        新建项目
-      </button>
-    </div>
+  <div class="mx-auto max-w-5xl px-6 py-6">
+    <VPageHeader title="项目" description="单音色朗读：粘贴文本，选好音色，一键合成整章音频。">
+      <template #actions>
+        <VButton :icon="ArrowDownTrayIcon" @click="fileInput?.click()">导入</VButton>
+        <VButton variant="primary" :icon="PlusIcon" @click="openCreate">新建项目</VButton>
+      </template>
+    </VPageHeader>
+    <input ref="fileInput" type="file" accept=".json" class="hidden" @change="handleFileImport" />
 
-    <div v-else>
-      <div class="flex justify-center mb-4 gap-4">
-        <button
-          @click="openCreateProjectModal"
-          class="btn btn-primary flex items-center"
-        >
-          <PlusIcon class="h-5 w-5 mr-2" />
-          新建项目
-        </button>
-        <button
-          @click="importProject"
-          class="btn btn-secondary flex items-center"
-        >
-          <ArrowDownTrayIcon class="h-5 w-5 mr-2" />
-          导入项目
-        </button>
-        <input
-          type="file"
-          ref="fileInput"
-          accept=".json"
-          class="hidden"
-          @change="handleFileImport"
+    <div class="panel overflow-hidden">
+      <div class="flex items-center gap-3 border-b border-line px-3 py-2">
+        <VInput
+          v-model="keyword"
+          :icon="MagnifyingGlassIcon"
+          size="sm"
+          placeholder="搜索项目名称或描述"
+          wrapper-class="w-72"
+          aria-label="搜索项目"
         />
+        <span class="num ml-auto text-2xs text-ink-subtle">{{ filtered.length }} / {{ projects.length }}</span>
       </div>
-      <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-        <div
-          v-for="project in projects"
-          :key="project.id"
-          class="card transition-shadow duration-200 shadow hover:shadow-md shadow-primary/20"
-        >
-          <div class="flex justify-between items-start mb-4">
-            <h3 class="text-lg font-semibold text-ink">
-              {{ project.title }}
-            </h3>
-            <div class="flex">
-              <button
-                @click="openEditProjectModal(project)"
-                class="text-ink-muted hover:text-ink p-1"
-              >
-                <PencilSquareIcon class="h-5 w-5" />
-              </button>
-              <button
-                @click="confirmDeleteProject(project)"
-                class="text-ink-muted hover:text-red-500 p-1"
-              >
-                <TrashIcon class="h-5 w-5" />
-              </button>
-            </div>
-          </div>
-          <p class="text-ink mb-4 line-clamp-2">
-            {{ project.description || "无描述" }}
-          </p>
-          <div class="flex justify-between items-center mt-4">
-            <span class="text-sm text-ink-muted">
-              {{ formatDate(project.updateAt) }}
-            </span>
-            <router-link
-              :to="`/projects/${project.id}`"
-              class="btn btn-primary"
-            >
-              打开
-            </router-link>
+
+      <template v-if="projectsStore.isLoading && !projects.length">
+        <div v-for="i in 4" :key="i" class="list-row">
+          <VSkeleton class="h-8 w-8" />
+          <div class="flex-1 space-y-1.5">
+            <VSkeleton class="h-3.5 w-48" />
+            <VSkeleton class="h-3 w-72" />
           </div>
         </div>
-      </div>
+      </template>
+
+      <VEmptyState
+        v-else-if="!projects.length"
+        :icon="FolderIcon"
+        title="还没有项目"
+        description="新建一个项目，把小说章节、文章或讲稿粘贴进去即可合成语音。"
+      >
+        <VButton variant="primary" :icon="PlusIcon" @click="openCreate">新建项目</VButton>
+        <VButton :icon="ArrowDownTrayIcon" @click="fileInput?.click()">导入 JSON</VButton>
+      </VEmptyState>
+
+      <VEmptyState v-else-if="!filtered.length" :icon="MagnifyingGlassIcon" title="没有匹配的项目" compact />
+
+      <ul v-else>
+        <li
+          v-for="project in filtered"
+          :key="project.id"
+          class="list-row group cursor-pointer"
+          @click="router.push(`/projects/${project.id}`)"
+        >
+          <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-accent/10 text-accent">
+            <FolderIcon class="h-4 w-4" aria-hidden="true" />
+          </div>
+          <div class="min-w-0 flex-1">
+            <RouterLink
+              :to="`/projects/${project.id}`"
+              class="block truncate text-sm font-medium text-ink hover:text-accent"
+              @click.stop
+            >
+              {{ project.title }}
+            </RouterLink>
+            <p class="truncate text-xs text-ink-subtle">{{ project.description || "无描述" }}</p>
+          </div>
+          <div class="hidden w-40 shrink-0 text-xs text-ink-muted md:block">
+            <span v-if="project.defaultVoiceSettings?.voiceId" class="inline-flex items-center gap-1 truncate">
+              <SpeakerWaveIcon class="h-3.5 w-3.5 shrink-0 text-ink-subtle" aria-hidden="true" />
+              {{ accountStore.voiceName(project.defaultVoiceSettings.voiceId) }}
+            </span>
+            <span v-else class="text-ink-subtle">未设默认音色</span>
+          </div>
+          <span class="num w-24 shrink-0 text-right text-2xs text-ink-subtle">{{ formatRelative(project.updateAt) }}</span>
+          <div class="flex shrink-0 items-center gap-0.5 opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100">
+            <VIconButton :icon="PencilSquareIcon" label="编辑" size="sm" @click.stop="openEdit(project)" />
+            <VIconButton :icon="TrashIcon" label="删除" size="sm" @click.stop="deleting = project" />
+          </div>
+        </li>
+      </ul>
     </div>
 
-    <!-- Create Project Modal -->
     <ProjectFormModal
-      v-if="showCreateModal"
-      :title="'创建新项目'"
-      :submitText="'创建'"
-      :initialData="newProject"
-      @close="showCreateModal = false"
-      @submit="createProject"
+      :open="formOpen"
+      :title="editing ? '编辑项目' : '新建项目'"
+      :submit-text="editing ? '保存' : '创建'"
+      :initial-data="editing"
+      :submitting="submitting"
+      @close="formOpen = false"
+      @submit="submitProject"
     />
 
-    <!-- Edit Project Modal -->
-    <ProjectFormModal
-      v-if="showEditModal"
-      :title="'编辑项目'"
-      :submitText="'保存'"
-      :initialData="editingProject"
-      @close="showEditModal = false"
-      @submit="updateProject"
-    />
-
-    <!-- Delete Confirmation Modal -->
-    <ConfirmationModal
-      v-if="showDeleteModal"
-      :title="'删除项目'"
-      :message="`确定要删除项目 (${deletingProject?.title}) 吗？此操作将同时删除该项目下的所有章节，且无法恢复。`"
-      :confirmText="'删除'"
-      :confirmButtonClass="'btn-danger'"
-      @close="showDeleteModal = false"
+    <VConfirmDialog
+      :open="!!deleting"
+      title="删除项目"
+      :message="`确定删除「${deleting?.title}」吗？项目下的所有章节会一并删除，且无法恢复。`"
+      confirm-text="删除"
+      @close="deleting = null"
       @confirm="deleteProject"
+    />
+
+    <VConfirmDialog
+      :open="!!pendingImport"
+      tone="primary"
+      title="项目已存在"
+      :message="`「${pendingImport?.title}」已存在。覆盖会替换现有项目的全部章节；也可以另存为新项目。`"
+      confirm-text="覆盖现有项目"
+      cancel-text="另存为新项目"
+      @cancel="importAsNew"
+      @close="pendingImport = null"
+      @confirm="importOverwrite"
     />
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from "vue";
+import { computed, onMounted, ref } from "vue";
+import { useRouter } from "vue-router";
 import { useToast } from "vue-toastification";
-import { useProjectsStore } from "@/stores/projects";
-import type { Project } from "@/types";
 import {
-  PlusIcon,
-  PencilSquareIcon,
-  TrashIcon,
   ArrowDownTrayIcon,
+  FolderIcon,
+  MagnifyingGlassIcon,
+  PencilSquareIcon,
+  PlusIcon,
+  SpeakerWaveIcon,
+  TrashIcon,
 } from "@heroicons/vue/24/outline";
-import ProjectFormModal from "@/components/projects/ProjectFormModal.vue";
-import ConfirmationModal from "@/components/common/ConfirmationModal.vue";
-import { formatDate } from "@/utils/common";
+import VPageHeader from "@/components/ui/VPageHeader.vue";
+import VButton from "@/components/ui/VButton.vue";
+import VIconButton from "@/components/ui/VIconButton.vue";
+import VInput from "@/components/ui/VInput.vue";
+import VEmptyState from "@/components/ui/VEmptyState.vue";
+import VSkeleton from "@/components/ui/VSkeleton.vue";
+import VConfirmDialog from "@/components/ui/VConfirmDialog.vue";
+import ProjectFormModal, { type ProjectFormData } from "@/components/projects/ProjectFormModal.vue";
+import { useProjectsStore } from "@/stores/projects";
+import { useAccountStore } from "@/stores/account";
+import type { Project } from "@/types";
+import { formatRelative } from "@/utils/format";
 
+const router = useRouter();
 const toast = useToast();
 const projectsStore = useProjectsStore();
+const accountStore = useAccountStore();
 
-// Load projects on component mount
-onMounted(() => {
-  projectsStore.loadProjects();
-});
-
-// Project list
-const projects = computed(() => projectsStore.projectsSorted);
-
-// Modal states
-const showCreateModal = ref(false);
-const showEditModal = ref(false);
-const showDeleteModal = ref(false);
-
-// Form data
-const newProject = ref({
-  title: "",
-  description: "",
-  defaultVoiceSettings: {},
-});
-
-const editingProject = ref<Project>();
-const deletingProject = ref<Project>();
+const keyword = ref("");
+const formOpen = ref(false);
+const submitting = ref(false);
+const editing = ref<Project | null>(null);
+const deleting = ref<Project | null>(null);
+const pendingImport = ref<any>(null);
 const fileInput = ref<HTMLInputElement>();
 
-// Modal functions
-function openCreateProjectModal() {
-  newProject.value = {
-    title: "",
-    description: "",
-    defaultVoiceSettings: {},
-  };
-  showCreateModal.value = true;
-}
-
-function openEditProjectModal(project: Project) {
-  editingProject.value = { ...project };
-  showEditModal.value = true;
-}
-
-function confirmDeleteProject(project: Project) {
-  deletingProject.value = project;
-  showDeleteModal.value = true;
-}
-
-// CRUD operations
-async function createProject(projectData: {
-  title: string;
-  description: string;
-  defaultVoiceSettings: any;
-}) {
-  const project = await projectsStore.createProject(
-    projectData.title,
-    projectData.description,
-    projectData.defaultVoiceSettings
+const projects = computed(() => projectsStore.projectsSorted);
+const filtered = computed(() => {
+  const q = keyword.value.trim().toLowerCase();
+  if (!q) return projects.value;
+  return projects.value.filter(
+    (p) => p.title.toLowerCase().includes(q) || (p.description || "").toLowerCase().includes(q)
   );
+});
 
-  if (project) {
-    toast.success(`项目 "${project.title}" 创建成功！`);
-    showCreateModal.value = false;
-  } else {
-    toast.error("创建项目失败！");
-  }
+onMounted(() => {
+  projectsStore.loadProjects();
+  accountStore.loadVoices();
+});
+
+function openCreate() {
+  editing.value = null;
+  formOpen.value = true;
 }
 
-async function updateProject(projectData: {
-  title: string;
-  description: string;
-  defaultVoiceSettings: any;
-}) {
-  if (!editingProject.value) return;
+function openEdit(project: Project) {
+  editing.value = project;
+  formOpen.value = true;
+}
 
-  const result = await projectsStore.updateProject(editingProject.value.id, {
-    title: projectData.title,
-    description: projectData.description,
-    defaultVoiceSettings: projectData.defaultVoiceSettings,
-  });
-
-  if (result) {
-    toast.success(`项目 "${projectData.title}" 更新成功！`);
-    showEditModal.value = false;
-  } else {
-    toast.error("更新项目失败！");
+async function submitProject(data: ProjectFormData) {
+  submitting.value = true;
+  try {
+    if (editing.value) {
+      const result = await projectsStore.updateProject(editing.value.id, data);
+      if (!result) throw new Error("更新项目失败");
+      toast.success("项目已保存");
+    } else {
+      const project = await projectsStore.createProject(data.title, data.description, data.defaultVoiceSettings);
+      if (!project) throw new Error("创建项目失败");
+      toast.success("项目已创建");
+      router.push({ path: `/projects/${project.id}`, query: { chapter: "new" } });
+    }
+    formOpen.value = false;
+  } catch (error) {
+    toast.error(error instanceof Error ? error.message : "操作失败");
+  } finally {
+    submitting.value = false;
   }
 }
 
 async function deleteProject() {
-  if (!deletingProject.value) return;
-
-  const result = await projectsStore.deleteProject(deletingProject.value.id);
-
-  if (result) {
-    toast.success(`项目 "${deletingProject.value.title}" 已删除！`);
-    showDeleteModal.value = false;
-  } else {
-    toast.error("删除项目失败！");
-  }
-}
-
-function importProject() {
-  // Trigger file input click
-  if (fileInput.value) {
-    fileInput.value.click();
-  }
+  const target = deleting.value;
+  if (!target) return;
+  const ok = await projectsStore.deleteProject(target.id);
+  if (ok) toast.success(`已删除「${target.title}」`);
+  else toast.error("删除项目失败");
+  deleting.value = null;
 }
 
 async function handleFileImport(event: Event) {
   const input = event.target as HTMLInputElement;
-  if (!input.files || input.files.length === 0) return;
-
-  const file = input.files[0];
+  const file = input.files?.[0];
+  input.value = "";
+  if (!file) return;
   try {
-    // Read the file
-    const content = await readFile(file);
-    const projectData = JSON.parse(content);
-
-    // Validate the import file structure
-    if (
-      !projectData.id ||
-      !projectData.title ||
-      !Array.isArray(projectData.chapters)
-    ) {
-      throw new Error("无效的项目导入文件格式");
-    }
-
-    // Check if project ID already exists
-    const existingProject = projectsStore.projects.find(
-      (p) => p.id === projectData.id
-    );
-    if (existingProject) {
-      // Ask for confirmation to overwrite or create new
-      if (
-        !confirm(
-          `项目 "${projectData.title}" 已存在，是否更新现有项目？点击"取消"将创建新项目。`
-        )
-      ) {
-        // Create new project with new ID
-        await createNewProjectFromImport(projectData);
-      } else {
-        // Update existing project
-        await updateExistingProject(projectData);
-      }
+    const data = JSON.parse(await file.text());
+    if (!data.id || !data.title || !Array.isArray(data.chapters)) throw new Error("无效的项目导入文件格式");
+    if (projectsStore.projects.some((p) => p.id === data.id)) {
+      pendingImport.value = data;
     } else {
-      // Create project with existing ID
-      await createNewProjectFromImport(projectData, false);
+      await createFromImport(data);
     }
-
-    // Reset file input
-    input.value = "";
   } catch (error) {
-    console.error("导入项目失败:", error);
-    toast.error(
-      `导入失败: ${error instanceof Error ? error.message : "无效的文件格式"}`
-    );
-    // Reset file input
-    input.value = "";
+    toast.error(`导入失败：${error instanceof Error ? error.message : "无效的文件格式"}`);
   }
 }
 
-// Function to read file content
-function readFile(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      if (e.target?.result) {
-        resolve(e.target.result as string);
-      } else {
-        reject(new Error("读取文件失败"));
-      }
-    };
-    reader.onerror = () => reject(new Error("读取文件失败"));
-    reader.readAsText(file);
-  });
-}
-
-// Function to create a new project from import data
-async function createNewProjectFromImport(
-  projectData: any,
-  generateNewId: boolean = true
-) {
-  try {
-    // Create new project
-    const { title, description, defaultVoiceSettings } = projectData;
-    const newProject = await projectsStore.createProject(
-      title,
-      description || "",
-      defaultVoiceSettings || {}
-    );
-
-    if (!newProject) {
-      throw new Error("创建项目失败");
-    }
-
-    // Add chapters
-    if (projectData.chapters && projectData.chapters.length > 0) {
-      for (const chapterData of projectData.chapters) {
-        const chapter = await projectsStore.createChapter(
-          newProject.id,
-          chapterData.name,
-          chapterData.text || "",
-          chapterData.settings || {}
-        );
-
-        if (!chapter) {
-          console.error(`导入章节 "${chapterData.name}" 失败`);
-        }
-      }
-    }
-
-    toast.success(`项目 "${title}" 导入成功`);
-  } catch (error) {
-    console.error("创建导入项目失败:", error);
-    toast.error(
-      `导入失败: ${error instanceof Error ? error.message : "未知错误"}`
-    );
+async function importChapters(projectId: string, chapters: any[]) {
+  for (const chapter of chapters || []) {
+    const created = await projectsStore.createChapter(projectId, chapter.name, chapter.text || "", chapter.settings || {});
+    if (!created) console.error(`导入章节「${chapter.name}」失败`);
   }
 }
 
-// Function to update existing project from import data
-async function updateExistingProject(projectData: any) {
+async function createFromImport(data: any) {
+  const project = await projectsStore.createProject(data.title, data.description || "", data.defaultVoiceSettings || {});
+  if (!project) throw new Error("创建项目失败");
+  await importChapters(project.id, data.chapters);
+  toast.success(`「${data.title}」导入成功`);
+}
+
+async function importAsNew() {
+  const data = pendingImport.value;
+  pendingImport.value = null;
+  if (!data) return;
   try {
-    // Update project
-    const result = await projectsStore.updateProject(projectData.id, {
-      title: projectData.title,
-      description: projectData.description || "",
-      defaultVoiceSettings: projectData.defaultVoiceSettings || {},
+    await createFromImport(data);
+  } catch (error) {
+    toast.error(`导入失败：${error instanceof Error ? error.message : "未知错误"}`);
+  }
+}
+
+async function importOverwrite() {
+  const data = pendingImport.value;
+  pendingImport.value = null;
+  if (!data) return;
+  try {
+    const result = await projectsStore.updateProject(data.id, {
+      title: data.title,
+      description: data.description || "",
+      defaultVoiceSettings: data.defaultVoiceSettings || {},
     });
-
-    if (!result) {
-      throw new Error("更新项目失败");
-    }
-
-    // Delete existing chapters and add new ones
-    const existingChapters = projectsStore.chapters.filter(
-      (c) => c.projectId === projectData.id
-    );
-    for (const chapter of existingChapters) {
-      await projectsStore.deleteChapter(chapter.id);
-    }
-
-    // Add chapters from import
-    if (projectData.chapters && projectData.chapters.length > 0) {
-      for (const chapterData of projectData.chapters) {
-        const chapter = await projectsStore.createChapter(
-          projectData.id,
-          chapterData.name,
-          chapterData.text || "",
-          chapterData.settings || {}
-        );
-
-        if (!chapter) {
-          console.error(`导入章节 "${chapterData.name}" 失败`);
-        }
-      }
-    }
-
-    toast.success(`项目 "${projectData.title}" 更新成功`);
+    if (!result) throw new Error("更新项目失败");
+    await projectsStore.loadChaptersByProjectId(data.id);
+    const existing = projectsStore.chapters.filter((c) => c.projectId === data.id);
+    for (const chapter of existing) await projectsStore.deleteChapter(chapter.id);
+    await importChapters(data.id, data.chapters);
+    toast.success(`「${data.title}」已覆盖更新`);
   } catch (error) {
-    console.error("更新导入项目失败:", error);
-    toast.error(
-      `导入失败: ${error instanceof Error ? error.message : "未知错误"}`
-    );
+    toast.error(`导入失败：${error instanceof Error ? error.message : "未知错误"}`);
   }
 }
 </script>
