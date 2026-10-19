@@ -361,8 +361,9 @@ async function synthesizeSegmentText(segment, chapterId) {
     };
 
     // 执行合成
+    const { toSpeechText } = require("../utils/speechText");
     const result = await ttsClient.synthesize(
-      segment.text,
+      toSpeechText(segment.text),
       outputPath,
       settings,
       ttsSettings[providerType]

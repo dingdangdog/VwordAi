@@ -9,6 +9,7 @@ const Chapter = require("../models/ProjectChapter");
 const Settings = require("../models/Settings");
 const audioUtils = require("../utils/audioUtils");
 const { success, error } = require("../utils/result");
+const { toSpeechText } = require("../utils/speechText");
 const Project = require("../models/Project");
 
 // Load voice model data
@@ -113,10 +114,12 @@ async function synthesizeWithProvider(
   providerConfig,
   providerType
 ) {
+  const text = toSpeechText(chunk);
+  if (!text) throw new Error("没有可朗读的文字");
   if (providerType === "local" || providerType === "sovits") {
     const provider = getProviderModule(providerType);
     if (!provider) throw new Error("本地语音不可用");
-    return provider.synthesize(chunk, outputPath, settings, providerConfig);
+    return provider.synthesize(text, outputPath, settings, providerConfig);
   }
 
   if (!settings.voiceId) {
@@ -124,7 +127,7 @@ async function synthesizeWithProvider(
   }
   const cloud = require("./cloudClient");
   return cloud.synthesizeToFile({
-    text: chunk,
+    text,
     voiceId: settings.voiceId,
     speed: settings.speed ?? 1,
     pitch: settings.pitch ?? 0,
@@ -224,7 +227,7 @@ async function synthesizeChapter(chapterId) {
 
     // 5. Split text into chunks
     const maxLength = TEXT_LENGTH_LIMITS[providerType] || 5000;
-    const textChunks = splitTextIntoChunks(chapter.text, maxLength);
+    const textChunks = splitTextIntoChunks(toSpeechText(chapter.text), maxLength);
     if (textChunks.length === 0) {
       throw new Error("Text split resulted in empty chunks");
     }

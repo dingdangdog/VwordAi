@@ -1,6 +1,8 @@
 import { computed, reactive, ref, watch } from "vue";
 import { useToast } from "vue-toastification";
 import { novelApi } from "@/api";
+import { useEditorDraft } from "@/composables/useEditorDraft";
+import { samePayload } from "@/utils/editorDraft";
 import { ttsApi, type VoiceModelsCache } from "@/api/ttsApi";
 import { useSettingsStore } from "@/stores/settings";
 import type { LLMProviderType, TTSProviderType } from "@/types";
@@ -14,6 +16,22 @@ export interface ChapterAudio {
   audioUrl: string;
   duration?: number;
   createdAt?: string;
+}
+
+interface SegmentDraft {
+  text: string;
+  character: string;
+  emotion?: string;
+  tone?: string;
+  voice?: string;
+  speed?: number;
+  mimicry?: string;
+  ttsConfig?: SegmentTtsConfig;
+}
+
+interface NovelEditorDraft {
+  content: string;
+  segments: SegmentDraft[] | null;
 }
 
 const DEFAULT_FEMALE_VOICE = "zh-CN-XiaoxiaoNeural";
@@ -57,6 +75,11 @@ export function useChapterWorkstation() {
   const selectedLLMProvider = ref<LLMProviderType>("");
   const skipLlm = ref(false);
   const plainSpeaker = ref("旁白");
+  const drafts = useEditorDraft<NovelEditorDraft>("client.novel-chapter");
+  const draftCached = drafts.cached;
+  const draftSegmentsDirty = ref(false);
+  let suspendDraft = false;
+  let savedSnapshot: NovelEditorDraft | null = null;
 
   const contentChanged = computed(() => !!chapter.value && editedContent.value !== (chapter.value.content || ""));
   const segments = computed<SegmentWithTts[]>(() => {
@@ -173,7 +196,55 @@ export function useChapterWorkstation() {
     return [];
   }
 
+  function segmentDraftOf(segment: ParsedSegment): SegmentDraft {
+    return {
+      text: segment.text || "",
+      character: segment.character || "",
+      emotion: segment.emotion,
+      tone: segment.tone,
+      voice: segment.voice,
+      speed: segment.speed,
+      mimicry: segment.mimicry,
+      ttsConfig: segment.ttsConfig ? { ...segment.ttsConfig } : undefined,
+    };
+  }
+
+  function currentPayload(): NovelEditorDraft {
+    return {
+      content: editedContent.value,
+      segments: parsedChapter.value ? parsedChapter.value.segments.map(segmentDraftOf) : null,
+    };
+  }
+
+  function applySegmentDraft(list: SegmentDraft[]) {
+    const segments = parsedChapter.value?.segments;
+    if (!segments || segments.length !== list.length) return false;
+    list.forEach((item, index) => {
+      const segment = segments[index];
+      segment.text = item.text;
+      segment.character = item.character;
+      segment.emotion = item.emotion;
+      segment.tone = item.tone;
+      segment.voice = item.voice;
+      segment.speed = item.speed;
+      segment.mimicry = item.mimicry;
+      if (item.ttsConfig) segment.ttsConfig = { ...item.ttsConfig };
+    });
+    return true;
+  }
+
+  function rememberSaved(next: NovelEditorDraft) {
+    if (!chapter.value) return;
+    savedSnapshot = next;
+    drafts.commit(chapter.value.id, currentPayload(), savedSnapshot);
+  }
+
   async function load(chapterId: string) {
+    drafts.flush();
+    drafts.focus(chapterId);
+    suspendDraft = true;
+    draftSegmentsDirty.value = false;
+    savedSnapshot = null;
     loading.value = true;
     try {
       await settingsStore.loadLLMSettings();
@@ -212,9 +283,28 @@ export function useChapterWorkstation() {
         const ttsRes = await novelApi.getTtsResults(chapterId);
         if (ttsRes.success) chapterAudios.value = normalizeChapterAudios(ttsRes.data);
       }
+
+      const baseline = currentPayload();
+      savedSnapshot = baseline;
+      const restored = await drafts.restore(chapterId, baseline);
+      if (restored) {
+        let restoredSomething = false;
+        if (!samePayload(restored.content, baseline.content)) {
+          editedContent.value = restored.content;
+          restoredSomething = true;
+        }
+        const segmentsAlign = !!restored.segments && !!baseline.segments && restored.segments.length === baseline.segments.length;
+        if (segmentsAlign && restored.segments && !samePayload(restored.segments, baseline.segments)) {
+          applySegmentDraft(restored.segments);
+          draftSegmentsDirty.value = true;
+          restoredSomething = true;
+        }
+        if (restoredSomething) toast.info("已恢复本机未保存的内容");
+      }
     } catch (error) {
       toast.error(`加载章节失败：${errorText(error)}`);
     } finally {
+      suspendDraft = false;
       loading.value = false;
     }
   }
@@ -226,6 +316,7 @@ export function useChapterWorkstation() {
       const res = await novelApi.updateChapter(chapter.value.id, { content: editedContent.value });
       if (!res.success) throw new Error(res.message || "保存失败");
       chapter.value.content = editedContent.value;
+      rememberSaved({ content: editedContent.value, segments: savedSnapshot?.segments ?? currentPayload().segments });
       if (!silent) toast.success("章节原文已保存");
       return true;
     } catch (error) {
@@ -244,6 +335,8 @@ export function useChapterWorkstation() {
       if (!res.success) throw new Error(res.message || "保存失败");
       chapter.value.parsedData = res.data;
       chapter.value.processed = true;
+      draftSegmentsDirty.value = false;
+      rememberSaved({ content: savedSnapshot?.content ?? chapter.value.content ?? "", segments: currentPayload().segments });
       if (!silent) toast.success("分段设置已保存");
       return true;
     } catch (error) {
@@ -477,6 +570,25 @@ export function useChapterWorkstation() {
     }
   }
 
+  function discardLocalDraft() {
+    if (!chapter.value || !savedSnapshot) return;
+    suspendDraft = true;
+    editedContent.value = savedSnapshot.content;
+    if (savedSnapshot.segments) applySegmentDraft(savedSnapshot.segments);
+    drafts.forget(chapter.value.id);
+    draftSegmentsDirty.value = false;
+    suspendDraft = false;
+  }
+
+  watch(
+    () => currentPayload(),
+    (payload) => {
+      if (suspendDraft || !chapter.value || !savedSnapshot) return;
+      drafts.schedule(chapter.value.id, payload, savedSnapshot);
+    },
+    { deep: true }
+  );
+
   async function revealAudio(audioUrl: string) {
     try {
       const filePath = audioUrl
@@ -515,7 +627,10 @@ export function useChapterWorkstation() {
     selectedLLMProvider,
     skipLlm,
     plainSpeaker,
+    draftCached,
+    draftSegmentsDirty,
     load,
+    discardLocalDraft,
     saveContent,
     saveParsed,
     saveAll,

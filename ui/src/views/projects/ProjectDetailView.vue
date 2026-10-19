@@ -111,8 +111,16 @@
             />
             <span class="flex items-center gap-1.5 text-2xs" :class="dirty ? 'text-warning' : 'text-ink-subtle'">
               <span class="status-dot" :class="dirty ? 'bg-warning' : 'bg-success'" aria-hidden="true" />
-              {{ dirty ? "未保存" : "已保存" }}
+              {{ dirty ? (draftCached ? "已暂存本机" : "未保存") : "已保存" }}
             </span>
+            <button
+              v-if="draftCached"
+              type="button"
+              class="text-2xs text-ink-subtle underline-offset-2 hover:text-ink hover:underline"
+              @click="discardDraft"
+            >
+              恢复已保存版本
+            </button>
             <VButton size="sm" :loading="saving" :disabled="!dirty" @click="saveDraft()">
               保存 <span class="kbd ml-1">Ctrl S</span>
             </VButton>
@@ -264,6 +272,7 @@ import VSlider from "@/components/ui/VSlider.vue";
 import ProjectFormModal, { type ProjectFormData } from "@/components/projects/ProjectFormModal.vue";
 import VoiceSelect from "@/components/projects/VoiceSelect.vue";
 import { ttsApi } from "@/api";
+import { useEditorDraft } from "@/composables/useEditorDraft";
 import { useAccountStore } from "@/stores/account";
 import { useProjectsStore } from "@/stores/projects";
 import type { Chapter } from "@/types";
@@ -291,7 +300,17 @@ const autoplayNext = ref(false);
 const textEl = ref<HTMLTextAreaElement | null>(null);
 const audioBar = ref<InstanceType<typeof VAudioBar> | null>(null);
 
-const draft = reactive({ name: "", text: "", voiceId: "", speed: 1 });
+interface ChapterDraft {
+  name: string;
+  text: string;
+  voiceId: string;
+  speed: number;
+}
+
+const draft = reactive<ChapterDraft>({ name: "", text: "", voiceId: "", speed: 1 });
+const editorDraft = useEditorDraft<ChapterDraft>("client.project-chapter");
+const draftCached = editorDraft.cached;
+let suspendDraft = false;
 
 const projectId = computed(() => route.params.id as string);
 const project = computed(() => projectsStore.projects.find((p) => p.id === projectId.value) || null);
@@ -329,13 +348,62 @@ function statusOf(chapter: Chapter) {
   return { label: "未合成", dot: "bg-line-strong" };
 }
 
-function loadDraft(chapter: Chapter | null) {
+function payloadOf(): ChapterDraft {
+  return { name: draft.name, text: draft.text, voiceId: draft.voiceId, speed: draft.speed };
+}
+
+function baselineOf(chapter: Chapter): ChapterDraft {
+  return {
+    name: chapter.name || "",
+    text: chapter.text || "",
+    voiceId: chapter.settings?.voiceId || "",
+    speed: Number(chapter.settings?.speed ?? 1) || 1,
+  };
+}
+
+async function loadDraft(chapter: Chapter | null) {
+  editorDraft.flush();
+  suspendDraft = true;
   draft.name = chapter?.name || "";
   draft.text = chapter?.text || "";
   draft.voiceId = chapter?.settings?.voiceId || "";
   draft.speed = Number(chapter?.settings?.speed ?? 1) || 1;
   analysis.value = [];
+  try {
+    if (!chapter) return;
+    editorDraft.focus(chapter.id);
+    const cached = await editorDraft.restore(chapter.id, baselineOf(chapter));
+    if (!cached) return;
+    draft.name = cached.name;
+    draft.text = cached.text;
+    draft.voiceId = cached.voiceId;
+    draft.speed = cached.speed;
+    toast.info("已恢复本机未保存的内容");
+  } finally {
+    suspendDraft = false;
+  }
 }
+
+function discardDraft() {
+  const chapter = selected.value;
+  if (!chapter) return;
+  editorDraft.forget(chapter.id);
+  suspendDraft = true;
+  draft.name = chapter.name || "";
+  draft.text = chapter.text || "";
+  draft.voiceId = chapter.settings?.voiceId || "";
+  draft.speed = Number(chapter.settings?.speed ?? 1) || 1;
+  suspendDraft = false;
+}
+
+watch(
+  draft,
+  () => {
+    if (suspendDraft || !selected.value) return;
+    editorDraft.schedule(selected.value.id, payloadOf(), baselineOf(selected.value));
+  },
+  { deep: true }
+);
 
 async function refreshAudio(chapter: Chapter | null, autoplay = false) {
   autoplayNext.value = autoplay;
@@ -346,7 +414,7 @@ async function selectChapter(id: string | null) {
   if (id === selectedId.value) return;
   if (dirty.value) await saveDraft(true);
   selectedId.value = id;
-  loadDraft(selected.value);
+  await loadDraft(selected.value);
   refreshAudio(selected.value);
   router.replace({ query: id ? { ...route.query, chapter: id } : {} });
 }
@@ -363,6 +431,7 @@ async function saveDraft(silent = false) {
     });
     if (!result) throw new Error("保存失败");
     if (!draft.name.trim()) draft.name = result.name;
+    editorDraft.commit(chapter.id, payloadOf(), baselineOf(result));
     if (!silent) toast.success("已保存");
     return true;
   } catch (error) {
@@ -456,6 +525,7 @@ async function deleteChapter() {
   if (!target) return;
   const index = chapters.value.findIndex((c) => c.id === target.id);
   const ok = await projectsStore.deleteChapter(target.id);
+  if (ok) editorDraft.forget(target.id);
   if (!ok) return toast.error("删除章节失败");
   toast.success(`已删除「${target.name}」`);
   if (selectedId.value === target.id) {

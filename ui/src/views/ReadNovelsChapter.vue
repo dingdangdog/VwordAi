@@ -47,8 +47,16 @@
         <span class="mx-1 h-5 w-px bg-line" aria-hidden="true" />
         <span class="flex items-center gap-1.5 text-2xs" :class="dirty ? 'text-warning' : 'text-ink-subtle'">
           <span class="status-dot" :class="dirty ? 'bg-warning' : 'bg-success'" aria-hidden="true" />
-          {{ dirty ? "未保存" : "已保存" }}
+          {{ dirty ? (ws.draftCached.value ? "已暂存本机" : "未保存") : "已保存" }}
         </span>
+        <button
+          v-if="ws.draftCached.value"
+          type="button"
+          class="text-2xs text-ink-subtle underline-offset-2 hover:text-ink hover:underline"
+          @click="discardLocal"
+        >
+          恢复已保存版本
+        </button>
         <VButton size="sm" :loading="ws.isSaving.value || ws.isUpdating.value" :disabled="!dirty" @click="saveAll">
           保存 <span class="kbd ml-1">Ctrl S</span>
         </VButton>
@@ -401,6 +409,12 @@ function scheduleSave() {
   saveTimer = setTimeout(flushParsed, 1200);
 }
 
+function discardLocal() {
+  clearTimeout(saveTimer);
+  parsedDirty.value = false;
+  ws.discardLocalDraft();
+}
+
 async function flushParsed() {
   clearTimeout(saveTimer);
   if (!parsedDirty.value) return true;
@@ -519,6 +533,13 @@ function onKeydown(event: KeyboardEvent) {
     selected.value = [];
   }
 }
+
+watch(
+  () => ws.draftSegmentsDirty.value,
+  (value) => {
+    if (value) scheduleSave();
+  }
+);
 
 watch(
   () => ws.loading.value,
