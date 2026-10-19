@@ -136,6 +136,7 @@
           <div class="flex h-8 shrink-0 items-center gap-4 border-t border-line px-6 text-2xs text-ink-subtle">
             <span class="num">{{ countChars(draft.text).toLocaleString() }} 字</span>
             <span>预计 {{ estimateDuration(draft.text) }}</span>
+            <SpeechTextHint :text="draft.text" />
             <span class="ml-auto hidden lg:inline">
               <span class="kbd">Ctrl Enter</span> 合成 · <span class="kbd">Space</span> 播放/暂停
             </span>
@@ -271,6 +272,7 @@ import VSkeleton from "@/components/ui/VSkeleton.vue";
 import VSlider from "@/components/ui/VSlider.vue";
 import ProjectFormModal, { type ProjectFormData } from "@/components/projects/ProjectFormModal.vue";
 import VoiceSelect from "@/components/projects/VoiceSelect.vue";
+import SpeechTextHint from "@/components/projects/SpeechTextHint.vue";
 import { ttsApi } from "@/api";
 import { useEditorDraft } from "@/composables/useEditorDraft";
 import { useAccountStore } from "@/stores/account";

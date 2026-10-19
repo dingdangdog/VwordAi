@@ -1,8 +1,19 @@
+import { toSpeechText } from "./speechText";
+
 /** 中文朗读约 260 字/分钟，用于估算时长。 */
 const CHARS_PER_MINUTE = 260;
 
+const countCache = new Map<string, number>();
+
+/** 按实际朗读的纯文本计数，格式符号不算。 */
 export function countChars(text?: string | null) {
-  return (text || "").replace(/\s/g, "").length;
+  const source = text || "";
+  const cached = countCache.get(source);
+  if (cached !== undefined) return cached;
+  const count = toSpeechText(source).replace(/\s/g, "").length;
+  if (countCache.size >= 200) countCache.clear();
+  countCache.set(source, count);
+  return count;
 }
 
 export function estimateDuration(text?: string | null) {

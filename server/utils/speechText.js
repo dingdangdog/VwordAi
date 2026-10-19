@@ -153,7 +153,7 @@ function toSpeechText(input) {
     const plain = stripSymbols(stripInline(line)).trim();
     return kind === "heading" || kind === "item" ? withPause(plain) : plain;
   });
-  return tidyWhitespace(lines.join("\n").replaceAll(ESCAPE_MARK, ""));
+  return tidyWhitespace(lines.join("\n").replace(/\uE000/g, ""));
 }
 
 module.exports = { toSpeechText };

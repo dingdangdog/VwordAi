@@ -40,6 +40,7 @@
           :variant="ws.segments.value.length ? 'secondary' : 'primary'"
           :icon="DocumentMagnifyingGlassIcon"
           :loading="ws.isParsing.value"
+          :disabled="!countChars(ws.editedContent.value)"
           @click="confirmParse"
         >
           {{ ws.skipLlm.value ? "生成分段" : ws.segments.value.length ? "重新解析" : "AI 解析" }}
@@ -87,6 +88,9 @@
           placeholder="粘贴章节原文…"
           aria-label="章节原文"
         />
+        <div v-if="hasSpeechMarkup(ws.editedContent.value)" class="flex h-8 shrink-0 items-center border-t border-line px-3">
+          <SpeechTextHint :text="ws.editedContent.value" />
+        </div>
       </section>
       <button
         v-else
@@ -144,7 +148,7 @@
               : 'AI 会把原文拆分为旁白与角色对白，并自动提取出场角色。'
           "
         >
-          <VButton variant="primary" :icon="DocumentMagnifyingGlassIcon" :loading="ws.isParsing.value" @click="ws.parse()">
+          <VButton variant="primary" :icon="DocumentMagnifyingGlassIcon" :loading="ws.isParsing.value" :disabled="!countChars(ws.editedContent.value)" @click="ws.parse()">
             {{ ws.skipLlm.value ? "生成分段" : "AI 解析" }}
           </VButton>
         </VEmptyState>
@@ -289,9 +293,11 @@ import SegmentRow from "@/components/novels/SegmentRow.vue";
 import SegmentInspector from "@/components/novels/SegmentInspector.vue";
 import ChapterCharacterPanel from "@/components/novels/ChapterCharacterPanel.vue";
 import CharacterModal from "@/components/ReadNovels/CharacterModal.vue";
+import SpeechTextHint from "@/components/projects/SpeechTextHint.vue";
 import { isNarratorName, useChapterWorkstation, type SegmentTtsConfig } from "@/composables/useChapterWorkstation";
 import type { Character } from "@/types/ReadNovels";
 import { countChars } from "@/utils/format";
+import { hasSpeechMarkup } from "@/utils/speechText";
 
 const route = useRoute();
 const router = useRouter();
@@ -448,6 +454,7 @@ async function synthesizeSelected() {
 }
 
 function confirmParse() {
+  if (!countChars(ws.editedContent.value)) return;
   if (ws.segments.value.length) reparseConfirm.value = true;
   else ws.parse();
 }
