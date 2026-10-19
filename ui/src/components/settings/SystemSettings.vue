@@ -33,7 +33,7 @@
             打开
           </VButton>
         </div>
-        <p class="field-hint">合成的音频文件会按项目保存在此目录下。</p>
+        <p class="field-hint">合成的音频文件会按读文章保存在此目录下。</p>
         <div class="flex justify-end">
           <VButton variant="primary" :loading="isSavingPath" :disabled="defaultExportPath === savedPath" @click="saveStorageSettings">
             保存
@@ -47,12 +47,12 @@
       <div class="grid gap-4 p-5 sm:grid-cols-2">
         <div class="rounded-md border border-line p-4">
           <p class="text-sm font-medium text-ink">导出</p>
-          <p class="mt-1 text-xs text-ink-subtle">把项目、章节、服务设置与系统配置导出为单个 JSON 文件。</p>
+          <p class="mt-1 text-xs text-ink-subtle">把读文章、章节、服务设置与系统配置导出为单个 JSON 文件。</p>
           <VButton class="mt-4" :icon="ArrowUpTrayIcon" :loading="isExporting" @click="exportSystemData">导出全部数据</VButton>
         </div>
         <div class="rounded-md border border-line p-4">
           <p class="text-sm font-medium text-ink">导入</p>
-          <p class="mt-1 text-xs text-ink-subtle">从备份文件恢复，会替换当前全部项目与设置。</p>
+          <p class="mt-1 text-xs text-ink-subtle">从备份文件恢复，会替换当前全部读文章与设置。</p>
           <VButton class="mt-4" :icon="ArrowDownTrayIcon" :loading="isImporting" @click="fileInput?.click()">选择备份文件</VButton>
           <input ref="fileInput" type="file" accept=".json" class="hidden" @change="handleFileImport" />
         </div>
@@ -62,7 +62,7 @@
     <VConfirmDialog
       :open="!!pendingImport"
       title="导入备份数据"
-      message="导入将替换当前系统中的全部项目、章节与设置，且无法撤销。确定继续吗？"
+      message="导入将替换当前系统中的全部读文章、章节与设置，且无法撤销。确定继续吗？"
       confirm-text="导入并替换"
       :loading="isImporting"
       @close="pendingImport = null"

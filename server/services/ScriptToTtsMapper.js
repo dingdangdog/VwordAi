@@ -4,6 +4,7 @@
  */
 const DEFAULT_NARRATOR_VOICE = "zh-CN-XiaoxiaoNeural";
 const DEFAULT_PROVIDER = "azure";
+const { speakingStyle, speakingRole } = require("../utils/emotions");
 
 /**
  * 匹配段落角色名到小说角色
@@ -98,6 +99,7 @@ function scriptToTtsReadySegments(script, characters, parsedSegments = null, def
     let provider = defaultTtsProvider;
     let voice = DEFAULT_NARRATOR_VOICE;
     let emotion = "";
+    let mimic = "";
     let style = "";
     let speed = 0;
     let pitch = 0;
@@ -106,7 +108,9 @@ function scriptToTtsReadySegments(script, characters, parsedSegments = null, def
     if (override) {
       provider = override.provider || provider;
       voice = (override.model && String(override.model).trim()) ? override.model : ((parsed && parsed.voice) || voice);
-      if (override.emotion !== undefined) emotion = override.emotion || "";
+      if (override.emotion) emotion = speakingStyle(override.emotion);
+      else emotion = speakingStyle(seg.emotion || seg.tone);
+      mimic = speakingRole(override.mimic) || speakingRole(seg.mimicry);
       if (override.style !== undefined) style = override.style || "";
       speed = typeof override.speed === "number" ? override.speed : speed;
       pitch = typeof override.pitch === "number" ? override.pitch : pitch;
@@ -115,13 +119,16 @@ function scriptToTtsReadySegments(script, characters, parsedSegments = null, def
       const tc = matched.ttsConfig;
       provider = tc.provider || provider;
       voice = tc.model || inferDefaultVoice(seg.mimicry, character);
-      emotion = tc.emotion || "";
+      emotion = speakingStyle(tc.emotion) || speakingStyle(seg.emotion || seg.tone);
+      mimic = speakingRole(tc.mimic) || speakingRole(seg.mimicry);
       style = tc.style || "";
       speed = typeof tc.speed === "number" ? tc.speed : (typeof seg.speed === "number" ? seg.speed : 0);
       pitch = typeof tc.pitch === "number" ? tc.pitch : 0;
       volume = typeof tc.volume === "number" ? tc.volume : 100;
     } else {
       voice = inferDefaultVoice(seg.mimicry, character);
+      emotion = speakingStyle(seg.emotion || seg.tone);
+      mimic = speakingRole(seg.mimicry);
       speed = typeof seg.speed === "number" ? seg.speed : 0;
     }
 
@@ -131,6 +138,7 @@ function scriptToTtsReadySegments(script, characters, parsedSegments = null, def
       provider,
       voice,
       emotion: emotion || undefined,
+      mimic: mimic || undefined,
       style: style || undefined,
       speed,
       pitch,

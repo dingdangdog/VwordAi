@@ -34,13 +34,16 @@
 
     <div class="space-y-4">
       <VSelect
-        :model-value="current.emotion"
-        label="情感 / 风格"
-        placeholder="无"
+        :model-value="current.emotion || 'dft'"
+        label="情感"
         :options="emotions.map((e) => ({ label: e.name, value: e.code }))"
-        :hint="emotions.length ? undefined : '当前音色不支持情感选项'"
-        :disabled="!emotions.length"
         @update:model-value="patch({ emotion: String($event) })"
+      />
+      <VSelect
+        :model-value="current.mimic || 'dft'"
+        label="伪音"
+        :options="roles.map((e) => ({ label: e.name, value: e.code }))"
+        @update:model-value="patch({ mimic: String($event) })"
       />
       <VSlider
         :model-value="current.speed"
@@ -89,11 +92,13 @@ import VSelect from "@/components/ui/VSelect.vue";
 import VSlider from "@/components/ui/VSlider.vue";
 import { roleTone } from "@/utils/roleColor";
 import { isNarratorName, type SegmentTtsConfig, type SegmentWithTts } from "@/composables/useChapterWorkstation";
+import { speakingStyle } from "@/utils/emotions";
 
 const props = defineProps<{
   segments: SegmentWithTts[];
   indexes: number[];
   emotions: { code: string; name: string }[];
+  roles: { code: string; name: string }[];
   voiceLabel: string;
   hasAudio: boolean;
   busy: boolean;
@@ -113,8 +118,15 @@ const tone = computed(() => roleTone(speaker.value));
 
 const current = computed(() => {
   const c = first.value?.ttsConfig;
+  const chosen = c?.emotion || "";
+  const emotion =
+    chosen === "dft"
+      ? "dft"
+      : speakingStyle(chosen) || speakingStyle(first.value?.emotion || first.value?.tone) || "dft";
+  const mimic = c?.mimic || first.value?.mimicry || "dft";
   return {
-    emotion: c?.emotion || "",
+    emotion,
+    mimic: mimic === "default" ? "dft" : mimic,
     speed: Number(c?.speed ?? 0) || 0,
     pitch: Number(c?.pitch ?? 0) || 0,
     volume: c?.volume === undefined || c.volume === null ? 100 : Number(c.volume),

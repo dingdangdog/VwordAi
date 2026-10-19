@@ -93,7 +93,8 @@ async function synthesizeSegment(chapterId, segmentData) {
       volume: segmentData.ttsConfig?.volume ?? 100,
       speed: segmentData.ttsConfig?.speed ?? 0,
       pitch: segmentData.ttsConfig?.pitch ?? 0,
-      emotion: segmentData.ttsConfig?.emotion || "",
+      emotion: require("../utils/emotions").speakingStyle(segmentData.ttsConfig?.emotion) || "",
+      mimic: require("../utils/emotions").speakingRole(segmentData.ttsConfig?.mimic) || "",
       style: segmentData.ttsConfig?.style || "",
     };
 
@@ -215,6 +216,7 @@ async function synthesizeAllSegments(chapterId) {
         speed: ready.speed,
         pitch: ready.pitch,
         emotion: ready.emotion || "",
+        mimic: ready.mimic || "",
         style: ready.style || "",
       };
 

@@ -1,8 +1,8 @@
 <template>
-  <div class="flex h-14 items-center gap-3 border-t border-line bg-surface px-4">
+  <div class="flex h-16 items-center gap-3 border-t border-line bg-surface px-4">
     <button
       type="button"
-      class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-accent text-accent-ink transition-colors duration-fast hover:bg-accent-hover disabled:cursor-not-allowed disabled:bg-soft disabled:text-ink-subtle"
+      class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-accent text-accent-ink transition-colors duration-fast hover:bg-accent-hover disabled:cursor-not-allowed disabled:bg-soft disabled:text-ink-subtle"
       :disabled="!src"
       :aria-label="playing ? '暂停' : '播放'"
       :title="playing ? '暂停 (Space)' : '播放 (Space)'"

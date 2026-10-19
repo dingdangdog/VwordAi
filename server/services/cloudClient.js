@@ -34,11 +34,11 @@ function publicClient() {
   });
 }
 
-async function synthesizeToFile({ text, voiceId, speed, pitch, volume, outputPath }) {
+async function synthesizeToFile({ text, voiceId, speed, pitch, volume, emotion, mimic, outputPath }) {
   const http = client();
   const response = await http.post(
     "/speech/synthesize",
-    { text, voiceId, speed, pitch, volume, async: text.length > 500 },
+    { text, voiceId, speed, pitch, volume, emotion: emotion || "", mimic: mimic || "", async: text.length > 500 },
     { responseType: "arraybuffer" },
   );
   const contentType = String(response.headers["content-type"] || "");

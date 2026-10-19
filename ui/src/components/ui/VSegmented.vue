@@ -16,7 +16,7 @@
       :disabled="option.disabled"
       class="inline-flex items-center justify-center gap-1.5 rounded-[5px] font-medium transition-colors duration-fast disabled:opacity-40"
       :class="[
-        size === 'sm' ? 'h-6 px-2 text-xs' : 'h-7 px-3 text-sm',
+        size === 'sm' ? 'h-7 px-2.5 text-xs' : 'h-8 px-3.5 text-sm',
         block && 'flex-1',
         option.value === modelValue
           ? 'bg-raised text-ink shadow-sm ring-1 ring-line'

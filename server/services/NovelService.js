@@ -17,7 +17,7 @@ async function getAllNovels() {
     return success(novels);
   } catch (err) {
     console.error("[NovelService] 获取所有小说失败:", err);
-    return error("获取小说列表失败: " + err.message);
+    return error("获取有声小说列表失败: " + err.message);
   }
 }
 
@@ -28,12 +28,12 @@ async function getNovel(id) {
   try {
     const novel = Novel.getNovelById(id);
     if (!novel) {
-      return error("小说不存在");
+      return error("有声小说不存在");
     }
     return success(novel);
   } catch (err) {
     console.error(`[NovelService] 获取小说 ${id} 失败:`, err);
-    return error("获取小说详情失败: " + err.message);
+    return error("获取有声小说详情失败: " + err.message);
   }
 }
 
@@ -46,7 +46,7 @@ async function createNovel(novelData) {
     return success(newNovel);
   } catch (err) {
     console.error("[NovelService] 创建小说失败:", err);
-    return error("创建小说失败: " + err.message);
+    return error("创建有声小说失败: " + err.message);
   }
 }
 
@@ -59,7 +59,7 @@ async function updateNovel(id, novelData) {
     return success(updatedNovel);
   } catch (err) {
     console.error(`[NovelService] 更新小说 ${id} 失败:`, err);
-    return error("更新小说失败: " + err.message);
+    return error("更新有声小说失败: " + err.message);
   }
 }
 
@@ -73,10 +73,10 @@ async function deleteNovel(id) {
 
     // 删除小说（包含内嵌的角色）
     Novel.deleteNovel(id);
-    return success({ message: "小说删除成功" });
+    return success({ message: "有声小说删除成功" });
   } catch (err) {
     console.error(`[NovelService] 删除小说 ${id} 失败:`, err);
-    return error("删除小说失败: " + err.message);
+    return error("删除有声小说失败: " + err.message);
   }
 }
 

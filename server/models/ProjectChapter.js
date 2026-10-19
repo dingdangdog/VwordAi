@@ -51,13 +51,13 @@ function createChapter(chapterData) {
   // 检查项目是否存在
   const project = Project.getProjectById(chapterData.projectId);
   if (!project) {
-    throw new Error("项目不存在");
+    throw new Error("读文章不存在");
   }
 
   // 检查章节名称在项目中是否唯一
   const projectChapters = getChaptersByProjectId(chapterData.projectId);
   if (projectChapters.some((c) => c.name === chapterData.name)) {
-    throw new Error("章节名称在当前项目中已存在");
+    throw new Error("章节名称在当前读文章中已存在");
   }
 
   const now = new Date();
@@ -102,7 +102,7 @@ function updateChapter(id, chapterData) {
       (c) => c.id !== id && c.name === chapterData.name
     );
     if (nameExists) {
-      throw new Error("章节名称在当前项目中已存在");
+      throw new Error("章节名称在当前读文章中已存在");
     }
   }
 

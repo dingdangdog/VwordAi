@@ -7,7 +7,8 @@ import { ttsApi, type VoiceModelsCache } from "@/api/ttsApi";
 import { useSettingsStore } from "@/stores/settings";
 import type { LLMProviderType, TTSProviderType } from "@/types";
 import type { Chapter, Character, ParsedChapter, ParsedSegment } from "@/types/ReadNovels";
-import { getEmotionDisplayName } from "@/utils/voice-utils";
+import { getVoiceModelByCode } from "@/utils/voice-utils";
+import { speakingStyle } from "@/utils/emotions";
 
 export type SegmentTtsConfig = NonNullable<ParsedSegment["ttsConfig"]>;
 export type SegmentWithTts = ParsedSegment & { ttsConfig: SegmentTtsConfig };
@@ -73,8 +74,6 @@ export function useChapterWorkstation() {
 
   const llmProviders = computed(() => settingsStore.getLLMProviders());
   const selectedLLMProvider = ref<LLMProviderType>("");
-  const skipLlm = ref(false);
-  const plainSpeaker = ref("旁白");
   const drafts = useEditorDraft<NovelEditorDraft>("client.novel-chapter");
   const draftCached = drafts.cached;
   const draftSegmentsDirty = ref(false);
@@ -99,7 +98,7 @@ export function useChapterWorkstation() {
   }
 
   function blankTtsConfig(model = ""): SegmentTtsConfig {
-    return { provider: activeProvider(), model, speed: 0, pitch: 0, volume: 100, emotion: "", style: "" };
+    return { provider: activeProvider(), model, speed: 0, pitch: 0, volume: 100, emotion: "", mimic: "", style: "" };
   }
 
   watch(
@@ -160,15 +159,29 @@ export function useChapterWorkstation() {
     return (Array.isArray(list) && list.find((m) => m.code === code)?.name) || code;
   }
 
-  /** 根据段落生效的语音模型返回支持的情感/风格选项 */
-  function emotionsFor(segment: SegmentWithTts): { code: string; name: string }[] {
-    const { provider, modelCode } = effectiveTts(segment);
-    const list = voiceModelsCache.value[provider];
-    if (!Array.isArray(list)) return [];
-    const model = list.find((m) => m.code === modelCode);
-    const items = model?.emotions ?? model?.styles;
-    if (!Array.isArray(items)) return [];
-    return items.map((e) => ({ code: e.code, name: getEmotionDisplayName(e) }));
+  function traitsFor(segment: SegmentWithTts, kind: "emotions" | "roles", current: string) {
+    const { modelCode } = effectiveTts(segment);
+    const model = getVoiceModelByCode(modelCode, voiceModelsCache.value);
+    const source = (model?.[kind] || []).filter((item) => item.code && item.code !== "default" && item.code !== "dft");
+    const list = [{ code: "dft", name: "默认" }, ...source.map((item) => ({ code: item.code, name: item.name || item.code }))];
+    if (current && current !== "dft" && !list.some((item) => item.code === current)) list.push({ code: current, name: current });
+    return list;
+  }
+
+  function emotionsFor(segment: SegmentWithTts) {
+    const chosen = segment.ttsConfig?.emotion || segment.emotion || segment.tone || "";
+    return traitsFor(segment, "emotions", speakingStyle(chosen));
+  }
+
+  function rolesFor(segment: SegmentWithTts) {
+    const chosen = segment.ttsConfig?.mimic || segment.mimicry || "";
+    return traitsFor(segment, "roles", chosen === "dft" ? "" : chosen);
+  }
+
+  function resolvedEmotion(segment: SegmentWithTts) {
+    const chosen = segment.ttsConfig?.emotion || "";
+    if (chosen) return speakingStyle(chosen);
+    return speakingStyle(segment.emotion || segment.tone);
   }
 
   function applyCharacterTts(segment: SegmentWithTts) {
@@ -427,14 +440,9 @@ export function useChapterWorkstation() {
     if (!(await saveContent(true))) return;
     isParsing.value = true;
     try {
-      if (!skipLlm.value) {
-        await novelApi.updateChapter(chapter.value.id, { llmProvider: selectedLLMProvider.value });
-        chapter.value.llmProvider = selectedLLMProvider.value;
-      }
-      const res = await novelApi.parseChapter(
-        chapter.value.id,
-        skipLlm.value ? { useLlm: false, speaker: plainSpeaker.value.trim() || "旁白" } : undefined
-      );
+      await novelApi.updateChapter(chapter.value.id, { llmProvider: selectedLLMProvider.value });
+      chapter.value.llmProvider = selectedLLMProvider.value;
+      const res = await novelApi.parseChapter(chapter.value.id);
       if (!res.success || !res.data) throw new Error(res.message || "解析失败");
       res.data.segments = res.data.segments.map(initialSegmentConfig);
       Object.keys(segmentAudios).forEach((k) => delete segmentAudios[Number(k)]);
@@ -466,11 +474,13 @@ export function useChapterWorkstation() {
         const male = !isNarratorName(segment.character) && !segment.character.includes("女");
         segment.voice = male ? DEFAULT_MALE_VOICE : DEFAULT_FEMALE_VOICE;
       }
+      const emotion = segment.ttsConfig?.emotion || speakingStyle(segment.emotion || segment.tone) || "";
+      const mimic = segment.ttsConfig?.mimic || segment.mimicry || "";
       const res = await novelApi.generateSegmentTts(chapter.value.id, {
         text: segment.text,
         voice: segment.ttsConfig?.model || segment.voice || DEFAULT_FEMALE_VOICE,
-        tone: segment.tone || "平静",
-        ttsConfig: segment.ttsConfig,
+        tone: segment.tone || "",
+        ttsConfig: { ...segment.ttsConfig, emotion, mimic },
       });
       if (!res.success || !res.data) throw new Error(res.message || "生成语音失败");
       segmentAudios[index] = res.data.audioUrl;
@@ -625,8 +635,6 @@ export function useChapterWorkstation() {
     allSegmentsHaveAudio,
     llmProviders,
     selectedLLMProvider,
-    skipLlm,
-    plainSpeaker,
     draftCached,
     draftSegmentsDirty,
     load,
@@ -644,6 +652,8 @@ export function useChapterWorkstation() {
     characterFor,
     effectiveTts,
     emotionsFor,
+    rolesFor,
+    resolvedEmotion,
     modelName,
   };
 }

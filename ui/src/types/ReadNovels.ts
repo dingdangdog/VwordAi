@@ -76,6 +76,7 @@ export interface Character {
     pitch?: number;
     volume?: number;
     emotion?: string;
+    mimic?: string;
     style?: string;
   };
   createdAt: string;
@@ -154,6 +155,7 @@ export interface SegmentTtsConfig {
   pitch?: number;
   volume?: number;
   emotion?: string;
+  mimic?: string;
   style?: string;
 }
 

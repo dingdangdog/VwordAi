@@ -129,14 +129,18 @@ function registerLLMProcessingHandlers() {
 
       if (parseResult.success) {
         // 规范为中间通用数据（剧本）格式并写入章节
-        const segments = rawSegments.map((seg, i) => ({
+        const { canonicalEmotion, speakingStyle, speakingRole } = require("../utils/emotions");
+        const segments = rawSegments.map((seg, i) => {
+          const emotion = canonicalEmotion(seg.tone) || speakingStyle(seg.tone) || "dft";
+          const mimic = speakingRole(seg.mimicry) || speakingRole(seg.voice) || "";
+          return {
           index: i,
           text: seg.text || "",
           character: (seg.character === "dft" || !seg.character) ? "旁白" : (seg.character || "旁白"),
-          emotion: seg.tone,
-          tone: seg.tone,
+          emotion,
+          tone: emotion,
           speed: typeof seg.speed === "number" ? seg.speed : 0,
-          mimicry: seg.mimicry || (seg.voice && seg.voice !== "narrator-1" ? seg.voice : undefined),
+          mimicry: mimic || undefined,
           voice: seg.voice,
           ttsConfig: {
             provider: "",
@@ -144,11 +148,13 @@ function registerLLMProcessingHandlers() {
             speed: 0,
             pitch: 0,
             volume: 100,
-            emotion: "",
+            emotion: emotion === "dft" ? "" : emotion,
+            mimic,
             style: "",
           },
           synthesisStatus: "unsynthesized",
-        }));
+        };
+        });
 
         const parsedData = {
           title: chapter.title || chapter.name,
@@ -328,6 +334,8 @@ async function synthesizeSegmentText(segment, chapterId) {
         speed: segment.ttsConfig.speed ?? 1,
         pitch: segment.ttsConfig.pitch ?? 0,
         volume: segment.ttsConfig.volume ?? 100,
+        emotion: segment.ttsConfig.emotion || segment.emotion || "",
+        mimic: segment.ttsConfig.mimic || segment.mimicry || "",
         outputPath,
       });
     }

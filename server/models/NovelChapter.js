@@ -47,13 +47,13 @@ function createNovelChapter(chapterData) {
   // 检查小说是否存在
   const novel = Novel.getNovelById(chapterData.novelId);
   if (!novel) {
-    throw new Error("小说不存在");
+    throw new Error("有声小说不存在");
   }
 
   // 检查章节标题在小说中是否唯一
   const novelChapters = getChaptersByNovelId(chapterData.novelId);
   if (novelChapters.some((c) => c.title === chapterData.title)) {
-    throw new Error("章节标题在当前小说中已存在");
+    throw new Error("章节标题在当前有声小说中已存在");
   }
 
   // 计算章节顺序
@@ -115,7 +115,7 @@ function updateNovelChapter(id, chapterData) {
       (c) => c.id !== id && c.title === chapterData.title
     );
     if (titleExists) {
-      throw new Error("章节标题在当前小说中已存在");
+      throw new Error("章节标题在当前有声小说中已存在");
     }
   }
 

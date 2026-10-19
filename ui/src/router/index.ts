@@ -13,20 +13,20 @@ const router = createRouter({
       path: "/read-novels",
       name: "read-novels",
       component: () => import("@/views/ReadNovels.vue"),
-      meta: { title: "小说", fullBleed: true },
+      meta: { title: "有声小说", fullBleed: true },
     },
     {
       path: "/projects",
       name: "projects",
       component: () => import("@/views/projects/ProjectsView.vue"),
-      meta: { title: "项目" },
+      meta: { title: "读文章" },
     },
     {
       path: "/projects/:id",
       name: "project-detail",
       component: () => import("@/views/projects/ProjectDetailView.vue"),
       props: true,
-      meta: { title: "项目编辑", fullBleed: true },
+      meta: { title: "读文章", fullBleed: true },
     },
     {
       path: "/projects/:projectId/chapters/new",

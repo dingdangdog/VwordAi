@@ -1,7 +1,7 @@
 <template>
   <aside
     class="flex shrink-0 flex-col border-r border-line bg-surface transition-[width] duration-base ease-standard"
-    :class="collapsed ? 'w-14' : 'w-[220px]'"
+    :class="collapsed ? 'w-14' : 'w-[232px]'"
     aria-label="主导航"
   >
     <div class="flex h-12 items-center px-2" :class="collapsed ? 'justify-center' : 'justify-between pl-4'">
@@ -137,10 +137,10 @@ const settingsStore = useSettingsStore();
 
 const mainNav: NavItem[] = [
   { to: "/", label: "工作台", icon: Squares2X2Icon, match: (p) => p === "/" },
-  { to: "/projects", label: "项目", icon: FolderIcon, match: (p) => p.startsWith("/projects") },
+  { to: "/projects", label: "读文章", icon: FolderIcon, match: (p) => p.startsWith("/projects") },
   {
     to: "/read-novels",
-    label: "小说",
+    label: "有声小说",
     icon: BookOpenIcon,
     match: (p) => p.startsWith("/read-novels") || p.startsWith("/chapters"),
   },

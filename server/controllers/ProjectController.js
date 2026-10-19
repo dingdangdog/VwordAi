@@ -96,7 +96,7 @@ async function getAllProjects() {
     return success(projects);
   } catch (err) {
     console.error("[ProjectController] Get all projects error:", err);
-    return error("获取项目列表失败: " + err.message);
+    return error("获取读文章列表失败: " + err.message);
   }
 }
 
@@ -108,12 +108,12 @@ async function getProjectById(id) {
   try {
     const project = Project.getProjectById(id);
     if (!project) {
-      return error("项目不存在");
+      return error("读文章不存在");
     }
     return success(project);
   } catch (err) {
     console.error("[ProjectController] Get project by id error:", err);
-    return error("获取项目详情失败: " + err.message);
+    return error("获取读文章详情失败: " + err.message);
   }
 }
 
@@ -127,7 +127,7 @@ async function createProject(projectData) {
     return success(newProject);
   } catch (err) {
     console.error("[ProjectController] Create project error:", err);
-    return error("创建项目失败: " + err.message);
+    return error("创建读文章失败: " + err.message);
   }
 }
 
@@ -142,7 +142,7 @@ async function updateProject(id, projectData) {
     return success(updatedProject);
   } catch (err) {
     console.error("[ProjectController] Update project error:", err);
-    return error("更新项目失败: " + err.message);
+    return error("更新读文章失败: " + err.message);
   }
 }
 
@@ -155,10 +155,10 @@ async function deleteProject(id) {
     Project.deleteProject(id);
     // 删除项目时，同时删除该项目下的所有章节
     Chapter.deleteChaptersByProjectId(id);
-    return success({ message: "项目删除成功" });
+    return success({ message: "读文章删除成功" });
   } catch (err) {
     console.error("[ProjectController] Delete project error:", err);
-    return error("删除项目失败: " + err.message);
+    return error("删除读文章失败: " + err.message);
   }
 }
 

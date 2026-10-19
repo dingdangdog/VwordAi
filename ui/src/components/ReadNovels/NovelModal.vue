@@ -1,5 +1,5 @@
 <template>
-  <VDialog :open="open" :title="novel ? '编辑小说' : '新建小说'" @close="emit('close')">
+  <VDialog :open="open" :title="novel ? '编辑有声小说' : '新建有声小说'" @close="emit('close')">
     <form id="novel-form" class="space-y-4" @submit.prevent="save">
       <div class="grid grid-cols-2 gap-4">
         <VInput v-model="form.title" label="书名" placeholder="例如：红楼梦" required autofocus />

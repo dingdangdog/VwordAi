@@ -42,7 +42,7 @@ class Project {
 
     const newProject = {
       id: uuidv4(),
-      title: projectData.title || "未命名项目",
+      title: projectData.title || "未命名读文章",
       description: projectData.description || "",
       author: projectData.author || "",
       createAt: new Date().toISOString(),
@@ -78,7 +78,7 @@ class Project {
     const index = projects.findIndex((project) => project.id === id);
 
     if (index === -1) {
-      throw new Error("项目不存在");
+      throw new Error("读文章不存在");
     }
 
     const updatedProject = {
@@ -103,7 +103,7 @@ class Project {
     const projects = this.getAllProjectsRaw();
     const project = projects.find((item) => item.id === id);
     if (!project) {
-      throw new Error("项目不存在");
+      throw new Error("读文章不存在");
     }
     project.deletedAt = new Date().toISOString();
     project.dirty = true;

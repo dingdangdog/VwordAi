@@ -2,7 +2,7 @@
   <div class="flex h-full flex-col">
     <!-- 工具栏 -->
     <header class="flex h-12 shrink-0 items-center gap-2 border-b border-line bg-surface px-3">
-      <VIconButton :icon="ArrowLeftIcon" label="返回小说" size="sm" @click="goBack" />
+      <VIconButton :icon="ArrowLeftIcon" label="返回有声小说" size="sm" @click="goBack" />
       <div class="min-w-0">
         <h1 class="truncate text-sm font-semibold text-ink">{{ ws.chapter.value?.title || "章节工作台" }}</h1>
       </div>
@@ -17,18 +17,8 @@
       </VBadge>
 
       <div class="ml-auto flex items-center gap-2">
-        <VSegmented v-model="parseMode" :options="parseModeOptions" size="sm" label="解析方式" />
-        <input
-          v-if="ws.skipLlm.value"
-          v-model="ws.plainSpeaker.value"
-          maxlength="80"
-          class="field field-sm w-24"
-          placeholder="说话者"
-          aria-label="说话者"
-          title="全文由该说话者朗读"
-        />
         <VSelect
-          v-else-if="ws.llmProviders.value.length"
+          v-if="ws.llmProviders.value.length"
           v-model="ws.selectedLLMProvider.value"
           size="sm"
           wrapper-class="w-40"
@@ -43,7 +33,7 @@
           :disabled="!countChars(ws.editedContent.value)"
           @click="confirmParse"
         >
-          {{ ws.skipLlm.value ? "生成分段" : ws.segments.value.length ? "重新解析" : "AI 解析" }}
+          {{ ws.segments.value.length ? "重新解析" : "AI 解析" }}
         </VButton>
         <span class="mx-1 h-5 w-px bg-line" aria-hidden="true" />
         <span class="flex items-center gap-1.5 text-2xs" :class="dirty ? 'text-warning' : 'text-ink-subtle'">
@@ -84,11 +74,11 @@
         </div>
         <textarea
           v-model="ws.editedContent.value"
-          class="min-h-0 flex-1 resize-none bg-transparent px-4 py-3 text-sm leading-7 text-ink outline-none placeholder:text-ink-subtle focus-visible:outline-none"
+          class="min-h-0 flex-1 resize-none bg-transparent px-4 py-3 text-base leading-7 text-ink outline-none placeholder:text-ink-subtle focus-visible:outline-none"
           placeholder="粘贴章节原文…"
           aria-label="章节原文"
         />
-        <div v-if="hasSpeechMarkup(ws.editedContent.value)" class="flex h-8 shrink-0 items-center border-t border-line px-3">
+        <div v-if="hasSpeechMarkup(ws.editedContent.value)" class="flex h-9 shrink-0 items-center border-t border-line px-3">
           <SpeechTextHint :text="ws.editedContent.value" />
         </div>
       </section>
@@ -141,15 +131,11 @@
           v-if="!ws.segments.value.length"
           class="flex-1"
           :icon="DocumentMagnifyingGlassIcon"
-          :title="ws.skipLlm.value ? '尚未生成分段' : '尚未解析'"
-          :description="
-            ws.skipLlm.value
-              ? '全文将由指定说话者朗读，点击「生成分段」开始。'
-              : 'AI 会把原文拆分为旁白与角色对白，并自动提取出场角色。'
-          "
+          title="尚未解析"
+          description="AI 会把原文拆分为旁白与角色对白，并自动提取出场角色。每个角色使用固定音色。"
         >
           <VButton variant="primary" :icon="DocumentMagnifyingGlassIcon" :loading="ws.isParsing.value" :disabled="!countChars(ws.editedContent.value)" @click="ws.parse()">
-            {{ ws.skipLlm.value ? "生成分段" : "AI 解析" }}
+            AI 解析
           </VButton>
         </VEmptyState>
 
@@ -196,6 +182,7 @@
             :segments="selectedSegments"
             :indexes="selected"
             :emotions="selectedSegments[0] ? ws.emotionsFor(selectedSegments[0]) : []"
+            :roles="selectedSegments[0] ? ws.rolesFor(selectedSegments[0]) : []"
             :voice-label="voiceLabel"
             :has-audio="selected.length === 1 && !!ws.segmentAudios[selected[0]]"
             :busy="selected.some((i) => ws.processingSegments[i]) || !!ws.batchProgress.value"
@@ -286,7 +273,6 @@ import VButton from "@/components/ui/VButton.vue";
 import VConfirmDialog from "@/components/ui/VConfirmDialog.vue";
 import VEmptyState from "@/components/ui/VEmptyState.vue";
 import VIconButton from "@/components/ui/VIconButton.vue";
-import VSegmented from "@/components/ui/VSegmented.vue";
 import VSelect from "@/components/ui/VSelect.vue";
 import VSkeleton from "@/components/ui/VSkeleton.vue";
 import SegmentRow from "@/components/novels/SegmentRow.vue";
@@ -316,15 +302,6 @@ const audioBar = ref<InstanceType<typeof VAudioBar> | null>(null);
 const playingIndex = ref<number | null>(null);
 const autoplay = ref(false);
 let saveTimer: ReturnType<typeof setTimeout> | undefined;
-
-const parseModeOptions = [
-  { label: "AI 分角色", value: "ai" as const },
-  { label: "单一说话者", value: "plain" as const },
-];
-const parseMode = computed({
-  get: () => (ws.skipLlm.value ? "plain" : "ai"),
-  set: (value: "ai" | "plain") => (ws.skipLlm.value = value === "plain"),
-});
 
 const dirty = computed(() => ws.contentChanged.value || parsedDirty.value);
 const busy = computed(() => ws.isGeneratingAll.value || !!ws.batchProgress.value);
@@ -370,7 +347,8 @@ const isPlaying = computed(() => Boolean(audioBar.value?.playing));
 
 function emotionLabel(index: number) {
   const segment = ws.segments.value[index];
-  const code = segment?.ttsConfig?.emotion;
+  if (!segment) return "";
+  const code = ws.resolvedEmotion(segment);
   if (!code) return "";
   return ws.emotionsFor(segment).find((e) => e.code === code)?.name || code;
 }

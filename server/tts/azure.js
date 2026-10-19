@@ -2,6 +2,7 @@ const fs = require("fs");
 const sdk = require("microsoft-cognitiveservices-speech-sdk");
 const path = require("path");
 const { success, error } = require("../utils/result");
+const { speakingStyle, speakingRole } = require("../utils/emotions");
 
 /**
  * Synthesize text to speech and save to file
@@ -11,6 +12,23 @@ const { success, error } = require("../utils/result");
  * @param {Object} config Provider configuration
  * @returns {Promise} Returns a Promise containing the file path
  */
+function buildEmotionSsml(text, voice, style, role) {
+  const escaped = String(text)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+  const safeVoice = String(voice).replace(/[<>"&]/g, "");
+  const safeStyle = String(style || "").replace(/[^a-z0-9_-]/gi, "");
+  const safeRole = String(role || "").replace(/[^A-Za-z]/g, "");
+  const attrs = [safeStyle ? `style="${safeStyle}"` : "", safeRole ? `role="${safeRole}"` : ""].filter(Boolean).join(" ");
+  if (!attrs) return "";
+  return (
+    '<speak version="1.0" xmlns="http://www.w3.org/2001/10/synthesis" ' +
+    'xmlns:mstts="https://www.w3.org/2001/mstts" xml:lang="zh-CN">' +
+    `<voice name="${safeVoice}"><mstts:express-as ${attrs}>${escaped}</mstts:express-as></voice></speak>`
+  );
+}
+
 const synthesize = (text, fileName, settings, config) => {
   if (!text) {
     return Promise.reject(error("Text content is empty"));
@@ -39,25 +57,10 @@ const synthesize = (text, fileName, settings, config) => {
     speechConfig.speechSynthesisVoiceName = settings.voice;
     console.log(`[Azure] Set voice model to: ${settings.voice}`);
 
-    // Set speech rate and emotion if available
-    if (settings.speed) {
-      // Convert to string with percent format
-      const speedValue = settings.speed.toString();
-      speechConfig.speechSynthesisRate = speedValue;
-      // speechConfig.setProperty("SpeechServiceConnection_SynthesisRate",
-      //   speedValue
-      // );
-      console.log(`[Azure] Set speech rate to: ${speedValue}`);
-    }
-
-    if (settings.emotion) {
-      speechConfig.speechSynthesisEmotionStyle = settings.emotion;
-      // speechConfig.setProperty(
-      //   "SpeechServiceConnection_SynthesisEmotionStyle",
-      //   settings.emotion
-      // );
-      console.log(`[Azure] Set emotion to: ${settings.emotion}`);
-    }
+    const style = speakingStyle(settings.emotion || settings.style);
+    const role = speakingRole(settings.mimic);
+    if (style) console.log(`[Azure] Set emotion to: ${style}`);
+    if (role) console.log(`[Azure] Set role to: ${role}`);
 
     // Specify audio output format as .wav (16khz, 16bit, mono PCM)
     speechConfig.speechSynthesisOutputFormat =
@@ -75,30 +78,32 @@ const synthesize = (text, fileName, settings, config) => {
       audioConfig
     );
     // 返回一个 Promise，用于处理异步操作
-    return new Promise((resolve, reject) => {
-      // 使用 speakTextAsync 播放语音
-      speechSynthesizer.speakTextAsync(
-        text,
-        (result) => {
+    const ssml = buildEmotionSsml(text, settings.voice, style, role);
+    const speak = (synthesizer, payload, useSsml) =>
+      new Promise((resolve, reject) => {
+        const done = (result) => {
+          synthesizer.close();
           if (result.reason === sdk.ResultReason.SynthesizingAudioCompleted) {
-            // 将 ArrayBuffer 转换为 Buffer
-            const audioData = Buffer.from(result.audioData);
-
-            // 成功时，返回音频数据
-            resolve(success({ filePath: fileName, audioData }, "success"));
-          } else {
-            console.error("Synthesis failed. Reason:", result.errorDetails);
-            reject(error(result.errorDetails)); // 失败时返回错误
+            resolve(Buffer.from(result.audioData));
+            return;
           }
-          speechSynthesizer.close();
-        },
-        (error) => {
-          console.log("Error:", error);
-          reject(new Error(error)); // 失败时返回错误
-          speechSynthesizer.close();
-        }
-      );
-    });
+          reject(new Error(result.errorDetails || "speech synthesis failed"));
+        };
+        const fail = (err) => {
+          synthesizer.close();
+          reject(err instanceof Error ? err : new Error(String(err || "speech synthesis failed")));
+        };
+        if (useSsml) synthesizer.speakSsmlAsync(payload, done, fail);
+        else synthesizer.speakTextAsync(payload, done, fail);
+      });
+
+    const run = ssml
+      ? speak(speechSynthesizer, ssml, true).catch(() => {
+          const plain = new sdk.SpeechSynthesizer(speechConfig, sdk.AudioConfig.fromAudioFileOutput(fileName));
+          return speak(plain, text, false);
+        })
+      : speak(speechSynthesizer, text, false);
+    return run.then((audioData) => success({ filePath: fileName, audioData }, "success"));
   } catch (err) {
     console.error("[Azure] synthesis setup error:", err);
     return Promise.reject(

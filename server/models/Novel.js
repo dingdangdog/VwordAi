@@ -38,7 +38,7 @@ class Novel {
 
     const newNovel = {
       id: uuidv4(),
-      title: novelData.title || "未命名小说",
+      title: novelData.title || "未命名有声小说",
       description: novelData.description || "",
       author: novelData.author || "",
       cover: novelData.cover || null,
@@ -79,7 +79,7 @@ class Novel {
     const index = novels.findIndex((novel) => novel.id === id);
 
     if (index === -1) {
-      throw new Error("小说不存在");
+      throw new Error("有声小说不存在");
     }
 
     const updatedNovel = {
@@ -104,7 +104,7 @@ class Novel {
     const filteredNovels = novels.filter((novel) => novel.id !== id);
 
     if (filteredNovels.length === novels.length) {
-      throw new Error("小说不存在");
+      throw new Error("有声小说不存在");
     }
 
     storage.saveData(NOVELS_STORAGE_KEY, filteredNovels);
@@ -140,7 +140,7 @@ class Novel {
   static addCharacter(novelId, characterData) {
     const novel = this.getNovelById(novelId);
     if (!novel) {
-      throw new Error("小说不存在");
+      throw new Error("有声小说不存在");
     }
 
     const newCharacter = {
@@ -179,7 +179,7 @@ class Novel {
   static updateCharacter(novelId, characterId, characterData) {
     const novel = this.getNovelById(novelId);
     if (!novel) {
-      throw new Error("小说不存在");
+      throw new Error("有声小说不存在");
     }
 
     const characterIndex = novel.characters.findIndex(c => c.id === characterId);
@@ -205,7 +205,7 @@ class Novel {
   static deleteCharacter(novelId, characterId) {
     const novel = this.getNovelById(novelId);
     if (!novel) {
-      throw new Error("小说不存在");
+      throw new Error("有声小说不存在");
     }
 
     const filteredCharacters = novel.characters.filter(c => c.id !== characterId);
@@ -224,7 +224,7 @@ class Novel {
   static getCharacters(novelId) {
     const novel = this.getNovelById(novelId);
     if (!novel) {
-      throw new Error("小说不存在");
+      throw new Error("有声小说不存在");
     }
     return novel.characters || [];
   }

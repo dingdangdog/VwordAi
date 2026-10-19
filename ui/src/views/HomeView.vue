@@ -5,7 +5,7 @@
         <VButton :icon="ArrowPathIcon" :loading="accountStore.syncing" :disabled="!accountStore.signedIn" @click="syncNow">
           同步
         </VButton>
-        <VButton variant="primary" :icon="PlusIcon" @click="formOpen = true">新建项目</VButton>
+        <VButton variant="primary" :icon="PlusIcon" @click="formOpen = true">新建读文章</VButton>
       </template>
     </VPageHeader>
 
@@ -38,7 +38,7 @@
           </p>
         </div>
         <div v-else class="mt-4 space-y-3">
-          <p class="text-sm text-ink-muted">登录官网账号后即可使用云端音色、AI 角色分析与多端同步。</p>
+          <p class="text-sm text-ink-muted">登录官网账号后即可使用云端音色、有声小说分角色与多端同步。</p>
           <VButton variant="primary" block :loading="loggingIn" @click="login">登录官网账号</VButton>
         </div>
       </section>
@@ -72,7 +72,7 @@
       <section class="panel overflow-hidden">
         <div class="panel-header">
           <FolderIcon class="h-4 w-4 text-ink-subtle" aria-hidden="true" />
-          最近项目
+          最近的读文章
           <RouterLink to="/projects" class="ml-auto text-xs font-normal text-ink-muted hover:text-accent">全部</RouterLink>
         </div>
         <ul v-if="recentProjects.length">
@@ -83,13 +83,13 @@
             </RouterLink>
           </li>
         </ul>
-        <VEmptyState v-else compact title="还没有项目" description="新建项目，粘贴文本即可合成。" />
+        <VEmptyState v-else compact title="还没有读文章" description="新建一篇读文章，粘贴正文即可合成。" />
       </section>
 
       <section class="panel overflow-hidden">
         <div class="panel-header">
           <BookOpenIcon class="h-4 w-4 text-ink-subtle" aria-hidden="true" />
-          最近小说
+          最近的有声小说
           <RouterLink to="/read-novels" class="ml-auto text-xs font-normal text-ink-muted hover:text-accent">全部</RouterLink>
         </div>
         <ul v-if="recentNovels.length">
@@ -103,13 +103,13 @@
             </RouterLink>
           </li>
         </ul>
-        <VEmptyState v-else compact title="还没有小说" description="导入小说章节，用 AI 拆分角色并多角色配音。" />
+        <VEmptyState v-else compact title="还没有有声小说" description="导入章节，用 AI 拆分角色，并为每个角色指定固定音色。" />
       </section>
     </div>
 
     <ProjectFormModal
       :open="formOpen"
-      title="新建项目"
+      title="新建读文章"
       submit-text="创建"
       :submitting="creating"
       @close="formOpen = false"
@@ -180,8 +180,8 @@ const entries = computed<
 >(() => [
   {
     to: "/projects",
-    title: "项目朗读",
-    description: "单音色整章合成，适合文章、讲稿与旁白。",
+    title: "读文章",
+    description: "整篇一个音色，粘贴正文后直接合成。",
     icon: FolderIcon,
     tone: "bg-accent/10 text-accent",
     badge: projectsStore.projects.length ? `${projectsStore.projects.length} 个` : undefined,
@@ -189,8 +189,8 @@ const entries = computed<
   },
   {
     to: "/read-novels",
-    title: "小说配音",
-    description: "AI 拆分对白与旁白，为每个角色分配音色。",
+    title: "有声小说",
+    description: "AI 拆分旁白和对白，每个角色使用固定音色。",
     icon: BookOpenIcon,
     tone: "bg-role-4/10 text-role-4",
     badge: novelsStore.novels.length ? `${novelsStore.novels.length} 部` : undefined,
@@ -233,7 +233,7 @@ async function createProject(data: ProjectFormData) {
   creating.value = true;
   const project = await projectsStore.createProject(data.title, data.description, data.defaultVoiceSettings);
   creating.value = false;
-  if (!project) return toast.error("创建项目失败");
+  if (!project) return toast.error("创建读文章失败");
   formOpen.value = false;
   router.push({ path: `/projects/${project.id}`, query: { chapter: "new" } });
 }

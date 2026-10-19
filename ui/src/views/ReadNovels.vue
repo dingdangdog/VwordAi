@@ -1,15 +1,15 @@
 <template>
   <div class="flex h-full">
-    <!-- 小说列表 -->
+    <!-- 有声小说列表 -->
     <aside class="flex w-64 shrink-0 flex-col border-r border-line bg-surface">
       <div class="flex items-center justify-between px-3 pb-2 pt-3">
-        <span class="section-title">小说</span>
-        <VIconButton :icon="PlusIcon" label="新建小说" size="sm" variant="secondary" @click="openNovelModal()" />
+        <span class="section-title">有声小说</span>
+        <VIconButton :icon="PlusIcon" label="新建有声小说" size="sm" variant="secondary" @click="openNovelModal()" />
       </div>
       <div class="px-3 pb-2">
-        <VInput v-model="keyword" size="sm" :icon="MagnifyingGlassIcon" placeholder="搜索书名或作者" aria-label="搜索小说" />
+        <VInput v-model="keyword" size="sm" :icon="MagnifyingGlassIcon" placeholder="搜索书名或作者" aria-label="搜索有声小说" />
       </div>
-      <ul class="min-h-0 flex-1 overflow-y-auto px-2 pb-2" role="listbox" aria-label="小说列表">
+      <ul class="min-h-0 flex-1 overflow-y-auto px-2 pb-2" role="listbox" aria-label="有声小说列表">
         <template v-if="novelsStore.isLoading && !novels.length">
           <li v-for="i in 4" :key="i" class="px-2 py-2"><VSkeleton class="h-9" /></li>
         </template>
@@ -33,7 +33,7 @@
           </button>
         </li>
         <li v-if="!novelsStore.isLoading && !filteredNovels.length" class="px-2 py-8 text-center text-xs text-ink-subtle">
-          {{ novels.length ? "没有匹配的小说" : "还没有小说" }}
+          {{ novels.length ? "没有匹配的有声小说" : "还没有有声小说" }}
         </li>
       </ul>
     </aside>
@@ -44,10 +44,10 @@
         v-if="!currentNovel"
         class="h-full"
         :icon="BookOpenIcon"
-        title="选择或新建一部小说"
-        description="导入章节后，AI 会拆分旁白与角色对白，并为每个角色分配音色。"
+        title="选择或新建一部有声小说"
+        description="导入章节后，AI 会拆分旁白与角色对白，每个角色使用固定音色。"
       >
-        <VButton variant="primary" :icon="PlusIcon" @click="openNovelModal()">新建小说</VButton>
+        <VButton variant="primary" :icon="PlusIcon" @click="openNovelModal()">新建有声小说</VButton>
       </VEmptyState>
 
       <div v-else class="mx-auto max-w-5xl px-6 py-6">
@@ -269,7 +269,7 @@ function errorText(error: unknown) {
 
 async function selectNovel(id: string) {
   await novelsStore.setCurrentNovel(id);
-  if (novelsStore.error) toast.error(`加载小说失败：${novelsStore.error}`);
+  if (novelsStore.error) toast.error(`加载有声小说失败：${novelsStore.error}`);
   router.replace({ query: { novel: id } });
 }
 
@@ -286,16 +286,16 @@ async function saveNovel(data: Partial<Novel>) {
   try {
     if (editingNovel.value) {
       await novelsStore.updateNovel(editingNovel.value.id, data);
-      toast.success("小说已更新");
+      toast.success("有声小说已更新");
     } else {
       const novel = await novelsStore.createNovel(data as Omit<Novel, "id" | "createdAt" | "updatedAt">);
       if (!novel) throw new Error(novelsStore.error || "创建失败");
-      toast.success("小说已创建");
+      toast.success("有声小说已创建");
       await selectNovel(novel.id);
     }
     closeNovelModal();
   } catch (error) {
-    toast.error(`保存小说失败：${errorText(error)}`);
+    toast.error(`保存有声小说失败：${errorText(error)}`);
   }
 }
 
@@ -345,7 +345,7 @@ async function saveChapter(data: { title: string; content: string; novelId: stri
 
 onMounted(async () => {
   await novelsStore.loadNovels();
-  if (novelsStore.error) toast.error(`加载小说失败：${novelsStore.error}`);
+  if (novelsStore.error) toast.error(`加载有声小说失败：${novelsStore.error}`);
   const wanted = (route.query.novel || route.query.novelId) as string | undefined;
   const target = novels.value.find((n) => n.id === wanted)?.id || currentNovel.value?.id || novels.value[0]?.id;
   if (target) await selectNovel(target);

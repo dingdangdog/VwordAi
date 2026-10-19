@@ -1,5 +1,5 @@
 <template>
-  <header class="drag-area flex h-9 shrink-0 select-none items-center border-b border-line bg-surface">
+  <header class="drag-area flex h-10 shrink-0 select-none items-center border-b border-line bg-surface">
     <div class="flex min-w-0 flex-1 items-center gap-2 pl-3">
       <img src="@/assets/logo.svg" alt="" class="h-4 w-4" />
       <span class="text-xs font-semibold text-ink">{{ appConfig.name }}</span>

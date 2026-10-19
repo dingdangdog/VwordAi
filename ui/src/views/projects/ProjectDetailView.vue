@@ -2,12 +2,12 @@
   <div class="flex h-full flex-col">
     <!-- 顶栏 -->
     <header class="flex h-12 shrink-0 items-center gap-2 border-b border-line bg-surface px-3">
-      <VIconButton :icon="ArrowLeftIcon" label="返回项目列表" size="sm" @click="router.push('/projects')" />
+      <VIconButton :icon="ArrowLeftIcon" label="返回读文章列表" size="sm" @click="router.push('/projects')" />
       <template v-if="project">
         <button
           type="button"
           class="group flex min-w-0 items-center gap-1.5 rounded-md px-1.5 py-1 hover:bg-soft"
-          title="编辑项目"
+          title="编辑读文章"
           @click="formOpen = true"
         >
           <h1 class="truncate text-sm font-semibold text-ink">{{ project.title }}</h1>
@@ -20,7 +20,7 @@
         </VBadge>
         <div class="ml-auto flex items-center gap-1">
           <VButton variant="ghost" size="sm" :icon="ArrowUpTrayIcon" @click="exportProject">导出</VButton>
-          <VButton variant="ghost" size="sm" :icon="Cog6ToothIcon" @click="formOpen = true">项目设置</VButton>
+          <VButton variant="ghost" size="sm" :icon="Cog6ToothIcon" @click="formOpen = true">读文章设置</VButton>
         </div>
       </template>
     </header>
@@ -41,10 +41,10 @@
       v-else-if="!project"
       class="flex-1"
       :icon="FolderIcon"
-      title="项目不存在"
-      description="该项目可能已被删除。"
+      title="读文章不存在"
+      description="该读文章可能已被删除。"
     >
-      <VButton variant="primary" @click="router.push('/projects')">返回项目列表</VButton>
+      <VButton variant="primary" @click="router.push('/projects')">返回读文章列表</VButton>
     </VEmptyState>
 
     <div v-else class="flex min-h-0 flex-1">
@@ -96,7 +96,7 @@
           class="flex-1"
           :icon="DocumentTextIcon"
           title="选择或新建一个章节"
-          description="章节文本会按项目或章节音色合成为一个音频文件。"
+          description="章节文本会按读文章或章节音色合成为一个音频文件。"
         >
           <VButton variant="primary" :icon="PlusIcon" @click="createChapterQuick">新建章节</VButton>
         </VEmptyState>
@@ -129,11 +129,11 @@
           <textarea
             ref="textEl"
             v-model="draft.text"
-            class="min-h-0 flex-1 resize-none bg-transparent px-8 py-6 text-[15px] leading-7 text-ink outline-none placeholder:text-ink-subtle focus-visible:outline-none"
+            class="min-h-0 flex-1 resize-none bg-transparent px-8 py-6 text-base leading-7 text-ink outline-none placeholder:text-ink-subtle focus-visible:outline-none"
             placeholder="在此粘贴或输入要朗读的文本…"
             aria-label="章节文本"
           />
-          <div class="flex h-8 shrink-0 items-center gap-4 border-t border-line px-6 text-2xs text-ink-subtle">
+          <div class="flex h-9 shrink-0 items-center gap-4 border-t border-line px-6 text-2xs text-ink-subtle">
             <span class="num">{{ countChars(draft.text).toLocaleString() }} 字</span>
             <span>预计 {{ estimateDuration(draft.text) }}</span>
             <SpeechTextHint :text="draft.text" />
@@ -151,7 +151,19 @@
           <VoiceSelect
             v-model="draft.voiceId"
             label="音色"
-            :placeholder="defaultVoiceId ? `跟随项目（${accountStore.voiceName(defaultVoiceId)}）` : '请选择音色'"
+            :placeholder="defaultVoiceId ? `跟随读文章（${accountStore.voiceName(defaultVoiceId)}）` : '请选择音色'"
+          />
+          <VSelect
+            v-model="draft.emotion"
+            label="情感"
+            placeholder="跟随读文章默认情感"
+            :options="emotionOptions"
+          />
+          <VSelect
+            v-model="draft.mimic"
+            label="伪音"
+            placeholder="跟随读文章默认伪音"
+            :options="mimicOptions"
           />
           <VSlider
             v-model="draft.speed"
@@ -164,7 +176,7 @@
           />
         </div>
 
-        <div class="space-y-3 border-b border-line p-4">
+        <div class="space-y-3 p-4">
           <VButton
             variant="primary"
             size="lg"
@@ -176,7 +188,7 @@
           >
             {{ synthesizing ? "正在合成…" : selected.audioPath ? "重新合成本章" : "合成本章" }}
           </VButton>
-          <p v-if="!effectiveVoiceId" class="text-xs text-warning">请先为本章或项目选择音色。</p>
+          <p v-if="!effectiveVoiceId" class="text-xs text-warning">请先为本章或读文章选择音色。</p>
           <p v-else-if="!countChars(draft.text)" class="text-xs text-ink-subtle">输入文本后即可合成。</p>
           <div v-else class="flex items-center gap-2 text-xs text-ink-muted">
             <span class="status-dot" :class="statusOf(selected).dot" aria-hidden="true" />
@@ -185,28 +197,6 @@
           </div>
         </div>
 
-        <div class="space-y-3 p-4">
-          <div class="flex items-center justify-between">
-            <p class="section-title">角色预览</p>
-            <VButton size="sm" variant="ghost" :loading="analyzing" :disabled="!countChars(draft.text)" @click="analyzeRoles">
-              分析
-            </VButton>
-          </div>
-          <p class="text-xs text-ink-subtle">
-            用 AI 识别文本中的说话人，便于检查分段。项目合成使用单一音色；需要多角色配音请使用「小说」工作台。
-          </p>
-          <ul v-if="analysis.length" class="space-y-1.5">
-            <li
-              v-for="(segment, index) in analysis"
-              :key="index"
-              class="rounded-md border-l-2 bg-raised px-2.5 py-1.5"
-              :class="roleTone(segment.speaker).border"
-            >
-              <p class="text-2xs font-medium" :class="roleTone(segment.speaker).text">{{ segment.speaker || "旁白" }}</p>
-              <p class="line-clamp-3 text-xs text-ink">{{ segment.text }}</p>
-            </li>
-          </ul>
-        </div>
       </aside>
     </div>
 
@@ -225,7 +215,7 @@
 
     <ProjectFormModal
       :open="formOpen"
-      title="项目设置"
+      title="读文章设置"
       :initial-data="project"
       :submitting="savingProject"
       @close="formOpen = false"
@@ -269,7 +259,9 @@ import VEmptyState from "@/components/ui/VEmptyState.vue";
 import VIconButton from "@/components/ui/VIconButton.vue";
 import VInput from "@/components/ui/VInput.vue";
 import VSkeleton from "@/components/ui/VSkeleton.vue";
+import VSelect from "@/components/ui/VSelect.vue";
 import VSlider from "@/components/ui/VSlider.vue";
+import { traitChoices } from "@/utils/emotions";
 import ProjectFormModal, { type ProjectFormData } from "@/components/projects/ProjectFormModal.vue";
 import VoiceSelect from "@/components/projects/VoiceSelect.vue";
 import SpeechTextHint from "@/components/projects/SpeechTextHint.vue";
@@ -279,7 +271,6 @@ import { useAccountStore } from "@/stores/account";
 import { useProjectsStore } from "@/stores/projects";
 import type { Chapter } from "@/types";
 import { countChars, estimateDuration, folderOf, formatRelative, toMediaUrl } from "@/utils/format";
-import { roleTone } from "@/utils/roleColor";
 
 const route = useRoute();
 const router = useRouter();
@@ -293,8 +284,6 @@ const listKeyword = ref("");
 const saving = ref(false);
 const savingProject = ref(false);
 const synthesizing = ref(false);
-const analyzing = ref(false);
-const analysis = ref<Array<{ text: string; speaker: string }>>([]);
 const formOpen = ref(false);
 const deletingChapter = ref<Chapter | null>(null);
 const audioUrl = ref("");
@@ -307,9 +296,14 @@ interface ChapterDraft {
   text: string;
   voiceId: string;
   speed: number;
+  emotion: string;
+  mimic: string;
 }
 
-const draft = reactive<ChapterDraft>({ name: "", text: "", voiceId: "", speed: 1 });
+const draft = reactive<ChapterDraft>({ name: "", text: "", voiceId: "", speed: 1, emotion: "", mimic: "" });
+const chapterVoice = computed(() => accountStore.voices.find((voice) => voice.id === (draft.voiceId || defaultVoiceId.value)));
+const emotionOptions = computed(() => traitChoices(chapterVoice.value?.emotions, draft.emotion));
+const mimicOptions = computed(() => traitChoices(chapterVoice.value?.roles, draft.mimic));
 const editorDraft = useEditorDraft<ChapterDraft>("client.project-chapter");
 const draftCached = editorDraft.cached;
 let suspendDraft = false;
@@ -339,7 +333,9 @@ const dirty = computed(() => {
     draft.name !== (c.name || "") ||
     draft.text !== (c.text || "") ||
     draft.voiceId !== (c.settings?.voiceId || "") ||
-    draft.speed !== Number(c.settings?.speed ?? 1)
+    draft.speed !== Number(c.settings?.speed ?? 1) ||
+    draft.emotion !== (c.settings?.emotion || "") ||
+    draft.mimic !== (c.settings?.mimic || "")
   );
 });
 
@@ -351,7 +347,7 @@ function statusOf(chapter: Chapter) {
 }
 
 function payloadOf(): ChapterDraft {
-  return { name: draft.name, text: draft.text, voiceId: draft.voiceId, speed: draft.speed };
+  return { name: draft.name, text: draft.text, voiceId: draft.voiceId, speed: draft.speed, emotion: draft.emotion, mimic: draft.mimic };
 }
 
 function baselineOf(chapter: Chapter): ChapterDraft {
@@ -360,6 +356,8 @@ function baselineOf(chapter: Chapter): ChapterDraft {
     text: chapter.text || "",
     voiceId: chapter.settings?.voiceId || "",
     speed: Number(chapter.settings?.speed ?? 1) || 1,
+    emotion: chapter.settings?.emotion || "",
+    mimic: chapter.settings?.mimic || "",
   };
 }
 
@@ -370,7 +368,8 @@ async function loadDraft(chapter: Chapter | null) {
   draft.text = chapter?.text || "";
   draft.voiceId = chapter?.settings?.voiceId || "";
   draft.speed = Number(chapter?.settings?.speed ?? 1) || 1;
-  analysis.value = [];
+  draft.emotion = chapter?.settings?.emotion || "";
+  draft.mimic = chapter?.settings?.mimic || "";
   try {
     if (!chapter) return;
     editorDraft.focus(chapter.id);
@@ -380,6 +379,8 @@ async function loadDraft(chapter: Chapter | null) {
     draft.text = cached.text;
     draft.voiceId = cached.voiceId;
     draft.speed = cached.speed;
+    draft.emotion = cached.emotion || "";
+    draft.mimic = cached.mimic || "";
     toast.info("已恢复本机未保存的内容");
   } finally {
     suspendDraft = false;
@@ -395,6 +396,8 @@ function discardDraft() {
   draft.text = chapter.text || "";
   draft.voiceId = chapter.settings?.voiceId || "";
   draft.speed = Number(chapter.settings?.speed ?? 1) || 1;
+  draft.emotion = chapter.settings?.emotion || "";
+  draft.mimic = chapter.settings?.mimic || "";
   suspendDraft = false;
 }
 
@@ -429,7 +432,7 @@ async function saveDraft(silent = false) {
     const result = await projectsStore.updateChapter(chapter.id, {
       name: draft.name.trim() || "未命名章节",
       text: draft.text,
-      settings: JSON.parse(JSON.stringify({ ...(chapter.settings || {}), voiceId: draft.voiceId, speed: draft.speed })),
+      settings: JSON.parse(JSON.stringify({ ...(chapter.settings || {}), voiceId: draft.voiceId, speed: draft.speed, emotion: draft.emotion, mimic: draft.mimic })),
     });
     if (!result) throw new Error("保存失败");
     if (!draft.name.trim()) draft.name = result.name;
@@ -452,6 +455,8 @@ async function createChapterQuick() {
     speed: 1,
     pitch: 0,
     volume: 100,
+    emotion: "",
+    mimic: "",
   });
   if (!chapter) {
     toast.error("新建章节失败");
@@ -486,21 +491,6 @@ async function synthesize() {
   }
 }
 
-async function analyzeRoles() {
-  if (!countChars(draft.text)) return;
-  analyzing.value = true;
-  try {
-    const result = await window.electron.invoke("cloud:script-split", { text: draft.text, useLlm: true });
-    if (!result?.success) throw new Error(result?.error || "角色分析失败，请稍后重试");
-    analysis.value = result.data?.segments || [];
-    if (!analysis.value.length) toast.info("没有识别到可分段的内容");
-  } catch (error) {
-    toast.error(error instanceof Error ? error.message : "角色分析失败，请稍后重试");
-  } finally {
-    analyzing.value = false;
-  }
-}
-
 async function openAudioFolder() {
   const path = selected.value?.audioPath;
   if (!path) return;
@@ -514,10 +504,10 @@ async function updateProject(data: ProjectFormData) {
   const result = await projectsStore.updateProject(project.value.id, data);
   savingProject.value = false;
   if (result) {
-    toast.success("项目设置已保存");
+    toast.success("读文章设置已保存");
     formOpen.value = false;
   } else {
-    toast.error("保存项目失败");
+    toast.error("保存读文章失败");
   }
 }
 
@@ -546,7 +536,7 @@ function exportProject() {
   a.download = `${project.value.title}.json`;
   a.click();
   URL.revokeObjectURL(url);
-  toast.success("项目已导出为 JSON");
+  toast.success("读文章已导出为 JSON");
 }
 
 function isTyping(target: EventTarget | null) {

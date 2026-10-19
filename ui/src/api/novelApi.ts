@@ -49,10 +49,10 @@ export const novelApi = {
         message: result.error
       };
     } catch (error) {
-      console.error("获取小说列表失败:", error);
+      console.error("获取有声小说列表失败:", error);
       return {
         success: false,
-        message: error instanceof Error ? error.message : "获取小说列表失败",
+        message: error instanceof Error ? error.message : "获取有声小说列表失败",
         data: []
       };
     }
@@ -76,7 +76,7 @@ export const novelApi = {
       console.error(`获取小说[${id}]详情失败:`, error);
       return {
         success: false,
-        message: error instanceof Error ? error.message : "获取小说详情失败",
+        message: error instanceof Error ? error.message : "获取有声小说详情失败",
         data: undefined
       };
     }
@@ -98,10 +98,10 @@ export const novelApi = {
         message: result.error
       };
     } catch (error) {
-      console.error("创建小说失败:", error);
+      console.error("创建有声小说失败:", error);
       return {
         success: false,
-        message: error instanceof Error ? error.message : "创建小说失败",
+        message: error instanceof Error ? error.message : "创建有声小说失败",
         data: undefined
       };
     }
@@ -127,7 +127,7 @@ export const novelApi = {
       console.error(`更新小说[${id}]失败:`, error);
       return {
         success: false,
-        message: error instanceof Error ? error.message : "更新小说失败",
+        message: error instanceof Error ? error.message : "更新有声小说失败",
         data: undefined
       };
     }
@@ -151,7 +151,7 @@ export const novelApi = {
       console.error(`删除小说[${id}]失败:`, error);
       return {
         success: false,
-        message: error instanceof Error ? error.message : "删除小说失败",
+        message: error instanceof Error ? error.message : "删除有声小说失败",
         data: false
       };
     }

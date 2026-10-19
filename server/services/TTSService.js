@@ -95,6 +95,8 @@ function splitTextIntoChunks(text, maxLength = 5000) {
 function getProviderModule(providerType) {
   if (providerType === "local") return require("../tts/local");
   if (providerType === "sovits") return require("../tts/sovits");
+  if (providerType === "azure") return require("../tts/azure");
+  if (providerType === "aliyun") return require("../tts/aliyun");
   return null;
 }
 
@@ -116,24 +118,23 @@ async function synthesizeWithProvider(
 ) {
   const text = toSpeechText(chunk);
   if (!text) throw new Error("没有可朗读的文字");
-  if (providerType === "local" || providerType === "sovits") {
-    const provider = getProviderModule(providerType);
-    if (!provider) throw new Error("本地语音不可用");
-    return provider.synthesize(text, outputPath, settings, providerConfig);
+  if (settings.voiceId) {
+    const cloud = require("./cloudClient");
+    return cloud.synthesizeToFile({
+      text,
+      voiceId: settings.voiceId,
+      speed: settings.speed ?? 1,
+      pitch: settings.pitch ?? 0,
+      volume: settings.volume ?? 100,
+      emotion: settings.emotion || "",
+      mimic: settings.mimic || "",
+      outputPath,
+    });
   }
 
-  if (!settings.voiceId) {
-    throw new Error("请在官网语音列表中重新选择语音");
-  }
-  const cloud = require("./cloudClient");
-  return cloud.synthesizeToFile({
-    text,
-    voiceId: settings.voiceId,
-    speed: settings.speed ?? 1,
-    pitch: settings.pitch ?? 0,
-    volume: settings.volume ?? 100,
-    outputPath,
-  });
+  const provider = getProviderModule(providerType);
+  if (!provider) throw new Error("请在官网语音列表中重新选择语音");
+  return provider.synthesize(text, outputPath, settings, providerConfig);
 }
 
 /**
@@ -219,10 +220,16 @@ async function synthesizeChapter(chapterId) {
 
     // 4. Prepare synthesis settings - Use only chapter settings or defaults from project
     // Do not use globalSettings.defaultVoiceSettings
+    const chapterEmotion = chapterSettings.emotion || "";
+    const projectEmotion = project?.defaultVoiceSettings?.emotion || "";
+    const chapterMimic = chapterSettings.mimic || "";
+    const projectMimic = project?.defaultVoiceSettings?.mimic || "";
     const synthesisSettings = {
       ...chapterSettings,
       voiceId,
       serviceProvider: providerType,
+      emotion: chapterEmotion || projectEmotion || "",
+      mimic: chapterMimic || projectMimic || "",
     };
 
     // 5. Split text into chunks

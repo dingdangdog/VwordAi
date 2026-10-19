@@ -1,9 +1,9 @@
 <template>
   <div class="mx-auto max-w-5xl px-6 py-6">
-    <VPageHeader title="项目" description="单音色朗读：粘贴文本，选好音色，一键合成整章音频。">
+    <VPageHeader title="读文章" description="整篇一个音色，粘贴正文后直接合成。">
       <template #actions>
         <VButton :icon="ArrowDownTrayIcon" @click="fileInput?.click()">导入</VButton>
-        <VButton variant="primary" :icon="PlusIcon" @click="openCreate">新建项目</VButton>
+        <VButton variant="primary" :icon="PlusIcon" @click="openCreate">新建读文章</VButton>
       </template>
     </VPageHeader>
     <input ref="fileInput" type="file" accept=".json" class="hidden" @change="handleFileImport" />
@@ -14,9 +14,9 @@
           v-model="keyword"
           :icon="MagnifyingGlassIcon"
           size="sm"
-          placeholder="搜索项目名称或描述"
+          placeholder="搜索读文章名称或描述"
           wrapper-class="w-72"
-          aria-label="搜索项目"
+          aria-label="搜索读文章"
         />
         <span class="num ml-auto text-2xs text-ink-subtle">{{ filtered.length }} / {{ projects.length }}</span>
       </div>
@@ -34,14 +34,14 @@
       <VEmptyState
         v-else-if="!projects.length"
         :icon="FolderIcon"
-        title="还没有项目"
-        description="新建一个项目，把小说章节、文章或讲稿粘贴进去即可合成语音。"
+        title="还没有读文章"
+        description="新建一篇读文章，粘贴正文即可合成。"
       >
-        <VButton variant="primary" :icon="PlusIcon" @click="openCreate">新建项目</VButton>
+        <VButton variant="primary" :icon="PlusIcon" @click="openCreate">新建读文章</VButton>
         <VButton :icon="ArrowDownTrayIcon" @click="fileInput?.click()">导入 JSON</VButton>
       </VEmptyState>
 
-      <VEmptyState v-else-if="!filtered.length" :icon="MagnifyingGlassIcon" title="没有匹配的项目" compact />
+      <VEmptyState v-else-if="!filtered.length" :icon="MagnifyingGlassIcon" title="没有匹配的读文章" compact />
 
       <ul v-else>
         <li
@@ -81,7 +81,7 @@
 
     <ProjectFormModal
       :open="formOpen"
-      :title="editing ? '编辑项目' : '新建项目'"
+      :title="editing ? '编辑读文章' : '新建读文章'"
       :submit-text="editing ? '保存' : '创建'"
       :initial-data="editing"
       :submitting="submitting"
@@ -91,8 +91,8 @@
 
     <VConfirmDialog
       :open="!!deleting"
-      title="删除项目"
-      :message="`确定删除「${deleting?.title}」吗？项目下的所有章节会一并删除，且无法恢复。`"
+      title="删除读文章"
+      :message="`确定删除「${deleting?.title}」吗？其中的所有章节会一并删除，且无法恢复。`"
       confirm-text="删除"
       @close="deleting = null"
       @confirm="deleteProject"
@@ -101,10 +101,10 @@
     <VConfirmDialog
       :open="!!pendingImport"
       tone="primary"
-      title="项目已存在"
-      :message="`「${pendingImport?.title}」已存在。覆盖会替换现有项目的全部章节；也可以另存为新项目。`"
-      confirm-text="覆盖现有项目"
-      cancel-text="另存为新项目"
+      title="读文章已存在"
+      :message="`「${pendingImport?.title}」已存在。覆盖会替换现有读文章的全部章节；也可以另存为新的读文章。`"
+      confirm-text="覆盖现有读文章"
+      cancel-text="另存为新的读文章"
       @cancel="importAsNew"
       @close="pendingImport = null"
       @confirm="importOverwrite"
@@ -180,12 +180,12 @@ async function submitProject(data: ProjectFormData) {
   try {
     if (editing.value) {
       const result = await projectsStore.updateProject(editing.value.id, data);
-      if (!result) throw new Error("更新项目失败");
-      toast.success("项目已保存");
+      if (!result) throw new Error("更新读文章失败");
+      toast.success("读文章已保存");
     } else {
       const project = await projectsStore.createProject(data.title, data.description, data.defaultVoiceSettings);
-      if (!project) throw new Error("创建项目失败");
-      toast.success("项目已创建");
+      if (!project) throw new Error("创建读文章失败");
+      toast.success("读文章已创建");
       router.push({ path: `/projects/${project.id}`, query: { chapter: "new" } });
     }
     formOpen.value = false;
@@ -201,7 +201,7 @@ async function deleteProject() {
   if (!target) return;
   const ok = await projectsStore.deleteProject(target.id);
   if (ok) toast.success(`已删除「${target.title}」`);
-  else toast.error("删除项目失败");
+  else toast.error("删除读文章失败");
   deleting.value = null;
 }
 
@@ -212,7 +212,7 @@ async function handleFileImport(event: Event) {
   if (!file) return;
   try {
     const data = JSON.parse(await file.text());
-    if (!data.id || !data.title || !Array.isArray(data.chapters)) throw new Error("无效的项目导入文件格式");
+    if (!data.id || !data.title || !Array.isArray(data.chapters)) throw new Error("无效的读文章导入文件格式");
     if (projectsStore.projects.some((p) => p.id === data.id)) {
       pendingImport.value = data;
     } else {
@@ -232,7 +232,7 @@ async function importChapters(projectId: string, chapters: any[]) {
 
 async function createFromImport(data: any) {
   const project = await projectsStore.createProject(data.title, data.description || "", data.defaultVoiceSettings || {});
-  if (!project) throw new Error("创建项目失败");
+  if (!project) throw new Error("创建读文章失败");
   await importChapters(project.id, data.chapters);
   toast.success(`「${data.title}」导入成功`);
 }
@@ -258,7 +258,7 @@ async function importOverwrite() {
       description: data.description || "",
       defaultVoiceSettings: data.defaultVoiceSettings || {},
     });
-    if (!result) throw new Error("更新项目失败");
+    if (!result) throw new Error("更新读文章失败");
     await projectsStore.loadChaptersByProjectId(data.id);
     const existing = projectsStore.chapters.filter((c) => c.projectId === data.id);
     for (const chapter of existing) await projectsStore.deleteChapter(chapter.id);

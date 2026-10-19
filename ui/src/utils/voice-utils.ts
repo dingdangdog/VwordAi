@@ -112,7 +112,16 @@ export function getMergedVoiceModels(cache: VoiceModelsCache | null | undefined)
   for (const provider of providers) {
     const cached = cache[provider as TTSProviderType];
     if (cached && cached.length > 0) {
-      result.push(...cached);
+      result.push(
+        ...cached.map((item) => {
+          const stat = staticList.find((model) => model.code === item.code);
+          return {
+            ...item,
+            emotions: stat?.emotions?.length ? stat.emotions : item.emotions,
+            roles: stat?.roles?.length ? stat.roles : item.roles,
+          };
+        }),
+      );
     } else {
       result.push(...staticList.filter((m) => m.provider === provider));
     }
