@@ -3,6 +3,7 @@ import type { TTSProviderType, VoiceModel } from "@/types";
 import modelsData from "@/assets/data/models.json";
 import rolesData from "@/assets/data/roles.json";
 import emotionsData from "@/assets/data/emotions.json";
+import officialStyles from "@/assets/data/azure-styles.json";
 
 /** 按服务商缓存的语音模型（如从 API 同步得到） */
 export type VoiceModelsCache = Partial<Record<TTSProviderType, VoiceModel[]>>;
@@ -68,12 +69,25 @@ export function getProcessedVoiceModels(): VoiceModel[] {
     // Process each model
     models.forEach(model => {
       // Process emotions (convert IDs to full objects)
-      const modelEmotions = model.emotions ? model.emotions
-        .map(emotionId => {
-          const found = providerEmotions.find(e => e.id === emotionId.toString());
-          return found ? { code: found.code, name: found.name } : null;
-        })
-        .filter((e): e is { code: string; name: string } => e !== null) : [];
+      const catalogEmotions = provider === "azure"
+        ? providerEmotions
+            .filter((item) => item.code && item.code !== "default")
+            .map((item) => ({ code: item.code, name: item.name }))
+        : [];
+      const official = (officialStyles as Record<string, string[]>)[model.code] || [];
+      const seen = new Set(catalogEmotions.map((item) => item.code.replace(/-/g, "_").toLowerCase()));
+      const extras = official
+        .map((style) => ({ code: style, name: styleName(style, providerEmotions) }))
+        .filter((item) => !seen.has(item.code.replace(/-/g, "_").toLowerCase()));
+      const tagged = model.emotions
+        ? model.emotions
+            .map((emotionId) => {
+              const found = providerEmotions.find((item) => item.id === emotionId.toString());
+              return found ? { code: found.code, name: found.name } : null;
+            })
+            .filter((item): item is { code: string; name: string } => item !== null)
+        : [];
+      const modelEmotions = catalogEmotions.length ? [...catalogEmotions, ...extras] : official.length ? extras : tagged;
 
       // Process roles (convert IDs to full objects)
       const modelRoles = model.roles ? model.roles
@@ -189,6 +203,19 @@ export function getVoiceRoleName(roleId: string): string {
  * @param emotionCode Emotion code (e.g. "cheerful", "sad")
  * @returns Localized name of the emotion
  */
+const EXTRA_STYLE_NAMES: Record<string, string> = {
+  "chat-casual": "轻松闲聊",
+  sorry: "抱歉",
+  livecommercial: "直播带货",
+  story: "故事",
+};
+
+function styleName(code: string, catalog: Array<{ code: string; name: string }>) {
+  const norm = code.replace(/-/g, "_").toLowerCase();
+  const found = catalog.find((item) => item.code.replace(/-/g, "_").toLowerCase() === norm);
+  return found?.name || EXTRA_STYLE_NAMES[code] || code;
+}
+
 export function getEmotionName(emotionCode: string): string {
   if (!emotionCode) return "";
   for (const provider in emotionsData) {

@@ -24,6 +24,7 @@ export interface CloudVoice {
   providerName?: string;
   emotions?: Array<{ code: string; name: string }>;
   roles?: Array<{ code: string; name: string }>;
+  previewUrl?: string;
 }
 
 export const useAccountStore = defineStore("account", () => {
