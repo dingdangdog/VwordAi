@@ -124,6 +124,13 @@ async function serviceChoices() {
   return success(response.data.data);
 }
 
+async function setQuotaBorrow(allow) {
+  const http = client();
+  const response = await http.patch("/account/quota-borrow", { allow: allow === true });
+  if (!response.data?.ok) return error(response.data?.error?.message || "无法保存借用设置");
+  return success(response.data.data);
+}
+
 async function saveServiceChoice(choice) {
   const http = client();
   const response = await http.put("/services/choices", choice);
@@ -141,5 +148,6 @@ module.exports = {
   services,
   serviceChoices,
   saveServiceChoice,
+  setQuotaBorrow,
   client,
 };

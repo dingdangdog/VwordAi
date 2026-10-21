@@ -26,10 +26,22 @@
         <VButton v-else variant="primary" :loading="loggingIn" @click="login">登录官网账号</VButton>
       </div>
 
-      <div v-if="accountStore.signedIn" class="mt-5 border-t border-line pt-4">
-        <VMeter v-if="quota" :value="quota.used" :max="quota.limit" label="本月已用字数" />
+      <div v-if="accountStore.signedIn" class="mt-5 space-y-4 border-t border-line pt-4">
+        <template v-if="accountStore.quotas">
+          <VMeter :value="accountStore.quotas.llm.used" :max="accountStore.quotas.llm.limit" label="模型额度" />
+          <VMeter :value="accountStore.quotas.tts.used" :max="accountStore.quotas.tts.limit" label="合成额度" />
+        </template>
         <p v-else class="text-xs text-ink-subtle">当前账号暂无订阅额度，可在官网订阅套餐。</p>
-        <p v-if="accountStore.lastSyncedAt" class="mt-2 text-2xs text-ink-subtle">上次同步：{{ formatRelative(accountStore.lastSyncedAt) }}</p>
+        <div>
+          <VSwitch
+            :model-value="Boolean(accountStore.account?.allowQuotaBorrow)"
+            :disabled="borrowSaving"
+            label="额度不足时允许互相借用"
+            @update:model-value="setBorrow"
+          />
+          <p class="mt-2 text-xs text-ink-subtle">1 个合成字符约换成 {{ llmCharsPerTtsChar }} 个模型字符。借用按成本向上取整，本周期已经借出的不会退回。</p>
+        </div>
+        <p v-if="accountStore.lastSyncedAt" class="text-2xs text-ink-subtle">上次同步：{{ formatRelative(accountStore.lastSyncedAt) }}</p>
       </div>
       <p v-if="loggingIn" class="mt-4 rounded-md bg-info/10 px-3 py-2 text-xs text-info">
         已在浏览器打开授权页面，请在官网确认登录；确认后此处会自动刷新。
@@ -82,7 +94,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref, watch } from "vue";
+import { onMounted, reactive, ref, watch } from "vue";
 import { useToast } from "vue-toastification";
 import { ArrowPathIcon, ArrowRightOnRectangleIcon, UserIcon } from "@heroicons/vue/24/outline";
 import VBadge from "@/components/ui/VBadge.vue";
@@ -90,6 +102,7 @@ import VButton from "@/components/ui/VButton.vue";
 import VInput from "@/components/ui/VInput.vue";
 import VMeter from "@/components/ui/VMeter.vue";
 import VSelect from "@/components/ui/VSelect.vue";
+import VSwitch from "@/components/ui/VSwitch.vue";
 import { useAccountStore } from "@/stores/account";
 import { formatRelative } from "@/utils/format";
 
@@ -107,6 +120,9 @@ interface CloudProvider {
 const toast = useToast();
 const accountStore = useAccountStore();
 
+/** 与 home/shared/quota.ts 的 LLM_CHARS_PER_TTS_CHAR 一致：1 个合成字符约换成的模型字符数。 */
+const llmCharsPerTtsChar = 76;
+
 const kinds: { id: Kind; label: string; hint: string }[] = [
   { id: "llm", label: "语言模型", hint: "用于 AI 分角色与文本处理" },
   { id: "tts", label: "语音服务", hint: "用于云端语音合成" },
@@ -114,6 +130,7 @@ const kinds: { id: Kind; label: string; hint: string }[] = [
 
 const apiBase = ref(accountStore.apiBase);
 const loggingIn = ref(false);
+const borrowSaving = ref(false);
 const savingKind = ref<Kind | null>(null);
 const providers = reactive<Record<Kind, CloudProvider[]>>({ llm: [], tts: [] });
 const choices = reactive<Record<Kind, { providerId: string; modelId: string }>>({
@@ -121,10 +138,13 @@ const choices = reactive<Record<Kind, { providerId: string; modelId: string }>>(
   tts: { providerId: "", modelId: "" },
 });
 
-const quota = computed(() => {
-  const q = accountStore.account?.quota;
-  return q && q.limit > 0 ? q : null;
-});
+async function setBorrow(allow: boolean) {
+  borrowSaving.value = true;
+  const result = await accountStore.setQuotaBorrow(allow);
+  borrowSaving.value = false;
+  if (result.success) toast.success("已保存");
+  else toast.error(result.error || "保存失败");
+}
 
 watch(
   () => accountStore.apiBase,

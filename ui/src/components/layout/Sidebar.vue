@@ -59,22 +59,15 @@
         </span>
         <div v-if="!collapsed" class="min-w-0 flex-1">
           <p class="truncate text-xs font-medium text-ink">{{ accountStore.displayName }}</p>
-          <VMeter
-            v-if="quota"
-            class="mt-1"
-            :value="quota.used"
-            :max="quota.limit"
-            :show-value="false"
-            label="本月字数"
-          />
+          <div v-if="accountStore.quotas" class="mt-1 space-y-1.5">
+            <VMeter :value="accountStore.quotas.llm.used" :max="accountStore.quotas.llm.limit" label="模型额度" />
+            <VMeter :value="accountStore.quotas.tts.used" :max="accountStore.quotas.tts.limit" label="合成额度" />
+          </div>
           <p v-else class="truncate text-2xs text-ink-subtle">
             {{ accountStore.signedIn ? "暂无订阅额度" : "登录后使用云端服务" }}
           </p>
         </div>
       </RouterLink>
-      <p v-if="!collapsed && quota" class="num -mt-1 px-1.5 text-2xs text-ink-subtle">
-        {{ quota.used.toLocaleString() }} / {{ quota.limit.toLocaleString() }} 字
-      </p>
 
       <VSegmented
         v-if="!collapsed"
@@ -163,11 +156,6 @@ const themeOptions: { label: string; value: ThemeMode; icon: Component }[] = [
 const currentTheme = computed(
   () => themeOptions.find((option) => option.value === settingsStore.theme) || themeOptions[0]
 );
-
-const quota = computed(() => {
-  const q = accountStore.account?.quota;
-  return q && q.limit > 0 ? q : null;
-});
 
 function isActive(item: NavItem) {
   return item.match(route.path);

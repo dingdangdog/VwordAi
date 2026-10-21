@@ -28,10 +28,13 @@
         </div>
 
         <div v-if="accountStore.signedIn" class="mt-4 space-y-3">
-          <VMeter v-if="quota" :value="quota.used" :max="quota.limit" label="本月已用字数" />
+          <template v-if="accountStore.quotas">
+            <VMeter :value="accountStore.quotas.llm.used" :max="accountStore.quotas.llm.limit" label="模型额度" />
+            <VMeter :value="accountStore.quotas.tts.used" :max="accountStore.quotas.tts.limit" label="合成额度" />
+          </template>
           <p v-else class="text-xs text-ink-subtle">暂无订阅额度，可在官网订阅套餐。</p>
-          <p v-if="quota?.periodEnd" class="text-2xs text-ink-subtle">
-            额度将于 {{ new Date(quota.periodEnd).toLocaleDateString() }} 重置
+          <p v-if="accountStore.quotas?.periodEnd" class="text-2xs text-ink-subtle">
+            额度将于 {{ new Date(accountStore.quotas.periodEnd).toLocaleDateString() }} 重置
           </p>
           <p v-if="accountStore.lastSyncedAt" class="text-2xs text-ink-subtle">
             上次同步：{{ formatRelative(accountStore.lastSyncedAt) }}
@@ -161,11 +164,6 @@ const greeting = computed(() => {
   const hour = new Date().getHours();
   const period = hour < 6 ? "夜深了" : hour < 12 ? "早上好" : hour < 18 ? "下午好" : "晚上好";
   return accountStore.account?.displayName ? `${period}，${accountStore.account.displayName}` : period;
-});
-
-const quota = computed(() => {
-  const q = accountStore.account?.quota;
-  return q && q.limit > 0 ? q : null;
 });
 
 const recentProjects = computed(() => projectsStore.projectsSorted.slice(0, 5));

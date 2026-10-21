@@ -1,11 +1,20 @@
 import { defineStore } from "pinia";
 import { computed, ref } from "vue";
 
+export interface PoolQuota {
+  used: number;
+  limit: number;
+  borrowedOut?: number;
+}
+
 export interface CloudQuota {
   used: number;
   limit: number;
   periodStart?: string;
   periodEnd?: string;
+  allowBorrow?: boolean;
+  llm?: PoolQuota;
+  tts?: PoolQuota;
 }
 
 export interface CloudAccount {
@@ -15,6 +24,7 @@ export interface CloudAccount {
   displayName?: string;
   avatarUrl?: string;
   role?: string;
+  allowQuotaBorrow?: boolean;
   quota?: CloudQuota | null;
 }
 
@@ -75,6 +85,27 @@ export const useAccountStore = defineStore("account", () => {
     return voices.value;
   }
 
+  const quotas = computed(() => {
+    const quota = account.value?.quota;
+    if (!quota) return null;
+    const tts = quota.tts ?? { limit: quota.limit, used: quota.used, borrowedOut: 0 };
+    const llm = quota.llm ?? { limit: 0, used: 0, borrowedOut: 0 };
+    if (tts.limit <= 0 && llm.limit <= 0) return null;
+    return { periodEnd: quota.periodEnd, llm, tts };
+  });
+
+  async function setQuotaBorrow(allow: boolean) {
+    const result = await window.electron.invoke("cloud:set-quota-borrow", allow);
+    if (result?.success && account.value) {
+      account.value = {
+        ...account.value,
+        allowQuotaBorrow: allow,
+        quota: account.value.quota ? { ...account.value.quota, allowBorrow: allow } : account.value.quota,
+      };
+    }
+    return { success: Boolean(result?.success), error: result?.error as string | undefined };
+  }
+
   function voiceName(id?: string | null) {
     if (!id) return "";
     return voices.value.find((voice) => voice.id === id)?.name || id;
@@ -123,10 +154,12 @@ export const useAccountStore = defineStore("account", () => {
     voicesLoaded,
     displayName,
     initials,
+    quotas,
     refresh,
     loadVoices,
     voiceName,
     setApiBase,
+    setQuotaBorrow,
     login,
     logout,
     sync,
