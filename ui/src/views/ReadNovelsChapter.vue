@@ -202,7 +202,20 @@
       </aside>
     </div>
 
-    <VAudioBar ref="audioBar" :src="playerSrc" :title="playerTitle" :subtitle="playerSubtitle" :autoplay="autoplay" @ended="onEnded">
+    <VAudioBar
+      ref="audioBar"
+      dock
+      :src="playerSrc"
+      :title="playerTitle"
+      :subtitle="playerSubtitle"
+      :cover="novelCover"
+      :autoplay="autoplay"
+      :can-next="canNextSegment"
+      :can-prev="canPrevSegment"
+      @ended="onEnded"
+      @next="stepSegment(1)"
+      @previous="stepSegment(-1)"
+    >
       <template #actions>
         <VButton
           size="sm"
@@ -281,6 +294,7 @@ import ChapterCharacterPanel from "@/components/novels/ChapterCharacterPanel.vue
 import CharacterModal from "@/components/ReadNovels/CharacterModal.vue";
 import SpeechTextHint from "@/components/projects/SpeechTextHint.vue";
 import { isNarratorName, useChapterWorkstation, type SegmentTtsConfig } from "@/composables/useChapterWorkstation";
+import { useNovelsStore } from "@/stores/novels";
 import type { Character } from "@/types/ReadNovels";
 import { countChars } from "@/utils/format";
 import { hasSpeechMarkup } from "@/utils/speechText";
@@ -288,6 +302,7 @@ import { hasSpeechMarkup } from "@/utils/speechText";
 const route = useRoute();
 const router = useRouter();
 const ws = useChapterWorkstation();
+const novelsStore = useNovelsStore();
 
 const sourceOpen = ref(true);
 const selected = ref<number[]>([]);
@@ -344,6 +359,23 @@ const playerTitle = computed(() => {
 });
 const playerSubtitle = computed(() => ws.chapter.value?.title);
 const isPlaying = computed(() => Boolean(audioBar.value?.playing));
+const novelCover = computed(() => {
+  const id = ws.chapter.value?.novelId;
+  if (!id) return null;
+  if (novelsStore.currentNovel?.id === id) return novelsStore.currentNovel.cover || null;
+  return novelsStore.novels.find((novel) => novel.id === id)?.cover || null;
+});
+const playableIndexes = computed(() => visibleIndexes.value.filter((index) => ws.segmentAudios[index]));
+const canPrevSegment = computed(() => {
+  if (playingIndex.value === null) return false;
+  return playableIndexes.value.indexOf(playingIndex.value) > 0;
+});
+const canNextSegment = computed(() => {
+  if (playingIndex.value === null) return false;
+  const list = playableIndexes.value;
+  const at = list.indexOf(playingIndex.value);
+  return at >= 0 && at < list.length - 1;
+});
 
 function emotionLabel(index: number) {
   const segment = ws.segments.value[index];
@@ -465,6 +497,15 @@ function playChapter() {
   if (!chapterAudio.value) return;
   autoplay.value = playingIndex.value !== null;
   playingIndex.value = null;
+}
+
+function stepSegment(delta: number) {
+  if (playingIndex.value === null) return;
+  const list = playableIndexes.value;
+  const next = list[list.indexOf(playingIndex.value) + delta];
+  if (next === undefined) return;
+  selected.value = [next];
+  playSegment(next);
 }
 
 function onEnded() {
