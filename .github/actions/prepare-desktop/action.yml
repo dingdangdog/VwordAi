@@ -1,0 +1,49 @@
+name: 准备桌面构建
+description: 安装依赖，把版本写入本次运行的包配置和关于页，并构建界面。调用前需要先 checkout。
+
+inputs:
+  version:
+    description: 不带 v 的版本号
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: 20
+        cache: npm
+        cache-dependency-path: |
+          package-lock.json
+          ui/package-lock.json
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: "3.11"
+
+    - name: Install dependencies
+      shell: bash
+      run: |
+        set -euo pipefail
+        npm ci
+        npm ci --prefix ui
+
+    - name: Write version
+      shell: bash
+      env:
+        VERSION: ${{ inputs.version }}
+      run: |
+        set -euo pipefail
+        if [[ ! "$VERSION" =~ ^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]]; then
+          echo "版本号无效：${VERSION}"
+          exit 1
+        fi
+        npm pkg set "version=${VERSION}"
+        npm pkg set "version=${VERSION}" --prefix ui
+        node .github/scripts/write-app-version.mjs
+
+    - name: Build UI
+      shell: bash
+      run: npm run build-only --prefix ui

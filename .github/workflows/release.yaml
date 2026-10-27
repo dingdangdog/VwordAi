@@ -1,137 +1,208 @@
-name: Electron Builder
+# 推送 vX.Y.Z 标签会构建三个平台的安装包并发布。
+# 也可以手动运行：从该标签运行时版本可留空；从分支运行时要填写版本，且标签必须指向这次提交。
+# 工作流不创建、不移动 git 标签。已有 Release 说明时不覆盖。安装包未签名。
+
+name: 发布安装包
 
 on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 版本号，例如 0.3.0。从对应的 v 标签运行时可留空。
+        required: false
+        type: string
+      latest:
+        description: 是否把这次 Release 标成最新。auto 在没有更高版本时标成最新；always 总是标成最新；never 不标。自动更新读取标成最新的 Release。
+        required: true
+        type: choice
+        default: auto
+        options:
+          - auto
+          - always
+          - never
+      windows:
+        description: 构建 Windows x64 安装包
+        required: true
+        type: boolean
+        default: true
+      macos:
+        description: 构建 macOS arm64 和 x64 安装包
+        required: true
+        type: boolean
+        default: true
+      linux:
+        description: 构建 Linux x64 安装包
+        required: true
+        type: boolean
+        default: true
   push:
     tags:
-      - v*.*.*
+      - "v*.*.*"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: desktop-release-${{ github.repository }}-${{ github.sha }}
+  cancel-in-progress: false
 
 jobs:
-  create-release:
+  selection:
+    name: 检查平台
     runs-on: ubuntu-latest
     steps:
-      - name: Check out
-        uses: actions/checkout@v4
-        with:
-          token: ${{ secrets.GH_TOKEN }}
+      - name: 至少选择一个平台
+        if: ${{ github.event_name == 'workflow_dispatch' && !inputs.windows && !inputs.macos && !inputs.linux }}
+        run: |
+          echo "至少选择 Windows、macOS、Linux 中的一个。"
+          exit 1
+      - name: 记录选择
+        run: |
+          if [[ "${{ github.event_name }}" == "push" ]]; then
+            echo "标签推送，Windows、macOS、Linux 都构建。"
+          else
+            echo "windows=${{ inputs.windows }} macos=${{ inputs.macos }} linux=${{ inputs.linux }} latest=${{ inputs.latest }}"
+          fi
 
-      - name: Get version
-        id: get_version
+  windows:
+    name: Windows
+    if: ${{ github.event_name == 'push' || inputs.windows }}
+    runs-on: windows-latest
+    timeout-minutes: 120
+    defaults:
+      run:
         shell: bash
-        run: |
-          VERSION=$(git describe --tags --always --match 'v*' | sed -n 's|^v\([0-9]*\.[0-9]*\.[0-9]*\)\(-.*\)\{0,1\}|\1|p')
-          echo "VERSION=$VERSION" >> $GITHUB_ENV  # Store version as an environment variable
-
-      - name: Git config
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-
-      - name: Create Release
-        uses: softprops/action-gh-release@v2
-        with:
-          token: ${{ secrets.GH_TOKEN }}
-          name: 🎉Release v${{ env.VERSION }}
-          tag_name: v${{ env.VERSION }}
-          body: v${{ env.VERSION }}
-
-  electron-package:
-    needs: create-release
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [macos-latest, ubuntu-latest, windows-latest]
-        include:
-          - os: macos-latest
-            package_command: npm run builder -- --mac
-            platform: Mac
-          - os: ubuntu-latest
-            package_command: npm run builder -- --linux
-            platform: Linux
-          - os: windows-latest
-            package_command: npm run builder -- --win
-            platform: Windows
-
     steps:
-      - name: Check out
+      - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Get version
-        id: get_version
-        shell: bash
-        run: |
-          VERSION=$(git describe --tags --always --match 'v*' | sed -n 's|^v\([0-9]*\.[0-9]*\.[0-9]*\)\(-.*\)\{0,1\}|\1|p')
-          echo "VERSION=$VERSION" >> $GITHUB_ENV
+      - name: Resolve version
+        id: version
+        env:
+          INPUT_VERSION: ${{ inputs.version }}
+        run: bash .github/scripts/resolve-version.sh
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - name: Resolve latest
+        id: latest
+        env:
+          INPUT_LATEST: ${{ inputs.latest || 'auto' }}
+          VERSION: ${{ steps.version.outputs.version }}
+        run: bash .github/scripts/mark-latest.sh
+
+      - name: Prepare desktop
+        uses: ./.github/actions/prepare-desktop
         with:
-          node-version: "20"
-      # 安装指定 Python
-      - uses: actions/setup-python@v4
-        with:
-          python-version: "3.11"
+          version: ${{ steps.version.outputs.version }}
 
-      # 前端打包
-      - name: Install UI dependencies
-        run: cd ui && npm ci --no-interactive
-
-      - name: Build UI
-        run: cd ui && npm run build-only
-
-      - name: Install Main dependencies
-        run: npm ci --no-interactive
-
-      - name: Package Application
+      - name: Package NSIS installer
         env:
           NODE_ENV: production
-          GH_TOKEN: ${{ secrets.GH_TOKEN }}
-        run: ${{ matrix.package_command }}
+          CSC_IDENTITY_AUTO_DISCOVERY: "false"
+        run: npm run builder -- --win --publish never
 
-      - name: Show Builds
-        if: ${{ matrix.platform == 'Windows' }}
-        run: dir package
-      - name: Show Builds
-        if: ${{ matrix.platform != 'Windows' }}
+      - name: Show builds
         run: ls -la package
 
-      - name: Mac Release
-        uses: softprops/action-gh-release@v2
-        if: ${{ matrix.platform == 'Mac' }}
-        with:
-          token: ${{ secrets.GH_TOKEN }}
-          name: 🎉Release v${{ env.VERSION }}
-          tag_name: v${{ env.VERSION }}
-          append_body: true
-          # VwordAi-2.0.0-arm64.dmg / VwordAi-2.0.0-x64.dmg / VwordAi-2.0.0-arm64.zip / VwordAi-2.0.0-x64.zip
-          files: |
-            package/VwordAi-${{ env.VERSION }}-arm64.dmg
-            package/VwordAi-${{ env.VERSION }}-x64.dmg
-            package/latest-mac.yml
+      - name: Publish installer
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.version.outputs.tag }}
+          VERSION: ${{ steps.version.outputs.version }}
+          MARK_LATEST: ${{ steps.latest.outputs.mark_latest }}
+        run: bash .github/scripts/publish-desktop-assets.sh windows
 
-      - name: Linux Release
-        uses: softprops/action-gh-release@v2
-        if: ${{ matrix.platform == 'Linux' }}
-        with:
-          token: ${{ secrets.GH_TOKEN }}
-          name: 🎉Release v${{ env.VERSION }}
-          tag_name: v${{ env.VERSION }}
-          append_body: true
-          # VwordAi_2.0.0_amd64.deb/VwordAi-2.0.0.AppImage
-          files: |
-            package/VwordAi-${{ env.VERSION }}.deb
-            package/VwordAi-${{ env.VERSION }}.AppImage
-            package/latest-linux.yml
+  macos:
+    name: macOS
+    if: ${{ github.event_name == 'push' || inputs.macos }}
+    runs-on: macos-latest
+    timeout-minutes: 120
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-      - name: Windows Release
-        uses: softprops/action-gh-release@v2
-        if: ${{ matrix.platform == 'Windows' }}
+      - name: Resolve version
+        id: version
+        env:
+          INPUT_VERSION: ${{ inputs.version }}
+        run: bash .github/scripts/resolve-version.sh
+
+      - name: Resolve latest
+        id: latest
+        env:
+          INPUT_LATEST: ${{ inputs.latest || 'auto' }}
+          VERSION: ${{ steps.version.outputs.version }}
+        run: bash .github/scripts/mark-latest.sh
+
+      - name: Prepare desktop
+        uses: ./.github/actions/prepare-desktop
         with:
-          # make_latest: "true"
-          token: ${{ secrets.GH_TOKEN }}
-          name: 🎉Release v${{ env.VERSION }}
-          tag_name: v${{ env.VERSION }}
-          append_body: true
-          # VwordAi Setup 2.0.0.exe
-          files: |
-            package/VwordAi-Setup-${{ env.VERSION }}.exe
-            package/latest.yml
+          version: ${{ steps.version.outputs.version }}
+
+      - name: Package disk images
+        env:
+          NODE_ENV: production
+          CSC_IDENTITY_AUTO_DISCOVERY: "false"
+        run: npm run builder -- --mac --publish never
+
+      - name: Show builds
+        run: ls -la package
+
+      - name: Publish installer
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.version.outputs.tag }}
+          VERSION: ${{ steps.version.outputs.version }}
+          MARK_LATEST: ${{ steps.latest.outputs.mark_latest }}
+        run: bash .github/scripts/publish-desktop-assets.sh macos
+
+  linux:
+    name: Linux
+    if: ${{ github.event_name == 'push' || inputs.linux }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Resolve version
+        id: version
+        env:
+          INPUT_VERSION: ${{ inputs.version }}
+        run: bash .github/scripts/resolve-version.sh
+
+      - name: Resolve latest
+        id: latest
+        env:
+          INPUT_LATEST: ${{ inputs.latest || 'auto' }}
+          VERSION: ${{ steps.version.outputs.version }}
+        run: bash .github/scripts/mark-latest.sh
+
+      - name: Prepare desktop
+        uses: ./.github/actions/prepare-desktop
+        with:
+          version: ${{ steps.version.outputs.version }}
+
+      - name: Install packaging libraries
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends fakeroot
+          sudo apt-get install -y --no-install-recommends libfuse2 || sudo apt-get install -y --no-install-recommends libfuse2t64
+
+      - name: Package AppImage and deb
+        env:
+          NODE_ENV: production
+          CSC_IDENTITY_AUTO_DISCOVERY: "false"
+          APPIMAGE_EXTRACT_AND_RUN: "1"
+        run: npm run builder -- --linux --publish never
+
+      - name: Show builds
+        run: ls -la package
+
+      - name: Publish installer
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.version.outputs.tag }}
+          VERSION: ${{ steps.version.outputs.version }}
+          MARK_LATEST: ${{ steps.latest.outputs.mark_latest }}
+        run: bash .github/scripts/publish-desktop-assets.sh linux

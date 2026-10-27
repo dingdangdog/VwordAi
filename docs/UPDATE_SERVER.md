@@ -204,27 +204,14 @@ removeUpdateListener: () => {
 
 ### 使用 GitHub 作为更新服务器
 
-1. **创建 GitHub 仓库** - 确保您有一个可用的 GitHub 仓库来托管应用程序更新。
+桌面端仓库的 Actions 工作流「发布安装包」会构建 Windows、macOS 和 Linux 安装包，连同 `latest.yml`、`latest-mac.yml`、`latest-linux.yml` 上传到 `dingdangdog/VwordAi` 的 GitHub Release。应用里的更新源就是这个仓库。
 
-2. **生成访问令牌** - 创建一个具有 `repo` 权限的个人访问令牌 (PAT)。
+1. 推送标签 `vX.Y.Z`。标签必须是三位版本号。推送后会自动构建三个平台。
+2. 也可以在 Actions 里手动运行。从该标签运行时版本可以留空。从分支运行时要填写版本，并且这个标签已经指向这次提交。可以只选部分平台。
+3. `latest` 默认是 auto：没有更高版本标签时，这次 Release 才标成最新。自动更新读取标成最新的 Release。
+4. 工作流不会创建或移动 git 标签，也不会覆盖已有 Release 说明。安装包未签名。Actions 使用工作流自带的 `GITHUB_TOKEN`。
 
-3. **配置环境变量** - 在构建环境中设置 `GH_TOKEN` 环境变量：
-
-   ```bash
-   export GH_TOKEN=your_github_token
-   ```
-
-   或在 Windows 中：
-
-   ```
-   set GH_TOKEN=your_github_token
-   ```
-
-4. **构建并发布**:
-
-   ```bash
-   npm run publish
-   ```
+本地仍可用 `npm run publish` 发布，这需要自己的 `GH_TOKEN`，不要把令牌写进源码。
 
 ### 使用自有服务器作为更新服务器
 
