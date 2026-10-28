@@ -31,7 +31,11 @@
           <VMeter :value="accountStore.quotas.llm.used" :max="accountStore.quotas.llm.limit" label="模型额度" />
           <VMeter :value="accountStore.quotas.tts.used" :max="accountStore.quotas.tts.limit" label="合成额度" />
         </template>
-        <p v-else class="text-xs text-ink-subtle">当前账号暂无订阅额度，可在官网订阅套餐。</p>
+        <p v-else class="text-xs text-ink-subtle">当前账号暂无订阅额度。</p>
+        <RouterLink to="/billing" class="inline-flex text-xs font-medium text-accent hover:underline">
+          <template v-if="accountStore.vpointBalance !== null">{{ accountStore.vpointBalance.toLocaleString() }} V豆 · </template>
+          查看方案和会员
+        </RouterLink>
         <div>
           <VSwitch
             :model-value="Boolean(accountStore.account?.allowQuotaBorrow)"

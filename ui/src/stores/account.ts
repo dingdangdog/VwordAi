@@ -47,6 +47,7 @@ export const useAccountStore = defineStore("account", () => {
   const lastSyncedAt = ref<number | null>(null);
   const voices = ref<CloudVoice[]>([]);
   const voicesLoaded = ref(false);
+  const vpointBalance = ref<number | null>(null);
 
   const displayName = computed(
     () => account.value?.displayName || account.value?.username || (signedIn.value ? "已登录" : "未登录")
@@ -60,10 +61,15 @@ export const useAccountStore = defineStore("account", () => {
       apiBase.value = config?.data?.apiBase || apiBase.value;
       signedIn.value = Boolean(config?.data?.signedIn);
       if (signedIn.value) {
-        const result = await window.electron.invoke("cloud:account");
+        const [result, wallet] = await Promise.all([
+          window.electron.invoke("cloud:account"),
+          window.electron.invoke("cloud:vpoints"),
+        ]);
         account.value = result?.success ? result.data : null;
+        if (wallet?.success && typeof wallet.data?.balance === "number") vpointBalance.value = wallet.data.balance;
       } else {
         account.value = null;
+        vpointBalance.value = null;
       }
     } catch (error) {
       console.error("读取账户失败:", error);
@@ -122,10 +128,15 @@ export const useAccountStore = defineStore("account", () => {
     return { success: Boolean(result?.success), error: result?.error };
   }
 
+  function setVpointBalance(value: number | null) {
+    vpointBalance.value = value;
+  }
+
   async function logout() {
     await window.electron.invoke("cloud:logout");
     signedIn.value = false;
     account.value = null;
+    vpointBalance.value = null;
   }
 
   async function sync(): Promise<{ success: boolean; error?: string }> {
@@ -152,6 +163,7 @@ export const useAccountStore = defineStore("account", () => {
     lastSyncedAt,
     voices,
     voicesLoaded,
+    vpointBalance,
     displayName,
     initials,
     quotas,
@@ -160,6 +172,7 @@ export const useAccountStore = defineStore("account", () => {
     voiceName,
     setApiBase,
     setQuotaBorrow,
+    setVpointBalance,
     login,
     logout,
     sync,

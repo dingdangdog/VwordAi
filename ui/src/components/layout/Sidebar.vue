@@ -59,6 +59,9 @@
         </span>
         <div v-if="!collapsed" class="min-w-0 flex-1">
           <p class="truncate text-xs font-medium text-ink">{{ accountStore.displayName }}</p>
+          <p v-if="accountStore.vpointBalance !== null" class="num truncate text-2xs text-ink-subtle">
+            {{ accountStore.vpointBalance.toLocaleString() }} V豆
+          </p>
           <div v-if="accountStore.quotas" class="mt-1 space-y-1.5">
             <VMeter :value="accountStore.quotas.llm.used" :max="accountStore.quotas.llm.limit" label="模型额度" />
             <VMeter :value="accountStore.quotas.tts.used" :max="accountStore.quotas.tts.limit" label="合成额度" />
@@ -102,6 +105,7 @@ import {
   ChevronDoubleRightIcon,
   Cog6ToothIcon,
   ComputerDesktopIcon,
+  CreditCardIcon,
   FolderIcon,
   MoonIcon,
   SignalIcon,
@@ -137,6 +141,7 @@ const mainNav: NavItem[] = [
     icon: BookOpenIcon,
     match: (p) => p.startsWith("/read-novels") || p.startsWith("/chapters"),
   },
+  { to: "/billing", label: "订阅", icon: CreditCardIcon, match: (p) => p.startsWith("/billing") },
   { to: "/bililive", label: "直播", icon: SignalIcon, match: (p) => p.startsWith("/bililive") },
 ];
 

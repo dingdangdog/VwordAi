@@ -40,6 +40,12 @@ const router = createRouter({
       }),
     },
     {
+      path: "/billing",
+      name: "billing",
+      component: () => import("@/views/BillingView.vue"),
+      meta: { title: "订阅" },
+    },
+    {
       path: "/settings",
       name: "settings",
       component: () => import("@/views/settings/SettingsView.vue"),

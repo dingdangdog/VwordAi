@@ -131,6 +131,73 @@ async function setQuotaBorrow(allow) {
   return success(response.data.data);
 }
 
+async function request(method, path, options = {}) {
+  try {
+    const http = options.auth === false ? publicClient() : client();
+    const response = method === "GET" ? await http.get(path) : await http.post(path, options.body || {});
+    const payload = response.data;
+    if (!payload || payload.ok !== true) return error(payload?.error?.message || "请求失败，请稍后重试");
+    return success(payload.data);
+  } catch (err) {
+    return error(err && err.message ? err.message : "请求失败，请稍后重试");
+  }
+}
+
+function billingPlans() {
+  return request("GET", "/billing/plans", { auth: false });
+}
+
+function billingSubscription() {
+  return request("GET", "/billing/subscription");
+}
+
+function vpoints() {
+  return request("GET", "/billing/vpoints");
+}
+
+function billingPayments() {
+  return request("GET", "/billing/payments", { auth: false });
+}
+
+function purchasePlan(planId, idempotencyKey) {
+  return request("POST", "/billing/purchase", {
+    body: { planId: String(planId || ""), idempotencyKey: String(idempotencyKey || "") },
+  });
+}
+
+function billingPortal() {
+  return request("POST", "/billing/portal", { body: {} });
+}
+
+function membershipPlans() {
+  return request("GET", "/listen/membership/plans", { auth: false });
+}
+
+function membership() {
+  return request("GET", "/listen/membership");
+}
+
+function purchaseMembership(listenerPlanId, idempotencyKey) {
+  return request("POST", "/listen/membership/checkout", {
+    body: { listenerPlanId: String(listenerPlanId || ""), idempotencyKey: String(idempotencyKey || "") },
+  });
+}
+
+function membershipPortal() {
+  return request("POST", "/listen/membership/portal", { body: {} });
+}
+
+function orders() {
+  return request("GET", "/listen/orders");
+}
+
+async function openExternal(url) {
+  const target = String(url || "");
+  if (!/^https:\/\//i.test(target)) return error("无法打开链接");
+  await shell.openExternal(target);
+  return success(true);
+}
+
 async function saveServiceChoice(choice) {
   const http = client();
   const response = await http.put("/services/choices", choice);
@@ -149,5 +216,17 @@ module.exports = {
   serviceChoices,
   saveServiceChoice,
   setQuotaBorrow,
+  billingPlans,
+  billingSubscription,
+  vpoints,
+  billingPayments,
+  purchasePlan,
+  billingPortal,
+  membershipPlans,
+  membership,
+  purchaseMembership,
+  membershipPortal,
+  orders,
+  openExternal,
   client,
 };
