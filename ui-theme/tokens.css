@@ -1,0 +1,72 @@
+/*
+ * VwordAi 设计令牌（home 与 electron-client 共用）
+ * 值为 RGB 通道，供 Tailwind 以 rgb(var(--vw-x) / <alpha-value>) 方式使用。
+ */
+
+:root {
+  --vw-canvas: 244 246 248;
+  --vw-surface: 255 255 255;
+  --vw-raised: 255 255 255;
+  --vw-soft: 238 241 244;
+  --vw-line: 221 226 232;
+  --vw-line-strong: 197 204 213;
+
+  --vw-ink: 14 17 22;
+  --vw-ink-muted: 75 85 99;
+  --vw-ink-subtle: 107 114 128;
+
+  --vw-accent: 15 118 110;
+  --vw-accent-hover: 17 94 89;
+  --vw-accent-ink: 255 255 255;
+
+  --vw-success: 21 128 61;
+  --vw-warning: 180 83 9;
+  --vw-danger: 185 28 28;
+  --vw-info: 29 78 216;
+  --vw-live: 220 38 38;
+
+  --vw-role-1: 37 99 235;
+  --vw-role-2: 219 39 119;
+  --vw-role-3: 180 83 9;
+  --vw-role-4: 124 58 237;
+  --vw-role-5: 5 150 105;
+  --vw-role-6: 234 88 12;
+  --vw-role-7: 8 145 178;
+  --vw-role-8: 220 38 38;
+
+  --vw-scrim: 15 18 22;
+}
+
+.dark {
+  --vw-canvas: 11 13 16;
+  --vw-surface: 17 20 24;
+  --vw-raised: 23 27 33;
+  --vw-soft: 30 35 43;
+  --vw-line: 38 44 53;
+  --vw-line-strong: 52 60 71;
+
+  --vw-ink: 230 234 240;
+  --vw-ink-muted: 154 164 178;
+  --vw-ink-subtle: 107 117 131;
+
+  --vw-accent: 45 212 191;
+  --vw-accent-hover: 94 234 212;
+  --vw-accent-ink: 4 32 28;
+
+  --vw-success: 74 222 128;
+  --vw-warning: 251 191 36;
+  --vw-danger: 248 113 113;
+  --vw-info: 96 165 250;
+  --vw-live: 239 68 68;
+
+  --vw-role-1: 96 165 250;
+  --vw-role-2: 244 114 182;
+  --vw-role-3: 251 191 36;
+  --vw-role-4: 167 139 250;
+  --vw-role-5: 52 211 153;
+  --vw-role-6: 251 146 60;
+  --vw-role-7: 34 211 238;
+  --vw-role-8: 248 113 113;
+
+  --vw-scrim: 0 0 0;
+}

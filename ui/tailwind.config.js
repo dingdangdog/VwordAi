@@ -1,4 +1,4 @@
-import preset from "../../ui-theme/tailwind-preset.cjs";
+import preset from "../ui-theme/tailwind-preset.cjs";
 
 /** @type {import('tailwindcss').Config} */
 export default {
