@@ -1,12 +1,14 @@
 #!/usr/bin/env bash
-# 收集一个平台的安装包和自动更新清单，写独立校验文件，并上传到已有标签的 Release。
+# 收集一个平台的安装包和自动更新清单，写独立校验文件。
+# 先把 vX.Y.Z 打到当前提交，再创建或沿用 Release 并上传。
 set -euo pipefail
 
 PLATFORM="${1:-}"
+SUM_NAME="${2:-$PLATFORM}"
 case "$PLATFORM" in
   windows|macos|linux) ;;
   *)
-    echo "用法：$0 windows|macos|linux"
+    echo "用法：$0 windows|macos|linux [校验文件名]"
     exit 1
     ;;
 esac
@@ -60,21 +62,35 @@ if [[ -n "$missing" ]]; then
   exit 1
 fi
 
+if [[ "$PLATFORM" == "macos" ]]; then
+  case "$SUM_NAME" in
+    macos-arm64) arch="arm64" ;;
+    macos-x64) arch="x64" ;;
+    *)
+      echo "macOS 的校验名必须是 macos-arm64 或 macos-x64。当前是：${SUM_NAME}"
+      exit 1
+      ;;
+  esac
+  cp -f "$DEST/latest-mac.yml" "$DEST/update-mac-${arch}.yml"
+  rm -f "$DEST/latest-mac.yml"
+fi
+
 SUMS="$(mktemp)"
 node .github/scripts/sha256-dir.mjs "$DEST" > "$SUMS"
-mv "$SUMS" "$DEST/SHA256SUMS-${PLATFORM}.txt"
+mv "$SUMS" "$DEST/SHA256SUMS-${SUM_NAME}.txt"
 
+bash .github/scripts/ensure-tag.sh
 bash .github/scripts/ensure-release.sh
 gh release upload "$TAG" "$DEST"/* --clobber
 
 if [[ -n "${GITHUB_STEP_SUMMARY:-}" ]]; then
   {
-    echo "### ${PLATFORM}"
+    echo "### ${SUM_NAME}"
     echo
     echo "GitHub latest: ${MARK_LATEST}"
     echo
     echo '```'
-    cat "$DEST/SHA256SUMS-${PLATFORM}.txt"
+    cat "$DEST/SHA256SUMS-${SUM_NAME}.txt"
     echo '```'
     echo
   } >> "$GITHUB_STEP_SUMMARY"

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# 为已有标签创建 GitHub Release。已有说明时不覆盖。不创建、不移动 git 标签。
+# 为当前提交上的 vX.Y.Z 创建 GitHub Release。已有说明时不覆盖。不移动 git 标签。
 set -euo pipefail
 
 : "${TAG:?}"
@@ -45,7 +45,7 @@ fi
 
 attempt=1
 while [[ "$attempt" -le 5 ]]; do
-  if gh release create "$TAG" --target "$GITHUB_SHA" --title "$TAG" --notes-file "$NOTES" "$latest_arg"; then
+  if gh release create "$TAG" --target "$GITHUB_SHA" --title "VwordAi ${VERSION}" --notes-file "$NOTES" "$latest_arg"; then
     echo "已创建 GitHub Release ${TAG}。"
     exit 0
   fi

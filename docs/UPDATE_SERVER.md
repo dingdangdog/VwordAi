@@ -204,12 +204,12 @@ removeUpdateListener: () => {
 
 ### 使用 GitHub 作为更新服务器
 
-桌面端仓库的 Actions 工作流「发布安装包」会构建 Windows、macOS 和 Linux 安装包，连同 `latest.yml`、`latest-mac.yml`、`latest-linux.yml` 上传到 `dingdangdog/VwordAi` 的 GitHub Release。应用里的更新源就是这个仓库。
+桌面端仓库的 Actions 工作流「发布客户端」会构建 Windows x64、macOS arm64、macOS Intel x64 和 Linux x64 安装包，连同 `latest.yml`、`latest-mac.yml`、`latest-linux.yml` 上传到 `dingdangdog/VwordAi` 的 GitHub Release。应用里的更新源就是这个仓库。
 
-1. 推送标签 `vX.Y.Z`。标签必须是三位版本号。推送后会自动构建三个平台。
-2. 也可以在 Actions 里手动运行。从该标签运行时版本可以留空。从分支运行时要填写版本，并且这个标签已经指向这次提交。可以只选部分平台。
+1. 在 Actions 里手动运行「发布客户端」，填写版本号，例如 `1.1.2`。工作流在安装包上传前把 `v1.1.2` 打到这次提交。推送标签不会自动构建。
+2. 可以只选部分平台。macOS 的 Apple 芯片和 Intel 各用一台对应架构的机器，只打包本机架构。
 3. `latest` 默认是 auto：没有更高版本标签时，这次 Release 才标成最新。自动更新读取标成最新的 Release。
-4. 工作流不会创建或移动 git 标签，也不会覆盖已有 Release 说明。安装包未签名。Actions 使用工作流自带的 `GITHUB_TOKEN`。
+4. 标签已经指向别的提交时，工作流不会移动它，需要换一个版本号。已有 Release 说明不覆盖。安装包未签名。Actions 使用工作流自带的 `GITHUB_TOKEN`。
 
 本地仍可用 `npm run publish` 发布，这需要自己的 `GH_TOKEN`，不要把令牌写进源码。
 
