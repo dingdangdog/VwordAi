@@ -1,137 +1,228 @@
-name: Electron Builder
+# 在 Actions 里填写版本号，分别构建 Windows、macOS Apple 芯片、macOS Intel 和 Linux。
+# 安装包生成后才把 vX.Y.Z 打到这次提交。已有 Release 说明时不覆盖。安装包未签名。
+# 推送标签不会自动构建。
+
+name: 发布客户端
 
 on:
-  push:
-    tags:
-      - v*.*.*
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 版本号，例如 1.1.2。工作流会在当前提交上创建 v1.1.2。
+        required: true
+        type: string
+      latest:
+        description: 是否把这次 Release 标成最新。auto 在没有更高版本时标成最新；always 总是标成最新；never 不标。自动更新读取标成最新的 Release。
+        required: true
+        type: choice
+        default: auto
+        options:
+          - auto
+          - always
+          - never
+      windows:
+        description: 构建 Windows x64 安装包
+        required: true
+        type: boolean
+        default: true
+      macos:
+        description: 构建 macOS arm64 和 x64 安装包
+        required: true
+        type: boolean
+        default: true
+      linux:
+        description: 构建 Linux x64 安装包
+        required: true
+        type: boolean
+        default: true
+
+permissions:
+  contents: write
+
+concurrency:
+  group: desktop-${{ github.repository }}-${{ inputs.version }}
+  cancel-in-progress: false
 
 jobs:
-  create-release:
+  selection:
+    name: 检查平台
     runs-on: ubuntu-latest
     steps:
-      - name: Check out
-        uses: actions/checkout@v4
-        with:
-          token: ${{ secrets.GH_TOKEN }}
+      - name: 至少选择一个平台
+        if: ${{ !inputs.windows && !inputs.macos && !inputs.linux }}
+        run: |
+          echo "至少选择 Windows、macOS、Linux 中的一个。"
+          exit 1
+      - name: 记录选择
+        run: |
+          echo "windows=${{ inputs.windows }} macos=${{ inputs.macos }} linux=${{ inputs.linux }} latest=${{ inputs.latest }}"
 
-      - name: Get version
-        id: get_version
+  windows:
+    name: Windows
+    if: ${{ inputs.windows }}
+    runs-on: windows-latest
+    timeout-minutes: 150
+    defaults:
+      run:
         shell: bash
-        run: |
-          VERSION=$(git describe --tags --always --match 'v*' | sed -n 's|^v\([0-9]*\.[0-9]*\.[0-9]*\)\(-.*\)\{0,1\}|\1|p')
-          echo "VERSION=$VERSION" >> $GITHUB_ENV  # Store version as an environment variable
-
-      - name: Git config
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-
-      - name: Create Release
-        uses: softprops/action-gh-release@v2
-        with:
-          token: ${{ secrets.GH_TOKEN }}
-          name: 🎉Release v${{ env.VERSION }}
-          tag_name: v${{ env.VERSION }}
-          body: v${{ env.VERSION }}
-
-  electron-package:
-    needs: create-release
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [macos-latest, ubuntu-latest, windows-latest]
-        include:
-          - os: macos-latest
-            package_command: npm run builder -- --mac
-            platform: Mac
-          - os: ubuntu-latest
-            package_command: npm run builder -- --linux
-            platform: Linux
-          - os: windows-latest
-            package_command: npm run builder -- --win
-            platform: Windows
-
     steps:
-      - name: Check out
+      - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Get version
-        id: get_version
-        shell: bash
-        run: |
-          VERSION=$(git describe --tags --always --match 'v*' | sed -n 's|^v\([0-9]*\.[0-9]*\.[0-9]*\)\(-.*\)\{0,1\}|\1|p')
-          echo "VERSION=$VERSION" >> $GITHUB_ENV
+      - name: Resolve version
+        id: version
+        env:
+          INPUT_VERSION: ${{ inputs.version }}
+        run: bash .github/scripts/resolve-version.sh
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - name: Resolve latest
+        id: latest
+        env:
+          INPUT_LATEST: ${{ inputs.latest }}
+          VERSION: ${{ steps.version.outputs.version }}
+        run: bash .github/scripts/mark-latest.sh
+
+      - name: Prepare desktop
+        uses: ./.github/actions/prepare-desktop
         with:
-          node-version: "20"
-      # 安装指定 Python
-      - uses: actions/setup-python@v4
-        with:
-          python-version: "3.11"
+          version: ${{ steps.version.outputs.version }}
 
-      # 前端打包
-      - name: Install UI dependencies
-        run: cd ui && npm ci --no-interactive
-
-      - name: Build UI
-        run: cd ui && npm run build-only
-
-      - name: Install Main dependencies
-        run: npm ci --no-interactive
-
-      - name: Package Application
+      - name: Package NSIS installer
         env:
           NODE_ENV: production
-          GH_TOKEN: ${{ secrets.GH_TOKEN }}
-        run: ${{ matrix.package_command }}
+          CSC_IDENTITY_AUTO_DISCOVERY: "false"
+        run: npm run package:win
 
-      - name: Show Builds
-        if: ${{ matrix.platform == 'Windows' }}
-        run: dir package
-      - name: Show Builds
-        if: ${{ matrix.platform != 'Windows' }}
-        run: ls -la package
+      - name: Publish installer
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.version.outputs.tag }}
+          VERSION: ${{ steps.version.outputs.version }}
+          MARK_LATEST: ${{ steps.latest.outputs.mark_latest }}
+        run: bash .github/scripts/publish-desktop-assets.sh windows
 
-      - name: Mac Release
-        uses: softprops/action-gh-release@v2
-        if: ${{ matrix.platform == 'Mac' }}
+  macos:
+    name: macOS ${{ matrix.arch }}
+    if: ${{ inputs.macos }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: macos-latest
+            arch: arm64
+            sums: macos-arm64
+          - runner: macos-15-intel
+            arch: x64
+            sums: macos-x64
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 150
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Resolve version
+        id: version
+        env:
+          INPUT_VERSION: ${{ inputs.version }}
+        run: bash .github/scripts/resolve-version.sh
+
+      - name: Resolve latest
+        id: latest
+        env:
+          INPUT_LATEST: ${{ inputs.latest }}
+          VERSION: ${{ steps.version.outputs.version }}
+        run: bash .github/scripts/mark-latest.sh
+
+      - name: Prepare desktop
+        uses: ./.github/actions/prepare-desktop
         with:
-          token: ${{ secrets.GH_TOKEN }}
-          name: 🎉Release v${{ env.VERSION }}
-          tag_name: v${{ env.VERSION }}
-          append_body: true
-          # VwordAi-2.0.0-arm64.dmg / VwordAi-2.0.0-x64.dmg / VwordAi-2.0.0-arm64.zip / VwordAi-2.0.0-x64.zip
-          files: |
-            package/VwordAi-${{ env.VERSION }}-arm64.dmg
-            package/VwordAi-${{ env.VERSION }}-x64.dmg
-            package/latest-mac.yml
+          version: ${{ steps.version.outputs.version }}
 
-      - name: Linux Release
-        uses: softprops/action-gh-release@v2
-        if: ${{ matrix.platform == 'Linux' }}
-        with:
-          token: ${{ secrets.GH_TOKEN }}
-          name: 🎉Release v${{ env.VERSION }}
-          tag_name: v${{ env.VERSION }}
-          append_body: true
-          # VwordAi_2.0.0_amd64.deb/VwordAi-2.0.0.AppImage
-          files: |
-            package/VwordAi-${{ env.VERSION }}.deb
-            package/VwordAi-${{ env.VERSION }}.AppImage
-            package/latest-linux.yml
+      - name: Package disk images
+        env:
+          NODE_ENV: production
+          CSC_IDENTITY_AUTO_DISCOVERY: "false"
+        run: npm run package:mac
 
-      - name: Windows Release
-        uses: softprops/action-gh-release@v2
-        if: ${{ matrix.platform == 'Windows' }}
+      - name: Publish installer
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.version.outputs.tag }}
+          VERSION: ${{ steps.version.outputs.version }}
+          MARK_LATEST: ${{ steps.latest.outputs.mark_latest }}
+        run: bash .github/scripts/publish-desktop-assets.sh macos ${{ matrix.sums }}
+
+  linux:
+    name: Linux
+    if: ${{ inputs.linux }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 150
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Resolve version
+        id: version
+        env:
+          INPUT_VERSION: ${{ inputs.version }}
+        run: bash .github/scripts/resolve-version.sh
+
+      - name: Resolve latest
+        id: latest
+        env:
+          INPUT_LATEST: ${{ inputs.latest }}
+          VERSION: ${{ steps.version.outputs.version }}
+        run: bash .github/scripts/mark-latest.sh
+
+      - name: Prepare desktop
+        uses: ./.github/actions/prepare-desktop
         with:
-          # make_latest: "true"
-          token: ${{ secrets.GH_TOKEN }}
-          name: 🎉Release v${{ env.VERSION }}
-          tag_name: v${{ env.VERSION }}
-          append_body: true
-          # VwordAi Setup 2.0.0.exe
-          files: |
-            package/VwordAi-Setup-${{ env.VERSION }}.exe
-            package/latest.yml
+          version: ${{ steps.version.outputs.version }}
+
+      - name: Install packaging libraries
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends fakeroot patchelf
+          sudo apt-get install -y --no-install-recommends libfuse2 || sudo apt-get install -y --no-install-recommends libfuse2t64
+
+      - name: Package AppImage and deb
+        env:
+          NODE_ENV: production
+          CSC_IDENTITY_AUTO_DISCOVERY: "false"
+          APPIMAGE_EXTRACT_AND_RUN: "1"
+        run: npm run package:linux
+
+      - name: Publish installer
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.version.outputs.tag }}
+          VERSION: ${{ steps.version.outputs.version }}
+          MARK_LATEST: ${{ steps.latest.outputs.mark_latest }}
+        run: bash .github/scripts/publish-desktop-assets.sh linux
+
+  macos-manifest:
+    name: macOS 更新清单
+    needs: macos
+    if: ${{ !cancelled() && needs.macos.result != 'skipped' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Resolve version
+        id: version
+        env:
+          INPUT_VERSION: ${{ inputs.version }}
+        run: bash .github/scripts/resolve-version.sh
+
+      - name: Merge macOS update manifests
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.version.outputs.tag }}
+        run: bash .github/scripts/publish-mac-update-manifest.sh
